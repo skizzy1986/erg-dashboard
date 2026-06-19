@@ -1,6 +1,7 @@
 import { useState, useEffect, Component } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { std, mean } from "mathjs";
+import { supabase } from "./supabaseClient.js";
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -1738,19 +1739,17 @@ function resolveDay(date) {
 }
 
 // ── COMPLETION STATUS — match a calendar day to the session log ─
-// A planned day is "done" if the sessionLog has any entry on that date.
-// Returns how many sessions were logged + their labels, so the calendar
-// and overview can mark days completed vs upcoming vs today. Honest
-// limitation: matches by DATE only (not which specific session), so a
-// day with any logged work reads as done — fine for a status glance.
-function logEntriesForDate(date) {
-  // sessionLog dates are "M/D/YY" (e.g. "6/19/26")
+// A planned day is "done" if the session list has any entry on that date.
+// Takes the session list as a param so it works with the MERGED list
+// (hardcoded seed history + live sessions fetched from Supabase).
+function logEntriesForDate(date, sessions) {
+  // session dates are "M/D/YY" (e.g. "6/19/26")
   const key = (date.getMonth()+1) + "/" + date.getDate() + "/" + String(date.getFullYear()).slice(-2);
-  return sessionLog.filter(e => e.date === key);
+  return (sessions || []).filter(e => e.date === key);
 }
-function dayStatus(date, todayMidnight) {
+function dayStatus(date, todayMidnight, sessions) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const logged = logEntriesForDate(d);
+  const logged = logEntriesForDate(d, sessions);
   if (logged.length > 0) return { state:"done", logged };
   if (d.getTime() === todayMidnight.getTime()) return { state:"today", logged:[] };
   if (d < todayMidnight) return { state:"missed", logged:[] }; // past, nothing logged
@@ -1777,7 +1776,7 @@ function getToday(cycleMode) {
 // to DEFAULT slots (erg 06:00, strength 16:00). Scans forward up to
 // 3 days, computing roster mode PER DAY so it handles the home↔FIFO
 // boundary correctly (e.g. Sunday before fly-out shows FIFO sessions).
-function getUpcomingSessions(now) {
+function getUpcomingSessions(now, sessions) {
   const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const ERG_HOUR = 6, STRENGTH_HOUR = 16; // default slots
   const isStrength = txt => txt && /lower|upper|strength|day 1|day 2/i.test(txt);
@@ -1788,7 +1787,7 @@ function getUpcomingSessions(now) {
     const sess = resolveDay(d); // override-aware (one-off swaps respected)
     if (!sess) continue;
     // If the day already has logged work, it's done — don't list it as upcoming.
-    if (logEntriesForDate(d).length > 0) continue;
+    if (logEntriesForDate(d, sessions).length > 0) continue;
     if (sess.am && sess.am !== "—") {
       const t = new Date(d); t.setHours(isStrength(sess.am) ? STRENGTH_HOUR : ERG_HOUR, 0, 0, 0);
       if (t > now) out.push({ when:t, label:sess.am, slot:isStrength(sess.am)?"PM slot":"AM slot", dow });
@@ -1809,7 +1808,9 @@ function LogEntry({ entry }) {
   const isErg = !!entry.splits;
   return (
     <div style={{
-      border:`1px solid ${open ? color+"50" : "#4a4a68"}`,
+      borderTop:`1px solid ${open ? color+"50" : "#4a4a68"}`,
+      borderRight:`1px solid ${open ? color+"50" : "#4a4a68"}`,
+      borderBottom:`1px solid ${open ? color+"50" : "#4a4a68"}`,
       borderLeft:`3px solid ${color}`,
       borderRadius:6, overflow:"hidden",
       background: open ? `${color}10` : "#2a2a48",
@@ -2194,6 +2195,140 @@ function LoadTooltip({ active, payload, label }) {
   );
 }
 
+// ── LOG SESSION FORM — writes a strength session to Supabase ───
+// Proof-of-concept write path. Strength only for now (erg pulls from
+// Strava). On submit: insert into the `sessions` table, then call
+// onSaved() so the parent re-fetches and the new entry appears.
+function LogSessionForm({ onSaved }) {
+  const today = new Date();
+  const todayKey = (today.getMonth()+1) + "/" + today.getDate() + "/" + String(today.getFullYear()).slice(-2);
+  const [open, setOpen]       = useState(false);
+  const [date, setDate]       = useState(todayKey);
+  const [label, setLabel]     = useState("");
+  const [duration, setDuration] = useState("");
+  const [srpe, setSrpe]       = useState(5);
+  const [rows, setRows]       = useState([{ name:"", weight:"", volume:"", e1rm:"", pr:false }]);
+  const [saving, setSaving]   = useState(false);
+  const [msg, setMsg]         = useState(null); // {type:'ok'|'err', text}
+
+  const srpeAnchor = srpe <= 2 ? "very easy · full conversation"
+    : srpe <= 4 ? "easy · talk in sentences (UT2)"
+    : srpe <= 6 ? "moderate · short sentences (UT1)"
+    : srpe <= 8 ? "hard · few words (threshold)"
+    : "max · can't talk";
+  const srpeColor = srpe <= 4 ? "#34d399" : srpe <= 6 ? "#ffd700" : srpe <= 8 ? "#ff6b35" : "#ff2d55";
+
+  const setRow = (i, field, val) => setRows(rows.map((r,j) => j===i ? {...r, [field]:val} : r));
+  const addRow = () => setRows([...rows, { name:"", weight:"", volume:"", e1rm:"", pr:false }]);
+  const removeRow = (i) => setRows(rows.length > 1 ? rows.filter((_,j) => j!==i) : rows);
+
+  const reset = () => {
+    setDate(todayKey); setLabel(""); setDuration(""); setSrpe(5);
+    setRows([{ name:"", weight:"", volume:"", e1rm:"", pr:false }]); setMsg(null);
+  };
+
+  const submit = async () => {
+    // Validate
+    if (!label.trim()) { setMsg({type:"err", text:"Add a session label (e.g. Lower 2)."}); return; }
+    const filledRows = rows.filter(r => r.name.trim());
+    if (filledRows.length === 0) { setMsg({type:"err", text:"Add at least one exercise."}); return; }
+
+    setSaving(true); setMsg(null);
+    const prs = filledRows.filter(r => r.pr).length;
+    const exercises = filledRows.map(r => ({
+      name: r.name.trim(),
+      weight: r.weight.trim() || "—",
+      volume: r.volume.trim() || "—",
+      e1rm: r.e1rm.trim() || "—",
+      pr: r.pr,
+    }));
+    const { error } = await supabase.from("sessions").insert({
+      date, type: "Strength", label: label.trim(),
+      duration: duration.trim() || null, srpe, prs, exercises,
+    });
+    setSaving(false);
+    if (error) { setMsg({type:"err", text:"Save failed: " + error.message}); return; }
+    setMsg({type:"ok", text:"Saved! Session added to your log."});
+    reset();
+    if (onSaved) onSaved(); // tell parent to re-fetch
+  };
+
+  const inp = { background:"#08080d", border:"1px solid #4a4a68", borderRadius:4, padding:"7px 9px", fontSize:11, color:"#e8e8f0", fontFamily:"inherit", width:"100%", boxSizing:"border-box" };
+  const lbl = { fontSize:8, letterSpacing:1, color:"#7e7e9a", marginBottom:3, display:"block" };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{
+        width:"100%", background:"#34d39915", border:"1px solid #34d399", borderRadius:6,
+        padding:"12px", marginBottom:14, fontSize:12, fontWeight:700, color:"#34d399",
+        cursor:"pointer", fontFamily:"inherit", letterSpacing:1,
+      }}>＋ LOG A STRENGTH SESSION</button>
+    );
+  }
+
+  return (
+    <div style={{ background:"#2a2a48", border:"1px solid #34d399", borderRadius:6, padding:"14px 16px", marginBottom:14 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <span style={{ fontSize:12, fontWeight:700, color:"#34d399", letterSpacing:1 }}>LOG STRENGTH SESSION</span>
+        <button onClick={() => { setOpen(false); reset(); }} style={{ background:"none", border:"none", color:"#7e7e9a", fontSize:16, cursor:"pointer" }}>✕</button>
+      </div>
+
+      {/* Top fields */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+        <div><label style={lbl}>DATE</label><input style={inp} value={date} onChange={e=>setDate(e.target.value)} placeholder="6/19/26" /></div>
+        <div><label style={lbl}>DURATION</label><input style={inp} value={duration} onChange={e=>setDuration(e.target.value)} placeholder="1h4m" /></div>
+      </div>
+      <div style={{ marginBottom:12 }}>
+        <label style={lbl}>SESSION LABEL</label>
+        <input style={inp} value={label} onChange={e=>setLabel(e.target.value)} placeholder="Lower 2" />
+      </div>
+
+      {/* sRPE slider */}
+      <div style={{ marginBottom:14 }}>
+        <label style={lbl}>sRPE — talk-test anchored</label>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <input type="range" min="1" max="10" value={srpe} onChange={e=>setSrpe(Number(e.target.value))} style={{ flex:1, accentColor:srpeColor }} />
+          <span style={{ fontSize:18, fontWeight:700, color:srpeColor, width:24, textAlign:"center" }}>{srpe}</span>
+        </div>
+        <div style={{ fontSize:9, color:srpeColor, marginTop:3 }}>{srpeAnchor}</div>
+      </div>
+
+      {/* Exercise rows */}
+      <label style={lbl}>EXERCISES</label>
+      <div style={{ display:"flex", flexDirection:"column", gap:7, marginBottom:10 }}>
+        {rows.map((r,i)=>(
+          <div key={i} style={{ background:"#08080d", borderRadius:5, padding:"9px 10px" }}>
+            <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+              <input style={{...inp, flex:1}} value={r.name} onChange={e=>setRow(i,"name",e.target.value)} placeholder="Exercise name" />
+              <button onClick={()=>removeRow(i)} style={{ background:"none", border:"1px solid #4a4a68", borderRadius:4, color:"#7e7e9a", cursor:"pointer", padding:"0 9px", fontSize:12 }}>−</button>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:6 }}>
+              <input style={inp} value={r.weight} onChange={e=>setRow(i,"weight",e.target.value)} placeholder="Top wt (70kg)" />
+              <input style={inp} value={r.volume} onChange={e=>setRow(i,"volume",e.target.value)} placeholder="Vol (2260kg)" />
+              <input style={inp} value={r.e1rm} onChange={e=>setRow(i,"e1rm",e.target.value)} placeholder="e1RM (88.8kg)" />
+            </div>
+            <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:10, color:"#ffd700", cursor:"pointer" }}>
+              <input type="checkbox" checked={r.pr} onChange={e=>setRow(i,"pr",e.target.checked)} style={{ accentColor:"#ffd700" }} />
+              🏆 PR
+            </label>
+          </div>
+        ))}
+      </div>
+      <button onClick={addRow} style={{ background:"none", border:"1px dashed #4a4a68", borderRadius:4, color:"#7e7e9a", cursor:"pointer", padding:"7px", width:"100%", fontSize:10, marginBottom:14 }}>＋ add exercise</button>
+
+      {/* Message + submit */}
+      {msg && (
+        <div style={{ fontSize:10, color: msg.type==="ok" ? "#34d399" : "#ff2d55", marginBottom:10, lineHeight:1.5 }}>{msg.text}</div>
+      )}
+      <button onClick={submit} disabled={saving} style={{
+        width:"100%", background: saving ? "#4a4a68" : "#34d399", border:"none", borderRadius:6,
+        padding:"12px", fontSize:12, fontWeight:700, color:"#08080d", cursor: saving ? "default":"pointer",
+        fontFamily:"inherit", letterSpacing:1,
+      }}>{saving ? "SAVING…" : "SUBMIT SESSION"}</button>
+    </div>
+  );
+}
+
 // ── MAIN APP ──────────────────────────────────────────────────
 export default function App() {
   const [view, setView]         = useState("overview");
@@ -2219,16 +2354,48 @@ export default function App() {
   const isMid  = vw >= 600;      // tablet
   const containerMax = isWide ? 1100 : 680;
 
+  // ── DATABASE SESSIONS (Supabase) — MERGED with hardcoded history ─
+  // Fetch sessions saved to the database on load. These MERGE with the
+  // hardcoded `sessionLog` seed: db sessions first (newest), then the
+  // baked-in history. The app never loses the seed history even if the
+  // DB is empty or unreachable — it just shows the seed alone.
+  const [dbSessions, setDbSessions] = useState([]);
+  const [dbStatus, setDbStatus]     = useState("loading"); // loading | ok | error
+  const fetchSessions = () => {
+    supabase
+      .from("sessions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) { setDbStatus("error"); return; }
+        const mapped = (data || [])
+          .filter(r => r.type !== "Test")
+          .map(r => ({
+            date: r.date, type: r.type, label: r.label,
+            duration: r.duration, srpe: r.srpe, prs: r.prs,
+            exercises: r.exercises || undefined,
+            coachNote: r.coach_note || undefined,
+            _fromDb: true, _id: r.id,
+          }));
+        setDbSessions(mapped);
+        setDbStatus("ok");
+      });
+  };
+  useEffect(() => { fetchSessions(); }, []);
+  // The merged list every display + helper uses. DB sessions are newest,
+  // so they go first; the hardcoded seed follows.
+  const allSessions = [...dbSessions, ...sessionLog];
+
   const loadData       = calcTrainingLoad(DAILY_TSS);
   const latest         = loadData[loadData.length - 1];
   const tsbColor       = latest.tsb > 10 ? "#34d399" : latest.tsb > -10 ? "#ffd700" : latest.tsb > -30 ? "#ff6b35" : "#ff2d55";
 
-  const ergSessions    = sessionLog.filter(e => e.splits);
-  const strengthSessions = sessionLog.filter(e => e.exercises);
+  const ergSessions    = allSessions.filter(e => e.splits);
+  const strengthSessions = allSessions.filter(e => e.exercises);
   const latestErg      = ergSessions[ergSessions.length - 1];
   const totalErgDist   = 55000; // metres, from logged sessions
   const latestSquat    = strengthTrend["Back Squat"].slice(-1)[0];
-  const totalSessions  = sessionLog.length;
+  const totalSessions  = allSessions.length;
 
   const liftColor = LIFT_COLOR[activeLift] || "#00d4ff";
 
@@ -2288,7 +2455,7 @@ export default function App() {
             const mode = getRosterMode(d);
             if (i >= 0 && mode !== firstMode) sawSwitch = true;
             const sess = resolveDay(d); // override-aware
-            const status = dayStatus(d, today0); // done / today / upcoming / missed
+            const status = dayStatus(d, today0, allSessions); // done / today / upcoming / missed
             days.push({ date:d, dow, sess, isToday:i===0, isPast:i<0, mode, isOverride: !!(sess && sess.override), status });
           }
           const todayMode = firstMode;
@@ -3034,11 +3201,11 @@ export default function App() {
             {(() => {
               const t = getToday(getRosterMode(nowTick)); // roster auto-switches home/FIFO by date
               const todayRec = recoveryLog[recoveryLog.length - 1];
-              const lastSrpe = (() => { for (let i = sessionLog.length - 1; i >= 0; i--) { if (sessionLog[i].srpe != null) return sessionLog[i].srpe; } return null; })();
+              const lastSrpe = (() => { for (let i = 0; i < allSessions.length; i++) { if (allSessions[i].srpe != null) return allSessions[i].srpe; } return null; })();
               const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
               const readiness = calcReadiness(todayRec, latest.tsb);
               const sig = autoregulate(latest.tsb, readiness, fired);
-              const upcoming = getUpcomingSessions(nowTick);
+              const upcoming = getUpcomingSessions(nowTick, allSessions);
               return (
                 <div style={{ background:"linear-gradient(135deg,#1e1e30,#2a2a48)", border:`1px solid ${sig.color}50`, borderRadius:8, padding:"14px 16px", marginBottom:14 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
@@ -3053,7 +3220,7 @@ export default function App() {
                   </div>
                   {t.today && (() => {
                     const todaySessions = daySessions(t.today);
-                    const todayLogged = logEntriesForDate(new Date());
+                    const todayLogged = logEntriesForDate(new Date(), allSessions);
                     const isDone = todayLogged.length > 0;
                     return (
                       <div style={{ marginBottom:8 }}>
@@ -3095,7 +3262,7 @@ export default function App() {
 
                   {/* Recently completed — last few logged sessions at a glance */}
                   {(() => {
-                    const recent = sessionLog.slice(0, 4);
+                    const recent = allSessions.slice(0, 4);
                     if (recent.length === 0) return null;
                     return (
                       <>
@@ -3160,7 +3327,7 @@ export default function App() {
             {/* Adaptive Decision Engine */}
             {(() => {
               const todayRec = recoveryLog[recoveryLog.length - 1];
-              const lastSrpe = (() => { for (let i = sessionLog.length - 1; i >= 0; i--) { if (sessionLog[i].srpe != null) return sessionLog[i].srpe; } return null; })();
+              const lastSrpe = (() => { for (let i = 0; i < allSessions.length; i++) { if (allSessions[i].srpe != null) return allSessions[i].srpe; } return null; })();
               const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
               const consistency = checkConsistency(fired, false);
               return (
@@ -3218,7 +3385,7 @@ export default function App() {
             {/* Today's Prescription — live targets + autoregulation */}
             {(() => {
               const todayRec = recoveryLog[recoveryLog.length - 1];
-              const lastSrpe = (() => { for (let i = sessionLog.length - 1; i >= 0; i--) { if (sessionLog[i].srpe != null) return sessionLog[i].srpe; } return null; })();
+              const lastSrpe = (() => { for (let i = 0; i < allSessions.length; i++) { if (allSessions[i].srpe != null) return allSessions[i].srpe; } return null; })();
               const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
               const readiness = calcReadiness(todayRec, latest.tsb);
               const auto = autoregulate(latest.tsb, readiness, fired);
@@ -3361,7 +3528,7 @@ export default function App() {
 
             <div style={{ fontSize:9, letterSpacing:3, color:"#7e7e9a", marginBottom:8 }}>RECENT SESSIONS</div>
             <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
-              {sessionLog.slice(-4).reverse().map((entry,i)=>(
+              {allSessions.slice(0, 4).map((entry,i)=>(
                 <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
               ))}
             </div>
@@ -3932,6 +4099,9 @@ export default function App() {
               Share Concept2 links or Fitbod screenshots to add sessions. sRPE captured every session.
             </div>
 
+            {/* Interactive log form — writes to the database */}
+            <LogSessionForm onSaved={fetchSessions} />
+
             {/* sRPE scale reference */}
             <div style={{ background:"#2a2a48", border:"1px solid #4a4a68", borderLeft:"3px solid #ff6b35", borderRadius:6, padding:"12px 14px", marginBottom:14 }}>
               <div style={{ fontSize:9, letterSpacing:2, color:"#ff6b35", marginBottom:8 }}>sRPE SCALE · TALK-TEST ANCHORED (asked every session)</div>
@@ -3947,7 +4117,7 @@ export default function App() {
               <div style={{ fontSize:8, color:"#7e7e9a", lineHeight:1.5, marginTop:6, fontStyle:"italic" }}>Over-rating easy work is the common error — anchor to the talk test. TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output) cross-checked every session. All agree = confidence; diverge = early fatigue/stress signal.</div>
             </div>
             <div style={{ display: isWide ? "grid" : "flex", gridTemplateColumns: isWide ? "1fr 1fr" : undefined, flexDirection:"column", gap:6, alignItems: isWide ? "start" : undefined }}>
-              {sessionLog.slice().reverse().map((entry,i)=>(
+              {allSessions.map((entry,i)=>(
                 <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
               ))}
             </div>
