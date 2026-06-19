@@ -2203,10 +2203,21 @@ export default function App() {
   const [progTab, setProgTab]   = useState("phases"); // phases | week | year
   const [nowTick, setNowTick]   = useState(new Date()); // for date-awareness (day rollover)
   const [mobOpen, setMobOpen]   = useState(null); // which mobility routine is expanded
+  const [vw, setVw]             = useState(typeof window !== "undefined" ? window.innerWidth : 1200); // viewport width → responsive layout
   useEffect(() => {
     const t = setInterval(() => setNowTick(new Date()), 60000); // once a minute is plenty
     return () => clearInterval(t);
   }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Responsive breakpoints: wider container on desktop, multi-column where it helps.
+  const isWide = vw >= 900;      // desktop — use the extra width
+  const isMid  = vw >= 600;      // tablet
+  const containerMax = isWide ? 1100 : 680;
 
   const loadData       = calcTrainingLoad(DAILY_TSS);
   const latest         = loadData[loadData.length - 1];
@@ -2233,7 +2244,7 @@ export default function App() {
         background:"linear-gradient(180deg,#1e1e30 0%,#08080d 100%)",
         borderBottom:"1px solid #4a4a68", padding:"24px 14px 18px", boxSizing:"border-box", width:"100%",
       }}>
-        <div style={{ maxWidth:680, margin:"0 auto", boxSizing:"border-box", width:"100%" }}>
+        <div style={{ maxWidth:containerMax, margin:"0 auto", boxSizing:"border-box", width:"100%" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", gap:8 }}>
             <div style={{ fontSize:9, letterSpacing:3, color:"#00d4ff", marginBottom:4, minWidth:0 }}>ERG + STRENGTH · BASE</div>
             <div style={{ fontSize:8, letterSpacing:1, color:"#6c6c88", flexShrink:0 }}>v1.2 beta</div>
@@ -2242,7 +2253,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ maxWidth:680, margin:"0 auto", padding:"0 14px", boxSizing:"border-box", width:"100%" }}>
+      <div style={{ maxWidth:containerMax, margin:"0 auto", padding: isWide ? "0 24px" : "0 14px", boxSizing:"border-box", width:"100%" }}>
 
         {/* NAV */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:5, margin:"18px 0 16px" }}>
@@ -2288,7 +2299,7 @@ export default function App() {
                 <span style={{ color:"#00d4ff", fontWeight:700 }}>YOUR WEEKS · </span>
                 {todayCycle.label.split("—")[0].trim()} · {PHASE_CONTEXT.phaseLabel}. <span style={{ color:"#34d399" }}>✓ done</span> · <span style={{ color:"#00d4ff" }}>● today</span> · upcoming.{sawSwitch ? " Roster switches mid-view (home↔FIFO)." : ""}
               </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              <div style={{ display: isWide ? "grid" : "flex", gridTemplateColumns: isWide ? "1fr 1fr" : undefined, flexDirection:"column", gap:8 }}>
                 {days.map((d,i)=>{
                   const sessions = daySessions(d.sess);
                   const railObj = { top:d.dow.toUpperCase(), big:d.date.getDate(), bottom:monthNames[d.date.getMonth()] };
@@ -3131,7 +3142,7 @@ export default function App() {
             </div>
 
             {/* Stats */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8, marginBottom:16 }}>
+            <div style={{ display:"grid", gridTemplateColumns:`repeat(${isWide?4:2},1fr)`, gap:8, marginBottom:16 }}>
               {[
                 ["SESSIONS LOGGED", totalSessions, "erg + strength"],
                 ["ERG DISTANCE", `${(totalErgDist/1000).toFixed(0)}km`, "logged total"],
@@ -3763,7 +3774,7 @@ export default function App() {
                   </div>
 
                   {/* Current metrics */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8, marginBottom:12 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:`repeat(${isWide?4:2},1fr)`, gap:8, marginBottom:12 }}>
                     {[
                       ["RESTING HR", `${today.rhr} bpm`, `baseline ${RHR_BASELINE}`, today.rhr <= RHR_BASELINE + 2 ? "#34d399" : today.rhr <= RHR_BASELINE + 5 ? "#ffd700" : "#ff2d55"],
                       ["HRV", today.hrv != null ? `${today.hrv} ms` : "—", today.hrv != null ? `baseline ${HRV_BASELINE}` : "needs overnight wear", today.hrv == null ? "#6c6c88" : today.hrv >= HRV_BASELINE - 3 ? "#34d399" : today.hrv >= HRV_BASELINE - 8 ? "#ffd700" : "#ff2d55"],
@@ -3935,7 +3946,7 @@ export default function App() {
               ))}
               <div style={{ fontSize:8, color:"#7e7e9a", lineHeight:1.5, marginTop:6, fontStyle:"italic" }}>Over-rating easy work is the common error — anchor to the talk test. TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output) cross-checked every session. All agree = confidence; diverge = early fatigue/stress signal.</div>
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+            <div style={{ display: isWide ? "grid" : "flex", gridTemplateColumns: isWide ? "1fr 1fr" : undefined, flexDirection:"column", gap:6, alignItems: isWide ? "start" : undefined }}>
               {sessionLog.slice().reverse().map((entry,i)=>(
                 <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
               ))}
