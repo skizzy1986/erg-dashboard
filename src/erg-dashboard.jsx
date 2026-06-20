@@ -59,6 +59,23 @@ const ICON = {
   "Lower Strength":"🦵","Combined":"🔄",
 };
 
+// Normalize incoming session `type` to the canonical taxonomy the colour/icon
+// maps use. Coach CSV uses "erg"/"strength"; the log form writes "Strength";
+// seed + program data already use canonical names. Keeps every source coloured.
+const normType = (t, label = "") => {
+  if (C[t]) return t;                       // already canonical
+  const lt = (t || "").toLowerCase();
+  const ll = (label || "").toLowerCase();
+  if (lt === "erg") return "Z2 Aerobic";
+  if (lt === "strength") {
+    if (/upper/.test(ll)) return "Upper Strength";
+    if (/lower/.test(ll)) return "Lower Strength";
+    return "Combined";
+  }
+  if (lt === "mobility" || lt === "rest") return "Rest";
+  return t;                                 // unknown -> grey fallback
+};
+
 // ── SESSION LOG (add entries here as block progresses) ──────────
 // ── sRPE SCALE (always-capture standard) ──────────────────────
 // Session-RPE captured after EVERY workout (a primary analysed
@@ -1956,7 +1973,7 @@ export default function App() {
         const mapped = (data || [])
           .filter(r => r.type !== "Test")
           .map(r => ({
-            date: r.date, type: r.type, label: r.label,
+            date: r.date, type: normType(r.type, r.label), label: r.label,
             duration: r.duration, srpe: r.srpe, prs: r.prs,
             exercises: r.exercises || undefined,
             coachNote: r.coach_note || undefined,
