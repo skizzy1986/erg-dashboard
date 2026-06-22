@@ -2,6 +2,7 @@ import { useState, useEffect, Component } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { std, mean } from "mathjs";
 import { supabase } from "./supabaseClient.js";
+import StrengthLogger from "./StrengthLogger.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -52,11 +53,12 @@ const C = {
   "Upper Strength": "#a78bfa",
   "Lower Strength": "#34d399",
   "Combined":       "#f472b6",
+  "Cycling":        "#2dd4bf",
 };
 const ICON = {
   "Z2 Aerobic":"🚣","Threshold":"⚡","VO₂ Intervals":"🔥",
   "Sharpener":"🎯","Rest":"😴","Upper Strength":"💪",
-  "Lower Strength":"🦵","Combined":"🔄",
+  "Lower Strength":"🦵","Combined":"🔄","Cycling":"🚴",
 };
 
 // Normalize incoming session `type` to the canonical taxonomy the colour/icon
@@ -72,6 +74,7 @@ const normType = (t, label = "") => {
     if (/lower/.test(ll)) return "Lower Strength";
     return "Combined";
   }
+  if (lt === "cycling" || lt === "bike" || lt === "ride") return "Cycling";
   if (lt === "mobility" || lt === "rest") return "Rest";
   return t;                                 // unknown -> grey fallback
 };
@@ -1404,34 +1407,48 @@ function getUpcomingSessions(now, sessions) {
 }
 
 // ── LOG ENTRY COMPONENT ───────────────────────────────────────
-function LogEntry({ entry }) {
+function LogEntry({ entry, done = false }) {
   const [open, setOpen] = useState(false);
   const color = C[entry.type] || "#888";
-  const isErg = !!entry.splits;
+  const isErg = !!entry._isErg;
+  const planned = entry.status === "planned";
+  // Flat erg metrics replaced the removed `splits` field. Planned erg rows
+  // carry null metrics — we show the prescription (label + coach_note) instead.
+  const hasErgMetrics = entry.distance_m != null || entry.avg_watts != null || entry.avg_hr != null;
+  const fmtDist = (m) => m == null ? "—" : (m >= 1000 ? `${(m/1000).toFixed(m % 1000 === 0 ? 0 : 1)}km` : `${m}m`);
   return (
     <div style={{
       borderTop:`1px solid ${open ? color+"50" : "#4a4a68"}`,
       borderRight:`1px solid ${open ? color+"50" : "#4a4a68"}`,
       borderBottom:`1px solid ${open ? color+"50" : "#4a4a68"}`,
-      borderLeft:`3px solid ${color}`,
+      borderLeft:`3px ${planned ? "dashed" : "solid"} ${color}`,
       borderRadius:6, overflow:"hidden",
       background: open ? `${color}10` : "#2a2a48",
+      opacity: done ? 0.5 : 1,
     }}>
       <div onClick={() => setOpen(!open)} style={{
         padding:"13px 14px", cursor:"pointer",
         display:"flex", alignItems:"center", justifyContent:"space-between", gap:8,
       }}>
         <div style={{ display:"flex", alignItems:"center", gap:11, minWidth:0, flex:1 }}>
-          <div style={{ fontSize:15, flexShrink:0 }}>{ICON[entry.type]}</div>
+          <div style={{ fontSize:15, flexShrink:0 }}>{ICON[entry.type] || "•"}</div>
           <div style={{ minWidth:0 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:"#fff", lineHeight:1.3 }}>{entry.label}</div>
-            <div style={{ fontSize:11, color:"#7e7e9a" }}>{entry.date} · {entry.duration}{entry.srpe != null && <span style={{ color:"#ffd700" }}> · sRPE {entry.srpe}</span>}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#fff", lineHeight:1.3 }}>
+              {entry.label}
+              {done && (
+                <span style={{ marginLeft:8, fontSize:8, letterSpacing:1.5, fontWeight:700, color:"#34d399", border:"1px solid #34d39966", borderRadius:3, padding:"1px 5px", verticalAlign:"middle" }}>✓ DONE</span>
+              )}
+              {planned && !done && (
+                <span style={{ marginLeft:8, fontSize:8, letterSpacing:1.5, fontWeight:700, color, border:`1px solid ${color}66`, borderRadius:3, padding:"1px 5px", verticalAlign:"middle" }}>PLANNED</span>
+              )}
+            </div>
+            <div style={{ fontSize:11, color:"#7e7e9a" }}>{entry.date}{entry.duration ? ` · ${entry.duration}` : ""}{entry.srpe != null && <span style={{ color:"#ffd700" }}> · sRPE {entry.srpe}</span>}</div>
           </div>
         </div>
-        {isErg && entry.summary && (
+        {isErg && hasErgMetrics && (
           <div style={{ textAlign:"right", flexShrink:0 }}>
-            <div style={{ fontSize:12, fontWeight:700, color }}>{entry.summary.pace}</div>
-            <div style={{ fontSize:10, color:"#7e7e9a" }}>{entry.summary.rate}</div>
+            {entry.avg_watts != null && <div style={{ fontSize:12, fontWeight:700, color }}>{entry.avg_watts}W</div>}
+            <div style={{ fontSize:10, color:"#7e7e9a" }}>{fmtDist(entry.distance_m)}{entry.avg_hr != null ? ` · ${entry.avg_hr}bpm` : ""}</div>
           </div>
         )}
         {!isErg && entry.prs > 0 && (
@@ -1445,38 +1462,21 @@ function LogEntry({ entry }) {
       {open && (
         <div style={{ padding:"0 16px 14px" }}>
           {isErg ? (
-            <>
-              {entry.summary && (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:10 }}>
-                  {[["AVG PACE",entry.summary.pace],["AVG WATTS",entry.summary.watts],["RATE",entry.summary.rate],["DRAG",entry.summary.drag]].map(([k,v])=>(
-                    <div key={k} style={{ background:"#08080d", borderRadius:4, padding:"7px 8px" }}>
-                      <div style={{ fontSize:8, color:"#7e7e9a", letterSpacing:2, marginBottom:2 }}>{k}</div>
-                      <div style={{ fontSize:11, color, fontWeight:600 }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, tableLayout:"fixed" }}>
-                <thead>
-                  <tr style={{ borderBottom:"1px solid #4a4a68" }}>
-                    {[["Split","28%"],["Pace /500m","30%"],["Watts","21%"],["Rate","21%"]].map(([h,w])=>(
-                      <td key={h} style={{ padding:"5px 4px", color:"#7e7e9a", fontSize:9, letterSpacing:0.5, width:w }}>{h}</td>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {entry.splits.map((s,i)=>(
-                    <tr key={i} style={{ borderBottom:"1px solid #1e1e30", opacity:s.note==="warmup"?0.45:1 }}>
-                      <td style={{ padding:"6px 4px", color:"#aaaacc", wordBreak:"break-word" }}>{s.label}{s.note==="warmup"&&<span style={{color:"#7e7e9a",fontSize:9}}> (wu)</span>}</td>
-                      <td style={{ padding:"6px 4px", color:"#e8e8f0", fontWeight:600, wordBreak:"break-word" }}>{s.pace}</td>
-                      <td style={{ padding:"6px 4px", color:"#aaaacc", wordBreak:"break-word" }}>{s.watts}</td>
-                      <td style={{ padding:"6px 4px", color:"#aaaacc", wordBreak:"break-word" }}>{s.rate}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          ) : (
+            hasErgMetrics ? (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:entry.coachNote?10:0 }}>
+                {[["DURATION",entry.duration||"—"],["DISTANCE",fmtDist(entry.distance_m)],["AVG WATTS",entry.avg_watts!=null?`${entry.avg_watts}W`:"—"],["AVG HR",entry.avg_hr!=null?`${entry.avg_hr}`:"—"]].map(([k,v])=>(
+                  <div key={k} style={{ background:"#08080d", borderRadius:4, padding:"7px 8px" }}>
+                    <div style={{ fontSize:8, color:"#7e7e9a", letterSpacing:2, marginBottom:2 }}>{k}</div>
+                    <div style={{ fontSize:11, color, fontWeight:600 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize:10, color:"#7e7e9a", fontStyle:"italic", marginBottom:entry.coachNote?8:0 }}>
+                {planned ? "Prescription — targets below." : "No metrics logged for this session."}
+              </div>
+            )
+          ) : entry.exercises ? (
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, tableLayout:"fixed" }}>
               <thead>
                 <tr style={{ borderBottom:"1px solid #4a4a68" }}>
@@ -1496,6 +1496,10 @@ function LogEntry({ entry }) {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div style={{ fontSize:10, color:"#7e7e9a", fontStyle:"italic", marginBottom:entry.coachNote?8:0 }}>
+              {planned ? "Prescription — targets below." : (entry.duration ? `Session · ${entry.duration}` : "Session logged.")}
+            </div>
           )}
           {entry.coachNote && (
             <div style={{
@@ -1972,13 +1976,23 @@ export default function App() {
         if (error) { setDbStatus("error"); return; }
         const mapped = (data || [])
           .filter(r => r.type !== "Test")
-          .map(r => ({
-            date: r.date, type: normType(r.type, r.label), label: r.label,
-            duration: r.duration, srpe: r.srpe, prs: r.prs,
-            exercises: r.exercises || undefined,
-            coachNote: r.coach_note || undefined,
-            _fromDb: true, _id: r.id,
-          }));
+          .map(r => {
+            const raw = (r.type || "").toLowerCase();
+            return {
+              date: r.date, type: normType(r.type, r.label), label: r.label,
+              duration: r.duration, srpe: r.srpe, prs: r.prs,
+              exercises: r.exercises || undefined,
+              coachNote: r.coach_note || undefined,
+              // status drives planned-vs-actual reconciliation. null legacy rows
+              // are treated as actual (completed history) everywhere downstream.
+              status: r.status || null,
+              // flat erg metrics (the `splits` field was removed from the schema)
+              distance_m: r.distance_m, avg_watts: r.avg_watts, avg_hr: r.avg_hr,
+              // raw-type flags survive normType so the renderer can branch reliably
+              _isErg: raw === "erg", _isCycling: raw === "cycling" || raw === "bike" || raw === "ride",
+              _fromDb: true, _id: r.id,
+            };
+          });
         setDbSessions(mapped);
         setDbStatus("ok");
       });
@@ -1988,16 +2002,27 @@ export default function App() {
   // so they go first; the hardcoded seed follows.
   const allSessions = [...dbSessions, ...sessionLog];
 
+  // ── PLANNED vs LOGGED SPLIT (reconciliation) ──────────────────
+  // Planned rows are forward-looking prescriptions and must NOT appear in the
+  // completed Log, the calendar's done-state, recent sessions, or analytics.
+  // null-status legacy rows count as actual/completed history.
+  const loggedSessions  = allSessions.filter(e => e.status !== "planned");
+  const plannedSessions = allSessions.filter(e => e.status === "planned");
+  // A planned row is reconciled ("done") once an actual exists for the same
+  // date + type. v1 matches on normalized type + date (a planned_id link can
+  // come later). Keyed off loggedSessions only.
+  const loggedKeys = new Set(loggedSessions.map(e => `${e.date}|${e.type}`));
+
   const loadData       = calcTrainingLoad(DAILY_TSS);
   const latest         = loadData[loadData.length - 1];
   const tsbColor       = latest.tsb > 10 ? "#34d399" : latest.tsb > -10 ? "#ffd700" : latest.tsb > -30 ? "#ff6b35" : "#ff2d55";
 
-  const ergSessions    = allSessions.filter(e => e.splits);
-  const strengthSessions = allSessions.filter(e => e.exercises);
-  const latestErg      = ergSessions[ergSessions.length - 1];
+  const ergSessions    = loggedSessions.filter(e => e._isErg);
+  const strengthSessions = loggedSessions.filter(e => e.exercises);
+  const latestErg      = ergSessions[0]; // dbSessions are newest-first
   const totalErgDist   = 55000; // metres, from logged sessions
   const latestSquat    = strengthTrend["Back Squat"].slice(-1)[0];
-  const totalSessions  = allSessions.length;
+  const totalSessions  = loggedSessions.length;
 
   const liftColor = LIFT_COLOR[activeLift] || "#00d4ff";
 
@@ -2026,7 +2051,7 @@ export default function App() {
 
         {/* NAV */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:5, margin:"18px 0 16px" }}>
-          {[["overview","Overview"],["calendar","Calendar"],["program","Program"],["erg","Erg"],["strength","Strength"],["mobility","Mobility"],["recovery","Recovery"],["log","Log"],["journal","Journal"]].map(([v,label])=>(
+          {[["overview","Overview"],["calendar","Calendar"],["program","Program"],["plan","Plan"],["erg","Erg"],["strength","Strength"],["logger","Logger"],["mobility","Mobility"],["recovery","Recovery"],["log","Log"],["journal","Journal"]].map(([v,label])=>(
             <button key={v} onClick={()=>{ setView(v); setExpanded(null); }} style={{
               flex:"1 1 auto", minWidth:0,
               background: view===v ? "#4a4a68" : "transparent",
@@ -2040,6 +2065,45 @@ export default function App() {
         </div>
 
         <ErrorBoundary>
+        {/* ── STRENGTH LOGGER VIEW (live set/rep logging → sessions) ── */}
+        {view === "logger" && <StrengthLogger />}
+
+        {/* ── PLAN VIEW (today + future prescriptions from status='planned') ── */}
+        {view === "plan" && (() => {
+          // session dates are "M/D/YY" → Date for sorting/today-filtering
+          const parsePlanDate = (k) => { const [m,d,y] = (k || "").split("/").map(Number); return new Date(2000 + (y || 0), (m || 1) - 1, d || 1); };
+          const now = new Date();
+          const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const items = plannedSessions
+            .map(e => ({ e, dt: parsePlanDate(e.date), done: loggedKeys.has(`${e.date}|${e.type}`) }))
+            .filter(x => x.dt >= today0)
+            .sort((a, b) => a.dt - b.dt);
+          return (
+            <>
+              <div style={{
+                background:"#2a2a48", border:"1px solid #4a4a68",
+                borderLeft:"3px dashed #00d4ff", borderRadius:6,
+                padding:"11px 14px", marginBottom:14,
+                fontSize:11, color:"#aaaacc", lineHeight:1.6,
+              }}>
+                <span style={{ color:"#00d4ff", fontWeight:700 }}>THE PLAN. </span>
+                Upcoming prescriptions from Coach (today forward). A dashed border marks a planned session; tap any card for the targets. Cards mark ✓ done once you log the matching session.
+              </div>
+              {items.length === 0 ? (
+                <div style={{ background:"#2a2a48", border:"1px solid #4a4a68", borderRadius:6, padding:"18px 16px", fontSize:11, color:"#7e7e9a", textAlign:"center" }}>
+                  No upcoming planned sessions.
+                </div>
+              ) : (
+                <div style={{ display: isWide ? "grid" : "flex", gridTemplateColumns: isWide ? "1fr 1fr" : undefined, flexDirection:"column", gap:6, alignItems: isWide ? "start" : undefined }}>
+                  {items.map(({ e, done }, i) => (
+                    <LogEntry key={`plan-${e.date}-${e.label}-${i}`} entry={e} done={done} />
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
+
         {/* ── CALENDAR VIEW ── */}
         {view === "calendar" && (() => {
           const dayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -2057,7 +2121,7 @@ export default function App() {
             const mode = getRosterMode(d);
             if (i >= 0 && mode !== firstMode) sawSwitch = true;
             const sess = resolveDay(d); // override-aware
-            const status = dayStatus(d, today0, allSessions); // done / today / upcoming / missed
+            const status = dayStatus(d, today0, loggedSessions); // done / today / upcoming / missed
             days.push({ date:d, dow, sess, isToday:i===0, isPast:i<0, mode, isOverride: !!(sess && sess.override), status });
           }
           const todayMode = firstMode;
@@ -2803,11 +2867,11 @@ export default function App() {
             {(() => {
               const t = getToday(getRosterMode(nowTick)); // roster auto-switches home/FIFO by date
               const todayRec = recoveryLog[recoveryLog.length - 1];
-              const lastSrpe = (() => { for (let i = 0; i < allSessions.length; i++) { if (allSessions[i].srpe != null) return allSessions[i].srpe; } return null; })();
+              const lastSrpe = (() => { for (let i = 0; i < loggedSessions.length; i++) { if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe; } return null; })();
               const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
               const readiness = calcReadiness(todayRec, latest.tsb);
               const sig = autoregulate(latest.tsb, readiness, fired);
-              const upcoming = getUpcomingSessions(nowTick, allSessions);
+              const upcoming = getUpcomingSessions(nowTick, loggedSessions);
               return (
                 <div style={{ background:"linear-gradient(135deg,#1e1e30,#2a2a48)", border:`1px solid ${sig.color}50`, borderRadius:8, padding:"14px 16px", marginBottom:14 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
@@ -2822,7 +2886,7 @@ export default function App() {
                   </div>
                   {t.today && (() => {
                     const todaySessions = daySessions(t.today);
-                    const todayLogged = logEntriesForDate(new Date(), allSessions);
+                    const todayLogged = logEntriesForDate(new Date(), loggedSessions);
                     const isDone = todayLogged.length > 0;
                     return (
                       <div style={{ marginBottom:8 }}>
@@ -2864,7 +2928,7 @@ export default function App() {
 
                   {/* Recently completed — last few logged sessions at a glance */}
                   {(() => {
-                    const recent = allSessions.slice(0, 4);
+                    const recent = loggedSessions.slice(0, 4);
                     if (recent.length === 0) return null;
                     return (
                       <>
@@ -2915,7 +2979,7 @@ export default function App() {
               {[
                 ["SESSIONS LOGGED", totalSessions, "erg + strength"],
                 ["ERG DISTANCE", `${(totalErgDist/1000).toFixed(0)}km`, "logged total"],
-                ["LATEST WATTS", (latestErg?.summary?.watts || "—"), "working avg power"],
+                ["LATEST WATTS", (latestErg?.avg_watts ? `${latestErg.avg_watts}W` : "—"), "working avg power"],
                 ["SQUAT e1RM", `${latestSquat.e1rm}kg`, `as of ${latestSquat.date}`],
               ].map(([k,v,sub])=>(
                 <div key={k} style={{ background:"#2a2a48", border:"1px solid #4a4a68", borderRadius:6, padding:"11px 13px" }}>
@@ -2929,7 +2993,7 @@ export default function App() {
             {/* Adaptive Decision Engine */}
             {(() => {
               const todayRec = recoveryLog[recoveryLog.length - 1];
-              const lastSrpe = (() => { for (let i = 0; i < allSessions.length; i++) { if (allSessions[i].srpe != null) return allSessions[i].srpe; } return null; })();
+              const lastSrpe = (() => { for (let i = 0; i < loggedSessions.length; i++) { if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe; } return null; })();
               const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
               const consistency = checkConsistency(fired, false);
               return (
@@ -2987,7 +3051,7 @@ export default function App() {
             {/* Today's Prescription — live targets + autoregulation */}
             {(() => {
               const todayRec = recoveryLog[recoveryLog.length - 1];
-              const lastSrpe = (() => { for (let i = 0; i < allSessions.length; i++) { if (allSessions[i].srpe != null) return allSessions[i].srpe; } return null; })();
+              const lastSrpe = (() => { for (let i = 0; i < loggedSessions.length; i++) { if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe; } return null; })();
               const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
               const readiness = calcReadiness(todayRec, latest.tsb);
               const auto = autoregulate(latest.tsb, readiness, fired);
@@ -3130,7 +3194,7 @@ export default function App() {
 
             <div style={{ fontSize:9, letterSpacing:3, color:"#7e7e9a", marginBottom:8 }}>RECENT SESSIONS</div>
             <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
-              {allSessions.slice(0, 4).map((entry,i)=>(
+              {loggedSessions.slice(0, 4).map((entry,i)=>(
                 <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
               ))}
             </div>
@@ -3719,7 +3783,7 @@ export default function App() {
               <div style={{ fontSize:8, color:"#7e7e9a", lineHeight:1.5, marginTop:6, fontStyle:"italic" }}>Over-rating easy work is the common error — anchor to the talk test. TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output) cross-checked every session. All agree = confidence; diverge = early fatigue/stress signal.</div>
             </div>
             <div style={{ display: isWide ? "grid" : "flex", gridTemplateColumns: isWide ? "1fr 1fr" : undefined, flexDirection:"column", gap:6, alignItems: isWide ? "start" : undefined }}>
-              {allSessions.map((entry,i)=>(
+              {loggedSessions.map((entry,i)=>(
                 <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
               ))}
             </div>
