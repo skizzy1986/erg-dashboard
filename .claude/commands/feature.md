@@ -1,46 +1,34 @@
-Run the full software factory pipeline for a new feature.
+Invoke the orchestrator agent to run the full software factory pipeline.
 
-## What this command does
+The orchestrator coordinates all specialist agents in sequence:
+researcher → spec-writer → feature-builder → test-verifier → code-reviewer
 
-> Student note: This command orchestrates the full development pipeline.
-> It stops at each gate and shows you results before moving forward.
-> You stay in control — Claude runs the agents, you make the decisions.
+It gates on your approval at every stage — research, spec, build, test,
+review, and commit — so you stay in control of the process.
 
-## Pipeline
+## Usage
 
 ```
-1. Understand  →  Clarify what the feature is
-2. Research    →  researcher agent investigates APIs and patterns
-3. Spec        →  spec-writer produces a technical specification
-4. Build       →  feature-builder implements the spec
-5. Test        →  test-verifier writes and runs tests
-6. Review      →  code-reviewer checks the result
-7. Commit      →  user decides whether to commit
+/feature <description>
 ```
 
-## Steps (run in this order, pause for user confirmation between each)
+Examples:
+- `/feature add Strava activity sync`
+- `/feature connect Garmin HRV to vitals table`
+- `/feature Concept2 Logbook session import`
 
-1. If the feature is not already described, ask: "Describe the feature in one sentence."
+If no description is given, the orchestrator will ask you for one.
 
-2. Spawn the **researcher** agent with the feature as context.
-   Ask: "Does the research look right? Should I proceed to spec?"
+## What happens
 
-3. Spawn the **spec-writer** agent with the feature description and research.
-   Show the full spec. Ask: "Is this spec correct? Any changes before we build?"
+1. Orchestrator reads CLAUDE.md and classifies your request
+2. Researcher agent investigates any APIs or patterns needed
+3. You approve the research before spec writing begins
+4. Spec-writer produces acceptance criteria and file targets
+5. You approve the spec before any code is written
+6. Feature-builder implements following the architecture
+7. Test-verifier writes and runs tests
+8. Code-reviewer gives APPROVE or REQUEST CHANGES
+9. You decide whether to commit and push to a feature branch
 
-4. Spawn the **feature-builder** agent with the approved spec.
-   Report: files created, files modified, build status.
-
-5. Spawn the **test-verifier** agent.
-   Report: tests written, pass/fail status.
-
-6. Spawn the **code-reviewer** agent.
-   Report: APPROVE or REQUEST CHANGES with findings.
-
-7. Ask: "Ready to commit? I'll create a branch and commit with a descriptive message."
-   If yes: create a feature branch, commit the changes, push to origin.
-
-## Skipping steps
-
-If the user says the feature is simple (e.g., a UI label change), confirm before
-skipping research. Always run spec → build → test → review even for small changes.
+The orchestrator never advances without your explicit go-ahead.

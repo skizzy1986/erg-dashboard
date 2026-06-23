@@ -119,19 +119,38 @@ Planned external data sources (to be built after refactor foundation is solid):
 
 ## Development Workflow (Software Factory)
 
-New features follow a structured pipeline. Each stage has a dedicated agent.
+All development flows through the **orchestrator** — the master coordinator
+that routes requests, spawns specialist agents in sequence, and gates on your
+approval at every stage. Never advances without explicit go-ahead.
 
 ```
-/research topic   →  researcher agent explores APIs, docs, patterns
-/spec story       →  spec-writer turns story into technical spec
-/build spec       →  feature-builder implements following architecture
-/test             →  test-verifier writes and runs tests
-/review           →  code-reviewer checks correctness and style
+/feature <description>   →  orchestrator runs the full pipeline
+/refactor <module>       →  orchestrator runs the refactor pipeline
+/research <topic>        →  orchestrator runs research only
 ```
 
-Use `/feature` to run the full pipeline interactively for any new feature.
-Use `/refactor <module>` to safely extract one module from the monolith.
-Use `/research <topic>` to investigate an API or concept before building.
+### Pipeline (orchestrator coordinates these agents in order)
+
+```
+researcher   →  investigates APIs, docs, patterns
+spec-writer  →  turns description into acceptance criteria + file targets
+             ↑ USER APPROVES SPEC BEFORE BUILD BEGINS
+feature-builder  →  implements following the architecture rules
+test-verifier    →  writes and runs Vitest tests
+code-reviewer    →  APPROVE / REQUEST CHANGES verdict
+             ↑ USER APPROVES BEFORE COMMIT
+```
+
+### Specialist agents (used directly for focused tasks)
+
+| Agent | Use when |
+|---|---|
+| `researcher` | Deep-dive into an API before committing to an approach |
+| `spec-writer` | Write a spec without the full pipeline |
+| `feature-builder` | Implement from an already-approved spec |
+| `test-verifier` | Add tests to existing code |
+| `code-reviewer` | Review a diff before committing |
+| `refactor-agent` | Extract one module from erg-dashboard.jsx |
 
 ## Safety Constraints
 
