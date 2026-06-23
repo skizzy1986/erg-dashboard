@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[HOOK] Bash command about to run. If this is git reset --hard, git push --force, or rm -rf — stop and confirm with the user first.'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/user/erg-dashboard && FILES=$(git diff --name-only HEAD 2>/dev/null | grep -E '\\.(js|jsx)$' | head -5); if [ -n \"$FILES\" ]; then npx eslint --max-warnings=0 $FILES 2>&1 | tail -10 || true; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /home/user/erg-dashboard && CHANGES=$(git status --short 2>/dev/null | wc -l | tr -d ' '); if [ \"$CHANGES\" -gt 0 ]; then echo \"[HOOK] $CHANGES file(s) changed and uncommitted. Run: git add -p && git commit when ready.\"; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
