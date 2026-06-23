@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./erg-dashboard.jsx";
 import { supabase } from "./supabaseClient.js";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 60_000, retry: 2, refetchOnWindowFocus: false },
+  },
+});
 
 // ── THEME TOKENS (match the dashboard) ───────────────────────────
 const C = {
@@ -121,6 +128,8 @@ function AuthGate() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <AuthGate />
+    <QueryClientProvider client={queryClient}>
+      <AuthGate />
+    </QueryClientProvider>
   </React.StrictMode>
 );
