@@ -1,7 +1,7 @@
 ---
 id: WO-004
 title: Implement rigorous CI process — lint, test, coverage, branch protection
-status: ready
+status: done
 author: coach
 created: 2026-06-24
 targets: [github-actions, npm-config, vite-config]
