@@ -50,6 +50,7 @@ import {
   PHASES,
   PHASE_CONTEXT,
 } from './constants/schedule.js';
+import { C, ICON } from './constants/ui.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -106,30 +107,6 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-// ── COLOUR SYSTEM ──────────────────────────────────────────────
-const C = {
-  'Z2 Aerobic': '#00d4ff',
-  Threshold: '#ffd700',
-  'VO₂ Intervals': '#ff6b35',
-  Sharpener: '#ff2d55',
-  Rest: '#3a3a4a',
-  'Upper Strength': '#a78bfa',
-  'Lower Strength': '#34d399',
-  Combined: '#f472b6',
-  Cycling: '#2dd4bf',
-};
-const ICON = {
-  'Z2 Aerobic': '🚣',
-  Threshold: '⚡',
-  'VO₂ Intervals': '🔥',
-  Sharpener: '🎯',
-  Rest: '😴',
-  'Upper Strength': '💪',
-  'Lower Strength': '🦵',
-  Combined: '🔄',
-  Cycling: '🚴',
-};
 
 // Normalize incoming session `type` to the canonical taxonomy the colour/icon
 // maps use. Coach CSV uses "erg"/"strength"; the log form writes "Strength";
