@@ -10,6 +10,7 @@ navigationCompose = "2.8.2"
 supabase = "3.5.0"
 ktor = "3.0.0"
 junit = "4.13.2"
+gson = "2.11.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -28,6 +29,7 @@ supabase-postgrest = { group = "io.github.jan-tennant.supabase", name = "postgre
 supabase-auth = { group = "io.github.jan-tennant.supabase", name = "auth-kt", version.ref = "supabase" }
 ktor-client-android = { group = "io.ktor", name = "ktor-client-android", version.ref = "ktor" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

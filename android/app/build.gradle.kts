@@ -40,6 +40,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests {
+            all {
+                // Run JVM unit tests from repo root so File("test-fixtures/...") resolves correctly.
+                it.workingDir = rootProject.projectDir.parentFile
+            }
+        }
+    }
 }
 
 dependencies {
@@ -55,6 +64,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     testImplementation(libs.junit)
+    testImplementation(libs.gson)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
