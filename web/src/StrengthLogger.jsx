@@ -46,14 +46,15 @@ const CSS = `
 .slog .ex-head{padding:13px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border-bottom:1px solid var(--line)}
 .slog .ex-name{font-weight:700;font-size:16px}
 .slog .ex-target{font-size:12.5px;color:var(--mut);margin-top:3px}
-.slog .set-grid{display:grid;grid-template-columns:26px 1fr 1fr 52px 34px 24px;gap:7px;align-items:center;padding:8px 12px}
+.slog .set-grid{display:grid;grid-template-columns:26px auto 1fr 1fr 52px 40px 24px;gap:7px;align-items:center;padding:8px 12px}
 .slog .set-grid.hd{padding-top:10px;padding-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut)}
 .slog .set-grid input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:9px 6px;text-align:center;font-weight:600}
 .slog .set-grid input:focus{outline:none;border-color:var(--accent)}
 .slog .setno{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--mut);position:relative}
 .slog .setno.warm{color:var(--warn)}
-.slog .chk{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:16px;color:transparent}
+.slog .chk{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:16px;color:transparent}
 .slog .chk.on{background:var(--good);border-color:var(--good);color:#06210f}
+.slog .set-row.done{background:rgba(52,211,153,.06);border-radius:6px}
 .slog .set-row.done input{opacity:.55}
 .slog .set-row.sug input{border-color:rgba(167,139,250,.4)}
 .slog .set-row.sug input::placeholder{color:rgba(167,139,250,.55)}
@@ -63,7 +64,7 @@ const CSS = `
 .slog .set-del:active{color:var(--bad)}
 .slog .rest-edit{display:flex;align-items:center;gap:7px;margin-left:auto;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:4px 6px}
 .slog .rest-edit .lbl{font-size:12px;color:var(--mut);font-weight:600;padding-left:3px}
-.slog .rest-edit .step{width:28px;height:28px;border-radius:8px;background:var(--bg);color:var(--txt);border:1px solid var(--line);font-size:16px;font-weight:700;line-height:1}
+.slog .rest-edit .step{width:40px;height:40px;border-radius:8px;background:var(--bg);color:var(--txt);border:1px solid var(--line);font-size:16px;font-weight:700;line-height:1}
 .slog .rest-edit .step:active{border-color:var(--accent)}
 .slog .rest-val{font-size:13px;font-weight:700;min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
 .slog nav{display:flex;gap:6px;margin-bottom:14px}
@@ -479,7 +480,7 @@ function mountStrengthLogger(root) {
     rmv.appendChild(rb);
     const hd = el('div', 'set-grid hd');
     hd.innerHTML =
-      '<div>Set</div><div>Kg</div><div>Reps</div><div>RPE</div><div></div><div></div>';
+      '<div>Set</div><div style="font-size:10px;text-align:right">Prev</div><div>Kg</div><div>Reps</div><div>RPE</div><div></div><div></div>';
     b.appendChild(hd);
     ex.sets.forEach((s, si) => b.appendChild(renderSet(ex, ei, s, si)));
     const er = el('div', 'e1rm');
@@ -526,6 +527,33 @@ function mountStrengthLogger(root) {
     };
     dn.onclick = () => bump(-15);
     up.onclick = () => bump(15);
+    [dn, up].forEach((btn, idx) => {
+      const dir = idx === 0 ? -1 : 1;
+      let holdTimer = null,
+        holdInterval = null;
+      const startHold = () => {
+        holdTimer = setTimeout(() => {
+          holdInterval = setInterval(() => bump(dir * 15), 150);
+        }, 600);
+      };
+      const stopHold = () => {
+        clearTimeout(holdTimer);
+        clearInterval(holdInterval);
+      };
+      btn.addEventListener('mousedown', startHold);
+      btn.addEventListener(
+        'touchstart',
+        (e) => {
+          e.preventDefault();
+          startHold();
+        },
+        { passive: false }
+      );
+      btn.addEventListener('mouseup', stopHold);
+      btn.addEventListener('mouseleave', stopHold);
+      btn.addEventListener('touchend', stopHold);
+      btn.addEventListener('touchcancel', stopHold);
+    });
     restEdit.appendChild(dn);
     restEdit.appendChild(rv);
     restEdit.appendChild(up);
@@ -589,7 +617,16 @@ function mountStrengthLogger(root) {
       ex.sets.splice(si, 1);
       renderWorkout();
     };
+    const prevSet = ex.last && ex.last.sets ? ex.last.sets[si] : null;
+    const prevDiv = el('div');
+    prevDiv.style.cssText =
+      'color:var(--mut);font-size:11px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap';
+    prevDiv.textContent =
+      prevSet && prevSet.w != null
+        ? `${prevSet.w}×${prevSet.reps != null ? prevSet.reps : '–'}`
+        : '–';
     r.appendChild(no);
+    r.appendChild(prevDiv);
     r.appendChild(w);
     r.appendChild(rp);
     r.appendChild(rpe);
@@ -713,36 +750,32 @@ function mountStrengthLogger(root) {
       toast('Log at least one set first');
       return;
     }
-    const srpe = prompt(
-      'Session RPE (1–10)?  How hard was the whole session?',
-      '7'
-    );
-    if (btn) {
-      btn.textContent = 'Saving…';
-    }
-    const { error: e1 } = await sb.from('strength_sets').insert(rows);
-    if (e1) {
-      toast('Save failed: ' + e1.message);
-      if (btn) btn.textContent = 'Finish & save workout';
-      return;
-    }
-    await sb
-      .from('strength_workouts')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        srpe: srpe ? parseInt(srpe) : null,
-      })
-      .eq('id', active.id);
-    if (active.assignment) {
+    showFinishSheet(rows, async ({ srpe }) => {
+      if (btn) btn.textContent = 'Saving…';
+      const { error: e1 } = await sb.from('strength_sets').insert(rows);
+      if (e1) {
+        toast('Save failed: ' + e1.message);
+        if (btn) btn.textContent = 'Finish & save workout';
+        return;
+      }
       await sb
-        .from('workout_assignments')
-        .update({ status: 'completed' })
-        .eq('id', active.assignment.id);
-    }
-    toast('Workout saved 💪');
-    active = null;
-    show('home');
+        .from('strength_workouts')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          srpe: srpe || null,
+        })
+        .eq('id', active.id);
+      if (active.assignment) {
+        await sb
+          .from('workout_assignments')
+          .update({ status: 'completed' })
+          .eq('id', active.assignment.id);
+      }
+      toast('Workout saved 💪');
+      active = null;
+      show('home');
+    });
   }
   async function discardWorkout() {
     if (!confirm('Discard this workout? Nothing will be saved.')) return;
@@ -756,6 +789,65 @@ function mountStrengthLogger(root) {
     active = null;
     toast('Discarded');
     show('home');
+  }
+
+  /* ---------- FINISH SHEET ---------- */
+  function showFinishSheet(rows, onSave) {
+    const totalVol = rows.reduce(
+      (sum, r) =>
+        sum +
+        (r.weight_kg != null && r.reps != null ? r.weight_kg * r.reps : 0),
+      0
+    );
+    const setCount = rows.length;
+    const exCount = new Set(rows.map((r) => r.exercise_name)).size;
+    let selectedRpe = 7;
+
+    const bg = el('div', 'sheet-bg');
+    const sh = el('div', 'sheet');
+    sh.innerHTML = `
+      <div class="sheet-hd"><h3>Finish workout</h3></div>
+      <div class="sheet-body">
+        <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center">
+          <div style="font-size:26px;font-weight:800;color:var(--good)">${
+            totalVol > 0
+              ? Math.round(totalVol).toLocaleString() + ' kg vol'
+              : setCount + ' sets'
+          }</div>
+          <div style="font-size:13px;color:var(--mut);margin-top:4px">${exCount} exercise${exCount !== 1 ? 's' : ''} · ${setCount} set${setCount !== 1 ? 's' : ''}</div>
+        </div>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin-bottom:10px">Session RPE — how hard was this?</div>
+        <div id="finRpe" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px"></div>
+        <button id="finSave" class="btn good" style="margin-bottom:10px">Save workout 💪</button>
+        <button id="finCancel" class="btn danger">Cancel</button>
+      </div>`;
+    bg.appendChild(sh);
+    $('#sheet').innerHTML = '';
+    $('#sheet').appendChild(bg);
+
+    const rpeGrid = $('#finRpe');
+    const rpeBtns = [];
+    for (let i = 1; i <= 10; i++) {
+      const b = el('button', i === selectedRpe ? 'btn' : 'btn sec', String(i));
+      b.style.cssText =
+        'padding:12px 4px;font-size:17px;font-weight:800;border-radius:10px';
+      b.onclick = () => {
+        selectedRpe = i;
+        rpeBtns.forEach((x, j) => {
+          x.className = j + 1 === i ? 'btn' : 'btn sec';
+        });
+      };
+      rpeBtns.push(b);
+      rpeGrid.appendChild(b);
+    }
+
+    $('#finSave').onclick = () => {
+      $('#sheet').innerHTML = '';
+      onSave({ srpe: selectedRpe });
+    };
+    $('#finCancel').onclick = () => {
+      $('#sheet').innerHTML = '';
+    };
   }
 
   /* ---------- EXERCISE PICKER ---------- */

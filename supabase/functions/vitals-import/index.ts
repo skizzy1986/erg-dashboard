@@ -73,11 +73,29 @@ Deno.serve(async (req: Request) => {
     else upserted++;
   }
 
-  return json({
+  const result = {
     ok: errors.length === 0,
     parsed: records.length,
     upserted,
     errors,
     range: records.length ? { first: records[0].date, last: records[records.length - 1].date } : null,
-  }, errors.length ? 207 : 200);
+  };
+
+  // best-effort Slack post — never throws, never blocks the job
+  const webhookUrl = Deno.env.get("SLACK_BUILD_WEBHOOK_URL");
+  if (webhookUrl) {
+    const latest = records[records.length - 1]?.date ?? "?";
+    const text = errors.length === 0
+      ? `WO-001 OK · vitals: ${upserted} date(s) upserted (latest ${latest})`
+      : `WO-001 FAIL · vitals import: ${errors[0]?.error}`;
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+    } catch (_) { /* swallow — a Slack outage never fails the import */ }
+  }
+
+  return json(result, errors.length ? 207 : 200);
 });

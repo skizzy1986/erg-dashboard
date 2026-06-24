@@ -1,4 +1,4 @@
-name: CI
+name: CI — Web
 
 on:
   push:
@@ -6,8 +6,12 @@ on:
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-web-${{ github.ref }}
   cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: web
 
 jobs:
   lint:
@@ -19,6 +23,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
@@ -33,12 +38,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npx vitest run --coverage
       - uses: davelosert/vitest-coverage-report-action@v2
         if: always()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          json-summary-path: web/coverage/coverage-summary.json
+          json-final-path: web/coverage/coverage-final.json
 
   build:
     name: Build
@@ -50,5 +58,6 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run build
