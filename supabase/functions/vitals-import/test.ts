@@ -1,25 +1,9 @@
-import { buildRecords } from "./parser.ts";
+import { buildRecords, isoDate } from "./parser.ts";
 
-// CSV assembled from the REAL Health Data Export layout: an activity preamble we
-// must ignore, then Weight, Sleep, and Vitals sections (incl. the 6/18 sleep
-// double-row and Concept2 vitals rows with blank HRV/RHR).
-const csv = [
-  "# Sheet1",
-  "",
-  "Date,Source(s),Timezone,Steps,Distance (m),Total Calories (kcal)",
-  "2026-06-14,com.fitbit.FitbitMobile,Australia/Perth,5000,3000,2500",
-  "",
-  "Date/Time,Source(s),Timezone,Weight (kg),Body Fat (%),Bone mass (kg),Height (m),Lean body mass (kg)",
-  "2026-06-14 00:00:00,com.sbs.diet,Australia/Perth,95.00,,,,",
-  "2026-06-18 00:00:00,com.sbs.diet,Australia/Perth,95.00,,,,",
-  "2026-06-22 00:00:00,com.sbs.diet,Australia/Perth,94.50,,,,",
-  "",
-  "Date,Source(s),Timezone,Start Time,End Time,Light Sleep (min),Deep Sleep (min),REM Sleep (min),Awake (min)",
-  "2026-06-14,com.fitbit.FitbitMobile,Australia/Perth,2026-06-13 23:06:00,2026-06-14 08:15:00,308,66,126,36",
-  "2026-06-18,com.fitbit.FitbitMobile,Australia/Perth,2026-06-17 23:50:00,2026-06-18 09:02:00,238,45,74,181",
-  "2026-06-18,com.fitbit.FitbitMobile,Australia/Perth,2026-06-17 23:50:00,2026-06-18 09:22:00,244,41,74,198",
-  "2026-06-22,com.fitbit.FitbitMobile,Australia/Perth,2026-06-21 20:37:00,2026-06-22 08:34:00,393,83,158,65",
-  "",
+// Three separate CSVs mirroring the real Health Data Export tab structure.
+// Includes the 6/18 sleep double-row and Concept2 vitals rows with blank HRV/RHR.
+
+const vitalsCsv = [
   "Date,Source(s),Timezone,Heart rate min (bpm),Heart rate max (bpm),Heart rate avg (bpm),Heart rate variability min (ms),Heart rate variability max (ms),Heart rate variability avg (ms),Oxygen saturation min (%),Oxygen saturation max (%),Oxygen saturation avg (%),Respiratory rate min (breaths/min),Respiratory rate max (breaths/min),Respiratory rate avg (breaths/min),Resting heart rate min (bpm),Resting heart rate max (bpm),Resting heart rate avg (bpm),Blood pressure (mmHg),Blood glucose (mmol/L),Body temperature (°C)",
   "2026-06-14,com.fitbit.FitbitMobile,Australia/Perth,45,124,67.53,11.70,44.70,25.20,,,,15.40,15.40,15.40,57.00,57.00,57.00,,,",
   "2026-06-14,com.concept2.ergdata,Australia/Perth,71,129,116.45,,,,,,,,,,,,,,,",
@@ -28,7 +12,22 @@ const csv = [
   "2026-06-22,com.fitbit.FitbitMobile,Australia/Perth,46,91,53.57,13.20,47.90,23.08,,,,10.20,10.20,10.20,58.00,58.00,58.00,,,",
 ].join("\n");
 
-const recs = buildRecords(csv);
+const sleepCsv = [
+  "Date,Source(s),Timezone,Start Time,End Time,Light Sleep (min),Deep Sleep (min),REM Sleep (min),Awake (min)",
+  "2026-06-14,com.fitbit.FitbitMobile,Australia/Perth,2026-06-13 23:06:00,2026-06-14 08:15:00,308,66,126,36",
+  "2026-06-18,com.fitbit.FitbitMobile,Australia/Perth,2026-06-17 23:50:00,2026-06-18 09:02:00,238,45,74,181",
+  "2026-06-18,com.fitbit.FitbitMobile,Australia/Perth,2026-06-17 23:50:00,2026-06-18 09:22:00,244,41,74,198",
+  "2026-06-22,com.fitbit.FitbitMobile,Australia/Perth,2026-06-21 20:37:00,2026-06-22 08:34:00,393,83,158,65",
+].join("\n");
+
+const weightCsv = [
+  "Date/Time,Source(s),Timezone,Weight (kg),Body Fat (%),Bone mass (kg),Height (m),Lean body mass (kg)",
+  "2026-06-14 00:00:00,com.sbs.diet,Australia/Perth,95.00,,,,",
+  "2026-06-18 00:00:00,com.sbs.diet,Australia/Perth,95.00,,,,",
+  "2026-06-22 00:00:00,com.sbs.diet,Australia/Perth,94.50,,,,",
+].join("\n");
+
+const recs = buildRecords(vitalsCsv, sleepCsv, weightCsv);
 const byDate: Record<string, any> = {};
 for (const r of recs) byDate[r.date] = r;
 
@@ -56,6 +55,12 @@ check("6/22 sleep (393+83+158)/60=10.57", byDate["2026-06-22"].sleep_hours === 1
 check("6/22 weight 94.5", byDate["2026-06-22"].bodyweight_kg === 94.5);
 // activity/nutrition ignored: no stray dates, exactly the 5 we expect
 check("only expected dates present (4)", recs.length === 4);
+
+// isoDate handles both formats
+check("isoDate YYYY-MM-DD passthrough", isoDate("2026-06-14") === "2026-06-14");
+check("isoDate DD/MM/YYYY converts to ISO", isoDate("14/06/2026") === "2026-06-14");
+check("isoDate with timestamp suffix", isoDate("2026-06-14 00:00:00") === "2026-06-14");
+check("isoDate null on garbage", isoDate("not-a-date") === null);
 
 console.log("\nRESULT:", pass, "passed,", fail, "failed");
 if (fail) (globalThis as any).process.exit(1);

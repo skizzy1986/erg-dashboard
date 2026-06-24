@@ -1,9 +1,12 @@
 // vitals-import — daily ingestion of the Health Data Export sheet into public.vitals.
-// Reads the published-CSV of the sheet, maps per VITALS_IMPORT.md, and upserts via
-// public.upsert_vital (coalesce: never null-wipes, never touches readiness/soreness/notes).
+// Reads three published-CSV tabs (Vitals, Sleep, Body Measurements), maps per
+// VITALS_IMPORT.md, and upserts via public.upsert_vital (coalesce: never null-wipes,
+// never touches readiness/soreness/notes).
 //
 // Required env (set as Edge Function secrets):
-//   SHEET_CSV_URL              publish-to-web CSV URL of the Health Data Export sheet
+//   VITALS_CSV_URL             published CSV URL for the Vitals tab
+//   SLEEP_CSV_URL              published CSV URL for the Sleep tab
+//   WEIGHT_CSV_URL             published CSV URL for the Body Measurements tab
 //   VITALS_USER_ID             owner uuid (rows written with this so RLS shows them to Scott)
 //   SUPABASE_URL               (auto-injected on Supabase)
 //   SUPABASE_SERVICE_ROLE_KEY  service role (bypasses RLS; required to write)
@@ -21,26 +24,37 @@ Deno.serve(async (req: Request) => {
     return json({ error: "unauthorized" }, 401);
   }
 
-  const csvUrl = Deno.env.get("SHEET_CSV_URL");
-  const userId = Deno.env.get("VITALS_USER_ID");
-  const supaUrl = Deno.env.get("SUPABASE_URL");
+  const vitalsUrl  = Deno.env.get("VITALS_CSV_URL");
+  const sleepUrl   = Deno.env.get("SLEEP_CSV_URL");
+  const weightUrl  = Deno.env.get("WEIGHT_CSV_URL");
+  const userId     = Deno.env.get("VITALS_USER_ID");
+  const supaUrl    = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
   const missing = [
-    ["SHEET_CSV_URL", csvUrl], ["VITALS_USER_ID", userId],
-    ["SUPABASE_URL", supaUrl], ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
+    ["VITALS_CSV_URL", vitalsUrl], ["SLEEP_CSV_URL", sleepUrl], ["WEIGHT_CSV_URL", weightUrl],
+    ["VITALS_USER_ID", userId], ["SUPABASE_URL", supaUrl], ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
   ].filter(([, v]) => !v).map(([k]) => k);
   if (missing.length) return json({ error: "missing env", missing }, 500);
 
-  let csv: string;
+  const fetchCsv = async (url: string, label: string): Promise<string> => {
+    const res = await fetch(url, { redirect: "follow" });
+    if (!res.ok) throw new Error(`${label} fetch failed: HTTP ${res.status}`);
+    return res.text();
+  };
+
+  let vitalsCsv: string, sleepCsv: string, weightCsv: string;
   try {
-    const res = await fetch(csvUrl!, { redirect: "follow" });
-    if (!res.ok) return json({ error: "fetch failed", status: res.status }, 502);
-    csv = await res.text();
+    [vitalsCsv, sleepCsv, weightCsv] = await Promise.all([
+      fetchCsv(vitalsUrl!, "vitals"),
+      fetchCsv(sleepUrl!,  "sleep"),
+      fetchCsv(weightUrl!, "weight"),
+    ]);
   } catch (e) {
-    return json({ error: "fetch threw", detail: String(e) }, 502);
+    return json({ error: "fetch failed", detail: String(e) }, 502);
   }
 
-  const records = buildRecords(csv);
+  const records = buildRecords(vitalsCsv, sleepCsv, weightCsv);
   const supa = createClient(supaUrl!, serviceKey!, { auth: { persistSession: false } });
 
   let upserted = 0;

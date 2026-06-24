@@ -21,7 +21,7 @@ acceptance:
 Stand up a one-way **System → Bridge** Slack feed so automated state — deploys, cron results, errors — is visible on Scott's phone without prompting Coach. This is the swing read-out: when he's away and not prompting, Slack is how he learns the import broke on day 2 instead of twelve days later. **Not a command rail:** jobs post to Slack; nothing reads commands from Slack and executes them.
 
 ## Scope
-- **In:** slack channels; an incoming webhook → `#build`; the webhook stored as Supabase secret `SLACK_BUILD_WEBHOOK_URL`; the Vercel → Slack integration on the `erg-dashboard` project.
+- **In:** Slack channels; an incoming webhook → `#build`; the webhook stored as Supabase secret `SLACK_BUILD_WEBHOOK_URL`; the Vercel → Slack integration on the `erg-dashboard` project.
 - **Out (explicitly excluded):** any Slack → system read or command path. Slack is a sink, not a source. Re-opening that is a separate WO and a Constitution question.
 
 ## Schema
