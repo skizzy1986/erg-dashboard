@@ -38,6 +38,11 @@ class DashboardViewModel : ViewModel() {
             TssInput("2026-06-10", tss = 95, note = ""),
             TssInput("2026-06-12", tss = 75, note = ""),
             TssInput("2026-06-13", tss = 80, note = ""),
+            TssInput("2026-06-16", tss = 95, note = ""),
+            TssInput("2026-06-18", tss = 85, note = ""),
+            TssInput("2026-06-20", tss = 65, note = ""),
+            TssInput("2026-06-22", tss = 80, note = ""),
+            TssInput("2026-06-24", tss = 90, note = ""),
         )
     }
 }
