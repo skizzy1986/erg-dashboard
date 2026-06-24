@@ -1,9 +1,13 @@
-import { useState, useEffect, Component, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Component, lazy, Suspense } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { std, mean } from "mathjs";
 import { supabase } from "./supabaseClient.js";
-import StrengthLogger from "./StrengthLogger.jsx";
-import ErgLiveView from "./views/ErgLiveView.jsx";
+
+// Native replacements for mathjs std/mean — sample std dev (n-1 denominator)
+const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+const std  = arr => { const m = mean(arr); return Math.sqrt(arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1)); };
+
+const StrengthLogger = lazy(() => import("./StrengthLogger.jsx"));
+const ErgLiveView    = lazy(() => import("./views/ErgLiveView.jsx"));
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -2066,6 +2070,7 @@ export default function App() {
         </div>
 
         <ErrorBoundary>
+        <Suspense fallback={<div style={{ padding: 24, color: "#7e7e9a", fontSize: 12 }}>Loading…</div>}>
         {/* ── STRENGTH LOGGER VIEW (live set/rep logging → sessions) ── */}
         {view === "logger" && <StrengthLogger />}
 
@@ -2076,6 +2081,7 @@ export default function App() {
             onSessionSaved={() => { setView("log"); fetchSessions(); }}
           />
         )}
+        </Suspense>
 
         {/* ── PLAN VIEW (today + future prescriptions from status='planned') ── */}
         {view === "plan" && (() => {

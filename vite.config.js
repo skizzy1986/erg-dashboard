@@ -40,6 +40,18 @@ export default defineConfig({
     }),
   ],
   base: "./",
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react":    ["react", "react-dom"],
+          "vendor-recharts": ["recharts"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-query":    ["@tanstack/react-query"],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",
