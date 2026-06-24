@@ -1,7 +1,7 @@
 ---
 id: WO-001
 title: Vitals daily import from Health Data Export sheet
-status: ready
+status: done
 author: coach
 created: 2026-06-22
 targets: [supabase-migration, edge-function, cron]
