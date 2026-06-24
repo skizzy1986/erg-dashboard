@@ -26,12 +26,14 @@ TrainingPeaks, Ergzone) with a unified, fully personalised training system.
 ## Key Commands
 
 ```bash
-npm run dev      # Start dev server → http://localhost:5173
-npm run build    # Production build → dist/
-npm run preview  # Preview production build locally
-npm test         # Run Vitest test suite
-npm run lint     # ESLint check
-npm run format   # Prettier format
+npm run dev           # Start dev server → http://localhost:5173
+npm run build         # Production build → dist/
+npm run preview       # Preview production build locally
+npm test              # Run Vitest test suite
+npm run lint          # ESLint check (blocks CI if it fails)
+npm run format        # Prettier format (auto-fix)
+npm run format:check  # Prettier check (used in CI — no writes)
+npx vitest run --coverage  # Run tests with coverage report
 ```
 
 ## Project Structure
@@ -49,6 +51,10 @@ supabase/
   functions/    Edge Functions (vitals-import from Google Health CSV)
 coach/
   work-orders/  Feature specs and task tracking
+.github/
+  workflows/    GitHub Actions CI (ci.yml — lint, test, build)
+  dependabot.yml  Weekly grouped dependency updates (npm + actions)
+  PULL_REQUEST_TEMPLATE.md  PR checklist template
 .claude/
   agents/       Specialist AI subagents (see Development Workflow below)
   skills/       Domain knowledge documents Claude reads when relevant
@@ -117,6 +123,31 @@ Planned external data sources (to be built after refactor foundation is solid):
 3. **Concept2 Logbook** — erg session auto-import
 4. **TrainingPeaks / Ergzone** — replaced by native plan engine
 
+## CI & Quality Gates
+
+Every PR is gated by three GitHub Actions jobs that must pass before merge:
+
+| Job | What it checks |
+|---|---|
+| `Lint & Format` | ESLint errors + Prettier formatting + `npm audit --audit-level=high` |
+| `Test & Coverage` | All Vitest tests pass; line ≥70%, function ≥70%, branch ≥60% |
+| `Build` | `npm run build` exits 0 (runs only after Test passes) |
+
+Coverage thresholds are defined in `vite.config.js` (`test.coverage.thresholds`).
+A PR comment with a coverage summary is posted automatically by
+`davelosert/vitest-coverage-report-action`.
+
+**Branch protection on `main`:** direct pushes are blocked. All changes must
+go through a PR with passing CI. Branches must be up to date before merging.
+
+**Pre-commit hook (Husky + lint-staged):** `eslint --fix` and
+`prettier --write` run automatically on staged `*.js` / `*.jsx` files before
+every local commit. This eliminates the most common cause of CI lint failures.
+The hook does NOT run tests (kept under 5 seconds).
+
+**Dependabot:** opens one grouped PR per week for minor/patch updates across
+both npm packages and GitHub Actions versions.
+
 ## Development Workflow (Software Factory)
 
 All development flows through the **orchestrator** — the master coordinator
@@ -139,6 +170,7 @@ feature-builder  →  implements following the architecture rules
 test-verifier    →  writes and runs Vitest tests
 code-reviewer    →  APPROVE / REQUEST CHANGES verdict
              ↑ USER APPROVES BEFORE COMMIT
+             → push to feature branch → PR → CI gates → merge
 ```
 
 ### Specialist agents (used directly for focused tasks)
@@ -154,8 +186,11 @@ code-reviewer    →  APPROVE / REQUEST CHANGES verdict
 
 ## Safety Constraints
 
-- Never push directly to main — always use feature branches
+- Never push directly to main — always use feature branches; branch protection enforces this
 - Never hardcode credentials — use `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 - Never delete Supabase rows without confirming with the user first
 - Always run `npm run build` before marking a feature complete
 - Always run `npm test` before committing
+- Always run `npm run lint` and `npm run format:check` before pushing — CI will fail if either does not pass
+- Never bypass the pre-commit hook (`--no-verify`) without an explicit reason
+- Coverage thresholds (70% lines/functions, 60% branches) are enforced in CI — new code should include tests
