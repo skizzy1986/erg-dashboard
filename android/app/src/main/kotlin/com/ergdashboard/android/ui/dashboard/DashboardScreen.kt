@@ -1,6 +1,7 @@
 package com.ergdashboard.android.ui.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,24 +32,67 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ergdashboard.android.domain.TrainingLoadEntry
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
+fun DashboardScreen(viewModel: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory)) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            Text(
-                text = "PMC",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
+    when {
+        uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
+        uiState.errorMessage != null -> Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(uiState.errorMessage!!)
+            Button(onClick = { viewModel.retry() }) { Text("Retry") }
+        }
+        else -> LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                Text(
+                    text = "PMC",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
 
-        uiState.latest?.let { latest ->
+            uiState.latest?.let { latest ->
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "CURRENT LOAD",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                            ) {
+                                MetricColumn("CTL", latest.ctl, Color(0xFF00D4FF))
+                                MetricColumn("ATL", latest.atl, Color(0xFFFF6B35))
+                                MetricColumn("TSB", latest.tsb, tsbColor(latest.tsb))
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "as of ${latest.date}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -54,49 +100,19 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "CURRENT LOAD",
+                            "HISTORY",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                        ) {
-                            MetricColumn("CTL", latest.ctl, Color(0xFF00D4FF))
-                            MetricColumn("ATL", latest.atl, Color(0xFFFF6B35))
-                            MetricColumn("TSB", latest.tsb, tsbColor(latest.tsb))
-                        }
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "as of ${latest.date}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        HistoryHeader()
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outline,
                         )
-                    }
-                }
-            }
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "HISTORY",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    HistoryHeader()
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                    uiState.entries.takeLast(14).reversed().forEach { entry ->
-                        HistoryRow(entry)
+                        uiState.entries.takeLast(14).reversed().forEach { entry ->
+                            HistoryRow(entry)
+                        }
                     }
                 }
             }

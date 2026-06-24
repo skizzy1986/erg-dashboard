@@ -1,19 +1,31 @@
 package com.ergdashboard.android.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.ergdashboard.android.ErgDashboardApplication
 import com.ergdashboard.android.domain.GetTrainingLoadUseCase
+import com.ergdashboard.android.domain.SessionRepository
 import com.ergdashboard.android.domain.TrainingLoadEntry
 import com.ergdashboard.android.domain.TssInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 data class DashboardUiState(
     val entries: List<TrainingLoadEntry> = emptyList(),
     val latest: TrainingLoadEntry? = null,
+    val isLoading: Boolean = true,
+    val errorMessage: String? = null,
 )
 
-class DashboardViewModel : ViewModel() {
+class DashboardViewModel(
+    private val sessionRepo: SessionRepository,
+) : ViewModel() {
 
     private val useCase = GetTrainingLoadUseCase()
 
@@ -21,28 +33,40 @@ class DashboardViewModel : ViewModel() {
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        val entries = useCase(STUB_TSS_DATA)
-        _uiState.value = DashboardUiState(entries = entries, latest = entries.lastOrNull())
+        loadData()
+    }
+
+    fun retry() {
+        loadData()
+    }
+
+    private fun loadData() {
+        _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+        viewModelScope.launch {
+            try {
+                val sessions = sessionRepo.getSessions()
+                val tssInputs = sessions.map { TssInput(it.date, it.tss, it.label) }
+                val entries = if (tssInputs.isNotEmpty()) useCase(tssInputs) else emptyList()
+                _uiState.value = DashboardUiState(
+                    entries = entries,
+                    latest = entries.lastOrNull(),
+                    isLoading = false,
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message,
+                )
+            }
+        }
     }
 
     companion object {
-        // Stub data — will be replaced by a Repository/Supabase source in a later step.
-        private val STUB_TSS_DATA = listOf(
-            TssInput("2026-05-25", tss = 80, note = ""),
-            TssInput("2026-05-27", tss = 100, note = ""),
-            TssInput("2026-05-29", tss = 60, note = ""),
-            TssInput("2026-06-01", tss = 90, note = ""),
-            TssInput("2026-06-03", tss = 110, note = ""),
-            TssInput("2026-06-05", tss = 70, note = ""),
-            TssInput("2026-06-08", tss = 85, note = ""),
-            TssInput("2026-06-10", tss = 95, note = ""),
-            TssInput("2026-06-12", tss = 75, note = ""),
-            TssInput("2026-06-13", tss = 80, note = ""),
-            TssInput("2026-06-16", tss = 95, note = ""),
-            TssInput("2026-06-18", tss = 85, note = ""),
-            TssInput("2026-06-20", tss = 65, note = ""),
-            TssInput("2026-06-22", tss = 80, note = ""),
-            TssInput("2026-06-24", tss = 90, note = ""),
-        )
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val app = this[APPLICATION_KEY] as ErgDashboardApplication
+                DashboardViewModel(sessionRepo = app.container.sessionRepository)
+            }
+        }
     }
 }

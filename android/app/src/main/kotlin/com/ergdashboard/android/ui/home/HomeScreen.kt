@@ -1,6 +1,7 @@
 package com.ergdashboard.android.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,42 +32,55 @@ import com.ergdashboard.android.domain.Session
 import com.ergdashboard.android.domain.TrainingLoadEntry
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(
-            text = "TRAINING DASHBOARD",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "Wed 24 Jun 2026",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    when {
+        state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        state.errorMessage != null -> Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(state.errorMessage!!)
+            Button(onClick = { viewModel.retry() }) { Text("Retry") }
+        }
+        else -> Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = "TRAINING DASHBOARD",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "Wed 24 Jun 2026",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
-        state.latestLoad?.let { LoadCard(it) }
+            state.latestLoad?.let { LoadCard(it) }
 
-        RecentSessionsCard(state.recentSessions)
+            RecentSessionsCard(state.recentSessions)
 
-        state.latestVital?.let { vital ->
-            SectionCard(title = "TODAY'S VITALS") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    VitalChip("RHR", "${vital.rhr} bpm")
-                    VitalChip("HRV", "${vital.hrv} ms")
-                    VitalChip("Sleep", "${"%.1f".format(vital.sleepHours)}h")
-                    VitalChip("Weight", "${"%.1f".format(vital.weightKg)} kg")
+            state.latestVital?.let { vital ->
+                SectionCard(title = "TODAY'S VITALS") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                    ) {
+                        VitalChip("RHR", "${vital.rhr} bpm")
+                        VitalChip("HRV", "${vital.hrv} ms")
+                        VitalChip("Sleep", "${"%.1f".format(vital.sleepHours)}h")
+                        VitalChip("Weight", "${"%.1f".format(vital.weightKg)} kg")
+                    }
                 }
             }
         }
