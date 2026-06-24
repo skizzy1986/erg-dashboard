@@ -2777,6 +2777,9 @@ function LogSessionForm({ onSaved }) {
 
     setSaving(true);
     setMsg(null);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const prs = filledRows.filter((r) => r.pr).length;
     const exercises = filledRows.map((r) => ({
       name: r.name.trim(),
@@ -2793,6 +2796,7 @@ function LogSessionForm({ onSaved }) {
       srpe,
       prs,
       exercises,
+      user_id: user?.id,
     });
     setSaving(false);
     if (error) {

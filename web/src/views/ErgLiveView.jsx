@@ -475,6 +475,9 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
 
   async function saveSession({ srpe, notes, date }) {
     setSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const row = {
       date,
       type: 'erg',
@@ -486,6 +489,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
       status: 'logged',
       source: 'bluetooth',
       exercises: notes ? [{ name: 'Notes', notes }] : [],
+      user_id: user?.id,
     };
 
     if (navigator.onLine) {
