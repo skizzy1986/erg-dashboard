@@ -1,62 +1,161 @@
-# CLAUDE.md
+# ERG DASHBOARD — Project Intelligence
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> Claude reads this file at the start of every session. It provides context
+> so Claude can work effectively without needing background explanations.
+> Think of it as a briefing document for a new team member.
 
-Single-athlete rowing + strength training dashboard. React SPA on Supabase, deployed on Vercel.
-This file is the durable "knowledge layer" Claude Code inherits every session. Keep it short and true.
+## What This App Is
 
-## Stack
-- **Vite 5 + React 18 — plain JavaScript / JSX (NO TypeScript).** This is deliberate; do not introduce TS without an explicit decision.
-- **Supabase** (Postgres + Auth + Edge Functions/Deno) — project ref `swdrueaserjzhuxnzmeu`.
-- **Vercel** — auto-deploys on push to `main`.
-- recharts, mathjs, @supabase/supabase-js.
+A personal coaching dashboard for rowing (erg), strength, and cycling training.
+Built by Scott, designed with Claude, deployed on Vercel + Supabase.
 
-## Commands
-- Node 18+ required.
-- `npm install` — deps. Run in a LOCAL clone, **never in the Drive-mirrored folder** (Drive would thrash syncing node_modules).
-- `npm run dev` — local dev server.
-- `npm run build` — production build (`vite build`). **Must pass before every commit.**
-- Edge function unit tests: `cd supabase/functions/vitals-import && deno test test.ts`
-- Edge function secrets (set in Supabase Dashboard → Project Settings → Edge Functions → Secrets): `SHEET_CSV_URL`, `VITALS_USER_ID`, `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `SLACK_BUILD_WEBHOOK_URL`
+**Vision**: Replace commercial apps (Strava, Garmin Connect, Concept2 Logbook,
+TrainingPeaks, Ergzone) with a unified, fully personalised training system.
 
-## Architecture
-- `src/main.jsx` — entry + Supabase email/password auth gate.
-- `src/erg-dashboard.jsx` — the main app. Large single-file component; nav tabs: overview / calendar / program / plan / erg / strength / logger / mobility / recovery / log / journal.
-- `src/StrengthLogger.jsx` — the Logger tab: full strength app (templates, coach assignments, rest timer, exercise picker, muscle-heatmap + animated demos, history/PRs). Scoped vanilla-JS mounted in a React container.
-- `src/supabaseClient.js` — shared client (`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`).
-- `supabase/functions/` — Deno edge functions (e.g. `vitals-import`).
-- No `supabase/migrations/` directory — schema has been applied directly to the DB; migrations directory does not exist yet.
-- Data (Supabase, RLS ON, rows carry `user_id`): `sessions`, `vitals`, `strength_workouts`, `strength_sets`, `templates`, `template_exercises`, `workout_assignments`, `exercise_prefs`, `exercises` (873 reference rows), `exercise_media`, `backup_snapshots`.
+## Tech Stack
 
-## Conventions
-- Dates render AND parse **d/m/y**; a single `formatDate` helper is the only date renderer.
-- **Never hardcode the user** — read `user_id` from auth; keep RLS correct. The app is already multi-tenant-shaped.
-- Idempotent ingestion: upsert on a natural key (see `vitals` `(user_id, date)`).
+| Layer      | Technology                     | Purpose                              |
+|------------|--------------------------------|--------------------------------------|
+| UI         | React 18 + Vite                | Frontend single-page app             |
+| Charts     | Recharts                       | Data visualisation                   |
+| Math       | mathjs                         | Linear regression for aerobic trend  |
+| Backend    | Supabase                       | Postgres DB, Auth, Edge Functions    |
+| Hosting    | Vercel                         | Auto-deploy on git push              |
+| Testing    | Vitest + React Testing Library | Unit and component tests             |
 
-## Testing
-- No formal test runner yet. Verify with `npm run build` passing, plus targeted logic tests via esbuild + node for pure functions (parsers, mappers) before relying on them.
+## Key Commands
 
-## Don't do
-- Don't introduce TypeScript (JS by design).
-- Don't commit secrets / `.env` / service-role keys.
-- Don't run `npm install` in the Drive-mirrored clone.
-- Don't bypass RLS; don't run destructive SQL without a fresh backup + explicit approval.
-- Large edits to `src/erg-dashboard.jsx` can truncate on the Drive mount — after editing, verify with `npm run build`.
-- A `PreToolUse(Bash)` hook (`.claude/hooks/block-secret-commit.sh`) blocks `git commit` when a secret-looking file (`.env`, `*.pem`, `id_rsa`, `service_role`, etc.) is staged — unstage it rather than working around the hook.
+```bash
+npm run dev      # Start dev server → http://localhost:5173
+npm run build    # Production build → dist/
+npm run preview  # Preview production build locally
+npm test         # Run Vitest test suite
+npm run lint     # ESLint check
+npm run format   # Prettier format
+```
 
-## Backups & safety
-- Free Supabase tier → no PITR. Daily in-DB snapshots (`backup_snapshots`, pg_cron 18:00 UTC) + weekly off-site to Drive `backups/`. Before any destructive migration, confirm a fresh snapshot exists.
+## Project Structure
 
-## Deploy
-- Commit to `main` → Vercel auto-builds. After a deploy, confirm it reaches READY — don't assume.
+```
+src/
+  constants/    Hardcoded config, seed data, reference tables
+  hooks/        Custom React hooks (data fetching, derived state)
+  utils/        Pure functions — analysis, formatting, scheduling
+  components/   Shared UI components (LogEntry, WorkoutItem, charts)
+  views/        One component per dashboard tab (10 views)
+  App.jsx       Navigation, state, view dispatch (~200 lines)
+  main.jsx      Auth gate (Supabase email/password login)
+supabase/
+  functions/    Edge Functions (vitals-import from Google Health CSV)
+coach/
+  work-orders/  Feature specs and task tracking
+.claude/
+  agents/       Specialist AI subagents (see Development Workflow below)
+  skills/       Domain knowledge documents Claude reads when relevant
+  commands/     Slash commands for common workflows (/feature, /research, etc.)
+  settings.json Hooks configuration (automation triggers)
+```
 
-## How we work (the factory)
-This repo uses the agent-factory model — see `FACTORY.md`. Feature work flows: research → story → spec → build → test → validate → PR, with human approval after the story, after the spec, and after validation. Specialized agents live in `.claude/agents/`; the chain is `.claude/commands/orchestrate.md`.
+## Code Style
 
-## Work-orders
-`coach/work-orders/` is the git-native handover rail for Coach-authored build specs:
-- `WORK_ORDERS.md` — convention doc (schema, flow, rules).
-- `WO-NNN-slug.md` — one file per order; status in YAML front-matter (`draft | ready | in_progress | done | reverted`).
-- Flow: Coach authors + sets `status: ready` → Bridge commits the file (the authorization gate) → Cowork implements → advances status.
-- Cowork never self-authorizes. The Bridge commit is the gate.
-- Active orders: WO-001 (vitals import), WO-002 (Slack build read-out), WO-003 (done), WO-004 (done).
+- Plain JavaScript and JSX — no TypeScript yet
+- No comments unless the WHY is non-obvious
+- Inline styles throughout (existing pattern — do not switch to CSS modules)
+- No new abstractions beyond what the task requires
+- Component files: PascalCase (e.g., LogEntry.jsx)
+- Utility/hook files: camelCase (e.g., formatting.js, useSessions.js)
+- Tests: co-located in `__tests__/` subdirectories or `*.test.js`
+
+## Architecture: Strangler Fig Refactor
+
+The main file (`src/erg-dashboard.jsx`, ~3,900 lines) is being decomposed
+into a modular structure. The safe migration order:
+
+1. Extract constants and utils (zero risk — pure JS, no JSX)
+2. Extract hooks (low risk — same data, reorganised)
+3. Extract components (test each after extraction)
+4. Extract views (one at a time, confirm props thread correctly)
+5. Rename entry point to `App.jsx`
+
+**Rule: One extraction at a time. Never attempt a big-bang rewrite.**
+Use `/refactor` to run each extraction step safely.
+
+## Supabase Schema
+
+| Table    | Purpose                                        |
+|----------|------------------------------------------------|
+| sessions | All workouts — erg, strength, cycling, rest    |
+| vitals   | Daily health — RHR, HRV, sleep, bodyweight     |
+
+sessions columns: `date, type, label, duration, srpe, exercises, watts, hr, distance, status`
+
+Status values: `"logged"` (completed) or `"planned"` (prescription).
+
+## Training Science Domain
+
+> These terms appear throughout the code. Understanding them helps you
+> understand what the app is calculating.
+
+- **CTL** (Chronic Training Load) — 42-day exponential average of daily TSS.
+  Represents your fitness level. Goes up slowly with consistent training.
+- **ATL** (Acute Training Load) — 7-day average. Represents current fatigue.
+  Rises quickly after hard weeks, drops during rest.
+- **TSB** (Training Stress Balance) = CTL - ATL. Positive = fresh/rested.
+  Negative = fatigued. The "form" number.
+- **sRPE** — How hard a session felt on a 1–10 scale (subjective).
+- **CP** (Critical Power) — The highest power you can sustain indefinitely.
+  Currently estimated at ~190W; CP test planned for 1 Jul.
+- **Polarized TID** — 80% easy (Zone 2), 20% hard (threshold/VO₂max).
+- **Microcycle** — One week training pattern. Home weeks = loading. FIFO = deload.
+
+## Integration Roadmap
+
+Planned external data sources (to be built after refactor foundation is solid):
+
+1. **Strava** — OAuth2 activity sync → sessions table
+2. **Garmin Connect** — daily HRV/RHR/sleep → vitals table
+3. **Concept2 Logbook** — erg session auto-import
+4. **TrainingPeaks / Ergzone** — replaced by native plan engine
+
+## Development Workflow (Software Factory)
+
+All development flows through the **orchestrator** — the master coordinator
+that routes requests, spawns specialist agents in sequence, and gates on your
+approval at every stage. Never advances without explicit go-ahead.
+
+```
+/feature <description>   →  orchestrator runs the full pipeline
+/refactor <module>       →  orchestrator runs the refactor pipeline
+/research <topic>        →  orchestrator runs research only
+```
+
+### Pipeline (orchestrator coordinates these agents in order)
+
+```
+researcher   →  investigates APIs, docs, patterns
+spec-writer  →  turns description into acceptance criteria + file targets
+             ↑ USER APPROVES SPEC BEFORE BUILD BEGINS
+feature-builder  →  implements following the architecture rules
+test-verifier    →  writes and runs Vitest tests
+code-reviewer    →  APPROVE / REQUEST CHANGES verdict
+             ↑ USER APPROVES BEFORE COMMIT
+```
+
+### Specialist agents (used directly for focused tasks)
+
+| Agent | Use when |
+|---|---|
+| `researcher` | Deep-dive into an API before committing to an approach |
+| `spec-writer` | Write a spec without the full pipeline |
+| `feature-builder` | Implement from an already-approved spec |
+| `test-verifier` | Add tests to existing code |
+| `code-reviewer` | Review a diff before committing |
+| `refactor-agent` | Extract one module from erg-dashboard.jsx |
+
+## Safety Constraints
+
+- Never push directly to main — always use feature branches
+- Never hardcode credentials — use `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+- Never delete Supabase rows without confirming with the user first
+- Always run `npm run build` before marking a feature complete
+- Always run `npm test` before committing

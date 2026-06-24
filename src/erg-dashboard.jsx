@@ -1,8 +1,9 @@
-import { useState, useEffect, Component } from "react";
+import { useState, useEffect, Component, lazy, Suspense } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { std, mean } from "mathjs";
 import { supabase } from "./supabaseClient.js";
 import StrengthLogger from "./StrengthLogger.jsx";
+import ErgLiveView from "./views/ErgLiveView.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -2051,7 +2052,7 @@ export default function App() {
 
         {/* NAV */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:5, margin:"18px 0 16px" }}>
-          {[["overview","Overview"],["calendar","Calendar"],["program","Program"],["plan","Plan"],["erg","Erg"],["strength","Strength"],["logger","Logger"],["mobility","Mobility"],["recovery","Recovery"],["log","Log"],["journal","Journal"]].map(([v,label])=>(
+          {[["overview","Overview"],["calendar","Calendar"],["program","Program"],["plan","Plan"],["live","Live"],["erg","Erg"],["strength","Strength"],["logger","Logger"],["mobility","Mobility"],["recovery","Recovery"],["log","Log"],["journal","Journal"]].map(([v,label])=>(
             <button key={v} onClick={()=>{ setView(v); setExpanded(null); }} style={{
               flex:"1 1 auto", minWidth:0,
               background: view===v ? "#4a4a68" : "transparent",
@@ -2067,6 +2068,14 @@ export default function App() {
         <ErrorBoundary>
         {/* ── STRENGTH LOGGER VIEW (live set/rep logging → sessions) ── */}
         {view === "logger" && <StrengthLogger />}
+
+        {/* ── LIVE ERG VIEW (Bluetooth PM5 → real-time metrics → session save) ── */}
+        {view === "live" && (
+          <ErgLiveView
+            plannedSessions={plannedSessions}
+            onSessionSaved={() => { setView("log"); fetchSessions(); }}
+          />
+        )}
 
         {/* ── PLAN VIEW (today + future prescriptions from status='planned') ── */}
         {view === "plan" && (() => {
