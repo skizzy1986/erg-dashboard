@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -16,6 +17,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "SUPABASE_URL", project.findProperty("SUPABASE_URL")?.let { "\"$it\"" } ?: System.getenv("SUPABASE_URL")?.let { "\"$it\"" } ?: "\"\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", project.findProperty("SUPABASE_ANON_KEY")?.let { "\"$it\"" } ?: System.getenv("SUPABASE_ANON_KEY")?.let { "\"$it\"" } ?: "\"\"")
     }
 
     buildTypes {
@@ -33,12 +37,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlinOptions {
-        jvmTarget = "21"
-    }
-
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {
@@ -49,6 +50,16 @@ android {
             }
         }
     }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+configurations.all {
+    exclude(group = "androidx.browser", module = "browser")
 }
 
 dependencies {
@@ -62,7 +73,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.auth)
+    implementation(libs.ktor.client.android)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.gson)

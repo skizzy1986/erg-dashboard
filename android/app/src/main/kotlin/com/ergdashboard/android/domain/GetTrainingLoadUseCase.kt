@@ -24,19 +24,19 @@ class GetTrainingLoadUseCase {
     companion object {
         private val CTL_K = exp(-1.0 / 42)
         private val ATL_K = exp(-1.0 / 7)
-        private val END_DATE = LocalDate.parse("2026-06-13")
     }
 
     operator fun invoke(tssData: List<TssInput>): List<TrainingLoadEntry> {
         val tssMap = tssData.associateBy { it.date }
         val start = LocalDate.parse(tssData.first().date)
+        val end = tssData.maxOf { LocalDate.parse(it.date) }
 
         val results = mutableListOf<TrainingLoadEntry>()
         var ctl = 0.0
         var atl = 0.0
         var current = start
 
-        while (!current.isAfter(END_DATE)) {
+        while (!current.isAfter(end)) {
             val key = current.toString()
             val input = tssMap[key]
             val tss = input?.tss ?: 0
