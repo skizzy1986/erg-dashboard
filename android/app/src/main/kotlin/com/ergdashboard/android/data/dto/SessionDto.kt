@@ -11,12 +11,12 @@ data class SessionDto(
     val date: String,
     val type: String,
     val label: String,
-    val duration: String,
-    val srpe: Int,
+    val duration: String? = null,
+    val srpe: Int? = null,
     @SerialName("avg_watts") val avgWatts: Int? = null,
     @SerialName("avg_hr") val avgHr: Int? = null,
     @SerialName("distance_m") val distanceM: Int? = null,
-    val status: String,
+    val status: String? = null,
 ) {
     fun toDomain(): Session? {
         if (status == "planned") return null
@@ -28,18 +28,20 @@ data class SessionDto(
             else -> SessionType.REST
         }
         val durationMin = parseToMinutes(duration)
-        val tss = ((durationMin / 60.0) * srpe * 10).roundToInt()
+        val effectiveSrpe = srpe ?: 0
+        val tss = ((durationMin / 60.0) * effectiveSrpe * 10).roundToInt()
         return Session(
             date = date,
             type = sessionType,
             label = label,
             durationMin = durationMin,
-            srpe = srpe,
+            srpe = effectiveSrpe,
             tss = tss,
         )
     }
 
-    private fun parseToMinutes(duration: String): Int {
+    private fun parseToMinutes(duration: String?): Int {
+        if (duration == null) return 0
         val parts = duration.split(":")
         return when (parts.size) {
             3 -> {
