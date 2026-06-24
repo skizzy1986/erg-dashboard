@@ -1,7 +1,7 @@
 ---
 id: WO-002
 title: Slack read-out — Vercel deploy + edge-function/cron notifications
-status: ready
+status: done
 author: coach
 created: 2026-06-22
 targets: [vercel-integration, slack-webhook, config]
