@@ -1,31 +1,31 @@
 // Concept2 PM5 BLE GATT service and characteristic UUIDs
 // Source: ergometer.js (github.com/tijmenvangulik/ergometer) + community docs
-const PM5_ROW_SERVICE       = "ce060030-43e5-11e4-916c-0800200c9a66";
-const ROWING_GENERAL_STATUS = "ce060031-43e5-11e4-916c-0800200c9a66";
-const WORKOUT_END_SUMMARY   = "ce060080-43e5-11e4-916c-0800200c9a66";
+const PM5_ROW_SERVICE = 'ce060030-43e5-11e4-916c-0800200c9a66';
+const ROWING_GENERAL_STATUS = 'ce060031-43e5-11e4-916c-0800200c9a66';
+const WORKOUT_END_SUMMARY = 'ce060080-43e5-11e4-916c-0800200c9a66';
 
 // Workout state values broadcast in byte 6 of the status packet
 export const WorkoutState = {
-  IDLE:     0,
-  ACTIVE:   1,
-  PAUSED:   2,
+  IDLE: 0,
+  ACTIVE: 1,
+  PAUSED: 2,
   FINISHED: 3,
 };
 
 // Convert 500m split time (raw 0.01s units) to "m:ss.t" string
 export function parsePace(rawValue) {
-  if (!rawValue || rawValue === 0) return "--:--";
+  if (!rawValue || rawValue === 0) return '--:--';
   const totalSecs = rawValue / 100;
   const m = Math.floor(totalSecs / 60);
   const s = totalSecs % 60;
-  return `${m}:${s.toFixed(1).padStart(4, "0")}`;
+  return `${m}:${s.toFixed(1).padStart(4, '0')}`;
 }
 
 // Format elapsed seconds as "mm:ss"
 export function formatElapsed(totalSecs) {
   const m = Math.floor(totalSecs / 60);
   const s = Math.floor(totalSecs % 60);
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 // Parse the Rowing General Status notification packet (19 bytes, little-endian)
@@ -38,33 +38,32 @@ export function formatElapsed(totalSecs) {
 //   13–14 power (watts, uint16)
 //   15–16 calories (uint16)
 export function parseRowingStatus(dataView) {
-  const elapsed = (
-    dataView.getUint8(0) |
-    (dataView.getUint8(1) << 8) |
-    (dataView.getUint8(2) << 16)
-  ) / 100;
+  const elapsed =
+    (dataView.getUint8(0) |
+      (dataView.getUint8(1) << 8) |
+      (dataView.getUint8(2) << 16)) /
+    100;
 
-  const distRaw = (
+  const distRaw =
     dataView.getUint8(3) |
     (dataView.getUint8(4) << 8) |
-    (dataView.getUint8(5) << 16)
-  );
+    (dataView.getUint8(5) << 16);
   const distance = distRaw / 10;
 
   const workoutState = dataView.getUint8(6);
-  const strokeRate   = dataView.getUint8(9);
-  const paceRaw      = dataView.getUint16(10, true);
-  const watts        = dataView.getUint16(13, true);
-  const calories     = dataView.getUint16(15, true);
+  const strokeRate = dataView.getUint8(9);
+  const paceRaw = dataView.getUint16(10, true);
+  const watts = dataView.getUint16(13, true);
+  const calories = dataView.getUint16(15, true);
 
   return {
-    elapsedTime:  elapsed,
-    elapsedStr:   formatElapsed(elapsed),
-    distance:     Math.round(distance),
+    elapsedTime: elapsed,
+    elapsedStr: formatElapsed(elapsed),
+    distance: Math.round(distance),
     workoutState,
     strokeRate,
-    pace500:      paceRaw,
-    paceStr:      parsePace(paceRaw),
+    pace500: paceRaw,
+    paceStr: parsePace(paceRaw),
     watts,
     calories,
   };
@@ -74,7 +73,9 @@ export function parseRowingStatus(dataView) {
 // Returns { device, chars: { rowingStatus, workoutSummary } }
 export async function connectToPM5() {
   if (!navigator.bluetooth) {
-    throw new Error("Web Bluetooth is not supported in this browser. Use Chrome or Edge.");
+    throw new Error(
+      'Web Bluetooth is not supported in this browser. Use Chrome or Edge.'
+    );
   }
 
   const device = await navigator.bluetooth.requestDevice({
@@ -82,7 +83,7 @@ export async function connectToPM5() {
     optionalServices: [PM5_ROW_SERVICE],
   });
 
-  const server  = await device.gatt.connect();
+  const server = await device.gatt.connect();
   const service = await server.getPrimaryService(PM5_ROW_SERVICE);
 
   const [rowingStatus, workoutSummary] = await Promise.all([
@@ -97,7 +98,7 @@ export async function connectToPM5() {
 // callback receives a parsed metrics object on each update
 export async function subscribeToRowingStatus(characteristic, callback) {
   await characteristic.startNotifications();
-  characteristic.addEventListener("characteristicvaluechanged", (e) => {
+  characteristic.addEventListener('characteristicvaluechanged', (e) => {
     callback(parseRowingStatus(e.target.value));
   });
 }
@@ -105,10 +106,11 @@ export async function subscribeToRowingStatus(characteristic, callback) {
 // Subscribe to workout end summary (fires once when session completes)
 export async function subscribeToWorkoutEnd(characteristic, callback) {
   await characteristic.startNotifications();
-  characteristic.addEventListener("characteristicvaluechanged", (e) => {
+  characteristic.addEventListener('characteristicvaluechanged', (e) => {
     // Summary packet: parse distance and time from first 6 bytes (same layout)
     const dv = e.target.value;
-    const distRaw = dv.getUint8(3) | (dv.getUint8(4) << 8) | (dv.getUint8(5) << 16);
+    const distRaw =
+      dv.getUint8(3) | (dv.getUint8(4) << 8) | (dv.getUint8(5) << 16);
     callback({
       totalDistance: Math.round(distRaw / 10),
       rawPacket: dv,
