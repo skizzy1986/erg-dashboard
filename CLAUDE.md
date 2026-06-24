@@ -202,6 +202,23 @@ library documentation. Use it before WebSearch for any library in the stack.
 library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
 vite-plugin-pwa).
 
+## Cowork Change Procedure
+
+Changes made outside the Claude Code factory (Cowork sessions, manual edits,
+work-order housekeeping, edge-function updates) follow the same PR workflow:
+
+1. **Branch** — `git checkout -b <type>/<short-slug>`
+   - Types: `housekeeping/`, `config/`, `fix/`, `feature/`
+2. **Commit** — stage only the relevant files; write a clear message
+3. **Push** — `git push origin <branch>`
+4. **PR** — open on GitHub; Vercel preview deploys automatically
+5. **CI gates** — all three checks must pass (Lint, Test, Build)
+6. **Merge** — squash or merge commit; delete the branch
+
+**Monitoring:** CI results, Vercel deploys, and edge-function runs all post
+to `#build` in Slack. Check `#build` to confirm a change landed correctly
+without needing to prompt Coach.
+
 ## Safety Constraints
 
 - Never push directly to main — always use feature branches; branch protection enforces this
