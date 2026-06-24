@@ -70,7 +70,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.supabase.postgrest)
-    implementation(libs.supabase.auth)
+    implementation(libs.supabase.auth) {
+        exclude(group = "androidx.browser")
+    }
     implementation(libs.ktor.client.android)
     implementation(libs.kotlinx.serialization.json)
 
