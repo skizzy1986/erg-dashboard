@@ -1,0 +1,158 @@
+{
+  "generated": "2026-06-24T13:44:52.745Z",
+  "scenarios": [
+    {
+      "description": "single day, 100 TSS from zero",
+      "input": [
+        {
+          "date": "2026-06-13",
+          "tss": 100,
+          "note": ""
+        }
+      ],
+      "expected": [
+        {
+          "date": "06/13",
+          "ctl": 2.4,
+          "atl": 13.3,
+          "tsb": -11,
+          "tss": 100,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "description": "three consecutive days, equal TSS",
+      "input": [
+        {
+          "date": "2026-06-11",
+          "tss": 80,
+          "note": ""
+        },
+        {
+          "date": "2026-06-12",
+          "tss": 80,
+          "note": ""
+        },
+        {
+          "date": "2026-06-13",
+          "tss": 80,
+          "note": ""
+        }
+      ],
+      "expected": [
+        {
+          "date": "06/11",
+          "ctl": 1.9,
+          "atl": 10.6,
+          "tsb": -8.8,
+          "tss": 80,
+          "note": ""
+        },
+        {
+          "date": "06/12",
+          "ctl": 3.7,
+          "atl": 19.9,
+          "tsb": -16.2,
+          "tss": 80,
+          "note": ""
+        },
+        {
+          "date": "06/13",
+          "ctl": 5.5,
+          "atl": 27.9,
+          "tsb": -22.4,
+          "tss": 80,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "description": "rest day between two efforts",
+      "input": [
+        {
+          "date": "2026-06-11",
+          "tss": 100,
+          "note": ""
+        },
+        {
+          "date": "2026-06-13",
+          "tss": 100,
+          "note": ""
+        }
+      ],
+      "expected": [
+        {
+          "date": "06/11",
+          "ctl": 2.4,
+          "atl": 13.3,
+          "tsb": -11,
+          "tss": 100,
+          "note": ""
+        },
+        {
+          "date": "06/12",
+          "ctl": 2.3,
+          "atl": 11.5,
+          "tsb": -9.2,
+          "tss": 0,
+          "note": ""
+        },
+        {
+          "date": "06/13",
+          "ctl": 4.6,
+          "atl": 23.3,
+          "tsb": -18.7,
+          "tss": 100,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "description": "descending TSS over three days",
+      "input": [
+        {
+          "date": "2026-06-11",
+          "tss": 150,
+          "note": ""
+        },
+        {
+          "date": "2026-06-12",
+          "tss": 100,
+          "note": ""
+        },
+        {
+          "date": "2026-06-13",
+          "tss": 50,
+          "note": ""
+        }
+      ],
+      "expected": [
+        {
+          "date": "06/11",
+          "ctl": 3.5,
+          "atl": 20,
+          "tsb": -16.4,
+          "tss": 150,
+          "note": ""
+        },
+        {
+          "date": "06/12",
+          "ctl": 5.8,
+          "atl": 30.6,
+          "tsb": -24.8,
+          "tss": 100,
+          "note": ""
+        },
+        {
+          "date": "06/13",
+          "ctl": 6.8,
+          "atl": 33.2,
+          "tsb": -26.4,
+          "tss": 50,
+          "note": ""
+        }
+      ]
+    }
+  ]
+}
