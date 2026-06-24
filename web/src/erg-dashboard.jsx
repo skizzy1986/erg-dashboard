@@ -14,6 +14,9 @@ import StrengthLogger from './StrengthLogger.jsx';
 import ErgLiveView from './views/ErgLiveView.jsx';
 import WorkoutItem from './components/WorkoutItem.jsx';
 import LogEntry from './components/LogEntry.jsx';
+import ErgTooltip from './components/ErgTooltip.jsx';
+import StrengthTooltip from './components/StrengthTooltip.jsx';
+import LoadTooltip from './components/LoadTooltip.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
 import {
   SRPE_GUIDE,
@@ -1584,13 +1587,6 @@ const ANNUAL_ARC = [
 // effect (Wilson et al. 2012) while maximising force transfer to
 // rowing drive & pedal stroke. Pump work isolated to low-cost muscles.
 
-// ── UTILITIES ─────────────────────────────────────────────────
-function fmtPace(secs) {
-  const m = Math.floor(secs / 60);
-  const s = (secs % 60).toFixed(1).padStart(4, '0');
-  return `${m}:${s}`;
-}
-
 // ── ROSTER AUTO-SWITCH — home vs FIFO by date ─────────────────
 // FIFO is 1wk-on/1wk-off. Anchor on a KNOWN boundary: Scott flies
 // out Tue 2026-06-23 = FIFO week starts. From there, alternate every
@@ -1788,70 +1784,6 @@ function daySessions(day) {
 }
 
 // ── CUSTOM CHART TOOLTIP ──────────────────────────────────────
-function ErgTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div
-      style={{
-        background: '#2a2a48',
-        border: '1px solid #4a4a68',
-        borderRadius: 6,
-        padding: '10px 12px',
-        fontSize: 11,
-        fontFamily: "'DM Mono',monospace",
-      }}
-    >
-      <div
-        style={{
-          color: '#7e7e9a',
-          marginBottom: 4,
-          fontSize: 9,
-          letterSpacing: 2,
-        }}
-      >
-        {d.date} · {d.dist}
-      </div>
-      <div style={{ color: '#00d4ff', fontWeight: 700, fontSize: 14 }}>
-        {d.watts}W<span style={{ fontSize: 10, color: '#7e7e9a' }}> avg</span>
-      </div>
-      <div style={{ color: '#888', fontSize: 10, marginTop: 2 }}>
-        {fmtPace(d.pace)}/500m{d.hardPush ? ' · hard push' : ' · Z2'}
-      </div>
-    </div>
-  );
-}
-
-function StrengthTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div
-      style={{
-        background: '#2a2a48',
-        border: '1px solid #4a4a68',
-        borderRadius: 6,
-        padding: '10px 12px',
-        fontSize: 11,
-        fontFamily: "'DM Mono',monospace",
-      }}
-    >
-      <div
-        style={{
-          color: '#7e7e9a',
-          marginBottom: 4,
-          fontSize: 9,
-          letterSpacing: 2,
-        }}
-      >
-        {d.date}
-      </div>
-      <div style={{ color: payload[0].stroke, fontWeight: 700, fontSize: 14 }}>
-        {d.e1rm}kg<span style={{ fontSize: 10, color: '#7e7e9a' }}> e1RM</span>
-      </div>
-    </div>
-  );
-}
 
 // ── TRAINING LOAD DATA ────────────────────────────────────────
 // TSS per day. Erg: (duration_sec/3600) × (avg_watts/FTP)² × 100
@@ -2090,73 +2022,6 @@ function calcReadiness(day, tsb) {
   const color = score >= 75 ? '#34d399' : score >= 50 ? '#ffd700' : '#ff2d55';
   const partial = day.hrv == null || day.sleep == null;
   return { score, status, color, partial };
-}
-
-function LoadTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  const tsbColor =
-    d.tsb > 10
-      ? '#34d399'
-      : d.tsb > -10
-        ? '#ffd700'
-        : d.tsb > -30
-          ? '#ff6b35'
-          : '#ff2d55';
-  return (
-    <div
-      style={{
-        background: '#2a2a48',
-        border: '1px solid #4a4a68',
-        borderRadius: 6,
-        padding: '10px 12px',
-        fontSize: 11,
-        fontFamily: "'DM Mono',monospace",
-        minWidth: 140,
-      }}
-    >
-      <div
-        style={{
-          color: '#7e7e9a',
-          marginBottom: 6,
-          fontSize: 9,
-          letterSpacing: 2,
-        }}
-      >
-        {d.date}
-        {d.note ? ` · ${d.note}` : ''}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <div>
-          <span style={{ color: '#00d4ff' }}>CTL </span>
-          <span style={{ color: '#fff', fontWeight: 700 }}>{d.ctl}</span>
-        </div>
-        <div>
-          <span style={{ color: '#ff6b35' }}>ATL </span>
-          <span style={{ color: '#fff', fontWeight: 700 }}>{d.atl}</span>
-        </div>
-        <div>
-          <span style={{ color: tsbColor }}>TSB </span>
-          <span style={{ color: tsbColor, fontWeight: 700 }}>
-            {d.tsb > 0 ? '+' : ''}
-            {d.tsb}
-          </span>
-        </div>
-        {d.tss > 0 && (
-          <div
-            style={{
-              borderTop: '1px solid #4a4a68',
-              paddingTop: 3,
-              marginTop: 3,
-            }}
-          >
-            <span style={{ color: '#7e7e9a' }}>TSS </span>
-            <span style={{ color: '#aaaacc' }}>{d.tss}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 // ── LOG SESSION FORM — writes a strength session to Supabase ───
