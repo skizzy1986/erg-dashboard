@@ -1,4 +1,4 @@
-import React from "react";
+import { memo } from "react";
 
 const SIZES = {
   large:  { value: 52, label: 9,  unit: 11, gap: 2 },
@@ -6,7 +6,7 @@ const SIZES = {
   small:  { value: 22, label: 8,  unit: 9,  gap: 1 },
 };
 
-export default function LiveMetric({ label, value, unit, accent = "#00d4ff", size = "normal", dimmed = false }) {
+export default memo(function LiveMetric({ label, value, unit, accent = "#00d4ff", size = "normal", dimmed = false }) {
   const s = SIZES[size] || SIZES.normal;
   return (
     <div style={{
@@ -26,4 +26,4 @@ export default function LiveMetric({ label, value, unit, accent = "#00d4ff", siz
       )}
     </div>
   );
-}
+});

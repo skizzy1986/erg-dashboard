@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import { memo, useState } from "react";
 
 const C = {
   panel: "#1a1a2e", border: "#4a4a68", accent: "#ffd700",
   text: "#e8e8f0", muted: "#7e7e9a",
 };
 
-export default function WorkoutTarget({ session }) {
+export default memo(function WorkoutTarget({ session }) {
   const [open, setOpen] = useState(false);
 
   if (!session) {
@@ -57,4 +57,4 @@ export default function WorkoutTarget({ session }) {
       )}
     </div>
   );
-}
+});

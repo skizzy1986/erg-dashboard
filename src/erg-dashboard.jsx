@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useMemo, Component, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, memo, Component, lazy, Suspense } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { supabase } from "./supabaseClient.js";
+import { useSessions, useRefreshSessions } from "./hooks/useSessions.js";
 import { C, ICON, LIFT_COLOR } from "./constants/palette.js";
 import { CRITICAL_POWER, HR_ZONES, EST_MHR, SRPE_GUIDE, REP_SCHEMES, DAILY_TSS, CALIBRATION_STATUS, HR130_POWER, HR130_PROJECTION, strengthTrend, ergTrend, RHR_BASELINE, HRV_BASELINE, NUTRITION_TARGETS, LIPID_REF, HORMONE_REF } from "./constants/training.js";
 import { MICROCYCLE, SEASON, SEASON_2, EVENT_LADDER, PHASE_CONTEXT, ROSTER_ANCHOR, SESSION_OVERRIDES, DEFICIT_PROGRAM, FUELLING, NUTRITION_PRINCIPLES, TECHNOGYM_CONVERSION, DAILY_ROUTINE } from "./constants/program.js";
@@ -57,6 +58,11 @@ class ErrorBoundary extends Component {
 
 
 const HR130_ANALYSIS = analyzeBarometer(HR130_POWER);
+
+// Training load is computed once at module load — DAILY_TSS is a static constant
+const LOAD_DATA  = calcTrainingLoad(DAILY_TSS);
+const LOAD_LATEST  = LOAD_DATA[LOAD_DATA.length - 1];
+const LOAD_TSB_COLOR = LOAD_LATEST.tsb > 10 ? "#34d399" : LOAD_LATEST.tsb > -10 ? "#ffd700" : LOAD_LATEST.tsb > -30 ? "#ff6b35" : "#ff2d55";
 
 
 
@@ -275,7 +281,7 @@ const MOBILITY_STREAK_NOTE = "Consistency is the metric here, not intensity. The
 
 
 // ── LOG ENTRY COMPONENT ───────────────────────────────────────
-function LogEntry({ entry, done = false }) {
+const LogEntry = memo(function LogEntry({ entry, done = false }) {
   const [open, setOpen] = useState(false);
   const color = C[entry.type] || "#888";
   const isErg = !!entry._isErg;
@@ -379,7 +385,7 @@ function LogEntry({ entry, done = false }) {
       )}
     </div>
   );
-}
+});
 
 // ── SHARED WORKOUT ITEM ───────────────────────────────────────
 // ONE component for every workout display (calendar, microcycle,
@@ -388,7 +394,7 @@ function LogEntry({ entry, done = false }) {
 // optional left rail (date or day label). Single source of truth
 // for how a workout looks and behaves everywhere.
 // (showRail) so they read as a grouped pair.
-function WorkoutItem({ session, rail, highlight, showRail = true }) {
+const WorkoutItem = memo(function WorkoutItem({ session, rail, highlight, showRail = true }) {
   const [open, setOpen] = useState(false);
   const color = session ? workoutAccent(session.label) : "#3a3a4a";
   const hasDetail = session && (session.note || session.fuel || session.meal);
@@ -441,10 +447,10 @@ function WorkoutItem({ session, rail, highlight, showRail = true }) {
       )}
     </div>
   );
-}
+});
 
 // ── CUSTOM CHART TOOLTIP ──────────────────────────────────────
-function ErgTooltip({ active, payload }) {
+const ErgTooltip = memo(function ErgTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
@@ -457,9 +463,9 @@ function ErgTooltip({ active, payload }) {
       <div style={{ color:"#888", fontSize:10, marginTop:2 }}>{fmtPace(d.pace)}/500m{d.hardPush ? " · hard push" : " · Z2"}</div>
     </div>
   );
-}
+});
 
-function StrengthTooltip({ active, payload }) {
+const StrengthTooltip = memo(function StrengthTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
@@ -471,10 +477,9 @@ function StrengthTooltip({ active, payload }) {
       <div style={{ color: payload[0].stroke, fontWeight:700, fontSize:14 }}>{d.e1rm}kg<span style={{fontSize:10,color:"#7e7e9a"}}> e1RM</span></div>
     </div>
   );
-}
+});
 
-
-function LoadTooltip({ active, payload, label }) {
+const LoadTooltip = memo(function LoadTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   const tsbColor = d.tsb > 10 ? "#34d399" : d.tsb > -10 ? "#ffd700" : d.tsb > -30 ? "#ff6b35" : "#ff2d55";
@@ -492,7 +497,7 @@ function LoadTooltip({ active, payload, label }) {
       </div>
     </div>
   );
-}
+});
 
 // ── LOG SESSION FORM — writes a strength session to Supabase ───
 // Proof-of-concept write path. Strength only for now (erg pulls from
@@ -654,68 +659,45 @@ export default function App() {
   const containerMax = isWide ? 1100 : 680;
 
   // ── DATABASE SESSIONS (Supabase) — MERGED with hardcoded history ─
-  // Fetch sessions saved to the database on load. These MERGE with the
-  // hardcoded `sessionLog` seed: db sessions first (newest), then the
-  // baked-in history. The app never loses the seed history even if the
-  // DB is empty or unreachable — it just shows the seed alone.
-  const [dbSessions, setDbSessions] = useState([]);
-  const [dbStatus, setDbStatus]     = useState("loading"); // loading | ok | error
-  const fetchSessions = () => {
-    supabase
-      .from("sessions")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) { setDbStatus("error"); return; }
-        const mapped = (data || [])
-          .filter(r => r.type !== "Test")
-          .map(r => {
-            const raw = (r.type || "").toLowerCase();
-            return {
-              date: r.date, type: normType(r.type, r.label), label: r.label,
-              duration: r.duration, srpe: r.srpe, prs: r.prs,
-              exercises: r.exercises || undefined,
-              coachNote: r.coach_note || undefined,
-              // status drives planned-vs-actual reconciliation. null legacy rows
-              // are treated as actual (completed history) everywhere downstream.
-              status: r.status || null,
-              // flat erg metrics (the `splits` field was removed from the schema)
-              distance_m: r.distance_m, avg_watts: r.avg_watts, avg_hr: r.avg_hr,
-              // raw-type flags survive normType so the renderer can branch reliably
-              _isErg: raw === "erg", _isCycling: raw === "cycling" || raw === "bike" || raw === "ride",
-              _fromDb: true, _id: r.id,
-            };
-          });
-        setDbSessions(mapped);
-        setDbStatus("ok");
-      });
-  };
-  useEffect(() => { fetchSessions(); }, []);
+  // TanStack Query caches and deduplicates the fetch; seed history ensures
+  // the app never shows an empty state even when the DB is unreachable.
+  const { data: dbSessions = [], status: dbStatus } = useSessions();
+  const fetchSessions = useRefreshSessions(); // invalidates the cache → refetch
+
   // The merged list every display + helper uses. DB sessions are newest,
   // so they go first; the hardcoded seed follows.
-  const allSessions = [...dbSessions, ...sessionLog];
+  const allSessions = useMemo(() => [...dbSessions, ...sessionLog], [dbSessions]);
 
   // ── PLANNED vs LOGGED SPLIT (reconciliation) ──────────────────
   // Planned rows are forward-looking prescriptions and must NOT appear in the
   // completed Log, the calendar's done-state, recent sessions, or analytics.
   // null-status legacy rows count as actual/completed history.
-  const loggedSessions  = allSessions.filter(e => e.status !== "planned");
-  const plannedSessions = allSessions.filter(e => e.status === "planned");
+  const { loggedSessions, plannedSessions } = useMemo(() => ({
+    loggedSessions:  allSessions.filter(e => e.status !== "planned"),
+    plannedSessions: allSessions.filter(e => e.status === "planned"),
+  }), [allSessions]);
+
   // A planned row is reconciled ("done") once an actual exists for the same
   // date + type. v1 matches on normalized type + date (a planned_id link can
   // come later). Keyed off loggedSessions only.
-  const loggedKeys = new Set(loggedSessions.map(e => `${e.date}|${e.type}`));
+  const loggedKeys = useMemo(
+    () => new Set(loggedSessions.map(e => `${e.date}|${e.type}`)),
+    [loggedSessions]
+  );
 
-  const loadData       = calcTrainingLoad(DAILY_TSS);
-  const latest         = loadData[loadData.length - 1];
-  const tsbColor       = latest.tsb > 10 ? "#34d399" : latest.tsb > -10 ? "#ffd700" : latest.tsb > -30 ? "#ff6b35" : "#ff2d55";
+  // Training load data is module-scope (static input) — alias for render use
+  const loadData  = LOAD_DATA;
+  const latest    = LOAD_LATEST;
+  const tsbColor  = LOAD_TSB_COLOR;
 
-  const ergSessions    = loggedSessions.filter(e => e._isErg);
-  const strengthSessions = loggedSessions.filter(e => e.exercises);
-  const latestErg      = ergSessions[0]; // dbSessions are newest-first
+  const { ergSessions, strengthSessions, latestErg, totalSessions } = useMemo(() => {
+    const ergSessions      = loggedSessions.filter(e => e._isErg);
+    const strengthSessions = loggedSessions.filter(e => e.exercises);
+    return { ergSessions, strengthSessions, latestErg: ergSessions[0], totalSessions: loggedSessions.length };
+  }, [loggedSessions]);
+
   const totalErgDist   = 55000; // metres, from logged sessions
   const latestSquat    = strengthTrend["Back Squat"].slice(-1)[0];
-  const totalSessions  = loggedSessions.length;
 
   const liftColor = LIFT_COLOR[activeLift] || "#00d4ff";
 
