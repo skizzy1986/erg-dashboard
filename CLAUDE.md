@@ -184,6 +184,24 @@ code-reviewer    →  APPROVE / REQUEST CHANGES verdict
 | `code-reviewer` | Review a diff before committing |
 | `refactor-agent` | Extract one module from erg-dashboard.jsx |
 
+## MCP Servers
+
+### Context7
+
+Context7 is connected in every session and provides current, version-specific
+library documentation. Use it before WebSearch for any library in the stack.
+
+**Two-step lookup — always in this order:**
+1. `resolve-library-id` (params: `libraryName`, `query`) → returns a `/org/repo` ID
+2. `query-docs` (params: `libraryId`, `query`, optional `tokens`) → returns docs
+
+**Use Context7 for:** React, Vite, Vitest, `@supabase/supabase-js`,
+`@testing-library/react`, Recharts, `@tanstack/react-query`, ESLint, Prettier.
+
+**Fall back to WebSearch when:** `resolve-library-id` returns no results, or the
+library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
+vite-plugin-pwa).
+
 ## Safety Constraints
 
 - Never push directly to main — always use feature branches; branch protection enforces this

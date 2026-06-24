@@ -18,6 +18,10 @@ features from technical specs precisely — no more, no less.
 3. Read every file you will modify
 4. Search src/utils/ and src/hooks/ for existing utilities you can reuse
 5. Confirm the target file paths match the architecture in CLAUDE.md
+6. For any Supabase, Vitest, or React Query method you plan to use, verify the
+   current API signature with Context7 — call `resolve-library-id` then
+   `query-docs`. Do not rely on training data for method names and parameter
+   shapes; these APIs evolve between major versions.
 
 ## Architecture rules (enforce strictly)
 

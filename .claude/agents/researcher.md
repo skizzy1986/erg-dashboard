@@ -25,7 +25,20 @@ Find the official docs. Report:
 
 ## For library research
 
-Find the latest stable version. Report:
+**Always check Context7 first** before falling back to WebSearch. Context7
+provides current, version-specific docs for the libraries in this stack.
+
+Two-step lookup:
+1. Call `resolve-library-id` with `libraryName` and a `query` describing what you need
+2. Call `query-docs` with the returned `libraryId` and a focused `query`
+
+Use Context7 for: React, Vite, Vitest, `@supabase/supabase-js`,
+`@testing-library/react`, Recharts, `@tanstack/react-query`, ESLint, Prettier.
+
+Fall back to WebSearch when `resolve-library-id` returns no match, or for
+tooling utilities (Husky, lint-staged, mathjs) unlikely to be indexed.
+
+After checking Context7, report:
 - Bundle size impact (this app uses Vite — tree-shaking matters)
 - Whether it works with React 18 and Vite
 - Code examples matching this project's patterns (inline styles, functional components, hooks)
