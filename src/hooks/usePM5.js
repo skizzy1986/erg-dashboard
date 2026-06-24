@@ -1,14 +1,14 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from 'react';
 import {
   connectToPM5,
   subscribeToRowingStatus,
   subscribeToWorkoutEnd,
   disconnectPM5,
   WorkoutState,
-} from "../services/pm5Bluetooth";
+} from '../services/pm5Bluetooth';
 
 export function usePM5() {
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState('idle');
   // idle | connecting | connected | rowing | finished | error
   const [metrics, setMetrics] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -19,7 +19,7 @@ export function usePM5() {
   const peakMetrics = useRef({ maxWatts: 0, strokeCount: 0, samples: [] });
 
   const connect = useCallback(async () => {
-    setStatus("connecting");
+    setStatus('connecting');
     setError(null);
     setSummary(null);
     peakMetrics.current = { maxWatts: 0, strokeCount: 0, samples: [] };
@@ -28,15 +28,15 @@ export function usePM5() {
       const { device, chars } = await connectToPM5();
       deviceRef.current = device;
 
-      device.addEventListener("gattserverdisconnected", () => {
-        setStatus("idle");
+      device.addEventListener('gattserverdisconnected', () => {
+        setStatus('idle');
         setMetrics(null);
       });
 
       await subscribeToRowingStatus(chars.rowingStatus, (m) => {
         setMetrics(m);
         if (m.workoutState === WorkoutState.ACTIVE) {
-          setStatus("rowing");
+          setStatus('rowing');
           if (m.watts > peakMetrics.current.maxWatts) {
             peakMetrics.current.maxWatts = m.watts;
           }
@@ -51,10 +51,10 @@ export function usePM5() {
         buildSummary(endData);
       });
 
-      setStatus("connected");
+      setStatus('connected');
     } catch (err) {
       setError(err.message);
-      setStatus("error");
+      setStatus('error');
     }
   }, []);
 
@@ -67,26 +67,28 @@ export function usePM5() {
       ? Math.round(samples.reduce((a, s) => a + s.pace500, 0) / samples.length)
       : 0;
     const avgSpm = samples.length
-      ? Math.round(samples.reduce((a, s) => a + s.strokeRate, 0) / samples.length)
+      ? Math.round(
+          samples.reduce((a, s) => a + s.strokeRate, 0) / samples.length
+        )
       : 0;
 
     setSummary({
-      distance:    finalMetrics.distance || finalMetrics.totalDistance || 0,
+      distance: finalMetrics.distance || finalMetrics.totalDistance || 0,
       elapsedTime: finalMetrics.elapsedTime || 0,
-      elapsedStr:  finalMetrics.elapsedStr || "--:--",
+      elapsedStr: finalMetrics.elapsedStr || '--:--',
       avgWatts,
       avgPace,
       avgSpm,
-      maxWatts:    peakMetrics.current.maxWatts,
-      calories:    finalMetrics.calories || 0,
+      maxWatts: peakMetrics.current.maxWatts,
+      calories: finalMetrics.calories || 0,
     });
-    setStatus("finished");
+    setStatus('finished');
   }
 
   const disconnect = useCallback(() => {
     disconnectPM5(deviceRef.current);
     deviceRef.current = null;
-    setStatus("idle");
+    setStatus('idle');
     setMetrics(null);
   }, []);
 

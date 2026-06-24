@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
+import { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
-const QUEUE_KEY = "erg_pending_sessions";
+const QUEUE_KEY = 'erg_pending_sessions';
 
 function readQueue() {
   try {
-    return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
   } catch {
     return [];
   }
@@ -27,7 +27,7 @@ async function drainQueue() {
   const failed = [];
   for (const session of q) {
     const { _queuedAt, ...row } = session;
-    const { error } = await supabase.from("sessions").insert(row);
+    const { error } = await supabase.from('sessions').insert(row);
     if (error) failed.push(session);
   }
   writeQueue(failed);
@@ -44,9 +44,9 @@ export function useOfflineQueue() {
         if (synced > 0) setPending(readQueue().length);
       }
     };
-    window.addEventListener("online", sync);
+    window.addEventListener('online', sync);
     sync();
-    return () => window.removeEventListener("online", sync);
+    return () => window.removeEventListener('online', sync);
   }, []);
 
   function addToQueue(session) {

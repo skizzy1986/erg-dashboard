@@ -18,6 +18,11 @@ after features are built, then run them and report the results.
 - Test files: `src/**/__tests__/*.test.js` or `src/**/*.test.js`
 - Mock Supabase: `vi.mock('../supabaseClient', () => ({ supabase: { from: vi.fn() } }))`
 
+If the behaviour of `renderHook`, `waitFor`, `userEvent`, or a specific jest-dom
+matcher is in question, verify the current API via Context7 (`resolve-library-id`
+then `query-docs`) before writing the test — RTL and Vitest APIs evolve across
+major versions.
+
 ## Testing priorities (in order)
 
 1. **src/utils/ functions** — unit test every exported function. Pure functions
