@@ -62,7 +62,7 @@ export function useCoach() {
 
   const streamingRef = useRef('');
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], isSuccess: messagesReady } = useQuery({
     queryKey: ['coach_messages'],
     queryFn: async () => {
       const { data, error: err } = await supabase
@@ -80,6 +80,11 @@ export function useCoach() {
   const tssQuery = useTSSHistory();
   const vitals = useVitals();
   const sessions = useSessions();
+
+  const today = new Date().toISOString().split('T')[0];
+  const allSessions = sessions.data ?? [];
+  const todayPlanned =
+    allSessions.find((s) => s.status === 'planned' && s.date === today) ?? null;
 
   const setModel = (m) => {
     setModelState(m);
@@ -114,14 +119,9 @@ export function useCoach() {
       const loadData = tssData.length ? calcTrainingLoad(tssData) : [];
       const latestLoad = loadData[loadData.length - 1] ?? null;
 
-      const allSessions = sessions.data ?? [];
-      const today = new Date().toISOString().split('T')[0];
       const recentLogged = allSessions
         .filter((s) => s.status === 'logged')
         .slice(0, 5);
-      const todayPlanned =
-        allSessions.find((s) => s.status === 'planned' && s.date === today) ??
-        null;
 
       const context = buildTrainingContext(
         latestLoad,
@@ -245,6 +245,7 @@ export function useCoach() {
 
   return {
     messages,
+    messagesReady,
     streamingContent,
     isStreaming,
     error,
@@ -254,5 +255,6 @@ export function useCoach() {
     clearHistory,
     vitals,
     tssQuery,
+    todayPlanned,
   };
 }

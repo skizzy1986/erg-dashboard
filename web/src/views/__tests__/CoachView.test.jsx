@@ -1,10 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 
 // jsdom doesn't implement scrollIntoView — mock it globally
 beforeEach(() => {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 // Mock the useCoach hook so CoachView is testable in isolation
@@ -14,6 +18,8 @@ const mockClearHistory = vi.fn();
 
 const mockCoachState = {
   messages: [],
+  // messagesReady defaults to false so auto-brief doesn't fire in most tests
+  messagesReady: false,
   streamingContent: '',
   isStreaming: false,
   error: null,
@@ -23,6 +29,7 @@ const mockCoachState = {
   clearHistory: mockClearHistory,
   vitals: { latest: null, readinessScore: 0, readinessLabel: 'FATIGUED' },
   tssQuery: { data: [] },
+  todayPlanned: null,
 };
 
 vi.mock('../../hooks/useCoach.js', () => ({
@@ -40,10 +47,12 @@ function resetCoachState(overrides = {}) {
     mockCoachState,
     {
       messages: [],
+      messagesReady: false,
       streamingContent: '',
       isStreaming: false,
       error: null,
       model: 'sonnet',
+      todayPlanned: null,
     },
     overrides
   );
@@ -52,10 +61,13 @@ function resetCoachState(overrides = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   resetCoachState();
+  localStorage.clear();
 });
 
 describe('CoachView', () => {
   it('renders starter prompt chips when messages is empty', () => {
+    // Jul 14 2026 = home week (weekNum 3), CP test already past — static fallback chips render
+    vi.useFakeTimers({ now: new Date(2026, 6, 14) });
     render(<CoachView />);
     expect(screen.getByText("How's my training load looking?")).toBeTruthy();
     expect(screen.getByText('What should I focus on this week?')).toBeTruthy();
@@ -63,6 +75,8 @@ describe('CoachView', () => {
   });
 
   it('calls sendMessage when a starter chip is clicked', () => {
+    // Jul 14 ensures static fallback chips are present
+    vi.useFakeTimers({ now: new Date(2026, 6, 14) });
     render(<CoachView />);
     fireEvent.click(screen.getByText("How's my training load looking?"));
     expect(mockSendMessage).toHaveBeenCalledWith(
@@ -165,5 +179,80 @@ describe('CoachView', () => {
     render(<CoachView />);
     fireEvent.click(screen.getByRole('button', { name: 'CLEAR' }));
     expect(mockClearHistory).not.toHaveBeenCalled();
+  });
+
+  it('renders COACH label before assistant messages', () => {
+    resetCoachState({
+      messages: [{ role: 'assistant', content: 'Your TSB is on track.' }],
+    });
+    render(<CoachView />);
+    // "COACH" appears in both the tab header and the message label
+    expect(screen.getAllByText('COACH').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders session banner when todayPlanned is set and no messages', () => {
+    resetCoachState({
+      todayPlanned: {
+        type: 'Z2 Aerobic',
+        label: '60min UT1',
+        status: 'planned',
+      },
+    });
+    render(<CoachView />);
+    expect(screen.getByText('TODAY')).toBeTruthy();
+    expect(screen.getByText('Z2 Aerobic — 60min UT1')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'DISCUSS →' })).toBeTruthy();
+  });
+
+  it('hides session banner when messages exist', () => {
+    resetCoachState({
+      todayPlanned: {
+        type: 'Z2 Aerobic',
+        label: '60min UT1',
+        status: 'planned',
+      },
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+    render(<CoachView />);
+    expect(screen.queryByText('TODAY')).toBeNull();
+  });
+
+  it('DISCUSS button sends session discuss message', () => {
+    resetCoachState({
+      todayPlanned: {
+        type: 'Z2 Aerobic',
+        label: '60min UT1',
+        status: 'planned',
+      },
+    });
+    render(<CoachView />);
+    fireEvent.click(screen.getByRole('button', { name: 'DISCUSS →' }));
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      "Talk me through today's session"
+    );
+  });
+
+  it('auto-brief fires on first open of day when messages are empty', () => {
+    resetCoachState({ messagesReady: true, messages: [] });
+    render(<CoachView />);
+    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+    expect(mockSendMessage.mock.calls[0][0]).toMatch(/morning training brief/);
+  });
+
+  it('auto-brief does not fire twice on same day', () => {
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem('coach_brief_date', today);
+    resetCoachState({ messagesReady: true, messages: [] });
+    render(<CoachView />);
+    expect(mockSendMessage).not.toHaveBeenCalled();
+  });
+
+  it('auto-brief does not fire when messages already exist', () => {
+    resetCoachState({
+      messagesReady: true,
+      messages: [{ role: 'assistant', content: 'Ready to train.' }],
+    });
+    render(<CoachView />);
+    expect(mockSendMessage).not.toHaveBeenCalled();
   });
 });
