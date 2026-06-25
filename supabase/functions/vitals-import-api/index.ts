@@ -57,6 +57,7 @@ Deno.serve(async (req: Request) => {
     ["VITALS_USER_ID", userId],
     ["SUPABASE_URL", supaUrl],
     ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
+    ["CRON_SECRET", expected],
   ].filter(([, v]) => !v).map(([k]) => k);
   if (missing.length) return json({ error: "missing env", missing }, 500);
 
@@ -66,7 +67,7 @@ Deno.serve(async (req: Request) => {
     accessToken = await exchangeToken(clientId!, clientSecret!, refreshToken!);
   } catch (e) {
     await slack(`WO-005 FAIL · token exchange: ${String(e)}`);
-    return json({ error: "token exchange failed", detail: String(e) }, 502);
+    return json({ error: "token exchange failed" }, 502);
   }
 
   // 4. yesterday in Perth time (UTC+8): shift now by +8h, drop a day, use UTC getters
