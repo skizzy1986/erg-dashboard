@@ -483,7 +483,6 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
     const row = {
       date,
       type: 'erg',
-      user_id: user?.id,
       label: todaySession?.label ?? 'Erg Session',
       duration: Math.round((summary.elapsedTime || 0) / 60),
       srpe,
@@ -492,6 +491,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
       status: 'logged',
       source: 'bluetooth',
       exercises: notes ? [{ name: 'Notes', notes }] : [],
+      user_id: user?.id,
     };
 
     if (navigator.onLine) {

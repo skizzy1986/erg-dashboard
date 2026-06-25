@@ -24,9 +24,13 @@ export function enqueueSession(session) {
 async function drainQueue() {
   const q = readQueue();
   if (q.length === 0) return;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const failed = [];
   for (const session of q) {
-    const { _queuedAt, ...row } = session;
+    const { _queuedAt, ...rest } = session;
+    const row = { ...rest, user_id: rest.user_id ?? user?.id };
     const { error } = await supabase.from('sessions').insert(row);
     if (error) failed.push(session);
   }
