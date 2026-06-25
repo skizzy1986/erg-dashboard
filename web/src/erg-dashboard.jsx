@@ -12,6 +12,7 @@ import { std, mean } from 'mathjs';
 import { supabase } from './supabaseClient.js';
 import StrengthLogger from './StrengthLogger.jsx';
 import ErgLiveView from './views/ErgLiveView.jsx';
+import CoachView from './views/CoachView.jsx';
 import WorkoutItem from './components/WorkoutItem.jsx';
 import LogSessionForm from './components/LogSessionForm.jsx';
 import LogEntry from './components/LogEntry.jsx';
@@ -2247,6 +2248,7 @@ export default function App() {
             ['recovery', 'Recovery'],
             ['log', 'Log'],
             ['journal', 'Journal'],
+            ['coach', 'Coach'],
           ].map(([v, label]) => (
             <button
               key={v}
@@ -9705,6 +9707,8 @@ export default function App() {
               </div>
             </>
           )}
+          {/* ── COACH VIEW (Claude fitness coach chat) ── */}
+          {view === 'coach' && <CoachView />}
         </ErrorBoundary>
 
         <div
