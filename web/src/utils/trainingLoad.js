@@ -1,4 +1,4 @@
-export function calcTrainingLoad(tssData) {
+export function calcTrainingLoad(tssData, endDate) {
   const CTL_K = Math.exp(-1 / 42);
   const ATL_K = Math.exp(-1 / 7);
   const tssMap = {};
@@ -7,7 +7,10 @@ export function calcTrainingLoad(tssData) {
   });
 
   const start = new Date(tssData[0].date);
-  const end = new Date('2026-06-13');
+  const today = new Date().toISOString().split('T')[0];
+  const lastEntry = tssData[tssData.length - 1].date;
+  const resolvedEnd = endDate ?? (lastEntry > today ? lastEntry : today);
+  const end = new Date(resolvedEnd);
   const results = [];
   let ctl = 0,
     atl = 0;

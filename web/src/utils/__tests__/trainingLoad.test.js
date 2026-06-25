@@ -27,28 +27,40 @@ describe('calcTrainingLoad', () => {
 
   describe('date range', () => {
     it('first result date matches tssData start date (MM/DD)', () => {
-      const result = calcTrainingLoad(oneDay('2026-06-10'));
-      expect(result[0].date).toBe('06/10');
+      const today = new Date().toISOString().split('T')[0];
+      const result = calcTrainingLoad(oneDay(today));
+      const [mm, dd] = today.slice(5).split('-');
+      expect(result[0].date).toBe(`${mm}/${dd}`);
     });
 
-    it('last result date is always 06/13 (hardcoded end)', () => {
-      const result = calcTrainingLoad(oneDay('2026-06-10'));
-      expect(result[result.length - 1].date).toBe('06/13');
+    it('last result date is today when last entry is today', () => {
+      const today = new Date().toISOString().split('T')[0];
+      const result = calcTrainingLoad(oneDay(today));
+      const [mm, dd] = today.slice(5).split('-');
+      expect(result[result.length - 1].date).toBe(`${mm}/${dd}`);
     });
 
-    it('produces the correct number of days inclusive', () => {
-      // 2026-06-10 → 2026-06-13 = 4 days
-      const result = calcTrainingLoad(oneDay('2026-06-10'));
-      expect(result.length).toBe(4);
+    it('single-day input for today has length 1', () => {
+      const today = new Date().toISOString().split('T')[0];
+      expect(calcTrainingLoad(oneDay(today)).length).toBe(1);
     });
 
-    it('single-day input starting on the end date has length 1', () => {
-      expect(calcTrainingLoad(oneDay('2026-06-13')).length).toBe(1);
+    it('two consecutive days produce exactly 2 entries', () => {
+      const d1 = new Date();
+      d1.setDate(d1.getDate() - 1);
+      const yesterday = d1.toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      const result = calcTrainingLoad([
+        { date: yesterday, tss: 0, note: '' },
+        { date: today, tss: 0, note: '' },
+      ]);
+      expect(result.length).toBe(2);
     });
 
     it('formats dates as MM/DD', () => {
-      const result = calcTrainingLoad(oneDay('2026-06-01'));
-      expect(result[0].date).toBe('06/01');
+      const today = new Date().toISOString().split('T')[0];
+      const result = calcTrainingLoad(oneDay(today));
+      expect(result[0].date).toMatch(/^\d{2}\/\d{2}$/);
     });
   });
 

@@ -3,6 +3,7 @@ import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { DAILY_TSS } from '../../constants/tssData.js';
 import { useSessions } from '../../hooks/useSessions.js';
+import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 
 function tsbColor(tsb) {
   if (tsb > 10) return '#34d399';
@@ -26,8 +27,10 @@ function typeColor(type) {
 }
 
 export default function MobileAnalytics() {
-  const loadData = useMemo(() => calcTrainingLoad(DAILY_TSS), []);
+  const { data: tssHistory } = useTSSHistory();
   const { data: sessionsData } = useSessions();
+  const tssSource = tssHistory?.length ? tssHistory : DAILY_TSS;
+  const loadData = useMemo(() => calcTrainingLoad(tssSource), [tssSource]);
   const latest = loadData[loadData.length - 1];
 
   const weeklyData = useMemo(() => {

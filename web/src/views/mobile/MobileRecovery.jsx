@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useVitals } from '../../hooks/useVitals.js';
+import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { DAILY_TSS } from '../../constants/tssData.js';
 
@@ -14,8 +15,9 @@ const C = {
 
 export default function MobileRecovery() {
   const { isLoading, latest, readinessScore, readinessLabel } = useVitals();
-
-  const loadData = useMemo(() => calcTrainingLoad(DAILY_TSS), []);
+  const { data: tssHistory } = useTSSHistory();
+  const tssSource = tssHistory?.length ? tssHistory : DAILY_TSS;
+  const loadData = useMemo(() => calcTrainingLoad(tssSource), [tssSource]);
   const tsbValue = loadData[loadData.length - 1]?.tsb ?? 0;
 
   const todayStr = new Date().toLocaleDateString('en-GB', {
