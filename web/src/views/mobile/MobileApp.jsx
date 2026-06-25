@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import MobileAnalytics from './MobileAnalytics.jsx';
+import MobileSessionLog from './MobileSessionLog.jsx';
+import MobileStrength from './MobileStrength.jsx';
+import MobileRecovery from './MobileRecovery.jsx';
 import BottomTabBar from '../../components/mobile/BottomTabBar.jsx';
 import ErgLiveView from '../ErgLiveView.jsx';
 
@@ -30,11 +33,11 @@ export default function MobileApp() {
   } else if (activeTab === 'erg') {
     content = <ErgLiveView />;
   } else if (activeTab === 'log') {
-    content = <PlaceholderCard message="Session Log — coming soon" />;
+    content = <MobileSessionLog />;
   } else if (activeTab === 'strength') {
-    content = <PlaceholderCard message="Strength Logger — coming soon" />;
+    content = <MobileStrength />;
   } else {
-    content = <PlaceholderCard message="Recovery — coming soon" />;
+    content = <MobileRecovery />;
   }
 
   return (

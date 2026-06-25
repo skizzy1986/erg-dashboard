@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { DAILY_TSS } from '../../constants/tssData.js';
+import { useSessions } from '../../hooks/useSessions.js';
 
 function tsbColor(tsb) {
   if (tsb > 10) return '#34d399';
@@ -17,9 +18,28 @@ function tsbSignal(tsb) {
   return 'High fatigue — rest critical';
 }
 
+function typeColor(type) {
+  const t = (type ?? '').toLowerCase();
+  if (t.includes('erg') || t.includes('row')) return '#00d4ff';
+  if (t.includes('strength')) return '#a78bfa';
+  return '#7e7e9a';
+}
+
 export default function MobileAnalytics() {
   const loadData = useMemo(() => calcTrainingLoad(DAILY_TSS), []);
+  const { data: sessionsData } = useSessions();
   const latest = loadData[loadData.length - 1];
+
+  const weeklyData = useMemo(() => {
+    const buckets = [];
+    const slice = loadData.slice(-56);
+    for (let i = 0; i < slice.length; i += 7) {
+      const week = slice.slice(i, i + 7);
+      const weeklyTss = week.reduce((sum, d) => sum + (d.tss ?? 0), 0);
+      buckets.push({ weeklyTss });
+    }
+    return buckets;
+  }, [loadData]);
   const color = tsbColor(latest.tsb);
   const signal = tsbSignal(latest.tsb);
   const dateStr = new Date().toLocaleDateString('en-GB', {
@@ -212,6 +232,36 @@ export default function MobileAnalytics() {
         </div>
       </div>
 
+      <div
+        style={{
+          background: '#2a2a48',
+          borderRadius: 10,
+          padding: '14px',
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 9,
+            letterSpacing: 2,
+            color: '#7e7e9a',
+            marginBottom: 10,
+          }}
+        >
+          8-WEEK TSS HISTORY
+        </div>
+        <ResponsiveContainer width="100%" height={80}>
+          <BarChart data={weeklyData} barCategoryGap="20%">
+            <Bar
+              dataKey="weeklyTss"
+              fill="#34d399"
+              radius={[3, 3, 0, 0]}
+              isAnimationActive={false}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
       <div style={{ marginBottom: 8 }}>
         <div
           style={{
@@ -248,6 +298,62 @@ export default function MobileAnalytics() {
             </div>
           ))}
       </div>
+
+      {(() => {
+        const today = new Date().toISOString().slice(0, 10);
+        const upcoming = (sessionsData ?? [])
+          .filter((s) => s.status === 'planned' && s.date >= today)
+          .sort((a, b) => (a.date < b.date ? -1 : 1))
+          .slice(0, 3);
+        return (
+          <div style={{ marginBottom: 8 }}>
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: 2,
+                color: '#7e7e9a',
+                marginBottom: 8,
+              }}
+            >
+              UPCOMING
+            </div>
+            {upcoming.length === 0 ? (
+              <div style={{ fontSize: 12, color: '#7e7e9a' }}>
+                No upcoming sessions
+              </div>
+            ) : (
+              upcoming.map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 0',
+                    borderBottom: '1px solid #4a4a6833',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: typeColor(s.type),
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 12, color: '#e8e8f0', flex: 1 }}>
+                    {s.label ?? s.type}
+                  </span>
+                  <span style={{ fontSize: 10, color: '#7e7e9a' }}>
+                    {s.date}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
