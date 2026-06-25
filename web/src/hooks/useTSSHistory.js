@@ -13,10 +13,17 @@ export function useTSSHistory() {
         .gt('duration', 0)
         .order('date', { ascending: true });
       if (error) throw error;
-      return (data ?? []).map((s) => ({
-        date: s.date,
-        tss: Math.round((s.duration * s.srpe) / 60),
-      }));
+      // Sum TSS per day: multiple logged sessions on the same date must be
+      // combined. calcTrainingLoad keys its daily map by date, so emitting one
+      // row per session would let a later session overwrite an earlier one and
+      // silently drop that day's load. Sum raw, then round once.
+      const byDate = {};
+      for (const s of data ?? []) {
+        byDate[s.date] = (byDate[s.date] ?? 0) + (s.duration * s.srpe) / 60;
+      }
+      return Object.entries(byDate)
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([date, tss]) => ({ date, tss: Math.round(tss) }));
     },
     staleTime: 300_000,
   });

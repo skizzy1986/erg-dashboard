@@ -51,6 +51,28 @@ export default function MobileAnalytics() {
     month: 'short',
   });
 
+  // Recent sessions list: live logged sessions (newest first), falling back to
+  // the DAILY_TSS seed when the DB is empty (new install / offline).
+  const recentItems = useMemo(() => {
+    const live = (sessionsData ?? [])
+      .filter((s) => s.status !== 'planned')
+      .slice(0, 5)
+      .map((s) => ({
+        key: s.id,
+        label: s.label || s.type || 'Session',
+        date: s.date,
+        tss:
+          s.duration > 0 && s.srpe > 0
+            ? Math.round((s.duration * s.srpe) / 60)
+            : null,
+      }));
+    if (live.length) return live;
+    return DAILY_TSS.slice()
+      .reverse()
+      .slice(0, 5)
+      .map((s) => ({ key: s.date, label: s.note, date: s.date, tss: s.tss }));
+  }, [sessionsData]);
+
   return (
     <div style={{ padding: '16px 16px 24px', background: '#0a0a0f' }}>
       <div
@@ -276,30 +298,29 @@ export default function MobileAnalytics() {
         >
           RECENT SESSIONS
         </div>
-        {DAILY_TSS.slice()
-          .reverse()
-          .slice(0, 5)
-          .map((s) => (
-            <div
-              key={s.date}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottom: '1px solid #4a4a6833',
-              }}
-            >
-              <span style={{ fontSize: 12, color: '#e8e8f0' }}>{s.note}</span>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 10, color: '#7e7e9a' }}>{s.date}</div>
+        {recentItems.map((s) => (
+          <div
+            key={s.key}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+              borderBottom: '1px solid #4a4a6833',
+            }}
+          >
+            <span style={{ fontSize: 12, color: '#e8e8f0' }}>{s.label}</span>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, color: '#7e7e9a' }}>{s.date}</div>
+              {s.tss != null && (
                 <div
                   style={{ fontSize: 12, fontWeight: 700, color: '#34d399' }}
                 >
                   {s.tss} TSS
                 </div>
-              </div>
+              )}
             </div>
-          ))}
+          </div>
+        ))}
       </div>
 
       {(() => {
