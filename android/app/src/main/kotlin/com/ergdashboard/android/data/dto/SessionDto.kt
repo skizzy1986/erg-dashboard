@@ -4,7 +4,11 @@ import com.ergdashboard.android.domain.Session
 import com.ergdashboard.android.domain.SessionType
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+
+private val SHORT_DATE_FMT = DateTimeFormatter.ofPattern("M/d/yy")
 
 @Serializable
 data class SessionDto(
@@ -31,7 +35,7 @@ data class SessionDto(
         val effectiveSrpe = srpe ?: 0
         val tss = ((durationMin / 60.0) * effectiveSrpe * 10).roundToInt()
         return Session(
-            date = date,
+            date = toIsoDate(date),
             type = sessionType,
             label = label,
             durationMin = durationMin,
@@ -51,6 +55,18 @@ data class SessionDto(
             }
             2 -> parts[0].toIntOrNull() ?: 0
             else -> duration.toIntOrNull() ?: 0
+        }
+    }
+}
+
+private fun toIsoDate(date: String): String {
+    return try {
+        LocalDate.parse(date).toString()
+    } catch (_: Exception) {
+        try {
+            LocalDate.parse(date, SHORT_DATE_FMT).toString()
+        } catch (_: Exception) {
+            date
         }
     }
 }
