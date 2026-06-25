@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './erg-dashboard.jsx';
 import { supabase } from './supabaseClient.js';
+import { usePWAInstall } from './hooks/usePWAInstall.js';
+import { useIsMobile } from './hooks/useIsMobile.js';
+import MobileApp from './views/mobile/MobileApp.jsx';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -189,10 +192,40 @@ function SignOutButton() {
   );
 }
 
+// ── INSTALL BUTTON (floating, bottom-right) ──────────────────────
+function InstallButton() {
+  const { canInstall, installed, installPrompt } = usePWAInstall();
+  if (!canInstall || installed) return null;
+  return (
+    <button
+      onClick={installPrompt}
+      style={{
+        position: 'fixed',
+        bottom: 16,
+        right: 16,
+        zIndex: 999,
+        background: C.accent,
+        border: 'none',
+        borderRadius: 5,
+        padding: '10px 14px',
+        fontSize: 11,
+        letterSpacing: 1,
+        fontWeight: 700,
+        color: C.bg,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+      }}
+    >
+      ＋ ADD TO HOME SCREEN
+    </button>
+  );
+}
+
 // ── AUTH GATE ────────────────────────────────────────────────────
 // undefined = still checking, null = logged out, object = signed in.
 function AuthGate() {
   const [session, setSession] = useState(undefined);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -204,27 +237,37 @@ function AuthGate() {
 
   if (session === undefined) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: C.bg,
-          color: C.muted,
-          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-          fontSize: 12,
-        }}
-      >
-        Loading…
-      </div>
+      <>
+        <div
+          style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: C.bg,
+            color: C.muted,
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontSize: 12,
+          }}
+        >
+          Loading…
+        </div>
+        <InstallButton />
+      </>
     );
   }
-  if (!session) return <Login />;
+  if (!session)
+    return (
+      <>
+        <Login />
+        <InstallButton />
+      </>
+    );
   return (
     <>
       <SignOutButton />
-      <App />
+      {isMobile ? <MobileApp /> : <App />}
+      <InstallButton />
     </>
   );
 }
