@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePM5 } from '../hooks/usePM5';
 import { useOfflineQueue } from '../hooks/useOfflineQueue';
 import { supabase } from '../supabaseClient';
@@ -466,6 +467,7 @@ function SummaryScreen({ summary, onSave, onDiscard, saving }) {
 export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
   const { status, metrics, summary, error, connect, reset } = usePM5();
   const { addToQueue } = useOfflineQueue();
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -501,6 +503,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
       addToQueue(row);
     }
 
+    queryClient.invalidateQueries({ queryKey: ['sessions'] });
     setSaving(false);
     reset();
     if (onSessionSaved) onSessionSaved();

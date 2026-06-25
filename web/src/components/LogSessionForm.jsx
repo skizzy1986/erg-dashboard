@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
 
 export default function LogSessionForm({ onSaved }) {
+  const queryClient = useQueryClient();
   const today = new Date();
   const todayKey =
     today.getMonth() +
@@ -18,7 +20,6 @@ export default function LogSessionForm({ onSaved }) {
   const [rows, setRows] = useState([
     { name: '', weight: '', volume: '', e1rm: '', pr: false },
   ]);
-  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null); // {type:'ok'|'err', text}
 
   const srpeAnchor =
@@ -59,7 +60,45 @@ export default function LogSessionForm({ onSaved }) {
     setMsg(null);
   };
 
-  const submit = async () => {
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const filledRows = rows.filter((r) => r.name.trim());
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const prs = filledRows.filter((r) => r.pr).length;
+      const exercises = filledRows.map((r) => ({
+        name: r.name.trim(),
+        weight: r.weight.trim() || '—',
+        volume: r.volume.trim() || '—',
+        e1rm: r.e1rm.trim() || '—',
+        pr: r.pr,
+      }));
+      const { error } = await supabase.from('sessions').insert({
+        date,
+        type: 'Strength',
+        label: label.trim(),
+        duration: duration.trim() || null,
+        srpe,
+        prs,
+        exercises,
+        user_id: user?.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      setMsg({ type: 'ok', text: 'Saved! Session added to your log.' });
+      reset();
+      if (onSaved) onSaved();
+    },
+    onError: (error) => {
+      setMsg({ type: 'err', text: 'Save failed: ' + error.message });
+    },
+  });
+  const saving = saveMutation.isPending;
+
+  const submit = () => {
     // Validate
     if (!label.trim()) {
       setMsg({ type: 'err', text: 'Add a session label (e.g. Lower 2).' });
@@ -71,37 +110,8 @@ export default function LogSessionForm({ onSaved }) {
       return;
     }
 
-    setSaving(true);
     setMsg(null);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const prs = filledRows.filter((r) => r.pr).length;
-    const exercises = filledRows.map((r) => ({
-      name: r.name.trim(),
-      weight: r.weight.trim() || '—',
-      volume: r.volume.trim() || '—',
-      e1rm: r.e1rm.trim() || '—',
-      pr: r.pr,
-    }));
-    const { error } = await supabase.from('sessions').insert({
-      date,
-      type: 'Strength',
-      label: label.trim(),
-      duration: duration.trim() || null,
-      srpe,
-      prs,
-      exercises,
-      user_id: user?.id,
-    });
-    setSaving(false);
-    if (error) {
-      setMsg({ type: 'err', text: 'Save failed: ' + error.message });
-      return;
-    }
-    setMsg({ type: 'ok', text: 'Saved! Session added to your log.' });
-    reset();
-    if (onSaved) onSaved(); // tell parent to re-fetch
+    saveMutation.mutate();
   };
 
   const inp = {

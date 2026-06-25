@@ -1,0 +1,6 @@
+{
+  "appId": "com.scott.ergdashboard",
+  "appName": "Erg Dashboard",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" }
+}
