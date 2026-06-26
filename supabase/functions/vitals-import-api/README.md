@@ -19,8 +19,10 @@ On each run the function:
 1. Guards on the `x-cron-secret` header (vs `CRON_SECRET`).
 2. Exchanges `GOOGLE_HEALTH_REFRESH_TOKEN` for a short-lived access token (no browser).
 3. Computes yesterday's date in Perth time (UTC+8).
-4. Fetches four `dataPoints:dailyRollUp` metrics in parallel — HRV, RHR, sleep, weight.
-   A failure on any one metric maps that field to `null`; the others still upsert.
+4. Lists four metrics in parallel via `dataPoints.list` (GET, snake_case `filter`) —
+   HRV, RHR, sleep, weight. A failure on any one metric maps that field to `null`;
+   the others still upsert. (`dailyRollUp` is unsupported for the daily-* and sleep
+   types; `list` is the correct method for all four.)
 5. Maps responses to a `VitalRecord` (`mapper.ts`) and calls `upsert_vital`.
 6. Posts a best-effort `#build` Slack notification.
 
@@ -59,8 +61,14 @@ One-time local grant (Bridge/Scott, ~20 min). Full Google Cloud setup is in
 
 1. Create a GCP project, enable the Google Health API, configure the OAuth consent
    screen (User type **External**, publishing status **Production** — Testing tokens
-   expire after 7 days), add the three readonly scopes, and create a **Web
+   expire after 7 days), add the readonly scopes, and create a **Web
    application** OAuth client with redirect URI `http://localhost:8080/callback`.
+
+   Required scopes (sleep needs its own — `health_metrics_and_measurements.readonly`
+   does **not** cover it):
+   - `https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly` (HRV, RHR, weight)
+   - `https://www.googleapis.com/auth/googlehealth.sleep.readonly` (sleep)
+   - `https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly`
 2. Run the gitignored grant script locally:
 
    ```bash
@@ -88,7 +96,8 @@ select cron.schedule(
   $$
     select net.http_post(
       url     := 'https://swdrueaserjzhuxnzmeu.supabase.co/functions/v1/vitals-import-api',
-      headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb
+      headers := '{"Content-Type":"application/json","x-cron-secret":"<CRON_SECRET>"}'::jsonb,
+      timeout_milliseconds := 30000
     );
   $$
 );
@@ -97,13 +106,21 @@ select cron.schedule(
 Run both `vitals-import` (CSV) and `vitals-import-api` in parallel for 7 days, then
 retire the CSV cron with `select cron.unschedule('vitals-daily-import');` (Bridge only).
 
-## ⚠️ Unverified response field names
+## Response field paths (confirmed against live data)
 
-`mapper.ts` field paths are **PROVISIONAL**. The Google Health API launched May 2026
-and the exact `dataPoints:dailyRollUp` response shape is not yet empirically confirmed
-in this repo. Every extractor (`extractHrv`, `extractRhr`, `extractSleepHours`,
-`extractWeightKg`) documents the field path it assumes. **These names MUST be validated
-against a live API response (or developers.google.com/health) before production use.**
-The extractors fail safe — a wrong/missing shape yields `null`, not an exception, so a
-mismatch surfaces as persistent null fields (visible in the `[..=null]` Slack suffix)
-rather than a crash.
+Validated against live Fitbit Charge 6 / Health-Connect data via `dataPoints.list`.
+The `filter` query string is **snake_case** (data-type prefix and members); the JSON
+response is **camelCase**.
+
+| Metric | Response path | Unit / note |
+|---|---|---|
+| HRV | `dataPoints[].dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds` | ms (RMSSD), number → rounded |
+| RHR | `dataPoints[].dailyRestingHeartRate.beatsPerMinute` | bpm, **string** → `Number()` then rounded |
+| Weight | `dataPoints[].weight.weightGrams` | **grams** → ÷1000 for kg |
+| Sleep | `dataPoints[].sleep.summary.minutesAsleep` | minutes → ÷60 for hours, summed across sessions |
+
+Filters used (yesterday Perth, half-open `[date, nextDate)`): daily-* types key on
+`{type}.date`; weight on `weight.sample_time.civil_time`; sleep on
+`sleep.interval.civil_end_time` (the wake date). The extractors fail safe — a missing
+shape yields `null`, not an exception, so a metric with no data for the day surfaces as
+a null field (visible in the `[..=null]` Slack suffix) rather than a crash.

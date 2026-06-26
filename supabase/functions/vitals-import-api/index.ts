@@ -1,23 +1,21 @@
 // vitals-import-api — daily ingestion of vitals directly from the Google Health API
 // (health.googleapis.com/v4) into public.vitals. Replaces the manual CSV path
 // (vitals-import); see WO-005. Mints a short-lived access token from a stored refresh
-// token, pulls four daily roll-ups (HRV, RHR, sleep, weight) for yesterday (Perth time),
-// maps them via mapper.ts, and upserts via public.upsert_vital (coalesce: never
-// null-wipes an existing value).
+// token, lists four metrics (HRV, RHR, sleep, weight) for yesterday (Perth time) via
+// dataPoints.list, maps them via mapper.ts, and upserts via public.upsert_vital
+// (coalesce: never null-wipes an existing value).
 //
-// Required env (set as Edge Function secrets):
-//   GOOGLE_HEALTH_CLIENT_ID      OAuth 2.0 client id
-//   GOOGLE_HEALTH_CLIENT_SECRET  OAuth 2.0 client secret
-//   GOOGLE_HEALTH_REFRESH_TOKEN  long-lived refresh token (from scripts/google-health-oauth.ts)
-//   VITALS_USER_ID               owner uuid (rows written with this so RLS shows them to Scott)
-//   SUPABASE_URL                 (auto-injected on Supabase)
-//   SUPABASE_SERVICE_ROLE_KEY    service role (bypasses RLS; required to write)
-//   CRON_SECRET                  shared secret; caller must send header x-cron-secret
-// Optional:
-//   SLACK_BUILD_WEBHOOK_URL      #build webhook for best-effort success/failure posts
+// Required env (Edge Function secrets): GOOGLE_HEALTH_CLIENT_ID, GOOGLE_HEALTH_CLIENT_SECRET,
+//   GOOGLE_HEALTH_REFRESH_TOKEN, VITALS_USER_ID, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+//   CRON_SECRET. Optional: SLACK_BUILD_WEBHOOK_URL.
+// Sleep additionally requires the googlehealth.sleep.readonly OAuth scope on the refresh token.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { exchangeToken, fetchMetric } from "./client.ts";
+import { exchangeToken, listDataPoints } from "./client.ts";
 import { mapResponses } from "./mapper.ts";
+
+function ymd(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
 
 Deno.serve(async (req: Request) => {
   const json = (body: unknown, status = 200) =>
@@ -28,11 +26,7 @@ Deno.serve(async (req: Request) => {
   const slack = async (text: string): Promise<void> => {
     if (!webhookUrl) return;
     try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+      await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
     } catch (_) { /* swallow — a Slack outage never fails the import */ }
   };
 
@@ -70,40 +64,39 @@ Deno.serve(async (req: Request) => {
     return json({ error: "token exchange failed" }, 502);
   }
 
-  // 4. yesterday in Perth time (UTC+8): shift now by +8h, drop a day, use UTC getters
-  //    on the shifted instant so the offset is honoured.
+  // 4. yesterday in Perth time (UTC+8), and the following day, for half-open
+  //    [date, nextDate) filters. The daily-* types key on a user-timezone .date,
+  //    so the Perth-local calendar day is the correct window.
   const perthYesterday = new Date(Date.now() + 8 * 3600 * 1000 - 24 * 3600 * 1000);
-  const yyyy = perthYesterday.getUTCFullYear();
-  const mm = String(perthYesterday.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(perthYesterday.getUTCDate()).padStart(2, "0");
-  const date = `${yyyy}-${mm}-${dd}`;
+  const date = ymd(perthYesterday);
+  const nextDate = ymd(new Date(Date.UTC(perthYesterday.getUTCFullYear(), perthYesterday.getUTCMonth(), perthYesterday.getUTCDate()) + 86400000));
 
-  // 5. four parallel metric fetches; one failure must not block the others
-  const dataTypes = [
-    "daily-heart-rate-variability",
-    "daily-resting-heart-rate",
-    "sleep",
-    "weight",
+  // 5. per-type snake_case filters (filter is snake_case; response is camelCase).
+  //    weight keys on the civil sample date; sleep on the wake date (civil_end_time)
+  //    so an evening-start session lands on `date`. One failure must not block others.
+  const specs = [
+    { key: "hrv", dt: "daily-heart-rate-variability", filter: `daily_heart_rate_variability.date >= "${date}" AND daily_heart_rate_variability.date < "${nextDate}"` },
+    { key: "rhr", dt: "daily-resting-heart-rate", filter: `daily_resting_heart_rate.date >= "${date}" AND daily_resting_heart_rate.date < "${nextDate}"` },
+    { key: "sleep", dt: "sleep", filter: `sleep.interval.civil_end_time >= "${date}" AND sleep.interval.civil_end_time < "${nextDate}"`, pageSize: 25 },
+    { key: "weight", dt: "weight", filter: `weight.sample_time.civil_time >= "${date}" AND weight.sample_time.civil_time < "${nextDate}"` },
   ] as const;
 
   const settled = await Promise.allSettled(
-    dataTypes.map((dt) => fetchMetric(accessToken, dt, date)),
+    specs.map((s) => listDataPoints(accessToken, s.dt, s.filter, (s as { pageSize?: number }).pageSize)),
   );
-
-  const responses: Array<unknown> = [];
+  const byKey: Record<string, unknown> = {};
   for (let i = 0; i < settled.length; i++) {
     const s = settled[i];
     if (s.status === "fulfilled") {
-      responses.push(s.value);
+      byKey[specs[i].key] = s.value;
     } else {
-      responses.push(null);
-      await slack(`WO-005 FAIL · Health API ${dataTypes[i]}: ${String(s.reason)}`);
+      byKey[specs[i].key] = null;
+      await slack(`WO-005 FAIL · ${specs[i].dt}: ${String(s.reason)}`);
     }
   }
-  const [hrvResp, rhrResp, sleepResp, weightResp] = responses;
 
   // 6. map raw responses -> one VitalRecord (failed/empty metrics -> null)
-  const rec = mapResponses(date, hrvResp, rhrResp, sleepResp, weightResp);
+  const rec = mapResponses(date, byKey.hrv, byKey.rhr, byKey.sleep, byKey.weight);
 
   // 7. upsert via coalesce RPC; must set user_id explicitly (service role => auth.uid() null)
   const supa = createClient(supaUrl!, serviceKey!, { auth: { persistSession: false } });
@@ -127,16 +120,10 @@ Deno.serve(async (req: Request) => {
     ["rhr", rec.rhr_bpm],
     ["sleep", rec.sleep_hours],
     ["bodyweight", rec.bodyweight_kg],
-  ].filter(([, v]) => v == null).map(([k]) => `${k}=null`);
-  const suffix = nullFields.length ? ` [${nullFields.join(", ")}]` : "";
+  ].filter(([, v]) => v == null).map(([k]) => k as string);
+  const suffix = nullFields.length ? ` [${nullFields.map((k) => `${k}=null`).join(", ")}]` : "";
   await slack(`WO-005 OK · vitals: 1 date(s) upserted (latest ${date})${suffix}`);
 
   // 9. 200 if all four present, else 207 (partial)
-  const result = {
-    ok: nullFields.length === 0,
-    date,
-    record: rec,
-    nullFields: nullFields.map((f) => f.replace("=null", "")),
-  };
-  return json(result, nullFields.length ? 207 : 200);
+  return json({ ok: nullFields.length === 0, date, record: rec, nullFields }, nullFields.length ? 207 : 200);
 });

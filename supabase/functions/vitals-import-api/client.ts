@@ -1,6 +1,6 @@
 // client.ts — isolates all HTTP to the Google APIs for WO-005.
-// Two responsibilities: (1) exchange the long-lived refresh token for a short-lived
-// access token, (2) fetch a single daily-rolled-up metric from the Google Health API.
+// (1) exchange the long-lived refresh token for a short-lived access token,
+// (2) list a single data type's data points for a filter window from the Google Health API.
 // No Supabase imports here.
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
@@ -42,36 +42,33 @@ export async function exchangeToken(
 
   const accessToken = parsed?.access_token;
   if (typeof accessToken !== "string" || accessToken === "") {
-    const desc =
-      (parsed && typeof parsed.error_description === "string" && parsed.error_description) ||
-      `HTTP ${res.status}: ${text.slice(0, 200)}`;
-    throw new Error(`token exchange returned no access_token: ${desc}`);
+    throw new Error(`token exchange returned no access_token`);
   }
 
   return accessToken;
 }
 
-// Fetch a single metric's daily roll-up for one date. Throws on HTTP error;
-// returns the parsed JSON body on success.
-export async function fetchMetric(
+// List data points for one data type matching an AIP-160 filter string.
+// NB: the filter must be snake_case (data-type prefix AND member names); the JSON
+// response is camelCase. GET, no request body. Throws on HTTP error.
+export async function listDataPoints(
   accessToken: string,
   dataType: string,
-  date: string,
+  filter: string,
+  pageSize?: number,
 ): Promise<unknown> {
-  const url = `${HEALTH_API_BASE}/users/me/dataTypes/${dataType}/dataPoints:dailyRollUp`;
+  const url = new URL(`${HEALTH_API_BASE}/users/me/dataTypes/${dataType}/dataPoints`);
+  url.searchParams.set("filter", filter);
+  if (pageSize) url.searchParams.set("pageSize", String(pageSize));
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ startDate: date, endDate: date }),
+  const res = await fetch(url.toString(), {
+    method: "GET",
+    headers: { "Authorization": `Bearer ${accessToken}` },
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Health API ${dataType} failed: HTTP ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`Health API ${dataType} failed: HTTP ${res.status}: ${text.slice(0, 300)}`);
   }
 
   return await res.json();
