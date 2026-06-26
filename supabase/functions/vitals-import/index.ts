@@ -12,6 +12,7 @@
 //   SUPABASE_SERVICE_ROLE_KEY  service role (bypasses RLS; required to write)
 //   CRON_SECRET                shared secret; caller must send header x-cron-secret
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { timingSafeEqual } from "jsr:@std/crypto/timing-safe-equal";
 import { buildRecords } from "./parser.ts";
 
 Deno.serve(async (req: Request) => {
@@ -20,7 +21,9 @@ Deno.serve(async (req: Request) => {
 
   // shared-secret guard (function is deployed with verify_jwt=false)
   const expected = Deno.env.get("CRON_SECRET");
-  if (expected && req.headers.get("x-cron-secret") !== expected) {
+  if (!expected) return json({ error: "CRON_SECRET not configured" }, 500);
+  const enc = new TextEncoder();
+  if (!timingSafeEqual(enc.encode(req.headers.get("x-cron-secret") ?? ""), enc.encode(expected))) {
     return json({ error: "unauthorized" }, 401);
   }
 
