@@ -1,24 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
-
-const RHR_BASELINE = 57;
-const HRV_BASELINE = 30;
-
-function computeReadiness(latest) {
-  if (!latest) return { readinessScore: 0, readinessLabel: 'FATIGUED' };
-  let score = 100;
-  score -= Math.max(0, latest.rhr - RHR_BASELINE) * 4;
-  score -= Math.max(0, HRV_BASELINE - latest.hrv) * 1.5;
-  score -= latest.sleep < 7 ? (7 - latest.sleep) * 8 : 0;
-  const readinessScore = Math.round(Math.min(100, Math.max(0, score)));
-  const readinessLabel =
-    readinessScore >= 80
-      ? 'READY'
-      : readinessScore >= 60
-        ? 'CAUTION'
-        : 'FATIGUED';
-  return { readinessScore, readinessLabel };
-}
+import {
+  computeReadiness,
+  computePersonalBaselines,
+  computeReadinessHistory,
+} from '../utils/recoveryAnalytics.js';
 
 export function useVitals() {
   const query = useQuery({
@@ -26,7 +12,7 @@ export function useVitals() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('vitals')
-        .select('date, rhr, hrv, sleep, sleep_score')
+        .select('date, rhr, hrv, sleep, sleep_score, bodyweight')
         .order('date', { ascending: false })
         .limit(30);
       if (error) throw error;
@@ -35,13 +21,25 @@ export function useVitals() {
     staleTime: 60_000,
   });
 
-  const latest = query.data?.[0] ?? null;
-  const { readinessScore, readinessLabel } = computeReadiness(latest);
+  const rows = query.data ?? [];
+  const latest = rows[0] ?? null;
+  const personalBaselines = computePersonalBaselines(rows);
+  const { readinessScore, readinessLabel } = computeReadiness(
+    latest,
+    personalBaselines
+  );
+  const vitalsHistory = rows.slice().reverse();
+  const history = computeReadinessHistory(rows, personalBaselines);
+  const hasPersonalBaselines = rows.length >= 14;
 
   return {
     ...query,
     latest,
     readinessScore,
     readinessLabel,
+    personalBaselines,
+    vitalsHistory,
+    history,
+    hasPersonalBaselines,
   };
 }

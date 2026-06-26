@@ -1,4 +1,13 @@
 import React, { useMemo } from 'react';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  ResponsiveContainer,
+  ReferenceLine,
+  XAxis,
+} from 'recharts';
 import { useVitals } from '../../hooks/useVitals.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
@@ -13,8 +22,19 @@ const C = {
   err: '#ff2d55',
 };
 
+const tickStyle = { fontSize: 9, fill: C.muted };
+
 export default function MobileRecovery() {
-  const { isLoading, latest, readinessScore, readinessLabel } = useVitals();
+  const {
+    isLoading,
+    latest,
+    readinessScore,
+    readinessLabel,
+    personalBaselines,
+    vitalsHistory,
+    history,
+    hasPersonalBaselines,
+  } = useVitals();
   const { data: tssHistory } = useTSSHistory();
   const tssSource = tssHistory?.length ? tssHistory : DAILY_TSS;
   const loadData = useMemo(() => calcTrainingLoad(tssSource), [tssSource]);
@@ -39,6 +59,35 @@ export default function MobileRecovery() {
       : readinessLabel === 'CAUTION'
         ? 'Train but monitor closely'
         : 'Prioritise recovery today';
+
+  const baselineLabel = hasPersonalBaselines ? 'your avg' : 'baseline';
+
+  const trend14 = useMemo(
+    () =>
+      vitalsHistory.slice(-14).map((r) => ({
+        ...r,
+        date: r.date ? r.date.slice(5).replace('-', '/') : '',
+      })),
+    [vitalsHistory]
+  );
+
+  const weightData = useMemo(() => {
+    const withWeight = vitalsHistory.filter((r) => r.bodyweight != null);
+    if (withWeight.length < 5) return null;
+    const slice = withWeight.slice(-14);
+    return slice.map((r, i, arr) => {
+      const window = arr.slice(Math.max(0, i - 6), i + 1);
+      const sma7 =
+        Math.round(
+          (window.reduce((s, w) => s + w.bodyweight, 0) / window.length) * 10
+        ) / 10;
+      return {
+        ...r,
+        date: r.date ? r.date.slice(5).replace('-', '/') : '',
+        sma7,
+      };
+    });
+  }, [vitalsHistory]);
 
   return (
     <div
@@ -88,13 +137,14 @@ export default function MobileRecovery() {
             No vitals recorded yet
           </div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 8 }}>
-            Connect Garmin or Fitbit to populate this view
+            Connect Google Health to populate this view
           </div>
         </div>
       )}
 
       {!isLoading && latest && (
         <>
+          {/* Readiness hero */}
           <div
             style={{
               background: C.panel,
@@ -136,6 +186,7 @@ export default function MobileRecovery() {
             </div>
           </div>
 
+          {/* Metric tiles */}
           <div
             style={{
               display: 'grid',
@@ -145,7 +196,10 @@ export default function MobileRecovery() {
             }}
           >
             {(() => {
-              const rhrDelta = (latest.rhr ?? 0) - 57;
+              const rhrDelta =
+                Math.round(
+                  ((latest.rhr ?? 0) - personalBaselines.rhrBaseline) * 10
+                ) / 10;
               const rhrColor =
                 rhrDelta > 5 ? '#ff2d55' : rhrDelta > 2 ? '#ffd700' : '#34d399';
               return (
@@ -167,11 +221,7 @@ export default function MobileRecovery() {
                     RESTING HR
                   </div>
                   <div
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 700,
-                      color: rhrColor,
-                    }}
+                    style={{ fontSize: 24, fontWeight: 700, color: rhrColor }}
                   >
                     {latest.rhr ?? '—'} bpm
                   </div>
@@ -181,14 +231,17 @@ export default function MobileRecovery() {
                       : rhrDelta < 0
                         ? '↓ ' + rhrDelta
                         : '='}{' '}
-                    vs baseline
+                    vs {baselineLabel}
                   </div>
                 </div>
               );
             })()}
 
             {(() => {
-              const deficit = 30 - (latest.hrv ?? 0);
+              const deficit =
+                Math.round(
+                  (personalBaselines.hrvBaseline - (latest.hrv ?? 0)) * 10
+                ) / 10;
               const hrvColor =
                 deficit < 3 ? '#34d399' : deficit < 8 ? '#ffd700' : '#ff2d55';
               return (
@@ -210,19 +263,20 @@ export default function MobileRecovery() {
                     HRV
                   </div>
                   <div
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 700,
-                      color: hrvColor,
-                    }}
+                    style={{ fontSize: 24, fontWeight: 700, color: hrvColor }}
                   >
                     {latest.hrv ?? '—'} ms
                   </div>
                   <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>
-                    {latest.hrv >= 30
-                      ? '↑ +' + (latest.hrv - 30)
-                      : '↓ ' + (30 - latest.hrv)}{' '}
-                    vs baseline
+                    {(latest.hrv ?? 0) >= personalBaselines.hrvBaseline
+                      ? '↑ +' +
+                        Math.round(
+                          ((latest.hrv ?? 0) - personalBaselines.hrvBaseline) *
+                            10
+                        ) /
+                          10
+                      : '↓ ' + deficit}{' '}
+                    vs {baselineLabel}
                   </div>
                 </div>
               );
@@ -254,11 +308,7 @@ export default function MobileRecovery() {
                     SLEEP
                   </div>
                   <div
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 700,
-                      color: sleepColor,
-                    }}
+                    style={{ fontSize: 24, fontWeight: 700, color: sleepColor }}
                   >
                     {latest.sleep ?? '—'}h
                   </div>
@@ -337,6 +387,220 @@ export default function MobileRecovery() {
               </div>
             )}
           </div>
+
+          {/* HRV 14-day trend */}
+          <div
+            style={{
+              background: C.panel,
+              borderRadius: 10,
+              padding: '14px',
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: 2,
+                color: C.muted,
+                marginBottom: 6,
+              }}
+            >
+              HRV TREND — 14 DAYS
+            </div>
+            <ResponsiveContainer width="100%" height={110}>
+              <LineChart data={trend14}>
+                <XAxis
+                  dataKey="date"
+                  tick={tickStyle}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                />
+                <ReferenceLine
+                  y={personalBaselines.hrvBaseline}
+                  stroke="#ff6b35"
+                  strokeDasharray="3 3"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="hrv"
+                  stroke="#00d4ff"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* RHR 14-day trend */}
+          <div
+            style={{
+              background: C.panel,
+              borderRadius: 10,
+              padding: '14px',
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: 2,
+                color: C.muted,
+                marginBottom: 6,
+              }}
+            >
+              RESTING HR TREND — 14 DAYS
+            </div>
+            <ResponsiveContainer width="100%" height={110}>
+              <LineChart data={trend14}>
+                <XAxis
+                  dataKey="date"
+                  tick={tickStyle}
+                  axisLine={false}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                />
+                <ReferenceLine
+                  y={personalBaselines.rhrBaseline}
+                  stroke="#00d4ff"
+                  strokeDasharray="3 3"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="rhr"
+                  stroke="#ff6b35"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Sleep 14-day bar chart */}
+          <div
+            style={{
+              background: C.panel,
+              borderRadius: 10,
+              padding: '14px',
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: 2,
+                color: C.muted,
+                marginBottom: 6,
+              }}
+            >
+              SLEEP — 14 DAYS
+            </div>
+            <ResponsiveContainer width="100%" height={80}>
+              <BarChart data={trend14} barCategoryGap="20%">
+                <ReferenceLine y={7} stroke="#34d399" strokeDasharray="3 3" />
+                <Bar
+                  dataKey="sleep"
+                  fill="#a78bfa"
+                  radius={[3, 3, 0, 0]}
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 7-day readiness history */}
+          {history.length > 0 && (
+            <div
+              style={{
+                background: C.panel,
+                borderRadius: 10,
+                padding: '14px',
+                marginBottom: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  letterSpacing: 2,
+                  color: C.muted,
+                  marginBottom: 6,
+                }}
+              >
+                READINESS — 7 DAYS
+              </div>
+              <ResponsiveContainer width="100%" height={80}>
+                <LineChart data={history.slice(-7)}>
+                  <ReferenceLine
+                    y={80}
+                    stroke="#34d399"
+                    strokeDasharray="3 3"
+                  />
+                  <ReferenceLine
+                    y={60}
+                    stroke="#ffd700"
+                    strokeDasharray="3 3"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="readinessScore"
+                    stroke={readinessColor}
+                    dot={false}
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Bodyweight trend (only when ≥5 data points) */}
+          {weightData && (
+            <div
+              style={{
+                background: C.panel,
+                borderRadius: 10,
+                padding: '14px',
+                marginBottom: 10,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  letterSpacing: 2,
+                  color: C.muted,
+                  marginBottom: 6,
+                }}
+              >
+                BODYWEIGHT — 14 DAYS (kg)
+              </div>
+              <ResponsiveContainer width="100%" height={80}>
+                <LineChart data={weightData}>
+                  <Line
+                    type="monotone"
+                    dataKey="bodyweight"
+                    stroke="#ffd700"
+                    dot={false}
+                    strokeWidth={2}
+                    isAnimationActive={false}
+                    connectNulls
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="sma7"
+                    stroke="#ffd70088"
+                    strokeDasharray="4 4"
+                    dot={false}
+                    strokeWidth={1}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </>
       )}
     </div>
