@@ -5,5 +5,4 @@ dist
 .vite
 .env
 coverage
-web/android/
 scripts/
