@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/* global DOMException, Storage */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 
 // Mock the supabase client before importing the hook under test.
@@ -25,6 +26,40 @@ beforeEach(() => {
   Object.defineProperty(navigator, 'onLine', {
     value: true,
     configurable: true,
+  });
+});
+
+describe('enqueueSession write-path hardening', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('throws and logs when localStorage.setItem throws QuotaExceededError', () => {
+    const err = new DOMException('QuotaExceededError', 'QuotaExceededError');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw err;
+    });
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => enqueueSession({ date: '2026-06-25' })).toThrow();
+    expect(spy).toHaveBeenCalledWith(
+      expect.stringContaining('[useOfflineQueue]'),
+      expect.anything()
+    );
+  });
+
+  it('drops the oldest session and logs a warning when the queue reaches 50 items', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (let i = 1; i <= 50; i++) {
+      enqueueSession({ date: `2025-01-${String(i).padStart(2, '0')}` });
+    }
+    enqueueSession({ date: '2026-03-01' });
+    const q = JSON.parse(localStorage.getItem(QUEUE_KEY));
+    expect(q).toHaveLength(50);
+    expect(q[0].date).toBe('2025-01-02');
+    expect(q[49].date).toBe('2026-03-01');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[useOfflineQueue]')
+    );
   });
 });
 
