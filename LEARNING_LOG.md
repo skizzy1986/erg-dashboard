@@ -61,3 +61,15 @@ Publishing as HTML (pubhtml) and publishing as CSV are separate actions. Each ta
 2. Complete Step 3 (test fixtures JSON) onward per the handover notes.
 3. Two manual actions: Vercel root dir + .env copy.
 4. WO-002 (Slack) can be threaded in any time — quick win.
+
+---
+
+## Session 2026-06-26 (continued)
+
+Native Kotlin/Compose Android app replaced with Capacitor 7.6.7 WebView shell (PR #32,
+merged to main). Android project is now at `web/android/`; CI pipeline rewritten to
+build web assets first, then `cap sync`, then Gradle.
+
+See `coach/WO-006-capacitor-webview-handover.md` for the six post-merge follow-up items
+(on-device verification, secret names, local dev setup, icons, test-fixtures note,
+safe-area insets).
