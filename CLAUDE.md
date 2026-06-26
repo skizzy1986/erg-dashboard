@@ -207,13 +207,27 @@ vite-plugin-pwa).
 Changes made outside the Claude Code factory (Cowork sessions, manual edits,
 work-order housekeeping, edge-function updates) follow the same PR workflow:
 
-1. **Branch** — `git checkout -b <type>/<short-slug>`
+1. **Branch from fresh `main`** — `git fetch origin && git checkout -b <type>/<short-slug> origin/main`
    - Types: `housekeeping/`, `config/`, `fix/`, `feature/`
+   - Always cut from a freshly-fetched `origin/main`, never a stale local `main` or another
+     feature branch. Keep branches short-lived and **merge fast** to minimise drift.
 2. **Commit** — stage only the relevant files; write a clear message
 3. **Push** — `git push origin <branch>`
 4. **PR** — open on GitHub; Vercel preview deploys automatically
 5. **CI gates** — all three checks must pass (Lint, Test, Build)
 6. **Merge** — squash or merge commit; delete the branch
+
+**Keeping a branch current:** if `main` advances while a branch is open, rebase (don't merge)
+to keep history linear:
+
+```bash
+git fetch origin && git rebase origin/main
+# resolve any conflicts, re-run `npm test`, then:
+git push --force-with-lease origin <branch>   # safe force — aborts if the remote moved
+```
+
+Rebase early and often; a branch that tracks `main` closely rarely conflicts. Never plain
+`--force` a shared branch — always `--force-with-lease`.
 
 **Monitoring:** CI results, Vercel deploys, and edge-function runs all post
 to `#build` in Slack. Check `#build` to confirm a change landed correctly
@@ -222,6 +236,7 @@ without needing to prompt Coach.
 ## Safety Constraints
 
 - Never push directly to main — always use feature branches; branch protection enforces this
+- Branch from a freshly-fetched `origin/main`; keep branches short-lived and rebase (not merge) to stay current — `--force-with-lease` only, never `--force`
 - Never hardcode credentials — use `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 - Never delete Supabase rows without confirming with the user first
 - Always run `npm run build` before marking a feature complete
