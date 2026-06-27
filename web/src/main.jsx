@@ -171,7 +171,7 @@ function SignOutButton() {
       onClick={() => supabase.auth.signOut()}
       style={{
         position: 'fixed',
-        top: 8,
+        top: 'calc(8px + env(safe-area-inset-top, 0px))',
         right: 8,
         zIndex: 1000,
         background: '#08080dcc',

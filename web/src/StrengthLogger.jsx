@@ -71,7 +71,7 @@ const CSS = `
 .slog nav button{flex:1;background:var(--panel2);color:var(--mut);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;padding:10px;border-radius:10px;border:1px solid var(--line)}
 .slog nav button.active{color:var(--accent);border-color:var(--accent)}
 .slog nav svg{width:18px;height:18px}
-.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
 .slog #restBar .t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
 .slog .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center}
 .slog .sheet{background:var(--panel);width:100%;max-width:680px;max-height:88vh;border-radius:18px 18px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;animation:slogup .22s ease}
