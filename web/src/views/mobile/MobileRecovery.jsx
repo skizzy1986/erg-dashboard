@@ -9,6 +9,7 @@ import {
   XAxis,
 } from 'recharts';
 import { useVitals } from '../../hooks/useVitals.js';
+import { useVitalsSync } from '../../hooks/useVitalsSync.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { DAILY_TSS } from '../../constants/tssData.js';
@@ -35,6 +36,11 @@ export default function MobileRecovery() {
     history,
     hasPersonalBaselines,
   } = useVitals();
+  const {
+    mutate: syncVitals,
+    isPending: isSyncing,
+    isError: syncFailed,
+  } = useVitalsSync();
   const { data: tssHistory } = useTSSHistory();
   const tssSource = tssHistory?.length ? tssHistory : DAILY_TSS;
   const loadData = useMemo(() => calcTrainingLoad(tssSource), [tssSource]);
@@ -115,7 +121,24 @@ export default function MobileRecovery() {
         >
           RECOVERY
         </span>
-        <span style={{ fontSize: 11, color: C.muted }}>{todayStr}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => syncVitals()}
+            disabled={isSyncing}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: isSyncing ? 'default' : 'pointer',
+              color: isSyncing ? C.muted : syncFailed ? C.err : C.accent,
+              fontSize: 16,
+              lineHeight: 1,
+            }}
+          >
+            {isSyncing ? '…' : '↻'}
+          </button>
+          <span style={{ fontSize: 11, color: C.muted }}>{todayStr}</span>
+        </span>
       </div>
 
       {isLoading && (
