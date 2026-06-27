@@ -5,6 +5,7 @@ import MobileStrength from './MobileStrength.jsx';
 import MobileRecovery from './MobileRecovery.jsx';
 import BottomTabBar from '../../components/mobile/BottomTabBar.jsx';
 import ErgLiveView from '../ErgLiveView.jsx';
+import CoachView from '../CoachView.jsx';
 
 function PlaceholderCard({ message }) {
   return (
@@ -36,6 +37,8 @@ export default function MobileApp() {
     content = <MobileSessionLog />;
   } else if (activeTab === 'strength') {
     content = <MobileStrength />;
+  } else if (activeTab === 'coach') {
+    content = <CoachView />;
   } else {
     content = <MobileRecovery />;
   }

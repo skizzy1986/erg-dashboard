@@ -4,7 +4,6 @@ import { supabase } from '../supabaseClient.js';
 import { useTSSHistory } from './useTSSHistory.js';
 import { useVitals } from './useVitals.js';
 import { useSessions } from './useSessions.js';
-import { calcTrainingLoad } from '../utils/trainingLoad.js';
 
 export function buildTrainingContext(
   latestLoad,
@@ -110,28 +109,6 @@ export function useCoach() {
         .from('coach_messages')
         .insert({ role: 'user', content: userText, model });
 
-      const tssData = tssQuery.data ?? [];
-      const loadData = tssData.length ? calcTrainingLoad(tssData) : [];
-      const latestLoad = loadData[loadData.length - 1] ?? null;
-
-      const allSessions = sessions.data ?? [];
-      const today = new Date().toISOString().split('T')[0];
-      const recentLogged = allSessions
-        .filter((s) => s.status === 'logged')
-        .slice(0, 5);
-      const todayPlanned =
-        allSessions.find((s) => s.status === 'planned' && s.date === today) ??
-        null;
-
-      const context = buildTrainingContext(
-        latestLoad,
-        vitals.latest,
-        vitals.readinessScore,
-        vitals.readinessLabel,
-        recentLogged,
-        todayPlanned
-      );
-
       const currentMessages =
         queryClient.getQueryData(['coach_messages']) ?? [];
       const apiMessages = currentMessages
@@ -149,7 +126,7 @@ export function useCoach() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ messages: apiMessages, context, model }),
+        body: JSON.stringify({ messages: apiMessages, model }),
       });
 
       if (!res.ok) {
