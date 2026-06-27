@@ -6,6 +6,7 @@ const TABS = [
   { id: 'log', label: 'Log', icon: '📝' },
   { id: 'strength', label: 'Strength', icon: '💪' },
   { id: 'recovery', label: 'Recovery', icon: '❤️' },
+  { id: 'coach', label: 'Coach', icon: '🤖' },
 ];
 
 export default function BottomTabBar({ activeTab, onTabChange }) {
