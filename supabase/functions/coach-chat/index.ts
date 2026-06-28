@@ -3,7 +3,8 @@
 // Required secrets (set via Supabase Dashboard → Edge Functions → Secrets):
 //   ANTHROPIC_API_KEY  — Anthropic API key
 //
-// SUPABASE_URL and SUPABASE_ANON_KEY are injected automatically by Supabase.
+// SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY are injected
+// automatically by Supabase.
 //
 // Deployed with JWT verification ON (default). The caller must send
 // Authorization: Bearer <supabase-session-token>.
@@ -47,13 +48,25 @@ RESPONSE STYLE
 - If you're uncertain, say so — don't fabricate.
 - Stay within current phase. Don't prescribe intensity workouts until Build 1.`;
 
-async function buildContext(supabase: ReturnType<typeof createClient>): Promise<string> {
+async function buildContext(jwt: string): Promise<string> {
   const today = new Date().toISOString().split('T')[0];
+
+  // Decode already-validated JWT to extract user ID (Supabase verified it before this runs)
+  const payload = JSON.parse(atob(jwt.split('.')[1]));
+  const userId = payload.sub as string;
+
+  // Service role client bypasses RLS; we filter by userId explicitly
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    { auth: { persistSession: false } }
+  );
 
   const [{ data: tssRows }, { data: sessionRows }, { data: vitalsRows }] = await Promise.all([
     supabase
       .from('sessions')
       .select('date, duration, srpe')
+      .eq('user_id', userId)
       .eq('status', 'logged')
       .gt('srpe', 0)
       .gt('duration', 0)
@@ -61,11 +74,13 @@ async function buildContext(supabase: ReturnType<typeof createClient>): Promise<
     supabase
       .from('sessions')
       .select('date, type, label, duration, srpe, status')
+      .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(10),
     supabase
       .from('vitals')
       .select('date, rhr, hrv, sleep')
+      .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(30),
   ]);
@@ -167,15 +182,12 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  // Build training context by querying the DB with the user's JWT (respects RLS)
+  // Extract JWT from Authorization header (already validated by Supabase before this runs)
   const authHeader = req.headers.get('Authorization') ?? '';
   const jwt = authHeader.replace('Bearer ', '');
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: `Bearer ${jwt}` } } }
-  );
-  const context = await buildContext(supabase);
+
+  // Build training context using service role key + explicit user_id filter
+  const context = await buildContext(jwt);
 
   const resolvedModel = MODEL_MAP[model] ?? MODEL_MAP.sonnet;
   const systemPrompt = context
