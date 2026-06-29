@@ -1,16 +1,5 @@
 import { useState } from 'react';
-
-function workoutAccent(txt) {
-  if (!txt) return '#3a3a4a';
-  const t = txt.toLowerCase();
-  if (t.includes('lower')) return '#34d399';
-  if (t.includes('upper')) return '#a78bfa';
-  if (t.includes('rate ladder') || t.includes('threshold')) return '#ffd700';
-  if (t.includes('interval') || t.includes('vo')) return '#ff6b35';
-  if (t.includes('yoga') || t.includes('foam') || t.includes('rest'))
-    return '#3a3a4a';
-  return '#00d4ff'; // erg aerobic default
-}
+import { workoutAccent } from '../utils/formatting.js';
 
 export default function WorkoutItem({
   session,
