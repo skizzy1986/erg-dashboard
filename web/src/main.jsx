@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Capacitor } from '@capacitor/core';
+import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 import App from './erg-dashboard.jsx';
 import { supabase } from './supabaseClient.js';
 import { usePWAInstall } from './hooks/usePWAInstall.js';
 import { useIsMobile } from './hooks/useIsMobile.js';
 import MobileApp from './views/mobile/MobileApp.jsx';
+import { createNotificationChannels } from './utils/notifications.js';
+
+if (Capacitor.isNativePlatform()) {
+  BluetoothLowEnergy.shimWebBluetooth();
+  createNotificationChannels();
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

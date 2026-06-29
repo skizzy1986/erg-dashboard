@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import MobileAnalytics from './MobileAnalytics.jsx';
 import MobileSessionLog from './MobileSessionLog.jsx';
 import MobileStrength from './MobileStrength.jsx';
@@ -27,6 +29,20 @@ function PlaceholderCard({ message }) {
 
 export default function MobileApp() {
   const [activeTab, setActiveTab] = useState('analytics');
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const handle = App.addListener('backButton', () => {
+      if (activeTab !== 'analytics') {
+        setActiveTab('analytics');
+      } else {
+        App.minimizeApp();
+      }
+    });
+    return () => {
+      handle.then((h) => h.remove());
+    };
+  }, [activeTab]);
 
   let content;
   if (activeTab === 'analytics') {

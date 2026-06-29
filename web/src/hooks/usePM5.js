@@ -1,4 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import {
   connectToPM5,
   subscribeToRowingStatus,
@@ -17,6 +19,21 @@ export function usePM5() {
   const deviceRef = useRef(null);
   // Track peak metrics for end-of-session summary
   const peakMetrics = useRef({ maxWatts: 0, strokeCount: 0, samples: [] });
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const handle = App.addListener('pause', () => {
+      if (deviceRef.current?.gatt?.connected) {
+        disconnectPM5(deviceRef.current);
+        deviceRef.current = null;
+        setStatus('idle');
+        setMetrics(null);
+      }
+    });
+    return () => {
+      handle.then((h) => h.remove());
+    };
+  }, []);
 
   const connect = useCallback(async () => {
     setStatus('connecting');
