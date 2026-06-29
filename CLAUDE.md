@@ -39,20 +39,23 @@ npx vitest run --coverage  # Run tests with coverage report
 ## Project Structure
 
 ```
-src/
-  constants/    Hardcoded config, seed data, reference tables
-  hooks/        Custom React hooks (data fetching, derived state)
-  utils/        Pure functions — analysis, formatting, scheduling
-  components/   Shared UI components (LogEntry, WorkoutItem, charts)
-  views/        One component per dashboard tab (10 views)
-  App.jsx       Navigation, state, view dispatch (~200 lines)
-  main.jsx      Auth gate (Supabase email/password login)
+web/                The app lives under web/ (Vite + Capacitor monorepo layout)
+  src/
+    constants/      Hardcoded config, seed data, reference tables
+    hooks/          Custom React hooks (data fetching, derived state)
+    utils/          Pure functions — analysis, formatting, scheduling
+    components/     Shared UI components (LogEntry, WorkoutItem, charts)
+    views/          Extracted dashboard tabs (desktop + mobile)
+    erg-dashboard.jsx  Monolith being decomposed (~9,700 lines — see refactor)
+    StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
+    main.jsx        Auth gate (Supabase email/password login)
 supabase/
-  functions/    Edge Functions (vitals-import from Google Health CSV)
+  functions/        Edge Functions (vitals-import from Google Health CSV)
 coach/
-  work-orders/  Feature specs and task tracking
+  PROJECT_MANAGEMENT_ANALYSIS.md  PM/workflow analysis (2026-06-29)
+  work-orders/      DEPRECATED — historical specs; tracking is now GitHub Issues
 .github/
-  workflows/    GitHub Actions CI (ci.yml — lint, test, build)
+  workflows/    GitHub Actions CI (ci-web.yml, ci-android.yml)
   dependabot.yml  Weekly grouped dependency updates (npm + actions)
   PULL_REQUEST_TEMPLATE.md  PR checklist template
 .claude/
@@ -74,8 +77,10 @@ coach/
 
 ## Architecture: Strangler Fig Refactor
 
-The main file (`src/erg-dashboard.jsx`, ~3,900 lines) is being decomposed
-into a modular structure. The safe migration order:
+The main file (`web/src/erg-dashboard.jsx`, **~9,700 lines** as of 2026-06-29 —
+the refactor is in progress and tracked in GitHub issue #52) is being decomposed
+into a modular structure. `App.jsx` has not been reached yet. The safe migration
+order:
 
 1. Extract constants and utils (zero risk — pure JS, no JSX)
 2. Extract hooks (low risk — same data, reorganised)
@@ -184,86 +189,39 @@ code-reviewer    →  APPROVE / REQUEST CHANGES verdict
 | `code-reviewer` | Review a diff before committing |
 | `refactor-agent` | Extract one module from erg-dashboard.jsx |
 
-## Agency Agents (4 Installed Divisions)
+## Agency Agents (full library installed)
 
-In addition to the 12 project-specific pipeline agents, 26 general-purpose specialist agents
-from **The Agency** (`msitarzewski/agency-agents`) are installed. These are advisory and
-operational agents — they inform, plan, validate, and support, but do **not** write code
-directly or replace the core pipeline.
+In addition to the 12 project-specific pipeline agents, the **complete Agency
+agent library** (`msitarzewski/agency-agents`) is installed: **16 divisions,
+232 agents**. They are advisory and operational — they inform, plan, validate,
+and support, but do **not** write code directly or replace the core pipeline.
 
-To update: `./scripts/install.sh --tool claude-code --division product,project-management,support,testing`
+Installed in **two locations** (2026-06-29):
+- Globally at `~/.claude/agents/` (the upstream installer's default).
+- Committed into this repo's `.claude/agents/` (so they persist and version with
+  the project). Total there = 244 = 232 Agency + the 12 pipeline agents.
 
-### Division summary
+Agency agent files are division-prefixed (e.g. `project-management-project-shepherd.md`,
+`product-manager.md`, `testing-test-results-analyzer.md`). To list divisions or
+re-install: clone the upstream repo and run
+`./scripts/install.sh --tool claude-code --list teams` (or `--no-interactive` to
+install all). The 16 divisions: academic, design, engineering, finance,
+game-development, gis, marketing, paid-media, product, project-management, sales,
+security, spatial-computing, specialized, support, testing.
 
-| Division | Mandate | Most useful agents for this project |
-|---|---|---|
-| **Product** | What to build and when | `product-manager`, `sprint-prioritizer` |
-| **Project Management** | How to sequence and track | `senior-project-manager`, `experiment-tracker` |
-| **Support** | Operational health | `analytics-reporter`, `infrastructure-maintainer` |
-| **Testing** | Quality gates and validation | `reality-checker`, `evidence-collector`, `api-tester`, `performance-benchmarker`, `test-results-analyzer` |
+### Most relevant divisions for this solo dashboard
 
-### When to use agency agents
+Most of the 232 are irrelevant to a personal React/Supabase app (game-dev, GIS,
+real-estate, sales, …). The high-value ones:
 
-| You need to... | Agent |
+| Division | Use for |
 |---|---|
-| Decide what to build next | `product-manager` |
-| Break a feature into sprint tasks | `senior-project-manager` |
-| Analyse training data reporting | `analytics-reporter` |
-| Check Supabase/Vercel health | `infrastructure-maintainer` |
-| Visual QA before pushing | `evidence-collector` → `reality-checker` |
-| Interpret coverage report | `test-results-analyzer` |
-| Benchmark render/query performance | `performance-benchmarker` |
-| Validate Strava/Garmin API calls | `api-tester` |
-| Compare library options | `tool-evaluator` |
-| Audit accessibility on a new view | `accessibility-auditor` |
+| **product** | What to build next; re-ranking the backlog (`product-manager`, `product-sprint-prioritizer`) |
+| **project-management** | Sequencing and tracking issues/PRs (`project-management-project-shepherd`, `project-manager-senior`) |
+| **testing** | Coverage interpretation, perf, API validation, a11y |
+| **support** | Supabase/Vercel health, analytics reporting |
 
-### Agency agent relevance map
-
-**Product (5 agents)**
-
-| Agent | Relevance | Use case |
-|---|---|---|
-| `product-manager` | High | Roadmap ownership and prioritisation decisions |
-| `sprint-prioritizer` | High | Choosing which features to tackle next |
-| `feedback-synthesizer` | Medium | Synthesising Scott's own feature requests |
-| `behavioral-nudge-engine` | Medium | Motivational and engagement features |
-| `trend-researcher` | Low | Personal app — market research not needed |
-
-**Project Management (7 agents)**
-
-| Agent | Relevance | Use case |
-|---|---|---|
-| `senior-project-manager` | High | Breaking features into tasks before `/feature` |
-| `experiment-tracker` | Medium | Tracking A/B experiments on features |
-| `project-shepherd` | Medium | Tracking in-flight work across work orders |
-| `studio-producer` | Low | Solo project — portfolio management not needed |
-| `studio-operations` | Low | Solo — team efficiency not applicable |
-| `jira-workflow-steward` | Low | No Jira in this project |
-| `meeting-notes-specialist` | Low | Solo — no meetings |
-
-**Support (6 agents)**
-
-| Agent | Relevance | Use case |
-|---|---|---|
-| `analytics-reporter` | High | Training metrics, KPI dashboards, Supabase query reports |
-| `infrastructure-maintainer` | High | Supabase + Vercel reliability and performance |
-| `executive-summary-generator` | Medium | Sprint progress summaries |
-| `support-responder` | Low | Single user — no customer support |
-| `finance-tracker` | Low | Not applicable |
-| `legal-compliance-checker` | Low | Not applicable |
-
-**Testing (8 agents)**
-
-| Agent | Relevance | Use case |
-|---|---|---|
-| `evidence-collector` | High | Screenshot-based UI regression QA |
-| `reality-checker` | High | Pre-deploy production readiness gate |
-| `test-results-analyzer` | High | Interpreting CI coverage reports |
-| `performance-benchmarker` | High | Dashboard render times and query latency |
-| `api-tester` | High | Validating Strava/Garmin/Supabase API integrations |
-| `tool-evaluator` | Medium | Evaluating new libraries or integration options |
-| `workflow-optimizer` | Medium | Improving the agent pipeline itself |
-| `accessibility-auditor` | Medium | WCAG compliance on new views |
+Workflow and backlog live in GitHub Issues/Projects — see `WORKFLOW.md`.
 
 ### Important: provide erg-dashboard context
 
@@ -294,10 +252,16 @@ library documentation. Use it before WebSearch for any library in the stack.
 library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
 vite-plugin-pwa).
 
-## Cowork Change Procedure
+## Change Procedure (PR-centric)
 
-Changes made outside the Claude Code factory (Cowork sessions, manual edits,
-work-order housekeeping, edge-function updates) follow the same PR workflow:
+> The standing workflow is defined in **[`WORKFLOW.md`](WORKFLOW.md)**: every
+> change is a **GitHub Issue → branch → PR → CI → `main`**. The backlog is GitHub
+> Issues; status is a GitHub Projects board. The old `coach/work-orders/` system
+> is **deprecated**. The steps below are the same PR flow, kept here for quick
+> reference.
+
+Changes made outside the Claude Code factory (manual edits, config, edge-function
+updates) follow the same PR workflow:
 
 1. **Branch from fresh `main`** — `git fetch origin && git checkout -b <type>/<short-slug> origin/main`
    - Types: `housekeeping/`, `config/`, `fix/`, `feature/`
