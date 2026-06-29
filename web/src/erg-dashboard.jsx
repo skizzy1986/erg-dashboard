@@ -59,6 +59,12 @@ import {
   PHASE_CONTEXT,
 } from './constants/schedule.js';
 import { C, ICON } from './constants/ui.js';
+import {
+  normType,
+  assessMacro,
+  macroColor,
+  bpCategory,
+} from './utils/formatting.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -115,24 +121,6 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-// Normalize incoming session `type` to the canonical taxonomy the colour/icon
-// maps use. Coach CSV uses "erg"/"strength"; the log form writes "Strength";
-// seed + program data already use canonical names. Keeps every source coloured.
-const normType = (t, label = '') => {
-  if (C[t]) return t; // already canonical
-  const lt = (t || '').toLowerCase();
-  const ll = (label || '').toLowerCase();
-  if (lt === 'erg') return 'Z2 Aerobic';
-  if (lt === 'strength') {
-    if (/upper/.test(ll)) return 'Upper Strength';
-    if (/lower/.test(ll)) return 'Lower Strength';
-    return 'Combined';
-  }
-  if (lt === 'cycling' || lt === 'bike' || lt === 'ride') return 'Cycling';
-  if (lt === 'mobility' || lt === 'rest') return 'Rest';
-  return t; // unknown -> grey fallback
-};
 
 // ── SESSION LOG (add entries here as block progresses) ──────────
 
@@ -1646,18 +1634,6 @@ const nutritionLog = [
   },
 ];
 
-function assessMacro(val, range) {
-  if (typeof val !== 'number' || !Array.isArray(range) || range.length < 2)
-    return '—';
-  if (val >= range[0] && val <= range[1]) return '✅';
-  if (val < range[0]) return val >= range[0] * 0.9 ? '⚠️' : '❌';
-  return val <= range[1] * 1.15 ? '⚠️' : '❌';
-}
-
-function macroColor(status) {
-  return status === '✅' ? '#34d399' : status === '⚠️' ? '#ffd700' : '#ff2d55';
-}
-
 // ── RECOVERY METRICS ──────────────────────────────────────────
 // From Fitbit Charge 6: RHR, HRV (overnight), sleep duration/score.
 // ⚠️ SEED VALUES ARE PLACEHOLDERS — replace with real Fitbit data.
@@ -1772,27 +1748,6 @@ const bpLog = [
     clean: false,
   },
 ];
-
-// AU/most guidelines: treated target generally < 130–135 systolic, < 80 diastolic.
-// Confirm YOUR target with your GP — this is generic reference only.
-function bpCategory(sys, dia) {
-  // Validation: flag implausible readings rather than rendering garbage as a category.
-  if (
-    typeof sys !== 'number' ||
-    typeof dia !== 'number' ||
-    sys < 60 ||
-    sys > 260 ||
-    dia < 30 ||
-    dia > 160 ||
-    dia >= sys
-  ) {
-    return { label: 'Check reading', color: '#888' };
-  }
-  if (sys < 120 && dia < 80) return { label: 'Optimal', color: '#34d399' };
-  if (sys < 130 && dia < 80) return { label: 'Normal', color: '#34d399' };
-  if (sys < 140 || dia < 90) return { label: 'High-normal', color: '#ffd700' };
-  return { label: 'Elevated — note for GP', color: '#ff6b35' };
-}
 
 function calcReadiness(day, tsb) {
   if (!day || typeof day.rhr !== 'number') {
