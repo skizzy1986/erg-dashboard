@@ -82,7 +82,7 @@ export default function PaceTrendChart({
   const paces = chartData.map((s) => s.pace_500m);
   const zonePaces = (paceZones ?? [])
     .flatMap((z) => [z.paceFloor, z.paceCeil])
-    .filter((p) => p != null);
+    .filter((p) => p != null && p < 250);
   const all = [...paces, ...zonePaces];
   const hasData = all.length > 0;
   const paceFloor = hasData ? Math.min(...all) - 5 : 0;

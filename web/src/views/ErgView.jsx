@@ -206,14 +206,14 @@ const statLabel = {
 
 function withinLast7Days(dateStr) {
   if (!dateStr) return false;
-  const d = new Date(dateStr);
+  const d = new Date(dateStr + 'T00:00:00');
   if (Number.isNaN(d.getTime())) return false;
   const now = new Date();
   const cutoff = new Date(now.getTime() - 7 * 86400000);
   return d >= cutoff && d <= now;
 }
 
-export default function ErgView({ tsbNow }) {
+export default function ErgView({ tsbNow, ctlNow }) {
   const [tidScope, setTidScope] = useState(30);
   const ergQuery = useErgSessions();
   const sessions = ergQuery.data ?? [];
@@ -274,9 +274,9 @@ export default function ErgView({ tsbNow }) {
           }}
         >
           <div style={statCard}>
-            <div style={statLabel}>CP ESTIMATE</div>
+            <div style={statLabel}>FITNESS (CTL)</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#00d4ff' }}>
-              {CRITICAL_POWER.cpEstimate}W
+              {ctlNow != null ? Math.round(ctlNow) : '—'}
             </div>
           </div>
           <div style={statCard}>
