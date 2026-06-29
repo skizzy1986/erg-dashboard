@@ -15,6 +15,10 @@ export type VitalRecord = {
   hrv_ms: number | null;
   sleep_hours: number | null;
   bodyweight_kg: number | null;
+  steps_count: number | null;
+  distance_m: number | null;
+  active_minutes: number | null;
+  calories_kcal: number | null;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -75,12 +79,60 @@ export function extractSleepHours(resp: unknown): number | null {
   return +(totalMinutes / 60).toFixed(2);
 }
 
+export function extractSteps(resp: unknown): number | null {
+  const pts = dataPoints(resp);
+  if (!pts.length) return null;
+  const total = pts.reduce((s, p) => {
+    const r = asRecord(p);
+    return s + (num(asRecord(r?.dailySteps)?.count) ?? 0);
+  }, 0);
+  return total > 0 ? Math.round(total) : null;
+}
+
+export function extractDistanceMeters(resp: unknown): number | null {
+  const pts = dataPoints(resp);
+  if (!pts.length) return null;
+  const total = pts.reduce((s, p) => {
+    const r = asRecord(p);
+    return s + (num(asRecord(r?.dailyDistance)?.distanceMeters) ?? 0);
+  }, 0);
+  return total > 0 ? Math.round(total * 100) / 100 : null;
+}
+
+export function extractActiveMinutes(resp: unknown): number | null {
+  const pts = dataPoints(resp);
+  if (!pts.length) return null;
+  const total = pts.reduce((s, p) => {
+    const r = asRecord(p);
+    const mins =
+      num(asRecord(r?.dailyActiveMinutes)?.minutes) ??
+      num(asRecord(r?.activeZoneMinutes)?.minutes) ??
+      0;
+    return s + mins;
+  }, 0);
+  return total > 0 ? Math.round(total) : null;
+}
+
+export function extractCaloriesKcal(resp: unknown): number | null {
+  const pts = dataPoints(resp);
+  if (!pts.length) return null;
+  const total = pts.reduce((s, p) => {
+    const r = asRecord(p);
+    return s + (num(asRecord(r?.dailyCaloriesExpended)?.energyKilocalories) ?? 0);
+  }, 0);
+  return total > 0 ? Math.round(total) : null;
+}
+
 export function mapResponses(
   date: string,
   hrv: unknown,
   rhr: unknown,
   sleep: unknown,
   weight: unknown,
+  stepsResp?: unknown,
+  distanceResp?: unknown,
+  activeMinResp?: unknown,
+  caloriesResp?: unknown,
 ): VitalRecord {
   return {
     date,
@@ -88,5 +140,9 @@ export function mapResponses(
     rhr_bpm: extractRhr(rhr),
     sleep_hours: extractSleepHours(sleep),
     bodyweight_kg: extractWeightKg(weight),
+    steps_count: extractSteps(stepsResp),
+    distance_m: extractDistanceMeters(distanceResp),
+    active_minutes: extractActiveMinutes(activeMinResp),
+    calories_kcal: extractCaloriesKcal(caloriesResp),
   };
 }
