@@ -1,0 +1,36 @@
+# PR auto-labeler config (actions/labeler@v5). Maps changed paths to the area
+# labels defined in .github/labels.yml. Labels must already exist (synced by
+# .github/workflows/labels.yml).
+
+testing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/__tests__/**'
+          - '**/*.test.{js,jsx}'
+
+android:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'web/android/**'
+          - 'web/capacitor.config.json'
+
+integration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'supabase/**'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+
+infra:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+
+refactor:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'web/src/erg-dashboard.jsx'
+          - 'web/src/StrengthLogger.jsx'

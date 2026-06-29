@@ -1,0 +1,37 @@
+name: ✨ Feature
+description: A new capability or enhancement to build
+labels: ['P2']
+body:
+  - type: input
+    id: outcome
+    attributes:
+      label: Outcome-shaped title check
+      description: Restate the goal as an outcome, not a vibe ("Sync Strava activities into sessions", not "Strava stuff").
+      placeholder: When this ships, the user can…
+    validations:
+      required: true
+  - type: textarea
+    id: what-why
+    attributes:
+      label: What and why
+      description: What are we building, and why is it worth doing now?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist of observable conditions that mean "done".
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes / context
+      description: Affected files, training-science context (CTL/ATL, sessions/vitals), or links.
+    validations:
+      required: false

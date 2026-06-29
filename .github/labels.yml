@@ -1,0 +1,39 @@
+# Canonical label taxonomy for erg-dashboard (see WORKFLOW.md §1).
+# Synced to the repo by .github/workflows/labels.yml. Edit here, not in the UI.
+
+# Priority — relative stack rank, re-sorted often.
+- name: P0
+  color: 'b60205'
+  description: Do now — blocks other work or keeps the system honest
+- name: P1
+  color: 'd93f0b'
+  description: Next — most valuable in-flight feature or foundation
+- name: P2
+  color: 'fbca04'
+  description: Later — quality, or large new bets
+
+# Type / area
+- name: bug
+  color: 'd73a4a'
+  description: Something is broken or behaving incorrectly
+- name: refactor
+  color: '5319e7'
+  description: Strangler-fig decomposition of the monolith
+- name: integration
+  color: '0e8a16'
+  description: External data source (Strava, Garmin, Concept2) or Supabase backend
+- name: testing
+  color: '1d76db'
+  description: Tests, coverage, and test tooling
+- name: docs
+  color: '0075ca'
+  description: Documentation and project process
+- name: infra
+  color: 'c5def5'
+  description: CI, workflows, config, build
+- name: android
+  color: '3ddc84'
+  description: Capacitor / Android APK
+- name: dependencies
+  color: '0366d6'
+  description: Dependency updates (Dependabot)
