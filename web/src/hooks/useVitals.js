@@ -12,11 +12,17 @@ export function useVitals() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('vitals')
-        .select('date, rhr, hrv, sleep, sleep_score, bodyweight')
+        .select('date, rhr_bpm, hrv_ms, sleep_hours, bodyweight_kg')
         .order('date', { ascending: false })
         .limit(30);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((r) => ({
+        date: r.date,
+        rhr: r.rhr_bpm,
+        hrv: r.hrv_ms,
+        sleep: r.sleep_hours != null ? Number(r.sleep_hours) : null,
+        bodyweight: r.bodyweight_kg != null ? Number(r.bodyweight_kg) : null,
+      }));
     },
     staleTime: 60_000,
   });
