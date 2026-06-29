@@ -108,7 +108,7 @@ function Login() {
             marginBottom: 4,
           }}
         >
-          ERG DASHBOARD
+          SPLITIQ
         </div>
         <div style={{ fontSize: 11, color: C.muted, marginBottom: 22 }}>
           Sign in to continue

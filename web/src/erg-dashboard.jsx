@@ -2212,7 +2212,7 @@ export default function App() {
               letterSpacing: -1,
             }}
           >
-            TRAINING DASHBOARD
+            SPLITIQ
           </div>
         </div>
       </div>
