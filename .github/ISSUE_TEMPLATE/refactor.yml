@@ -1,0 +1,42 @@
+name: 🧱 Refactor
+description: Extract or restructure code (strangler-fig decomposition of the monolith)
+labels: ['refactor']
+body:
+  - type: input
+    id: module
+    attributes:
+      label: Module / target
+      description: What's being extracted or restructured? (e.g. "StrengthLogger.jsx → views/")
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Target layer
+      description: Per the strangler-fig migration order in .claude/skills/architecture.md.
+      options:
+        - constants
+        - utils
+        - hooks
+        - components
+        - views
+        - entry point (App.jsx)
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope (one extraction only)
+      description: One extraction per issue. What moves, what stays, what props thread through?
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety check
+      value: |
+        - [ ] App stays fully functional after the move (no behaviour change)
+        - [ ] Tests pass / added for the extracted unit
+        - [ ] `npm run build` exits 0
+    validations:
+      required: false

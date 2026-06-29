@@ -1,0 +1,32 @@
+name: 🧹 Chore
+description: Config, infra, dependencies, docs, or housekeeping
+labels: ['infra']
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+      description: The housekeeping task and why it's worth doing.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - config
+        - infra (CI / workflows)
+        - dependencies
+        - docs
+        - testing
+      multiple: true
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      value: |
+        - [ ]
+    validations:
+      required: false

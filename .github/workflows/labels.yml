@@ -1,0 +1,29 @@
+name: Sync labels
+
+# Keeps the repo's labels in lockstep with .github/labels.yml so issue templates
+# and the PR auto-labeler always have the labels they reference.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - .github/workflows/labels.yml
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    name: Sync labels from labels.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EndBug/label-sync@v2
+        with:
+          config-file: .github/labels.yml
+          # Leave labels not in labels.yml in place (e.g. GitHub defaults); set
+          # to true later for a strict, fully-managed taxonomy.
+          delete-other-labels: false
+          token: ${{ secrets.GITHUB_TOKEN }}
