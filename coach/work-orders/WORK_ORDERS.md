@@ -1,3 +1,21 @@
+> ## ⚠️ DEPRECATED (2026-06-29)
+>
+> The work-order system is **retired**, superseded by the GitHub PR-centric
+> workflow defined in [`WORKFLOW.md`](../../WORKFLOW.md): **GitHub Issues =
+> backlog, Projects = status, branch → PR → CI → `main` = the unit of work.**
+>
+> Why: even at five work orders this convention drifted (duplicate `WO-004` and
+> `WO-005` IDs; files scattered outside `work-orders/`). GitHub Issues give
+> unique IDs, state, and issue↔PR links for free. See
+> [`coach/PROJECT_MANAGEMENT_ANALYSIS.md`](../PROJECT_MANAGEMENT_ANALYSIS.md).
+>
+> The remaining `WO-00*` files are kept **as historical record** of shipped
+> work. The one open item (Google Health API, formerly WO-005) was migrated to
+> GitHub issue #51; its draft/handover files were removed. Do not author new
+> work orders — open an Issue instead.
+
+---
+
 # Coach → System Work-Orders — convention
 
 *How Coach-authored build specs reach Cowork in a form it can read and implement without hand-relay, while the Bridge gate stays intact. One parseable format replaces ad-hoc spec dumps. This is the **git-native** handover rail — not a live Supabase command channel. State lives in Supabase; build instructions live in the repo and pass through a human commit.*
