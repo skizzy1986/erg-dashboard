@@ -1,3 +1,5 @@
+Closes #<!-- issue number — links the PR to its issue so merging closes it and the Split IQ board moves it to Done -->
+
 ## What changed and why
 
 <!-- One sentence. What does this PR do and why is it needed? -->

@@ -256,7 +256,7 @@ vite-plugin-pwa).
 
 > The standing workflow is defined in **[`WORKFLOW.md`](WORKFLOW.md)**: every
 > change is a **GitHub Issue → branch → PR → CI → `main`**. The backlog is GitHub
-> Issues; status is a GitHub Projects board. The old `coach/work-orders/` system
+> Issues; status is the **"Split IQ"** GitHub Projects board. The old `coach/work-orders/` system
 > is **deprecated**. The steps below are the same PR flow, kept here for quick
 > reference.
 
