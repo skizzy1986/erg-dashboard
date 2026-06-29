@@ -69,7 +69,7 @@ export default function MobileAnalytics() {
             color: '#34d399',
           }}
         >
-          ERG DASHBOARD
+          SPLITIQ
         </span>
         <span style={{ fontSize: 11, color: '#7e7e9a' }}>{dateStr}</span>
       </div>

@@ -1,7 +1,7 @@
 {
-  "name": "Erg Dashboard",
-  "short_name": "ErgDash",
-  "description": "Personal rowing and strength coaching dashboard",
+  "name": "SplitIQ",
+  "short_name": "SplitIQ",
+  "description": "Performance intelligence for serious athletes.",
   "theme_color": "#08080d",
   "background_color": "#08080d",
   "display": "standalone",
