@@ -79,11 +79,13 @@ Three required checks on every PR (`.github/workflows/ci-web.yml`):
 | Gate | Checks |
 |---|---|
 | **Lint & Format** | ESLint + Prettier + `npm audit --audit-level=high` |
-| **Test & Coverage** | Vitest passes; line ≥70%, function ≥70%, branch ≥60% |
+| **Test & Coverage** | Vitest passes; line ≥50%, function ≥30%, branch ≥35% |
 | **Build** | `npm run build` exits 0 (runs after Test) |
 
 `main` is protected: no direct pushes, branch must be up to date, all checks
-green. A coverage comment posts automatically.
+green. A coverage comment posts automatically. The coverage numbers are the
+source of truth in `web/vite.config.js` (`test.coverage.thresholds`) — update
+them there, then mirror here.
 
 ## 5. Merge and clean up
 
