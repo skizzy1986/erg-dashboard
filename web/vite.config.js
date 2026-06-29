@@ -52,10 +52,36 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'json'],
+      // Make scope explicit. Without `include` + `all`, v8 only counts files a
+      // test happens to import, so the untested monolith is invisible and the
+      // gate passes by accident. `all: true` counts every in-scope src file.
+      all: true,
+      include: ['src/**'],
+      // Excluded from the coverage denominator (documented why each is here):
+      //  - erg-dashboard.jsx: the not-yet-decomposed monolith (#52). Each
+      //    extraction PR removes the file(s) it extracts from this list in the
+      //    same PR, so a file cannot leave `exclude` without hitting threshold.
+      //  - StrengthLogger.jsx: large untested component, extraction tracked (#79).
+      //  - main.jsx: auth/bootstrap entry point, not unit-testable in jsdom.
+      //  - constants/**: pure data tables — no logic to cover; counting them
+      //    only distorts the denominator.
+      //  - test-setup.js: the test harness itself.
+      exclude: [
+        'src/erg-dashboard.jsx',
+        'src/StrengthLogger.jsx',
+        'src/main.jsx',
+        'src/constants/**',
+        'src/test-setup.js',
+      ],
+      // Baseline measured 2026-06-29 after making scope explicit (was passing
+      // by accident at ~74% because only test-imported files counted). These
+      // are the honest starting numbers — RATCHET THEM UP as each extraction
+      // PR removes a file from `exclude` and lands its tests. Never lower them.
+      //   measured: lines 48.98 / functions 46.81 / branches 40.38
       thresholds: {
-        lines: 70,
-        functions: 70,
-        branches: 60,
+        lines: 48,
+        functions: 46,
+        branches: 40,
       },
     },
   },
