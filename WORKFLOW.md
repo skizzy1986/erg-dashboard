@@ -94,9 +94,10 @@ green. A coverage comment posts automatically.
 
 ---
 
-## The status board (GitHub Projects)
+## The status board — "Split IQ" (GitHub Projects)
 
-The board is the at-a-glance answer to "what's happening." Columns:
+The **Split IQ** board is the at-a-glance answer to "what's happening." All work is
+directed through it. Columns:
 
 ```
 Todo  →  In-progress  →  In-review  →  Done
@@ -105,14 +106,26 @@ Todo  →  In-progress  →  In-review  →  Done
 Issues enter in **Todo**, move to **In-progress** when you start a branch, to
 **In-review** when the PR opens, and to **Done** on merge.
 
-> **One-time manual setup (~2 min).** GitHub Projects boards can't be created by
-> automation, so create it once in the UI:
-> 1. Repo → **Projects** → **New project** → **Board** template → name it
->    "erg-dashboard".
-> 2. Add the four columns above (rename the defaults).
-> 3. **Add items** → pull in the open issues (the seeded backlog).
-> 4. Optionally set the board to auto-add new issues and auto-move on PR
->    open/merge (Project → Workflows).
+> **Board automation (one-time UI setup).** The board itself ("Split IQ") already
+> exists. GitHub Projects boards and their built-in workflows can't be configured by
+> repo automation, so turn these on once in the UI — *Project → ⋯ → **Workflows*** —
+> so items flow without manual dragging:
+> 1. **Auto-add to project** → filter `is:issue is:open` (and a second rule for
+>    `is:pr is:open`) → sets **Status = Todo**. This pulls every new issue/PR in.
+> 2. **Item reopened / added** → **Status = Todo**.
+> 3. **Pull request merged** and **Item closed** → **Status = Done**.
+>    (Pair with `Closes #N` in the PR body — see §3 — so a merge closes the issue and
+>    moves it to Done in one step.)
+> 4. Move to **In-progress** / **In-review** by hand when you start a branch / open a
+>    PR (Projects has no native "branch created" trigger).
+
+> **Committed auto-add fallback.** `.github/workflows/add-to-project.yml` adds new
+> issues/PRs to Split IQ from CI as a belt-and-suspenders layer behind the built-in
+> auto-add rule. It stays a **no-op until** you add the `ADD_TO_PROJECT_PAT` secret,
+> because the default `GITHUB_TOKEN` can't write to a user-owned project. To enable:
+> create a **classic PAT** with `project` + `repo` scope (or a fine-grained PAT with
+> project write), add it as repo secret **`ADD_TO_PROJECT_PAT`**, then set the board's
+> project number in `project-url` inside that workflow.
 
 ---
 

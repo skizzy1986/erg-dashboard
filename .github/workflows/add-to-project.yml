@@ -1,0 +1,30 @@
+name: Add to Split IQ
+
+# Adds new issues and PRs to the "Split IQ" GitHub Project as a CI-driven backstop
+# behind the board's built-in auto-add workflow (see WORKFLOW.md).
+#
+# This is a NO-OP until the ADD_TO_PROJECT_PAT secret is set, because the default
+# GITHUB_TOKEN cannot write to a user-owned Project v2. To enable:
+#   1. Create a classic PAT with `project` + `repo` scope (or a fine-grained PAT
+#      with project write), add it as repo secret ADD_TO_PROJECT_PAT.
+#   2. Replace <N> in project-url below with the Split IQ board's project number
+#      (from its URL: https://github.com/users/skizzy1986/projects/<N>).
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue/PR to the Split IQ board
+        env:
+          PAT: ${{ secrets.ADD_TO_PROJECT_PAT }}
+        if: env.PAT != ''
+        uses: actions/add-to-project@v1
+        with:
+          project-url: https://github.com/users/skizzy1986/projects/<N>
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
