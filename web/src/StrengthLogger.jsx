@@ -10,6 +10,11 @@
    ═══════════════════════════════════════════════════════════════ */
 import { useEffect, useRef } from 'react';
 import { supabase as sb } from './supabaseClient.js';
+import {
+  saveDraft as _saveDraft,
+  loadDraft,
+  clearDraft,
+} from './utils/strengthDraft.js';
 
 const CSS = `
 .slog{ --bg:#08080d; --panel:#2a2a48; --panel2:#1e1e30; --line:#4a4a68;
@@ -116,6 +121,7 @@ const CSS = `
 .slog .hold-time{font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:.5px}
 .slog .hold-hint{font-size:10px;color:var(--mut);margin-top:2px;text-align:center}
 @keyframes slogpulse{0%,100%{opacity:1}50%{opacity:.6}}
+.slog .draft-banner{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.3);border-radius:var(--radius);padding:14px;margin-bottom:14px}
 `;
 
 const SKELETON = `
@@ -176,6 +182,16 @@ function mountStrengthLogger(root) {
     restRemain = 0,
     restEi = null;
   let EXPREF = null;
+
+  /* ---------- draft persistence ---------- */
+  function saveDraft() {
+    _saveDraft(active);
+  }
+  let _draftTimer = null;
+  function saveDraftDebounced() {
+    clearTimeout(_draftTimer);
+    _draftTimer = setTimeout(saveDraft, 300);
+  }
 
   /* ---------- per-exercise preferences (remembered rest time) ---------- */
   async function loadPrefs() {
@@ -428,6 +444,7 @@ function mountStrengthLogger(root) {
         .then(() => {});
     }
     active = w;
+    active.user_id = USER.id;
     renderWorkout();
     show('workout');
   }
@@ -488,6 +505,7 @@ function mountStrengthLogger(root) {
     rb.style.flex = '0 0 auto';
     rb.onclick = () => {
       active.exercises.splice(ei, 1);
+      saveDraft();
       renderWorkout();
     };
     rmv.appendChild(rb);
@@ -524,6 +542,7 @@ function mountStrengthLogger(root) {
               done: false,
             }
       );
+      saveDraft();
       renderWorkout();
     };
     const warm = el('button', 'btn xs sec', '+ Warmup');
@@ -535,6 +554,7 @@ function mountStrengthLogger(root) {
         warmup: true,
         done: false,
       });
+      saveDraft();
       renderWorkout();
     };
     foot.appendChild(addSet);
@@ -550,6 +570,7 @@ function mountStrengthLogger(root) {
       ex.rest_seconds = Math.max(0, (ex.rest_seconds || 0) + d);
       rv.textContent = ex.rest_seconds + 's';
       saveRestPref(ex.exercise_id, ex.rest_seconds);
+      saveDraftDebounced();
     };
     dn.onclick = () => bump(-15);
     up.onclick = () => bump(15);
@@ -620,13 +641,16 @@ function mountStrengthLogger(root) {
     w.oninput = () => {
       s.weight = w.value;
       upd(ei);
+      saveDraftDebounced();
     };
     rp.oninput = () => {
       s.reps = rp.value;
       upd(ei);
+      saveDraftDebounced();
     };
     rpe.oninput = () => {
       s.rpe = rpe.value;
+      saveDraftDebounced();
     };
     const chk = el('div', 'chk' + (s.done ? ' on' : ''), '✓');
     chk.onclick = () => {
@@ -637,11 +661,13 @@ function mountStrengthLogger(root) {
         startRest(ex.rest_seconds || 120, ei);
         if (navigator.vibrate) navigator.vibrate(15);
       }
+      saveDraft();
     };
     const del = el('button', 'set-del', '✕');
     del.title = 'Remove set';
     del.onclick = () => {
       ex.sets.splice(si, 1);
+      saveDraft();
       renderWorkout();
     };
     const prevSet = ex.last && ex.last.sets ? ex.last.sets[si] : null;
@@ -714,6 +740,7 @@ function mountStrengthLogger(root) {
         hint.textContent = 'done';
         startRest(ex.rest_seconds || 120, ei);
         if (navigator.vibrate) navigator.vibrate(15);
+        saveDraft();
       } else {
         holdElapsed = 0;
         timerDiv.classList.add('running');
@@ -734,6 +761,7 @@ function mountStrengthLogger(root) {
               hint.textContent = 'done';
               if (navigator.vibrate) navigator.vibrate([30, 20, 60]);
               startRest(ex.rest_seconds || 120, ei);
+              saveDraft();
             }
           }, 1000);
         } else {
@@ -749,6 +777,7 @@ function mountStrengthLogger(root) {
     del.onclick = () => {
       clearInterval(holdTimer);
       ex.sets.splice(si, 1);
+      saveDraft();
       renderWorkout();
     };
     r.appendChild(no);
@@ -838,6 +867,7 @@ function mountStrengthLogger(root) {
         const rv = $(`#rv-${restEi}`);
         if (rv) rv.textContent = ex.rest_seconds + 's';
         saveRestPref(ex.exercise_id, ex.rest_seconds);
+        saveDraftDebounced();
       }
     }
   }
@@ -912,6 +942,7 @@ function mountStrengthLogger(root) {
           .eq('id', active.assignment.id);
       }
       toast('Workout saved 💪');
+      clearDraft();
       active = null;
       show('home');
     });
@@ -925,6 +956,7 @@ function mountStrengthLogger(root) {
         .update({ status: 'pending', workout_id: null })
         .eq('id', active.assignment.id);
     }
+    clearDraft();
     active = null;
     toast('Discarded');
     show('home');
@@ -986,6 +1018,51 @@ function mountStrengthLogger(root) {
     };
     $('#finCancel').onclick = () => {
       $('#sheet').innerHTML = '';
+    };
+  }
+
+  /* ---------- RESUME DRAFT SHEET ---------- */
+  function showResumeDraftSheet(draft, onResume, onDiscard) {
+    const bg = el('div', 'sheet-bg');
+    const sh = el('div', 'sheet');
+    const exNames = draft.exercises
+      .slice(0, 3)
+      .map((e) => esc(e.exercise_name))
+      .join(', ');
+    const moreCount = draft.exercises.length - 3;
+    const exerciseSummary =
+      exNames + (moreCount > 0 ? ` +${moreCount} more` : '');
+    const doneCount = draft.exercises.reduce(
+      (n, ex) => n + ex.sets.filter((s) => s.done).length,
+      0
+    );
+    const totalSets = draft.exercises.reduce((n, ex) => n + ex.sets.length, 0);
+    const elapsed = draft.started
+      ? Math.round((Date.now() - draft.started) / 60000)
+      : null;
+    sh.innerHTML = `
+      <div class="sheet-hd"><h3>Resume workout?</h3></div>
+      <div class="sheet-body">
+        <div class="draft-banner">
+          <div style="font-weight:700;font-size:16px;margin-bottom:4px">${esc(draft.label)}</div>
+          ${exerciseSummary ? `<div class="mut" style="font-size:13px">${exerciseSummary}</div>` : ''}
+          <div class="mut" style="font-size:12px;margin-top:6px">${doneCount}/${totalSets} sets done${elapsed != null ? ` · started ${elapsed}m ago` : ''}</div>
+        </div>
+        <div class="mut" style="font-size:13px;margin-bottom:16px;line-height:1.5">You have an unfinished workout. Pick up where you left off, or discard it and start fresh.</div>
+        <button id="draftResume" class="btn good" style="margin-bottom:10px">Resume workout</button>
+        <button id="draftDiscard" class="btn danger">Discard &amp; start fresh</button>
+      </div>`;
+    bg.appendChild(sh);
+    $('#sheet').innerHTML = '';
+    $('#sheet').appendChild(bg);
+    $('#draftResume').onclick = () => {
+      $('#sheet').innerHTML = '';
+      onResume();
+    };
+    $('#draftDiscard').onclick = () => {
+      if (!confirm('Discard the saved draft? This cannot be undone.')) return;
+      $('#sheet').innerHTML = '';
+      onDiscard();
     };
   }
 
@@ -1099,6 +1176,7 @@ function mountStrengthLogger(root) {
         { weight: '', reps: '', rpe: '', warmup: false, done: false },
       ],
     });
+    saveDraft();
     closeSheet();
     renderWorkout();
     toast(x.name + ' added');
@@ -1494,13 +1572,69 @@ function mountStrengthLogger(root) {
         '<div class="empty">Sign in on the dashboard to log strength sessions.</div>';
       return;
     }
-    loadHome();
+    const draft = loadDraft();
+    if (draft) {
+      if (draft.user_id && draft.user_id !== USER.id) {
+        clearDraft();
+        loadHome();
+        return;
+      }
+      loadHome();
+      showResumeDraftSheet(
+        draft,
+        async () => {
+          await loadPrefs();
+          active = draft;
+          renderWorkout();
+          show('workout');
+          // Re-create orphaned DB row if it was cleaned up externally
+          sb.from('strength_workouts')
+            .select('id')
+            .eq('id', draft.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (!data) {
+                sb.from('strength_workouts')
+                  .insert({
+                    id: draft.id,
+                    label: draft.label,
+                    session_type: draft.session_type,
+                    status: 'in_progress',
+                    origin: draft.origin,
+                    template_id: draft.template_id,
+                    assignment_id: draft.assignment
+                      ? draft.assignment.id
+                      : null,
+                    started_at: new Date(draft.started).toISOString(),
+                  })
+                  .then(() => {});
+              }
+            });
+        },
+        async () => {
+          clearDraft();
+          try {
+            await sb.from('strength_workouts').delete().eq('id', draft.id);
+            if (draft.assignment) {
+              await sb
+                .from('workout_assignments')
+                .update({ status: 'pending', workout_id: null })
+                .eq('id', draft.assignment.id);
+            }
+          } catch (_) {}
+          toast('Draft discarded');
+        }
+      );
+    } else {
+      loadHome();
+    }
   })();
 
   /* ---------- cleanup on unmount ---------- */
   return () => {
     clearInterval(restTimer);
     clearTimeout(_tick);
+    clearTimeout(_draftTimer);
     if (_demoTimer) clearInterval(_demoTimer);
   };
 }
