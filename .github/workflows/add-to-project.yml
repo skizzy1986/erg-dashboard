@@ -24,7 +24,7 @@ jobs:
         env:
           PAT: ${{ secrets.ADD_TO_PROJECT_PAT }}
         if: env.PAT != ''
-        uses: actions/add-to-project@v1
+        uses: actions/add-to-project@v2.0.0
         with:
           project-url: https://github.com/users/skizzy1986/projects/<N>
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
