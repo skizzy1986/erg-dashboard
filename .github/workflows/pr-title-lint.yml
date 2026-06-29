@@ -1,0 +1,36 @@
+name: PR title lint
+
+# Squash-merge uses the PR title as the commit message, so the title must be a
+# well-formed Conventional Commit. This keeps main's history clean and machine-
+# readable. Allowed types match the prefixes this repo uses (incl. config /
+# housekeeping from WORKFLOW.md branch types).
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate:
+    name: Validate PR title (Conventional Commits)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            refactor
+            test
+            ci
+            build
+            perf
+            chore
+            style
+            config
+            housekeeping
+            revert
