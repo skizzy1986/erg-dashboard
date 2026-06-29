@@ -504,6 +504,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
     }
 
     queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    queryClient.invalidateQueries({ queryKey: ['erg-sessions'] });
     setSaving(false);
     reset();
     if (onSessionSaved) onSessionSaved();
