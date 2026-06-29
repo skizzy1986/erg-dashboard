@@ -13,12 +13,12 @@ fully personalised app.
 
 ## What This Is
 
-A full-stack training dashboard built by and for a 50+ recreational rower
-training toward competitive regattas. Not a generic fitness tracker — every
-feature is built to scratch a specific itch that commercial apps don't reach:
-live PM5 Bluetooth data in the browser, HRV-aware readiness scoring, an AI
-coach with full training context, and training load analytics (TSS/CTL/ATL/TSB)
-computed from real session data.
+A full-stack training dashboard built by and for a data-obsessed cyclist-turned-rower
+competing in Concept2 rankings. Not a generic fitness tracker — every feature is
+built to scratch a specific itch that commercial apps don't reach: live PM5
+Bluetooth data in the browser, HRV-aware readiness scoring, an AI coach with
+full training context, and training load analytics (TSS/CTL/ATL/TSB) computed
+from real session data.
 
 ---
 
@@ -235,8 +235,20 @@ the edge function pattern is established, and the vitals import pipeline
 
 ## Background
 
-Built by Scott with Claude. Started as a static React artifact; grew into a
-full-stack app as training got more serious. The architecture decisions
-(Supabase, Capacitor, strangler-fig refactor) reflect real constraints: a
-single developer, a phone-first training environment, and a preference for
-owning the data rather than being locked into commercial platforms.
+Built by Scott — a 39-year-old cyclist who came to rowing for the same reason
+that makes it maddening: it's completely measurable. Every stroke produces a
+number — watts, split, stroke rate — and that precision, familiar from years of
+cycling analytics, turned out to be exactly what was missing from the available
+rowing software.
+
+A competitive cyclist has TrainingPeaks, Garmin Connect, and Strava, all
+talking to each other, all reachable from a phone. A serious rower has the
+Concept2 Logbook, a spreadsheet, and four different apps that have never heard
+of each other. After five-plus years training rowing, strength, and cycling in
+parallel — targeting Concept2 rankings — the absence of a unified, phone-first
+view became the project.
+
+Built with Claude Code. Started as a static React artifact; grew into a
+full-stack app as the training got more serious and the gaps in commercial apps
+got harder to ignore. Cycling will likely come back as a primary focus; the
+Strava integration on the roadmap is already waiting for it.
