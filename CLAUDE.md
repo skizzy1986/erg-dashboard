@@ -135,7 +135,7 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 | Job | What it checks |
 |---|---|
 | `Lint & Format` | ESLint errors + Prettier formatting + `npm audit --audit-level=high` |
-| `Test & Coverage` | All Vitest tests pass; line ≥70%, function ≥70%, branch ≥60% |
+| `Test & Coverage` | All Vitest tests pass; line ≥50%, function ≥30%, branch ≥35% |
 | `Build` | `npm run build` exits 0 (runs only after Test passes) |
 
 Coverage thresholds are defined in `vite.config.js` (`test.coverage.thresholds`).
@@ -195,6 +195,9 @@ In addition to the 12 project-specific pipeline agents, the **complete Agency
 agent library** (`msitarzewski/agency-agents`) is installed: **16 divisions,
 232 agents**. They are advisory and operational — they inform, plan, validate,
 and support, but do **not** write code directly or replace the core pipeline.
+
+> **Which agent for which job?** See **[`.claude/AGENTS.md`](.claude/AGENTS.md)** —
+> a task → agent routing map so the 244-file library is navigable, not sprawl.
 
 Installed in **two locations** (2026-06-29):
 - Globally at `~/.claude/agents/` (the upstream installer's default).
@@ -299,4 +302,4 @@ without needing to prompt Coach.
 - Always run `npm test` before committing
 - Always run `npm run lint` and `npm run format:check` before pushing — CI will fail if either does not pass
 - Never bypass the pre-commit hook (`--no-verify`) without an explicit reason
-- Coverage thresholds (70% lines/functions, 60% branches) are enforced in CI — new code should include tests
+- Coverage thresholds (50% lines, 30% functions, 35% branches — see `web/vite.config.js`) are enforced in CI — new code should include tests

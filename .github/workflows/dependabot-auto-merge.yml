@@ -1,0 +1,36 @@
+name: Dependabot auto-merge
+
+# Auto-approves and enables auto-merge for Dependabot patch/minor PRs. Auto-merge
+# only completes once the required CI gates (lint, test, build) are green, so the
+# existing checks remain authoritative. Major updates are left for manual review.
+#
+# Prerequisite: repo Settings → General → "Allow auto-merge" must be enabled.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Approve and auto-merge
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve and enable auto-merge (patch & minor)
+        if: |
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor'
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
