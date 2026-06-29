@@ -86,4 +86,29 @@ describe('useTSSHistory', () => {
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it('sums TSS for multiple sessions on the same day', async () => {
+    mockQuery([
+      { date: '2026-06-20', duration: 60, srpe: 6 }, // 6
+      { date: '2026-06-20', duration: 30, srpe: 8 }, // 4
+    ]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([{ date: '2026-06-20', tss: 10 }]);
+  });
+
+  it('rounds the per-day sum, not each session', async () => {
+    mockQuery([
+      { date: '2026-06-20', duration: 45, srpe: 6 }, // 4.5
+      { date: '2026-06-20', duration: 45, srpe: 6 }, // 4.5
+    ]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // 4.5 + 4.5 = 9.0 → 9, not round(4.5)+round(4.5) = 10
+    expect(result.current.data[0].tss).toBe(9);
+  });
 });
