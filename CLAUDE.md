@@ -184,6 +184,98 @@ code-reviewer    →  APPROVE / REQUEST CHANGES verdict
 | `code-reviewer` | Review a diff before committing |
 | `refactor-agent` | Extract one module from erg-dashboard.jsx |
 
+## Agency Agents (4 Installed Divisions)
+
+In addition to the 12 project-specific pipeline agents, 26 general-purpose specialist agents
+from **The Agency** (`msitarzewski/agency-agents`) are installed. These are advisory and
+operational agents — they inform, plan, validate, and support, but do **not** write code
+directly or replace the core pipeline.
+
+To update: `./scripts/install.sh --tool claude-code --division product,project-management,support,testing`
+
+### Division summary
+
+| Division | Mandate | Most useful agents for this project |
+|---|---|---|
+| **Product** | What to build and when | `product-manager`, `sprint-prioritizer` |
+| **Project Management** | How to sequence and track | `senior-project-manager`, `experiment-tracker` |
+| **Support** | Operational health | `analytics-reporter`, `infrastructure-maintainer` |
+| **Testing** | Quality gates and validation | `reality-checker`, `evidence-collector`, `api-tester`, `performance-benchmarker`, `test-results-analyzer` |
+
+### When to use agency agents
+
+| You need to... | Agent |
+|---|---|
+| Decide what to build next | `product-manager` |
+| Break a feature into sprint tasks | `senior-project-manager` |
+| Analyse training data reporting | `analytics-reporter` |
+| Check Supabase/Vercel health | `infrastructure-maintainer` |
+| Visual QA before pushing | `evidence-collector` → `reality-checker` |
+| Interpret coverage report | `test-results-analyzer` |
+| Benchmark render/query performance | `performance-benchmarker` |
+| Validate Strava/Garmin API calls | `api-tester` |
+| Compare library options | `tool-evaluator` |
+| Audit accessibility on a new view | `accessibility-auditor` |
+
+### Agency agent relevance map
+
+**Product (5 agents)**
+
+| Agent | Relevance | Use case |
+|---|---|---|
+| `product-manager` | High | Roadmap ownership and prioritisation decisions |
+| `sprint-prioritizer` | High | Choosing which features to tackle next |
+| `feedback-synthesizer` | Medium | Synthesising Scott's own feature requests |
+| `behavioral-nudge-engine` | Medium | Motivational and engagement features |
+| `trend-researcher` | Low | Personal app — market research not needed |
+
+**Project Management (7 agents)**
+
+| Agent | Relevance | Use case |
+|---|---|---|
+| `senior-project-manager` | High | Breaking features into tasks before `/feature` |
+| `experiment-tracker` | Medium | Tracking A/B experiments on features |
+| `project-shepherd` | Medium | Tracking in-flight work across work orders |
+| `studio-producer` | Low | Solo project — portfolio management not needed |
+| `studio-operations` | Low | Solo — team efficiency not applicable |
+| `jira-workflow-steward` | Low | No Jira in this project |
+| `meeting-notes-specialist` | Low | Solo — no meetings |
+
+**Support (6 agents)**
+
+| Agent | Relevance | Use case |
+|---|---|---|
+| `analytics-reporter` | High | Training metrics, KPI dashboards, Supabase query reports |
+| `infrastructure-maintainer` | High | Supabase + Vercel reliability and performance |
+| `executive-summary-generator` | Medium | Sprint progress summaries |
+| `support-responder` | Low | Single user — no customer support |
+| `finance-tracker` | Low | Not applicable |
+| `legal-compliance-checker` | Low | Not applicable |
+
+**Testing (8 agents)**
+
+| Agent | Relevance | Use case |
+|---|---|---|
+| `evidence-collector` | High | Screenshot-based UI regression QA |
+| `reality-checker` | High | Pre-deploy production readiness gate |
+| `test-results-analyzer` | High | Interpreting CI coverage reports |
+| `performance-benchmarker` | High | Dashboard render times and query latency |
+| `api-tester` | High | Validating Strava/Garmin/Supabase API integrations |
+| `tool-evaluator` | Medium | Evaluating new libraries or integration options |
+| `workflow-optimizer` | Medium | Improving the agent pipeline itself |
+| `accessibility-auditor` | Medium | WCAG compliance on new views |
+
+### Important: provide erg-dashboard context
+
+Agency agents are generic — they have no knowledge of rowing, CTL/ATL, Supabase schema, or
+the project architecture. Always give them relevant context when invoking:
+
+> "This is a personal rowing/cycling training dashboard (React + Supabase). The `sessions`
+> table tracks all workouts; the `vitals` table tracks daily health metrics (RHR, HRV, sleep)."
+
+The domain knowledge they need is in `.claude/skills/training-science.md` and
+`.claude/skills/supabase-patterns.md` — paste the relevant sections when context matters.
+
 ## MCP Servers
 
 ### Context7
