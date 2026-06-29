@@ -135,11 +135,17 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 | Job | What it checks |
 |---|---|
 | `Lint & Format` | ESLint errors + Prettier formatting + `npm audit --audit-level=high` |
-| `Test & Coverage` | All Vitest tests pass; line ≥50%, function ≥30%, branch ≥35% |
+| `Test & Coverage` | All Vitest tests pass; coverage meets the ratcheting thresholds in `web/vite.config.js` — baseline **48% lines / 46% functions / 40% branches** (set by the #62 keystone), raised as extractions add tests |
 | `Build` | `npm run build` exits 0 (runs only after Test passes) |
 
-Coverage thresholds are defined in `vite.config.js` (`test.coverage.thresholds`).
-A PR comment with a coverage summary is posted automatically by
+Coverage thresholds live in `web/vite.config.js` (`test.coverage.thresholds`) and
+**ratchet upward**. Scope is explicit — `coverage.all` + `include: ['src/**']`
+with the not-yet-extracted monolith, `StrengthLogger.jsx`, `main.jsx`, and
+pure-data `constants/**` excluded — so the gate measures real coverage instead of
+passing by accident on whatever files a test happened to import. Each refactor
+extraction removes its file from `exclude` and lands tests in the **same** PR;
+the thresholds are then raised toward it. The numbers only go up. A PR comment
+with a coverage summary is posted automatically by
 `davelosert/vitest-coverage-report-action`.
 
 **Branch protection on `main`:** direct pushes are blocked. All changes must
@@ -302,4 +308,4 @@ without needing to prompt Coach.
 - Always run `npm test` before committing
 - Always run `npm run lint` and `npm run format:check` before pushing — CI will fail if either does not pass
 - Never bypass the pre-commit hook (`--no-verify`) without an explicit reason
-- Coverage thresholds (50% lines, 30% functions, 35% branches — see `web/vite.config.js`) are enforced in CI — new code should include tests
+- Coverage thresholds (baseline 48% lines / 46% functions / 40% branches — the ratchet in `web/vite.config.js`) are enforced in CI — new code should include tests, and the numbers only go up
