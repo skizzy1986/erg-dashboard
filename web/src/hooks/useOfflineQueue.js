@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { Network } from '@capacitor/network';
 import { supabase } from '../supabaseClient';
 
 const QUEUE_KEY = 'erg_pending_sessions';
@@ -42,15 +44,30 @@ export function useOfflineQueue() {
   const [pending, setPending] = useState(readQueue().length);
 
   useEffect(() => {
-    const sync = async () => {
-      if (navigator.onLine) {
+    const sync = async (connected) => {
+      if (connected) {
         const synced = await drainQueue();
         if (synced > 0) setPending(readQueue().length);
       }
     };
-    window.addEventListener('online', sync);
-    sync();
-    return () => window.removeEventListener('online', sync);
+
+    if (Capacitor.isNativePlatform()) {
+      let networkHandle;
+      Network.addListener('networkStatusChange', ({ connected }) =>
+        sync(connected)
+      ).then((h) => {
+        networkHandle = h;
+      });
+      Network.getStatus().then(({ connected }) => sync(connected));
+      return () => {
+        networkHandle?.remove();
+      };
+    } else {
+      const webSync = () => sync(navigator.onLine);
+      window.addEventListener('online', webSync);
+      webSync();
+      return () => window.removeEventListener('online', webSync);
+    }
   }, []);
 
   function addToQueue(session) {
