@@ -12,6 +12,7 @@
 //   SUPABASE_SERVICE_ROLE_KEY  service role (bypasses RLS; required to write)
 //   CRON_SECRET                shared secret; caller must send header x-cron-secret
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { timingSafeEqual } from "jsr:@std/crypto/timing-safe-equal";
 import { buildRecords } from "./parser.ts";
 
 Deno.serve(async (req: Request) => {
@@ -20,7 +21,9 @@ Deno.serve(async (req: Request) => {
 
   // shared-secret guard (function is deployed with verify_jwt=false)
   const expected = Deno.env.get("CRON_SECRET");
-  if (expected && req.headers.get("x-cron-secret") !== expected) {
+  if (!expected) return json({ error: "CRON_SECRET not configured" }, 500);
+  const enc = new TextEncoder();
+  if (!timingSafeEqual(enc.encode(req.headers.get("x-cron-secret") ?? ""), enc.encode(expected))) {
     return json({ error: "unauthorized" }, 401);
   }
 
@@ -38,8 +41,10 @@ Deno.serve(async (req: Request) => {
   if (missing.length) return json({ error: "missing env", missing }, 500);
 
   const fetchCsv = async (url: string, label: string): Promise<string> => {
-    const res = await fetch(url, { redirect: "follow" });
+    const res = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`${label} fetch failed: HTTP ${res.status}`);
+    const ct = res.headers.get("content-type") ?? "";
+    if (!ct.startsWith("text/")) throw new Error(`${label} unexpected content-type: ${ct}`);
     return res.text();
   };
 
@@ -85,9 +90,11 @@ Deno.serve(async (req: Request) => {
   const webhookUrl = Deno.env.get("SLACK_BUILD_WEBHOOK_URL");
   if (webhookUrl) {
     const latest = records[records.length - 1]?.date ?? "?";
-    const text = errors.length === 0
-      ? `WO-001 OK · vitals: ${upserted} date(s) upserted (latest ${latest})`
-      : `WO-001 FAIL · vitals import: ${errors[0]?.error}`;
+    const text = errors.length > 0
+      ? `WO-001 FAIL · vitals import: ${errors[0]?.error}`
+      : records.length === 0
+        ? `WO-001 WARN · vitals: 0 records parsed — check sheet sharing or content-type`
+        : `WO-001 OK · vitals: ${upserted} date(s) upserted (latest ${latest})`;
     try {
       await fetch(webhookUrl, {
         method: "POST",

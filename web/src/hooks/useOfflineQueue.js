@@ -13,12 +13,23 @@ function readQueue() {
   }
 }
 
+const QUEUE_MAX = 50;
+
 function writeQueue(items) {
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
+  try {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.error('[useOfflineQueue] write failed:', e);
+    throw e;
+  }
 }
 
 export function enqueueSession(session) {
   const q = readQueue();
+  if (q.length >= QUEUE_MAX) {
+    console.warn('[useOfflineQueue] queue at cap; dropping oldest session');
+    q.shift();
+  }
   q.push({ ...session, _queuedAt: Date.now() });
   writeQueue(q);
 }
