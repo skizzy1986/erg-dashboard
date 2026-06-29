@@ -71,7 +71,7 @@ const CSS = `
 .slog nav button{flex:1;background:var(--panel2);color:var(--mut);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;padding:10px;border-radius:10px;border:1px solid var(--line)}
 .slog nav button.active{color:var(--accent);border-color:var(--accent)}
 .slog nav svg{width:18px;height:18px}
-.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:40;max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
+.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:110;max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
 .slog #restBar .t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
 .slog .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center}
 .slog .sheet{background:var(--panel);width:100%;max-width:680px;max-height:88vh;border-radius:18px 18px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;animation:slogup .22s ease}
@@ -109,6 +109,13 @@ const CSS = `
 .slog .seg button{background:var(--panel2);color:var(--mut);padding:8px 13px;font-size:13px;font-weight:700}
 .slog .seg button.on{background:var(--accent);color:#04222b}
 .slog .demo-fallback{margin-top:4px;padding:20px 16px;border:1px dashed var(--line);border-radius:12px;text-align:center;color:var(--mut);font-size:13.5px;line-height:1.5}
+.slog .set-grid.timed{grid-template-columns:26px auto 1fr 24px}
+.slog .hold-timer{display:flex;align-items:center;justify-content:center;background:var(--panel2);border:1.5px solid var(--line);border-radius:9px;padding:10px 6px;cursor:pointer;transition:border-color .15s;user-select:none;-webkit-user-select:none}
+.slog .hold-timer.running{border-color:var(--accent);animation:slogpulse 1.4s ease-in-out infinite}
+.slog .hold-timer.done{border-color:var(--good);opacity:.65;cursor:default}
+.slog .hold-time{font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;color:var(--txt);letter-spacing:.5px}
+.slog .hold-hint{font-size:10px;color:var(--mut);margin-top:2px;text-align:center}
+@keyframes slogpulse{0%,100%{opacity:1}50%{opacity:.6}}
 `;
 
 const SKELETON = `
@@ -327,12 +334,16 @@ function mountStrengthLogger(root) {
               rpe: te.target_rpe,
               type: 'work',
             }));
+      const isTimed = !!te.is_timed;
+      const targetSec = te.target_seconds || null;
       return {
         exercise_id: te.exercise_id,
         exercise_name: te.exercise_name,
         target_reps: te.target_reps,
         target_rpe: te.target_rpe,
         target_sets: te.target_sets,
+        target_seconds: targetSec,
+        is_timed: isTimed,
         rest_seconds: restPref(te.exercise_id, te.rest_seconds || 120),
         notes: te.notes,
         last: lastPerf[te.exercise_id] || null,
@@ -342,6 +353,8 @@ function mountStrengthLogger(root) {
           rpe: p.rpe != null ? String(p.rpe) : '',
           warmup: p.type === 'warmup',
           done: false,
+          hold_seconds: 0,
+          target_seconds: p.hold_seconds || targetSec || 0,
           sug: { weight: p.weight_kg, reps: p.reps, rpe: p.rpe },
         })),
       };
@@ -478,26 +491,39 @@ function mountStrengthLogger(root) {
       renderWorkout();
     };
     rmv.appendChild(rb);
-    const hd = el('div', 'set-grid hd');
-    hd.innerHTML =
-      '<div>Set</div><div style="font-size:10px;text-align:right">Prev</div><div>Kg</div><div>Reps</div><div>RPE</div><div></div><div></div>';
+    const hd = el('div', ex.is_timed ? 'set-grid timed hd' : 'set-grid hd');
+    hd.innerHTML = ex.is_timed
+      ? '<div>Set</div><div style="font-size:10px;text-align:right">Prev</div><div>Hold (tap to start)</div><div></div>'
+      : '<div>Set</div><div style="font-size:10px;text-align:right">Prev</div><div>Kg</div><div>Reps</div><div>RPE</div><div></div><div></div>';
     b.appendChild(hd);
     ex.sets.forEach((s, si) => b.appendChild(renderSet(ex, ei, s, si)));
-    const er = el('div', 'e1rm');
-    er.id = `e1-${ei}`;
-    er.innerHTML = bestE1(ex);
-    b.appendChild(er);
+    if (!ex.is_timed) {
+      const er = el('div', 'e1rm');
+      er.id = `e1-${ei}`;
+      er.innerHTML = bestE1(ex);
+      b.appendChild(er);
+    }
     const foot = el('div', 'ex-foot');
     const addSet = el('button', 'btn xs sec', '+ Set');
     addSet.onclick = () => {
       const last = ex.sets[ex.sets.length - 1] || {};
-      ex.sets.push({
-        weight: last.weight || '',
-        reps: '',
-        rpe: '',
-        warmup: false,
-        done: false,
-      });
+      ex.sets.push(
+        ex.is_timed
+          ? {
+              hold_seconds: 0,
+              target_seconds: ex.target_seconds || 0,
+              rpe: '',
+              warmup: false,
+              done: false,
+            }
+          : {
+              weight: last.weight || '',
+              reps: '',
+              rpe: '',
+              warmup: false,
+              done: false,
+            }
+      );
       renderWorkout();
     };
     const warm = el('button', 'btn xs sec', '+ Warmup');
@@ -562,6 +588,7 @@ function mountStrengthLogger(root) {
     return b;
   }
   function renderSet(ex, ei, s, si) {
+    if (ex.is_timed) return renderTimedSet(ex, ei, s, si);
     const r = el(
       'div',
       'set-grid set-row' +
@@ -631,6 +658,102 @@ function mountStrengthLogger(root) {
     r.appendChild(rp);
     r.appendChild(rpe);
     r.appendChild(chk);
+    r.appendChild(del);
+    return r;
+  }
+  function fmtHoldTime(sec) {
+    const s = Math.max(0, Math.round(sec || 0));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+  function renderTimedSet(ex, ei, s, si) {
+    const r = el('div', 'set-grid set-row timed' + (s.done ? ' done' : ''));
+    const no = el(
+      'div',
+      'setno' + (s.warmup ? ' warm' : ''),
+      s.warmup ? 'W' : String(workingIndex(ex, si))
+    );
+    const prevSet = ex.last && ex.last.sets ? ex.last.sets[si] : null;
+    const prevDiv = el('div');
+    prevDiv.style.cssText =
+      'color:var(--mut);font-size:11px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap';
+    prevDiv.textContent =
+      prevSet && prevSet.hold_seconds != null
+        ? fmtHoldTime(prevSet.hold_seconds)
+        : '–';
+    const target = s.target_seconds || ex.target_seconds || 0;
+    const timerDiv = el('div', 'hold-timer' + (s.done ? ' done' : ''));
+    const timeDisplay = el(
+      'div',
+      'hold-time',
+      s.done ? fmtHoldTime(s.hold_seconds) : fmtHoldTime(target)
+    );
+    const hint = el(
+      'div',
+      'hold-hint',
+      s.done ? 'done' : target > 0 ? 'tap to start' : 'tap · count up'
+    );
+    const inner = el('div');
+    inner.style.cssText =
+      'display:flex;flex-direction:column;align-items:center;gap:0';
+    inner.appendChild(timeDisplay);
+    inner.appendChild(hint);
+    timerDiv.appendChild(inner);
+    let holdTimer = null;
+    let holdElapsed = 0;
+    timerDiv.onclick = () => {
+      if (s.done) return;
+      if (holdTimer) {
+        clearInterval(holdTimer);
+        holdTimer = null;
+        s.hold_seconds = holdElapsed;
+        s.done = true;
+        r.classList.add('done');
+        timerDiv.classList.remove('running');
+        timerDiv.classList.add('done');
+        timeDisplay.textContent = fmtHoldTime(holdElapsed);
+        hint.textContent = 'done';
+        startRest(ex.rest_seconds || 120, ei);
+        if (navigator.vibrate) navigator.vibrate(15);
+      } else {
+        holdElapsed = 0;
+        timerDiv.classList.add('running');
+        hint.textContent = target > 0 ? 'tap to stop' : 'tap to stop';
+        if (target > 0) {
+          holdTimer = setInterval(() => {
+            holdElapsed++;
+            const remaining = target - holdElapsed;
+            timeDisplay.textContent = fmtHoldTime(Math.max(0, remaining));
+            if (remaining <= 0) {
+              clearInterval(holdTimer);
+              holdTimer = null;
+              s.hold_seconds = holdElapsed;
+              s.done = true;
+              r.classList.add('done');
+              timerDiv.classList.remove('running');
+              timerDiv.classList.add('done');
+              hint.textContent = 'done';
+              if (navigator.vibrate) navigator.vibrate([30, 20, 60]);
+              startRest(ex.rest_seconds || 120, ei);
+            }
+          }, 1000);
+        } else {
+          holdTimer = setInterval(() => {
+            holdElapsed++;
+            timeDisplay.textContent = fmtHoldTime(holdElapsed);
+          }, 1000);
+        }
+      }
+    };
+    const del = el('button', 'set-del', '✕');
+    del.title = 'Remove set';
+    del.onclick = () => {
+      clearInterval(holdTimer);
+      ex.sets.splice(si, 1);
+      renderWorkout();
+    };
+    r.appendChild(no);
+    r.appendChild(prevDiv);
+    r.appendChild(timerDiv);
     r.appendChild(del);
     return r;
   }
@@ -730,6 +853,22 @@ function mountStrengthLogger(root) {
     const rows = [];
     active.exercises.forEach((ex) => {
       ex.sets.forEach((s, i) => {
+        if (ex.is_timed) {
+          if (!s.done) return;
+          rows.push({
+            workout_id: active.id,
+            exercise_id: ex.exercise_id,
+            exercise_name: ex.exercise_name,
+            set_index: i + 1,
+            weight_kg: null,
+            reps: null,
+            rpe: s.rpe === '' ? null : parseFloat(s.rpe),
+            is_warmup: !!s.warmup,
+            completed: true,
+            hold_seconds: s.hold_seconds || null,
+          });
+          return;
+        }
         const reps = parseInt(s.reps),
           wt = s.weight === '' ? null : parseFloat(s.weight);
         if (!s.done && !reps) return;
