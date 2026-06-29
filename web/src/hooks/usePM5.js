@@ -22,6 +22,21 @@ export function usePM5() {
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
+    const initBle = async () => {
+      try {
+        const { BluetoothLowEnergy } =
+          await import('@capgo/capacitor-bluetooth-low-energy');
+        await BluetoothLowEnergy.requestPermissions();
+        BluetoothLowEnergy.shimWebBluetooth();
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+    initBle();
+  }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
     const handle = App.addListener('pause', () => {
       if (deviceRef.current?.gatt?.connected) {
         disconnectPM5(deviceRef.current);
