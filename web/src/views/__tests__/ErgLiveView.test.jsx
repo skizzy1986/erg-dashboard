@@ -96,6 +96,7 @@ describe('ErgLiveView', () => {
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['erg-sessions'] });
     expect(resetMock).toHaveBeenCalled();
     expect(onSessionSaved).toHaveBeenCalledTimes(1);
 
@@ -118,6 +119,7 @@ describe('ErgLiveView', () => {
     await waitFor(() => expect(addToQueueMock).toHaveBeenCalledTimes(1));
     // mutationFn resolves (no throw), so success path still runs.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['erg-sessions'] });
   });
 
   it('queues the row when offline without attempting an insert', async () => {

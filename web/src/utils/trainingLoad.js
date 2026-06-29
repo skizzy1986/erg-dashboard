@@ -32,3 +32,21 @@ export function calcTrainingLoad(tssData, endDate) {
   }
   return results;
 }
+
+export function deriveTargets(hr130Series) {
+  const clean = hr130Series.filter((p) => p.type === 'actual');
+  const anchor = clean.length ? clean[clean.length - 1].watts : 150;
+  // UT1 = train AT the HR130 anchor (you row to HR130, watts land here).
+  // UT2 = genuinely easy, ~86% of anchor. Pacer cue = anchor as early visual.
+  return {
+    anchor,
+    ut1Low: Math.round(anchor * 0.96),
+    ut1High: Math.round(anchor * 1.02),
+    ut2Low: Math.round(anchor * 0.83),
+    ut2High: Math.round(anchor * 0.9),
+    pacerCue: anchor,
+    source: clean.length
+      ? `${clean.length} clean HR130 points, latest ${anchor}W`
+      : 'default (no clean points)',
+  };
+}

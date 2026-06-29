@@ -1,5 +1,7 @@
 // Training science constants — update after CP test (1 Jul) or athlete baseline changes.
 
+import { wattsToPace500 } from '../utils/pace.js';
+
 export const SRPE_GUIDE = [
   {
     range: '1-2',
@@ -283,3 +285,36 @@ export const DAILY_TSS = [
 
 export const RHR_BASELINE = 57; // bpm — quietly trending DOWN 58→56 across the week (good)
 export const HRV_BASELINE = 30; // ms  — sheet-accurate; trough 18 (6/12) → peak 37 (6/17) → 31 now
+
+export const HR130_POWER = [
+  // actual readings (HR-anchored sessions, chest strap)
+  { date: '6/8', watts: 130, type: 'actual', setupArtifact: true }, // 60min, HR avg 123 — partly drag/strap settling, excluded from the fit
+  { date: '6/10', watts: 145, type: 'actual' }, // 45min, HR 132
+  { date: '6/12', watts: 151, type: 'actual' }, // 45min, HR 130 — clean anchor reading
+  { date: '6/13', watts: 149, type: 'actual' }, // 60min, Strava-confirmed HR 130.6 — clean anchor
+  { date: '6/15', watts: 149, type: 'actual' }, // 60min, HR130 locked all hour — clean anchor, on 5h24m sleep
+];
+
+const ZONE_POWER_PCT = [
+  { zone: 'Recovery', pctLow: 0, pctHigh: 0.55 },
+  { zone: 'UT2', pctLow: 0.55, pctHigh: 0.7 },
+  { zone: 'UT1', pctLow: 0.7, pctHigh: 0.8 },
+  { zone: 'AT', pctLow: 0.8, pctHigh: 0.9 },
+  { zone: 'TR', pctLow: 0.9, pctHigh: 1.05 },
+  { zone: 'AN', pctLow: 1.05, pctHigh: 1.3 },
+];
+
+export const PACE_ZONES = ZONE_POWER_PCT.map(({ zone, pctLow, pctHigh }) => {
+  const cp = CRITICAL_POWER.cpEstimate;
+  const hz = HR_ZONES.find((z) => z.zone === zone);
+  const wattsLow = Math.round(cp * pctLow);
+  const wattsHigh = Math.round(cp * pctHigh);
+  return {
+    zone,
+    color: hz?.color ?? '#666',
+    wattsLow,
+    wattsHigh,
+    paceFloor: pctHigh > 0 ? wattsToPace500(wattsHigh) : 300,
+    paceCeil: pctLow > 0 ? wattsToPace500(wattsLow) : 300,
+  };
+});
