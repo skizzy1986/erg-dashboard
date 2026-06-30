@@ -449,3 +449,103 @@ export const bpLog = [
     clean: false,
   },
 ];
+
+// ── CONFIDENCE MIGRATION — estimates hardening to measured ────
+export const CONFIDENCE_MIGRATION = [
+  {
+    metric: 'RHR baseline',
+    state: 'MEASURED',
+    note: 'Confirmed 58 — 3+ stable days (6/10–6/13)',
+  },
+  {
+    metric: 'Power@HR130',
+    state: 'MEASURED',
+    note: '4 clean points, Strava-cross-verified',
+  },
+  {
+    metric: 'HRV baseline',
+    state: 'FIRMING',
+    note: 'Rebuilding post-trough; ~31 provisional, needs recovered days',
+  },
+  {
+    metric: 'TDEE',
+    state: 'PENDING',
+    note: 'Confirms ~Jun 24 via intake-vs-weight regression',
+  },
+  {
+    metric: 'Critical Power / FTP',
+    state: 'PENDING',
+    note: '30min CP test ~Jun 25 → recalibrates load model',
+  },
+  {
+    metric: '2k estimate',
+    state: 'PENDING',
+    note: 'No threshold data yet; first test unknown ±20s',
+  },
+];
+
+// ── LIPID PANEL REFERENCE ─────────────────────────────────────
+export const LIPID_REF = [
+  {
+    marker: 'Total Cholesterol',
+    unit: 'mmol/L',
+    target: '< 5.5',
+    color: '#00d4ff',
+  },
+  { marker: "LDL ('bad')", unit: 'mmol/L', target: '< 2.0', color: '#ff6b35' },
+  { marker: "HDL ('good')", unit: 'mmol/L', target: '> 1.0', color: '#34d399' },
+  {
+    marker: 'Triglycerides',
+    unit: 'mmol/L',
+    target: '< 1.7',
+    color: '#ffd700',
+  },
+];
+
+// ── HORMONE PANEL ─────────────────────────────────────────────
+// Context: prior testicular cancer + orchiectomy (one testicle).
+// Clinically relevant reason to test — request via GP, ask for
+// ENDOCRINOLOGIST referral given oncology history. Morning, fasted,
+// rested day. TRT (if ever) is a specialist decision, never self-directed.
+export const HORMONE_REF = [
+  {
+    marker: 'Total Testosterone',
+    note: 'Core marker. Morning draw essential — peaks early AM.',
+  },
+  {
+    marker: 'Free Testosterone',
+    note: "The bioavailable fraction — what's actually usable.",
+  },
+  { marker: 'SHBG', note: 'Binds testosterone; affects free levels.' },
+  {
+    marker: 'LH / FSH',
+    note: 'Pituitary signals — locate where any issue sits (testicular vs central).',
+  },
+  {
+    marker: 'Oestradiol',
+    note: 'If indicated. Balance matters, not just testosterone.',
+  },
+];
+
+// ── NIGGLES / INJURY WATCH ────────────────────────────────────
+// Track proactively. Not medical advice — professional guidance leads.
+export const NIGGLES = [
+  {
+    area: 'Left hamstring / glute',
+    status: 'Rehab — physio-led',
+    color: '#ffd700',
+    detail:
+      'Year-old injury (running/soccer). Felt in hamstring + referring to glute. PHYSIO ASSESSED — prescribed stretches + RDLs as rehab. RDLs are therapeutic here, not a risk.',
+    watch:
+      "Follow physio's load/range/tempo over generic progression. Loading should leave it better or neutral, never progressively worse. Keep prescribed stretches. Periodic physio review as RDL load climbs. Flag if erg catch (deep compression) provokes it.",
+  },
+  {
+    area: 'Right shoulder',
+    status: 'Improving — form fix working',
+    color: '#34d399',
+    detail:
+      "Twinge during plank/side bridge (6/10), likely positioning + fast core-volume ramp. 6/12: pain-free at 1:50 plank WITH 'press forearms down' cue (engages serratus, offloads cuff). Form was the issue more than volume.",
+    watch:
+      'Keep the forearm-press cue on all planks/bridges. Build holds while pain-free; drop to 60s if it twinges. Elbow under shoulder, glutes squeezed. Unilateral lateral raises addressing the L/R strength gap.',
+  },
+];
