@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { strengthTrend, LIFT_COLOR } from '../../constants/strength.js';
 import StrengthView from '../StrengthView.jsx';
