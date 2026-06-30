@@ -1,0 +1,22 @@
+name: Dependency review
+
+# Flags vulnerable or disallowed dependencies introduced in a PR's diff, before
+# they land on main. Complements `npm audit` in ci-web.yml (which scans the whole
+# tree) by gating the *change*. Threshold matches the audit gate: fail on high+.
+# Requires the repo's Dependency graph feature (Settings -> Security & analysis).
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Review dependency changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
