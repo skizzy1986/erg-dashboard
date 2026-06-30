@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
@@ -20,13 +21,13 @@
     ]
   },
   "dependencies": {
-    "@capgo/capacitor-bluetooth-low-energy": "^8.1.0",
     "@capacitor/android": "^8.4.1",
     "@capacitor/app": "^8.0.0",
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1",
     "@capacitor/local-notifications": "^8.0.0",
     "@capacitor/network": "^8.0.0",
+    "@capgo/capacitor-bluetooth-low-energy": "^8.1.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tanstack/react-query": "^5.101.1",
     "mathjs": "^15.2.0",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.56.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
