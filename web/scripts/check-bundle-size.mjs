@@ -8,7 +8,7 @@
 // the monolith is finally code-split), never raise it without a deliberate
 // reason. Current build sits at ~360 KB gzipped; budget set with modest
 // headroom so a real regression trips it but normal noise does not.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
@@ -18,7 +18,9 @@ const ASSET_DIR = join(process.cwd(), 'dist', 'assets');
 function gzippedAssets(dir) {
   let entries;
   try {
-    entries = readdirSync(dir);
+    // withFileTypes carries the file-type from this single readdir call, so we
+    // never stat-then-read (avoids a TOCTOU file-system race).
+    entries = readdirSync(dir, { withFileTypes: true });
   } catch {
     console.error(
       `✖ ${dir} not found — run \`npm run build\` before the size check.`
@@ -26,14 +28,13 @@ function gzippedAssets(dir) {
     process.exit(1);
   }
   return entries
-    .filter((f) => f.endsWith('.js') || f.endsWith('.css'))
-    .map((f) => {
-      const full = join(dir, f);
-      if (!statSync(full).isFile()) return null;
-      const gzip = gzipSync(readFileSync(full)).length;
-      return { file: f, gzip };
+    .filter(
+      (e) => e.isFile() && (e.name.endsWith('.js') || e.name.endsWith('.css'))
+    )
+    .map((e) => {
+      const gzip = gzipSync(readFileSync(join(dir, e.name))).length;
+      return { file: e.name, gzip };
     })
-    .filter(Boolean)
     .sort((a, b) => b.gzip - a.gzip);
 }
 
