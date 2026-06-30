@@ -1,0 +1,41 @@
+name: E2E — Web Smoke
+
+# Playwright smoke tests: assert every dashboard tab mounts without error.
+# Runs on PRs (and pushes to main) but is NOT a required check yet — it informs,
+# it does not gate. The webServer in playwright.config.js builds the app with a
+# stub Supabase config; the auth gate is satisfied by a seeded localStorage
+# session, so no real backend is contacted.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: e2e-web-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  e2e:
+    name: Playwright Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 7
