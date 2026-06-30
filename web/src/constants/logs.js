@@ -449,3 +449,37 @@ export const bpLog = [
     clean: false,
   },
 ];
+
+// ── CONFIDENCE MIGRATION — estimates hardening to measured ────
+export const CONFIDENCE_MIGRATION = [
+  {
+    metric: 'RHR baseline',
+    state: 'MEASURED',
+    note: 'Confirmed 58 — 3+ stable days (6/10–6/13)',
+  },
+  {
+    metric: 'Power@HR130',
+    state: 'MEASURED',
+    note: '4 clean points, Strava-cross-verified',
+  },
+  {
+    metric: 'HRV baseline',
+    state: 'FIRMING',
+    note: 'Rebuilding post-trough; ~31 provisional, needs recovered days',
+  },
+  {
+    metric: 'TDEE',
+    state: 'PENDING',
+    note: 'Confirms ~Jun 24 via intake-vs-weight regression',
+  },
+  {
+    metric: 'Critical Power / FTP',
+    state: 'PENDING',
+    note: '30min CP test ~Jun 25 → recalibrates load model',
+  },
+  {
+    metric: '2k estimate',
+    state: 'PENDING',
+    note: 'No threshold data yet; first test unknown ±20s',
+  },
+];
