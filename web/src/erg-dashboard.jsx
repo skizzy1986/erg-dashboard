@@ -13,6 +13,7 @@ import StrengthLogger from './StrengthLogger.jsx';
 import ErgLiveView from './views/ErgLiveView.jsx';
 import CoachView from './views/CoachView.jsx';
 import ErgView from './views/ErgView.jsx';
+import SettingsView from './views/SettingsView.jsx';
 import WorkoutItem from './components/WorkoutItem.jsx';
 import LogSessionForm from './components/LogSessionForm.jsx';
 import LogEntry from './components/LogEntry.jsx';
@@ -1400,6 +1401,7 @@ export default function App() {
             ['log', 'Log'],
             ['journal', 'Journal'],
             ['coach', 'Coach'],
+            ['settings', 'Settings'],
           ].map(([v, label]) => (
             <button
               key={v}
@@ -8054,6 +8056,9 @@ export default function App() {
           )}
           {/* ── COACH VIEW (Claude fitness coach chat) ── */}
           {view === 'coach' && <CoachView />}
+
+          {/* ── SETTINGS VIEW (integrations: Strava connect + sync) ── */}
+          {view === 'settings' && <SettingsView />}
         </ErrorBoundary>
 
         <div
