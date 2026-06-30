@@ -5,7 +5,9 @@ dist
 .vite
 .env
 coverage
-scripts/
+/scripts/
 test-results
 playwright-report
 .playwright
+# Lighthouse CI local run output
+.lighthouseci/
