@@ -99,14 +99,31 @@ export default defineConfig({
       // PR removes a file from `exclude` and lands its tests. Never lower them.
       //   measured: lines 48.98 / functions 46.81 / branches 40.38
       thresholds: {
-        lines: 48,
-        functions: 46,
-        branches: 40,
+        // Global floor — ratcheted up as extractions land tests (measured
+        // ~62/60/62 after the overview extraction + child-component tests).
+        lines: 52,
+        functions: 50,
+        branches: 48,
         // Commercial-baseline gate (80/80/70) for new/extracted code, applied
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.
         'src/utils/sentry.js': { lines: 80, functions: 80, branches: 70 },
         'src/components/ErrorFallback.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/components/WorkoutItem.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/components/LoadTooltip.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/components/LogEntry.jsx': {
           lines: 80,
           functions: 80,
           branches: 70,
@@ -117,6 +134,11 @@ export default defineConfig({
           branches: 70,
         },
         'src/views/MobilityView.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/views/OverviewView.jsx': {
           lines: 80,
           functions: 80,
           branches: 70,
