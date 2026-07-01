@@ -1,0 +1,65 @@
+name: Doctrine SHA guard
+
+# The doctrine_sha anchor (Supabase `anchors` table) pins the canonical commit of
+# the doctrine docs — CLAUDE.md + .claude/skills/training-science.md — so Code and
+# Coach agree which doctrine version is live. When those docs change on main, the
+# anchor must be superseded to the new commit. That update lives in the DB (Coach's
+# content lane), not git, so CI can't perform it directly — but it can make the
+# drift impossible to miss. This guard fires exactly when doctrine docs land on
+# main and opens (or comments on) a single tracking issue carrying the new SHA,
+# turning silent drift into an actionable reminder.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CLAUDE.md'
+      - '.claude/skills/training-science.md'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: doctrine-sha-guard
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    name: Flag doctrine_sha drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update the doctrine_sha reminder issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          title="chore(doctrine): supersede doctrine_sha to latest main"
+          body=$(printf '%s\n' \
+            "The doctrine docs changed on \`main\` in commit \`${SHA}\`." \
+            "" \
+            "The \`doctrine_sha\` anchor (Supabase \`anchors\` table) still points at the previous commit, so Code and Coach may disagree on which doctrine version is live." \
+            "" \
+            "**Action — Coach's content lane, Scott authorises:** supersede \`doctrine_sha\` to \`${SHA}\`. Set \`superseded_at = now()\` on the current row and insert a new row with the new SHA, then close this issue:" \
+            "" \
+            "\`\`\`sql" \
+            "update public.anchors set superseded_at = now()" \
+            " where key = 'doctrine_sha' and superseded_at is null;" \
+            "insert into public.anchors (user_id, key, value, source, valid_from, note)" \
+            "values ('<scott-uuid>', 'doctrine_sha', '${SHA}'," \
+            "        'doctrine docs changed on main', current_date," \
+            "        'CLAUDE.md + .claude/skills/training-science.md');" \
+            "\`\`\`" \
+            "" \
+            "_Auto-filed by the Doctrine SHA guard. If this issue is already open, the latest SHA is appended as a comment rather than duplicated._")
+          existing=$(gh issue list --repo "$REPO" --state open \
+            --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPO" --body "$body"
+          else
+            gh issue create --repo "$REPO" --title "$title" --body "$body" \
+              --assignee "$OWNER"
+          fi
