@@ -50,7 +50,7 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     main.jsx        Auth gate (Supabase email/password login)
 supabase/
-  functions/        Edge Functions (vitals-import from Google Health CSV)
+  functions/        Edge Functions (vitals-import from Google Health API)
 coach/
   PROJECT_MANAGEMENT_ANALYSIS.md  PM/workflow analysis (2026-06-29)
   work-orders/      DEPRECATED — historical specs; tracking is now GitHub Issues
@@ -93,14 +93,53 @@ Use `/refactor` to run each extraction step safely.
 
 ## Supabase Schema
 
-| Table    | Purpose                                        |
-|----------|------------------------------------------------|
-| sessions | All workouts — erg, strength, cycling, rest    |
-| vitals   | Daily health — RHR, HRV, sleep, bodyweight     |
+**13 tables, 22 migrations** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
+2026-07-01. The core calendar plus the strength subsystem (Cowork-built, now in
+active coach use):
 
-sessions columns: `date, type, label, duration, srpe, exercises, watts, hr, distance, status`
+| Table               | Purpose                                                         |
+|---------------------|-----------------------------------------------------------------|
+| `sessions`          | Master training calendar — all modalities (erg, strength, bike, rest) |
+| `vitals`            | Daily health — RHR, HRV, sleep, bodyweight + Google-Health activity  |
+| `templates`         | Strength session templates (5, coach-origin: 2 Upper / 2 Lower / Prehab) |
+| `template_exercises`| Per-template prescriptions (sets/reps/rpe/`set_plan` jsonb/timed)     |
+| `strength_workouts` | Completed strength session container; links to calendar + template   |
+| `strength_sets`     | Per-set actuals (weight/reps/rpe/warmup/hold) — real logged data only |
+| `workout_assignments`| Template→date prescription (pending/in_progress/completed/skipped)   |
+| `exercises`         | Exercise library — 873 rows, **text ids**                            |
+| `exercise_media`    | Demo media per exercise (reference content, not user data)           |
+| `exercise_prefs`    | Per-user, per-exercise preferences (e.g. rest seconds)               |
+| `coach_messages`    | Legacy/experimental in-app chat rail (see Coaching data model)       |
+| `backup_snapshots`  | Daily full-DB JSON snapshots (backup cron)                           |
 
-Status values: `"logged"` (completed) or `"planned"` (prescription).
+**`sessions` columns:** `date` (**text `MM/DD/YY`**), `type`, `label`, `duration`,
+`srpe`, `prs`, `exercises` (jsonb), `coach_note`, `status`, `coach_flag`,
+`avg_watts`, `avg_hr`, `distance_m`, `source` (default `portal`; Coach writes
+`coach`), `user_id`. **No watt-target columns — targets live in `label` +
+`coach_note`.** Status values: `"logged"` (completed) or `"planned"` (prescription).
+
+**`vitals`:** `date` is a real `date` type; upsert on `(user_id, date)`. RHR/HRV/
+sleep/bodyweight and the Google-Health columns (`steps_count`, `distance_m`,
+`active_minutes`, `calories_kcal`) auto-fill via the vitals-import cron.
+**`readiness` + `soreness` are the only manual inputs** (morning check-in).
+
+**Strength logging convention:** a coach-logged strength session is a
+`strength_workouts` container with `status='completed'`, `origin='coach'`, linked
+to the calendar via `session_id → sessions.id` and to the template via
+`template_id`; the breakdown goes in `notes` and `prs` lands on the `sessions`
+row. Only populate `strength_sets` when real per-set data exists (in-app logging)
+— never fabricate reps from Fitbod session-level stickers. `workout_assignments`
+is not yet wired into the coach flow.
+
+**Data-layer gotchas (honour on every write):**
+- Supply the `user_id` UUID explicitly on inserts — `auth.uid()` is the column
+  default but does not resolve through the MCP connector.
+- Order `sessions` chronologically with `to_date(date,'MM/DD/YY')` (date is text).
+- `UNIQUE(date, label)` on `sessions` — temp-suffix labels before bulk shuffles
+  (`set label = label || '~tmp'`).
+- Vitals upsert: `on conflict (user_id, date) do update`.
+- DDL via `apply_migration` (named), not raw `execute_sql`.
+- Read back every write.
 
 ## Training Science Domain
 
@@ -115,11 +154,20 @@ Status values: `"logged"` (completed) or `"planned"` (prescription).
   Negative = fatigued. The "form" number.
 - **sRPE** — How hard a session felt on a 1–10 scale (subjective).
 - **CP** (Critical Power) — The highest power you can sustain indefinitely.
-  Currently estimated at ~190W; CP test planned for 1 Jul.
-- **Polarized TID** — 80% easy (Zone 2), 20% hard (threshold/VO₂max).
+  **~205W provisional (rowing)**; revalidate via rested 1-min + 4-min tests.
+  Rowing zones off this anchor: **UT2 113–144 / UT1 144–164 / AT 164–205 W**.
+- **Current model — pure base + strength** (reverted from polarised on 2026-06-29):
+  rowing is aerobic volume only (UT1/UT2 — no programmed threshold/VO₂); the bike
+  is a complementary Z1/Z2 aerobic carrier, never a programmed intensity source;
+  strength is **2 Upper + 2 Lower per week**, Lowers ≥3 days apart, alternating
+  RDL-led / quad-unilateral to manage the rehab hamstring.
 - **Microcycle** — One week training pattern. Home weeks = loading. FIFO = deload.
 
 ## Integration Roadmap
+
+**Live now:** **Google Health API** auto-syncs daily vitals into the `vitals`
+table (RHR/HRV/sleep/bodyweight + steps/distance/active-minutes/calories) via the
+`vitals-import` edge function + cron. No manual health-export step.
 
 Planned external data sources (to be built after refactor foundation is solid):
 
@@ -260,6 +308,20 @@ library documentation. Use it before WebSearch for any library in the stack.
 **Fall back to WebSearch when:** `resolve-library-id` returns no results, or the
 library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
 vite-plugin-pwa).
+
+### Supabase (coaching data model)
+
+The **integration model was ratified 2026-07-01**: Coach (Claude in chat) operates
+natively via the **Supabase MCP connector, writing directly to the DB** (`source='coach'`)
+— reading vitals, and inserting/updating `sessions`, `strength_workouts`, etc. This
+is the live coaching rail, so **Code and Coach share one source of truth: this file
+plus the schema above.** The in-app Anthropic-API path (`coach_messages` table) was
+trialed and set aside — treat it as legacy/experimental unless revived.
+
+**Bridge discipline persists** even though Code holds repo + schema + deploy: Scott
+authorises consequential/destructive/schema changes; review structure before material
+writes; read back every write. Honour the data-layer gotchas under *Supabase Schema*
+on every insert.
 
 ## Change Procedure (PR-centric)
 
