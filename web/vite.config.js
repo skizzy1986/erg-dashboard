@@ -102,11 +102,16 @@ export default defineConfig({
         lines: 48,
         functions: 46,
         branches: 40,
-        // Commercial-baseline gate (80/80/70) for new code, applied per-file as
-        // it lands. The global floor above ratchets toward this as the monolith
-        // is extracted and its exclusions fall away.
+        // Commercial-baseline gate (80/80/70) for new/extracted code, applied
+        // per-file as it lands. The global floor above ratchets toward this as
+        // the monolith is decomposed and its exclusions fall away.
         'src/utils/sentry.js': { lines: 80, functions: 80, branches: 70 },
         'src/components/ErrorFallback.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/views/StrengthView.jsx': {
           lines: 80,
           functions: 80,
           branches: 70,
