@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePM5 } from '../hooks/usePM5';
 import { useOfflineQueue } from '../hooks/useOfflineQueue';
 import { supabase } from '../supabaseClient';
@@ -468,46 +468,49 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
   const { status, metrics, summary, error, connect, reset } = usePM5();
   const { addToQueue } = useOfflineQueue();
   const queryClient = useQueryClient();
-  const [saving, setSaving] = useState(false);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todaySession =
     plannedSessions.find((s) => s.date === todayStr && s.type === 'erg') ||
     null;
 
-  async function saveSession({ srpe, notes, date }) {
-    setSaving(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const row = {
-      date,
-      type: 'erg',
-      label: todaySession?.label ?? 'Erg Session',
-      duration: Math.round((summary.elapsedTime || 0) / 60),
-      srpe,
-      watts: summary.avgWatts,
-      distance: summary.distance,
-      status: 'logged',
-      source: 'bluetooth',
-      exercises: notes ? [{ name: 'Notes', notes }] : [],
-      user_id: user?.id,
-    };
+  const saveMutation = useMutation({
+    mutationFn: async ({ srpe, notes, date }) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const row = {
+        date,
+        type: 'erg',
+        label: todaySession?.label ?? 'Erg Session',
+        duration: Math.round((summary.elapsedTime || 0) / 60),
+        srpe,
+        watts: summary.avgWatts,
+        distance: summary.distance,
+        status: 'logged',
+        source: 'bluetooth',
+        exercises: notes ? [{ name: 'Notes', notes }] : [],
+        user_id: user?.id,
+      };
 
-    if (navigator.onLine) {
-      const { error: dbError } = await supabase.from('sessions').insert(row);
-      if (dbError) {
+      if (navigator.onLine) {
+        const { error: dbError } = await supabase.from('sessions').insert(row);
+        if (dbError) {
+          addToQueue(row);
+        }
+      } else {
         addToQueue(row);
       }
-    } else {
-      addToQueue(row);
-    }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      reset();
+      if (onSessionSaved) onSessionSaved();
+    },
+  });
 
-    queryClient.invalidateQueries({ queryKey: ['sessions'] });
-    setSaving(false);
-    reset();
-    if (onSessionSaved) onSessionSaved();
-  }
+  const saving = saveMutation.isPending;
+  const saveSession = (payload) => saveMutation.mutate(payload);
 
   if (status === 'idle' || status === 'error') {
     return (

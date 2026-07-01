@@ -1,4 +1,5 @@
 import { useState, useEffect, Component, lazy, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   LineChart,
   Line,
@@ -2062,52 +2063,50 @@ export default function App() {
   // hardcoded `sessionLog` seed: db sessions first (newest), then the
   // baked-in history. The app never loses the seed history even if the
   // DB is empty or unreachable — it just shows the seed alone.
-  const [dbSessions, setDbSessions] = useState([]);
-  const [dbStatus, setDbStatus] = useState('loading'); // loading | ok | error
-  const fetchSessions = () => {
-    supabase
-      .from('sessions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          setDbStatus('error');
-          return;
-        }
-        const mapped = (data || [])
-          .filter((r) => r.type !== 'Test')
-          .map((r) => {
-            const raw = (r.type || '').toLowerCase();
-            return {
-              date: r.date,
-              type: normType(r.type, r.label),
-              label: r.label,
-              duration: r.duration,
-              srpe: r.srpe,
-              prs: r.prs,
-              exercises: r.exercises || undefined,
-              coachNote: r.coach_note || undefined,
-              // status drives planned-vs-actual reconciliation. null legacy rows
-              // are treated as actual (completed history) everywhere downstream.
-              status: r.status || null,
-              // flat erg metrics (the `splits` field was removed from the schema)
-              distance_m: r.distance_m,
-              avg_watts: r.avg_watts,
-              avg_hr: r.avg_hr,
-              // raw-type flags survive normType so the renderer can branch reliably
-              _isErg: raw === 'erg',
-              _isCycling: raw === 'cycling' || raw === 'bike' || raw === 'ride',
-              _fromDb: true,
-              _id: r.id,
-            };
-          });
-        setDbSessions(mapped);
-        setDbStatus('ok');
-      });
-  };
-  useEffect(() => {
-    fetchSessions();
-  }, []);
+  const {
+    data: dbSessions = [],
+    isLoading,
+    isError,
+    refetch,
+    dataUpdatedAt,
+  } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data || [])
+        .filter((r) => r.type !== 'Test')
+        .map((r) => {
+          const raw = (r.type || '').toLowerCase();
+          return {
+            date: r.date,
+            type: normType(r.type, r.label),
+            label: r.label,
+            duration: r.duration,
+            srpe: r.srpe,
+            prs: r.prs,
+            exercises: r.exercises || undefined,
+            coachNote: r.coach_note || undefined,
+            // status drives planned-vs-actual reconciliation. null legacy rows
+            // are treated as actual (completed history) everywhere downstream.
+            status: r.status || null,
+            // flat erg metrics (the `splits` field was removed from the schema)
+            distance_m: r.distance_m,
+            avg_watts: r.avg_watts,
+            avg_hr: r.avg_hr,
+            // raw-type flags survive normType so the renderer can branch reliably
+            _isErg: raw === 'erg',
+            _isCycling: raw === 'cycling' || raw === 'bike' || raw === 'ride',
+            _fromDb: true,
+            _id: r.id,
+          };
+        });
+    },
+  });
   // The merged list every display + helper uses. DB sessions are newest,
   // so they go first; the hardcoded seed follows.
   const allSessions = [...dbSessions, ...sessionLog];
@@ -2142,6 +2141,88 @@ export default function App() {
   const totalSessions = loggedSessions.length;
 
   const liftColor = LIFT_COLOR[activeLift] || '#00d4ff';
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#08080d',
+          color: '#7e7e9a',
+          fontFamily: "'DM Mono','Courier New',monospace",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 12,
+          letterSpacing: 2,
+        }}
+      >
+        LOADING SESSIONS…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#08080d',
+          color: '#e8e8f0',
+          fontFamily: "'DM Mono','Courier New',monospace",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 20,
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 360,
+            width: '100%',
+            background: '#1a0d0d',
+            border: '1px solid #ff2d5550',
+            borderRadius: 8,
+            padding: '24px 22px',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ fontSize: 13, color: '#ff2d55', marginBottom: 8 }}>
+            COULDN’T LOAD SESSIONS
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: '#7e7e9a',
+              lineHeight: 1.6,
+              marginBottom: 18,
+            }}
+          >
+            The database couldn’t be reached. Check your connection and try
+            again.
+          </div>
+          <button
+            onClick={() => refetch()}
+            style={{
+              background: '#34d399',
+              border: 'none',
+              borderRadius: 6,
+              padding: '11px 24px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#08080d',
+              cursor: 'pointer',
+              fontFamily: "'DM Mono',monospace",
+              letterSpacing: 1,
+            }}
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -2276,6 +2357,24 @@ export default function App() {
           ))}
         </div>
 
+        {dataUpdatedAt > 0 && (
+          <div
+            style={{
+              fontSize: 9,
+              letterSpacing: 1,
+              color: '#5a5a74',
+              marginBottom: 12,
+            }}
+          >
+            synced{' '}
+            {new Date(dataUpdatedAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })}
+          </div>
+        )}
+
         <ErrorBoundary>
           {/* ── STRENGTH LOGGER VIEW (live set/rep logging → sessions) ── */}
           {view === 'logger' && <StrengthLogger />}
@@ -2286,7 +2385,6 @@ export default function App() {
               plannedSessions={plannedSessions}
               onSessionSaved={() => {
                 setView('log');
-                fetchSessions();
               }}
             />
           )}
@@ -9277,7 +9375,7 @@ export default function App() {
               </div>
 
               {/* Interactive log form — writes to the database */}
-              <LogSessionForm onSaved={fetchSessions} />
+              <LogSessionForm />
 
               {/* sRPE scale reference */}
               <div
