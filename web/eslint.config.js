@@ -63,7 +63,7 @@ export default [
     },
   },
   {
-    files: ['e2e/**/*.{js,jsx}', 'playwright.config.js'],
+    files: ['e2e/**/*.{js,jsx}', 'playwright.config.js', 'vite.config.js'],
     languageOptions: {
       globals: {
         process: 'readonly',

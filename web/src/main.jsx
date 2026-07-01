@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
@@ -9,6 +10,10 @@ import { usePWAInstall } from './hooks/usePWAInstall.js';
 import { useIsMobile } from './hooks/useIsMobile.js';
 import MobileApp from './views/mobile/MobileApp.jsx';
 import { createNotificationChannels } from './utils/notifications.js';
+import { initSentry } from './utils/sentry.js';
+import ErrorFallback from './components/ErrorFallback.jsx';
+
+initSentry();
 
 if (Capacitor.isNativePlatform()) {
   BluetoothLowEnergy.shimWebBluetooth();
@@ -282,8 +287,12 @@ function AuthGate() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthGate />
-    </QueryClientProvider>
+    <Sentry.ErrorBoundary
+      fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}
+    >
+      <QueryClientProvider client={queryClient}>
+        <AuthGate />
+      </QueryClientProvider>
+    </Sentry.ErrorBoundary>
   </React.StrictMode>
 );
