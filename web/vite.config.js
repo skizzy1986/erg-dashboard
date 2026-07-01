@@ -116,6 +116,11 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/views/MobilityView.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
       },
     },
   },
