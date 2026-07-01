@@ -24,14 +24,38 @@ function makeWrapper() {
   return Wrapper;
 }
 
-function mockQuery(data, error = null) {
-  const chain = {
-    select: () => chain,
-    eq: () => chain,
-    order: () => chain,
-    limit: () => Promise.resolve({ data, error }),
-  };
-  fromMock.mockReturnValue(chain);
+// Both useErgSessions and its useAnchors dependency call supabase.from(); branch
+// by table so the erg-session query and the live-CP anchor query each resolve.
+function mockQuery(data, error = null, cp = 205) {
+  fromMock.mockImplementation((table) => {
+    if (table === 'anchors') {
+      const chain = {
+        select: () => chain,
+        is: () =>
+          Promise.resolve({
+            data:
+              cp == null
+                ? []
+                : [
+                    {
+                      key: 'rowing_cp',
+                      value: String(cp),
+                      status: 'provisional',
+                    },
+                  ],
+            error: null,
+          }),
+      };
+      return chain;
+    }
+    const chain = {
+      select: () => chain,
+      eq: () => chain,
+      order: () => chain,
+      limit: () => Promise.resolve({ data, error }),
+    };
+    return chain;
+  });
 }
 
 beforeEach(() => {
@@ -46,11 +70,25 @@ describe('useErgSessions', () => {
     const { result } = renderHook(() => useErgSessions(), {
       wrapper: makeWrapper(),
     });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.data[0]?.zone).toBe('UT1'));
     const s = result.current.data[0];
     expect(s.pace_500m).toBeCloseTo(wattsToPace500(150), 5);
-    expect(s.zone).toBe('UT1');
     expect(s.pace_500m_str).not.toBe('—');
+  });
+
+  it('leaves zone unset when Critical Power is unavailable', async () => {
+    mockQuery(
+      [{ id: 8, date: '2026-06-13', type: 'erg', avg_watts: 150, srpe: 6 }],
+      null,
+      null
+    );
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const s = result.current.data[0];
+    expect(s.zone).toBe(null);
+    expect(s.pace_500m).not.toBe(null);
   });
 
   it('falls back to distance/duration pace when no watts', async () => {
