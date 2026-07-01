@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
+
+// Upload source maps to Sentry only on release builds that carry an auth token
+// (CI). Without the token the plugin is omitted and local builds are untouched.
+const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 export default defineConfig({
   plugins: [
@@ -43,8 +48,21 @@ export default defineConfig({
         ],
       },
     }),
+    // Keep last so it sees the final built assets. No-op without an auth token.
+    ...(uploadSourceMaps
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+          }),
+        ]
+      : []),
   ],
   base: './',
+  // 'hidden' emits source maps for Sentry upload without referencing them from
+  // the shipped bundles, so production source stays out of the browser.
+  build: { sourcemap: uploadSourceMaps ? 'hidden' : false },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -84,6 +102,15 @@ export default defineConfig({
         lines: 48,
         functions: 46,
         branches: 40,
+        // Commercial-baseline gate (80/80/70) for new code, applied per-file as
+        // it lands. The global floor above ratchets toward this as the monolith
+        // is extracted and its exclusions fall away.
+        'src/utils/sentry.js': { lines: 80, functions: 80, branches: 70 },
+        'src/components/ErrorFallback.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
       },
     },
   },
