@@ -56,7 +56,6 @@ import {
   dayStatus,
   daySessions,
 } from './utils/schedule.js';
-import { DAILY_ROUTINE } from './constants/coaching.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
