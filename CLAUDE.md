@@ -93,9 +93,9 @@ Use `/refactor` to run each extraction step safely.
 
 ## Supabase Schema
 
-**13 tables, 22 migrations** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
-2026-07-01. The core calendar plus the strength subsystem (Cowork-built, now in
-active coach use):
+**14 tables, 23 migrations** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
+2026-07-01. The core calendar, the strength subsystem (Cowork-built, now in active
+coach use), and the context store (Code↔Coach shared memory, added by #94):
 
 | Table               | Purpose                                                         |
 |---------------------|-----------------------------------------------------------------|
@@ -111,6 +111,8 @@ active coach use):
 | `exercise_prefs`    | Per-user, per-exercise preferences (e.g. rest seconds)               |
 | `coach_messages`    | Legacy/experimental in-app chat rail (see Coaching data model)       |
 | `backup_snapshots`  | Daily full-DB JSON snapshots (backup cron)                           |
+| `coach_log`         | **Context store** — append-only diary + decision record (Coach's content) |
+| `anchors`           | **Context store** — current calibration + phase state (one live row/key)  |
 
 **`sessions` columns:** `date` (**text `MM/DD/YY`**), `type`, `label`, `duration`,
 `srpe`, `prs`, `exercises` (jsonb), `coach_note`, `status`, `coach_flag`,
@@ -130,6 +132,30 @@ to the calendar via `session_id → sessions.id` and to the template via
 row. Only populate `strength_sets` when real per-set data exists (in-app logging)
 — never fabricate reps from Fitbod session-level stickers. `workout_assignments`
 is not yet wired into the coach flow.
+
+**Context store (`coach_log` + `anchors`) — the single source of truth both tools
+read (Coach via MCP, Code via DB).** Native `date`/`timestamptz` throughout (not the
+legacy `sessions.date` text pattern); RLS single-owner policy like the modern tables.
+
+- **`coach_log`** — append-only diary + decision record. Columns: `date`,
+  `entry_type` (`diary` | `decision` | `observation`), `body` (the narrative/
+  reasoning), `author` (`coach` | `scott`), `tags` (text[]), `supersedes` (nullable
+  self-FK), `created_at`. **Never edit a row in place** — to reverse a past decision,
+  insert a NEW row with `supersedes` pointing at the one it overrides. History is the
+  record of *why we changed our mind*.
+- **`anchors`** — current calibration + phase state. Columns: `key`, `value` (text),
+  `unit`, `status` (`provisional` | `unvalidated` | `confirmed`), `source`,
+  `valid_from`, `superseded_at` (nullable), `note`. **One live row per key** — a
+  partial unique index on `(user_id, key) where superseded_at is null` makes "current
+  value per key" a one-row read. To update, set `superseded_at = now()` on the old row
+  and insert the new one (don't overwrite). Live keys: `rowing_cp`, `bike_ftp`,
+  `current_phase`, `current_block`, `doctrine_sha`.
+- **`doctrine_sha`** pins the canonical doctrine commit (this file +
+  `.claude/skills/training-science.md`). Doctrine *prose stays in git*; only the SHA
+  lives in a row, so both tools agree which version is live. When a doctrine doc
+  changes, Coach supersedes this anchor.
+- **Lanes:** Code owns the schema (tables, structural seed, migrations); Coach owns
+  row content (diary, decisions, anchor updates) via scoped writes; Scott authorises.
 
 **Data-layer gotchas (honour on every write):**
 - Supply the `user_id` UUID explicitly on inserts — `auth.uid()` is the column
