@@ -134,13 +134,15 @@ Issues enter in **Todo**, move to **In-progress** when you start a branch, to
 
 ## How this composes with the software factory
 
-The `.claude/` agent pipeline (`/feature`, `/orchestrate`, `/refactor`,
-`/research` — see `FACTORY.md`) is **how a single issue gets built**, not a
-competing tracker. It already ends in *PR → CI → merge*, so it slots straight
-into this rail:
+The `.claude/` factory pipeline (`/feature`, `/orchestrate`, `/refactor`,
+`/research` — defined in `.claude/skills/orchestrate/SKILL.md`, explained in
+`FACTORY.md`, staffed by the Agency agent library) is **how a single issue gets
+built**, not a competing tracker. It already ends in *PR → CI → merge*, so it
+slots straight into this rail:
 
 ```
-Issue ──▶ /feature or /orchestrate ──▶ research → spec → build → test → review
+Issue ──▶ /feature or /orchestrate ──▶ research → story → spec → build+test
+      │                                        → verify → review+validate
       └─────────────────────────────────────────────────▶ PR (Closes #issue)
 ```
 
@@ -171,8 +173,8 @@ for running this workflow:
 - **`senior` project manager** (`project-manager-senior`) — turn a rough idea
   into well-formed, sequenced issues.
 
-These are generic — always give them erg context (React + Supabase; `sessions` /
-`vitals` tables; CTL/ATL training-load model). Domain knowledge lives in
+These are generic — always prepend `.claude/skills/erg-context.md` (the
+canonical spawn preamble) when invoking them. Deeper domain knowledge lives in
 `.claude/skills/`.
 
 ---

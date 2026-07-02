@@ -59,9 +59,9 @@ coach/
   dependabot.yml  Weekly grouped dependency updates (npm + actions)
   PULL_REQUEST_TEMPLATE.md  PR checklist template
 .claude/
-  agents/       Specialist AI subagents (see Development Workflow below)
-  skills/       Domain knowledge documents Claude reads when relevant
-  commands/     Slash commands for common workflows (/feature, /research, etc.)
+  agents/       Agency agent library (232 agents, 16 divisions) — staffs the pipeline
+  skills/       Pipeline definitions (/orchestrate, /feature, /refactor, /research),
+                erg-context.md spawn preamble, and domain knowledge docs
   settings.json Hooks configuration (automation triggers)
 ```
 
@@ -237,54 +237,59 @@ both npm packages and GitHub Actions versions.
 
 ## Development Workflow (Software Factory)
 
-All development flows through the **orchestrator** — the master coordinator
-that routes requests, spawns specialist agents in sequence, and gates on your
-approval at every stage. Never advances without explicit go-ahead.
+All development flows through the canonical pipeline defined **once** in
+`.claude/skills/orchestrate/SKILL.md`. There is no orchestrator agent — the
+skill prompt, running in the main conversation, orchestrates: it classifies
+the request, spawns Agency-library agents per stage, and stops at three human
+approval gates. It never advances without explicit go-ahead.
 
 ```
-/feature <description>   →  orchestrator runs the full pipeline
-/refactor <module>       →  orchestrator runs the refactor pipeline
-/research <topic>        →  orchestrator runs research only
+/feature <description>   →  alias for /orchestrate
+/orchestrate <idea>      →  the canonical pipeline
+/refactor <module>       →  strangler-fig extraction (Minimal Change Engineer)
+/research <topic>        →  research only (Trend Researcher)
 ```
 
-### Pipeline (orchestrator coordinates these agents in order)
+### The canonical chain (stage → Agency agent)
 
-```
-researcher   →  investigates APIs, docs, patterns
-spec-writer  →  turns description into acceptance criteria + file targets
-             ↑ USER APPROVES SPEC BEFORE BUILD BEGINS
-feature-builder  →  implements following the architecture rules
-test-verifier    →  writes and runs Vitest tests
-code-reviewer    →  APPROVE / REQUEST CHANGES verdict
-             ↑ USER APPROVES BEFORE COMMIT
-             → push to feature branch → PR → CI gates → merge
-```
+| Stage | Agent | Writes? |
+|---|---|---|
+| 1. Research (codebase) | `Codebase Onboarding Engineer` | no |
+| 2. Story | `Product Manager` | no |
+| — **GATE 1: right problem? criteria correct?** | | |
+| 3. Spec | `Workflow Architect` | no |
+| — **GATE 2: design safe? approve before any code** | | |
+| 4. Build + tests | `Backend Architect` / `Frontend Developer` | yes |
+| 5. Test verification | `Test Results Analyzer` | no |
+| 6. Review + Validate | `Code Reviewer` + `Reality Checker` (parallel judges) | no |
+| — **GATE 3: ship?** | | |
+| 7. Deliver | main thread — branch → PR → CI → merge | — |
 
-### Specialist agents (used directly for focused tasks)
+Every spawn is prefixed with `.claude/skills/erg-context.md` (the canonical
+context preamble) plus a stage addendum from the skill — the agents are
+generic; the skill makes them erg-aware. Models are pinned per stage via the
+Agent tool's `model` parameter (sonnet for research/story/verify/review; opus
+for spec/build/validate). Read-only stages are prompt-enforced and checked
+with `git status` before/after each spawn.
 
-| Agent | Use when |
-|---|---|
-| `researcher` | Deep-dive into an API before committing to an approach |
-| `spec-writer` | Write a spec without the full pipeline |
-| `feature-builder` | Implement from an already-approved spec |
-| `test-verifier` | Add tests to existing code |
-| `code-reviewer` | Review a diff before committing |
-| `refactor-agent` | Extract one module from erg-dashboard.jsx |
+## Agency Agents (the full library staffs the factory)
 
-## Agency Agents (full library installed)
-
-In addition to the 12 project-specific pipeline agents, the **complete Agency
-agent library** (`msitarzewski/agency-agents`) is installed: **16 divisions,
-232 agents**. They are advisory and operational — they inform, plan, validate,
-and support, but do **not** write code directly or replace the core pipeline.
+The **complete Agency agent library** (`msitarzewski/agency-agents`) is
+installed: **16 divisions, 232 agents**. As of 2026-07-02 the library **staffs
+the pipeline** — the 12 project-specific pipeline agents were retired (git
+history is their archive). Agency agents both advise *and* build, but code
+still ships only through the gated pipeline and lands as a PR per
+`WORKFLOW.md` — never as a direct commit from a loose agent.
 
 > **Which agent for which job?** See **[`.claude/AGENTS.md`](.claude/AGENTS.md)** —
-> a task → agent routing map so the 244-file library is navigable, not sprawl.
+> a task → agent routing map so the 232-file library is navigable, not sprawl.
 
 Installed in **two locations** (2026-06-29):
 - Globally at `~/.claude/agents/` (the upstream installer's default).
 - Committed into this repo's `.claude/agents/` (so they persist and version with
-  the project). Total there = 244 = 232 Agency + the 12 pipeline agents.
+  the project). **Never edit the library files** — all erg-specific behaviour
+  (context, model pins, read-only discipline, persona reframing) is applied at
+  spawn time by the skills, so the 232 files stay pristine and re-installable.
 
 Agency agent files are division-prefixed (e.g. `project-management-project-shepherd.md`,
 `product-manager.md`, `testing-test-results-analyzer.md`). To list divisions or
@@ -296,8 +301,9 @@ security, spatial-computing, specialized, support, testing.
 
 ### Most relevant divisions for this solo dashboard
 
-Most of the 232 are irrelevant to a personal React/Supabase app (game-dev, GIS,
-real-estate, sales, …). The high-value ones:
+Beyond the pipeline roles above, most of the 232 are irrelevant to a personal
+React/Supabase app (game-dev, GIS, real-estate, sales, …). The high-value
+advisory ones:
 
 | Division | Use for |
 |---|---|
@@ -310,14 +316,12 @@ Workflow and backlog live in GitHub Issues/Projects — see `WORKFLOW.md`.
 
 ### Important: provide erg-dashboard context
 
-Agency agents are generic — they have no knowledge of rowing, CTL/ATL, Supabase schema, or
-the project architecture. Always give them relevant context when invoking:
-
-> "This is a personal rowing/cycling training dashboard (React + Supabase). The `sessions`
-> table tracks all workouts; the `vitals` table tracks daily health metrics (RHR, HRV, sleep)."
-
-The domain knowledge they need is in `.claude/skills/training-science.md` and
-`.claude/skills/supabase-patterns.md` — paste the relevant sections when context matters.
+Agency agents are generic — they have no knowledge of rowing, CTL/ATL, Supabase
+schema, or the project architecture. **Prepend the full contents of
+`.claude/skills/erg-context.md` to every spawn** — the pipeline skills do this
+automatically; do the same when invoking an Agency agent directly. Deeper
+domain knowledge lives in `.claude/skills/training-science.md` and
+`.claude/skills/supabase-patterns.md`.
 
 ## MCP Servers
 

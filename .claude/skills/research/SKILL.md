@@ -1,15 +1,10 @@
 ---
 name: research
 description: Deep-dive into a topic, API, or concept before writing any code. Use when the user wants to investigate an external service (Strava, Garmin, Concept2, Supabase), understand a library, explore training science concepts, or answer "how would we integrate X?" before committing to an approach.
+argument-hint: <topic>
 ---
 
 Deep-dive into a topic, API, or concept before writing any code.
-
-## What this command does
-
-> Student note: Good software starts with understanding the problem.
-> This command runs a focused research phase before any implementation.
-> It prevents building the wrong thing by investigating first.
 
 ## Usage
 
@@ -26,27 +21,36 @@ Examples:
 
 ## Process
 
-1. Spawn the **researcher** agent with the topic.
+1. Spawn `Trend Researcher` (model: sonnet, READ-ONLY — write no files).
+   Prepend the full contents of `.claude/skills/erg-context.md`, then reframe
+   the persona:
 
-2. The agent will search official documentation, GitHub, and relevant sources.
-   It returns a structured report:
-   - What it found (with sources)
-   - What is confirmed
-   - What is uncertain
-   - A recommendation
+   > You are doing TECHNICAL research, not market intelligence. Investigate the
+   > topic against official documentation. Check Context7 first for stack
+   > libraries (React, Vite, Vitest, @supabase/supabase-js,
+   > @testing-library/react, Recharts): `resolve-library-id` then `query-docs`;
+   > fall back to WebSearch for anything unindexed. For APIs report: auth
+   > method, the specific endpoints this project needs, rate limits, data
+   > formats, and whether a Supabase Edge Function or client-side fetch fits.
+   > For libraries report: React 18 + Vite compatibility, bundle-size impact,
+   > and alternatives considered. For training science: cite sources and note
+   > evidence vs convention. Check findings against the current date — APIs
+   > change. If credentials are needed, identify what and how to obtain them —
+   > never how to hardcode them.
 
-3. Present the full report to the user.
+2. The report must be structured:
+   - **What I found** (with sources)
+   - **Confirmed**
+   - **Uncertain**
+   - **Recommendation**
 
-4. Ask: "Does this research answer your question?
-   Next step: use /spec to turn this into a technical specification."
+3. Present the full report to Scott.
+
+4. Ask: "Does this answer your question? Next step: `/orchestrate` to turn it
+   into a spec'd feature."
 
 ## Notes
 
-- Research does NOT write code. It informs the next step (/spec).
-- If the topic requires credentials (OAuth flows), the research phase identifies
-  what credentials are needed and how to obtain them — not how to hardcode them.
-- Research findings should be checked against the current date (June 2026) —
-  APIs change and research should reflect current versions.
-
+- Research does NOT write code or files. It feeds the pipeline's Spec stage.
 
 ARGUMENTS: $ARGUMENTS

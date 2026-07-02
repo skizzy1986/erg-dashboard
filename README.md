@@ -196,12 +196,12 @@ with Gradle. The APK is uploaded as a build artifact (retained 14 days).
 
 ## Development Workflow
 
-All feature work flows through a **software factory** — a chain of specialist
-Claude agents coordinated by an orchestrator, with human approval gates before
-code is written and before code is merged.
+All feature work flows through a **software factory** — a chain of Claude
+agents from the Agency library, orchestrated by the `/orchestrate` skill, with
+three human approval gates.
 
 ```
-/feature <description>   →  full pipeline
+/feature <description>   →  full pipeline (alias for /orchestrate)
 /refactor <module>       →  safe strangler-fig extraction
 /research <topic>        →  research only, no code
 ```
@@ -209,13 +209,14 @@ code is written and before code is merged.
 **Pipeline:**
 
 ```
-researcher  →  spec-writer  →  [APPROVE SPEC]
-            →  feature-builder  →  test-verifier  →  code-reviewer
-            →  [APPROVE BUILD]  →  PR  →  CI  →  merge
+research  →  story  →  [GATE 1]  →  spec  →  [GATE 2]
+          →  build + tests  →  verify  →  review + validate
+          →  [GATE 3]  →  PR  →  CI  →  merge
 ```
 
-Agents live in `.claude/agents/`. The orchestrator never advances to the next
-stage without explicit approval.
+The Agency agent library lives in `.claude/agents/`; the pipeline itself is
+defined in `.claude/skills/orchestrate/SKILL.md` (see `FACTORY.md` for the
+model). It never advances past a gate without explicit approval.
 
 ---
 
