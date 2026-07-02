@@ -1,36 +1,42 @@
 # Agent routing — which agent for which job
 
-> The full Agency library (232 agents, 16 divisions) plus 12 erg pipeline agents
-> are installed in `.claude/agents/`. This file is the map: pick the right one
-> fast instead of scrolling 244 files. Background on the library is in CLAUDE.md
-> ("Agency Agents"); the build pipeline is in FACTORY.md.
+> The full Agency library (232 agents, 16 divisions) is installed in
+> `.claude/agents/` and **staffs the factory pipeline** (the 12 project pipeline
+> agents were retired 2026-07-02; git history is their archive). This file is
+> the map: pick the right agent fast instead of scrolling 232 files. Background
+> on the library is in CLAUDE.md ("Agency Agents"); the pipeline is defined in
+> `.claude/skills/orchestrate/SKILL.md` and explained in FACTORY.md.
 
 ## Always give Agency agents erg context
 
-Agency agents are generic — they know nothing about rowing, CTL/ATL, or the schema.
-Paste this when you invoke one:
-
-> Personal rowing/cycling/strength training dashboard (React 18 + Vite, Supabase,
-> Vercel, Capacitor/Android). `sessions` table = all workouts; `vitals` table =
-> daily RHR/HRV/sleep/bodyweight. Training-load model is CTL/ATL/TSB. Domain
-> detail lives in `.claude/skills/` (training-science, supabase-patterns,
-> architecture, testing-patterns).
+Agency agents are generic — they know nothing about rowing, CTL/ATL, or the
+schema. **Prepend the full contents of `.claude/skills/erg-context.md` to every
+spawn.** The pipeline skills do this automatically; do the same when invoking
+one directly.
 
 ## First choice: build through the pipeline, not loose agents
 
-For anything that ships code, use the command — it sequences the right pipeline
-agents and gates on your approval. Reach for individual Agency agents only for the
-advisory/planning work in the table below.
+For anything that ships code, use the command — it sequences the right agents
+with the right context and gates on your approval.
 
 | Command | Use for |
 |---|---|
-| `/feature <desc>` or `/orchestrate` | New feature or bug fix — full chain: research → spec → build → test → review → PR |
-| `/refactor <module>` | One strangler-fig extraction from `erg-dashboard.jsx` |
+| `/feature <desc>` or `/orchestrate` | New feature or bug fix — full chain: research → story → spec → build+test → verify → review+validate → PR |
+| `/refactor <module>` | One strangler-fig extraction (erg-dashboard.jsx remainder, ProgramView #77, StrengthLogger #79) |
 | `/research <topic>` | Investigate an API/library/concept before building |
 
-Pipeline agents (in `.claude/agents/`, driven by the orchestrator): `researcher`,
-`story-writer`, `spec-writer`, `backend-builder`, `frontend-builder`,
-`test-verifier`, `implementation-validator`, `code-reviewer`, `refactor-agent`.
+### Pipeline roles (stage → Agency agent)
+
+| Stage | Agent |
+|---|---|
+| Research (codebase) | `Codebase Onboarding Engineer` |
+| Story | `Product Manager` |
+| Spec | `Workflow Architect` |
+| Build + tests | `Backend Architect` / `Frontend Developer` |
+| Test verification | `Test Results Analyzer` |
+| Review + Validate | `Code Reviewer` + `Reality Checker` |
+| Refactor extraction | `Minimal Change Engineer` |
+| External research | `Trend Researcher` |
 
 ## Advisory Agency agents — task → agent
 
@@ -68,7 +74,8 @@ sales, real-estate, …) are noise here.
 
 ## Rule of thumb
 
-Advisory agents **inform, plan, and validate** — they don't write app code. Code
-ships only through the pipeline (`/feature`, `/orchestrate`, `/refactor`) and lands
-as a PR per WORKFLOW.md. If an Agency agent's output is a recommendation, the next
-step is an Issue, not a commit.
+Agency agents both **advise and build** — but code ships only through the gated
+pipeline (`/feature`, `/orchestrate`, `/refactor`) and lands as a PR per
+WORKFLOW.md, never as a direct commit from a loose agent. If an agent invoked
+outside the pipeline produces a recommendation, the next step is an Issue, not
+a commit.
