@@ -120,7 +120,10 @@ coach use), and the context store (Code↔Coach shared memory, added by #94):
 `srpe`, `prs`, `exercises` (jsonb), `coach_note`, `status`, `coach_flag`,
 `avg_watts`, `avg_hr`, `distance_m`, `source` (default `portal`; Coach writes
 `coach`), `user_id`. **No watt-target columns — targets live in `label` +
-`coach_note`.** Status values: `"logged"` (completed) or `"planned"` (prescription).
+`coach_note`.** Status values: `"actual"`, `"completed"`, or `"logged"` (all mean
+completed — `"logged"` is written by the live PM5 Bluetooth save path, `"actual"`/
+`"completed"` by bulk-imported history), `"planned"` (prescription), or
+`"cancelled"`.
 
 **`vitals`:** `date` is a real `date` type; upsert on `(user_id, date)`. RHR/HRV/
 sleep/bodyweight and the Google-Health columns (`steps_count`, `distance_m`,
