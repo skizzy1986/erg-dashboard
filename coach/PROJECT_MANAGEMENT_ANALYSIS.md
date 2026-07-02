@@ -4,6 +4,18 @@
 > Produced 2026-06-29 by the Project Management division. Read alongside
 > `WORKFLOW.md` (the new standing process) and `CLAUDE.md` (project briefing).
 
+> **Addendum 2026-07-02 — status update.** Three days of execution overtook
+> several findings; treat the figures below as historical. Finding 1 (three
+> disconnected trackers) and Finding 3 (agents documented-but-not-installed)
+> are **resolved** — GitHub Issues/Projects is the single rail, 244 agents are
+> installed. Finding 5 (stalled refactor) is **nearly resolved**:
+> `erg-dashboard.jsx` is down from 9,733 to **~960 lines** (a shell/router;
+> ~20 extraction PRs merged 2026-06-29 → 07-01); the endgame is tracked in
+> issue #114. The CI coverage gate cited in Finding 7 now lives solely in
+> `web/vite.config.js` (a ratchet — do not quote numbers in docs). Findings 6
+> (dormant integrations) and the StrengthLogger test gap remain open, tracked
+> in issues #116 and #114.
+
 ---
 
 ## Executive summary
