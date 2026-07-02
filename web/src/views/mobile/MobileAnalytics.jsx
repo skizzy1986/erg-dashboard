@@ -326,8 +326,8 @@ export default function MobileAnalytics() {
       {(() => {
         const today = new Date().toISOString().slice(0, 10);
         const upcoming = (sessionsData ?? [])
-          .filter((s) => s.status === 'planned' && s.date >= today)
-          .sort((a, b) => (a.date < b.date ? -1 : 1))
+          .filter((s) => s.status === 'planned' && toISODate(s.date) >= today)
+          .sort((a, b) => (toISODate(a.date) < toISODate(b.date) ? -1 : 1))
           .slice(0, 3);
         return (
           <div style={{ marginBottom: 8 }}>
