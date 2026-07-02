@@ -46,7 +46,7 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     utils/          Pure functions — analysis, formatting, scheduling
     components/     Shared UI components (LogEntry, WorkoutItem, charts)
     views/          Extracted dashboard tabs (desktop + mobile)
-    erg-dashboard.jsx  Monolith being decomposed (~9,700 lines — see refactor)
+    erg-dashboard.jsx  Former monolith, now a ~960-line shell/router (see refactor)
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     main.jsx        Auth gate (Supabase email/password login)
 supabase/
@@ -77,10 +77,12 @@ coach/
 
 ## Architecture: Strangler Fig Refactor
 
-The main file (`web/src/erg-dashboard.jsx`, **~9,700 lines** as of 2026-06-29 —
-the refactor is in progress and tracked in GitHub issue #52) is being decomposed
-into a modular structure. `App.jsx` has not been reached yet. The safe migration
-order:
+The refactor is nearly complete (tracked in GitHub issue #52). The former
+monolith `web/src/erg-dashboard.jsx` is down to **~960 lines** (2026-07-02) — a
+shell/router that composes the extracted views. Remaining large files:
+`views/ProgramView.jsx` (~3,050 lines, being split into `views/program/*`, #77)
+and `StrengthLogger.jsx` (~1,665 lines, untested, #79). `App.jsx` has not been
+reached yet. The safe migration order:
 
 1. Extract constants and utils (zero risk — pure JS, no JSX)
 2. Extract hooks (low risk — same data, reorganised)
@@ -209,7 +211,7 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 | Job | What it checks |
 |---|---|
 | `Lint & Format` | ESLint errors + Prettier formatting + `npm audit --audit-level=high` |
-| `Test & Coverage` | All Vitest tests pass; coverage meets the ratcheting thresholds in `web/vite.config.js` — baseline **48% lines / 46% functions / 40% branches** (set by the #62 keystone), raised as extractions add tests |
+| `Test & Coverage` | All Vitest tests pass; coverage meets the ratcheting thresholds in `web/vite.config.js` (`test.coverage.thresholds` — the **only** source of truth for the numbers), raised as extractions add tests |
 | `Build` | `npm run build` exits 0 (runs only after Test passes) |
 
 Coverage thresholds live in `web/vite.config.js` (`test.coverage.thresholds`) and
@@ -396,4 +398,4 @@ without needing to prompt Coach.
 - Always run `npm test` before committing
 - Always run `npm run lint` and `npm run format:check` before pushing — CI will fail if either does not pass
 - Never bypass the pre-commit hook (`--no-verify`) without an explicit reason
-- Coverage thresholds (baseline 48% lines / 46% functions / 40% branches — the ratchet in `web/vite.config.js`) are enforced in CI — new code should include tests, and the numbers only go up
+- Coverage thresholds (the ratchet in `web/vite.config.js` — the only source of truth for the numbers) are enforced in CI — new code should include tests, and the numbers only go up
