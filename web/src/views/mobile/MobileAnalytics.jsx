@@ -4,6 +4,9 @@ import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { DAILY_TSS } from '../../constants/tssData.js';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
+import { parseDurationMinutes } from '../../utils/duration.js';
+import { toISODate } from '../../utils/dateFormat.js';
+import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 
 function tsbColor(tsb) {
   if (tsb > 10) return '#34d399';
@@ -43,6 +46,29 @@ export default function MobileAnalytics() {
     }
     return buckets;
   }, [loadData]);
+  const recentLive = useMemo(() => {
+    return (sessionsData ?? [])
+      .filter((s) => COMPLETED_STATUSES.includes(s.status))
+      .slice()
+      .sort((a, b) => {
+        const ai = toISODate(a.date);
+        const bi = toISODate(b.date);
+        return ai < bi ? 1 : ai > bi ? -1 : 0;
+      })
+      .slice(0, 5)
+      .map((s) => ({
+        date: s.date,
+        tss: Math.round(
+          (parseDurationMinutes(s.duration) * (s.srpe ?? 0)) / 60
+        ),
+        note: s.label ?? s.type ?? '',
+      }));
+  }, [sessionsData]);
+
+  const recentSessions = recentLive.length
+    ? recentLive
+    : DAILY_TSS.slice().reverse().slice(0, 5);
+
   const color = tsbColor(latest.tsb);
   const signal = tsbSignal(latest.tsb);
   const dateStr = new Date().toLocaleDateString('en-GB', {
@@ -276,30 +302,25 @@ export default function MobileAnalytics() {
         >
           RECENT SESSIONS
         </div>
-        {DAILY_TSS.slice()
-          .reverse()
-          .slice(0, 5)
-          .map((s) => (
-            <div
-              key={s.date}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '10px 0',
-                borderBottom: '1px solid #4a4a6833',
-              }}
-            >
-              <span style={{ fontSize: 12, color: '#e8e8f0' }}>{s.note}</span>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 10, color: '#7e7e9a' }}>{s.date}</div>
-                <div
-                  style={{ fontSize: 12, fontWeight: 700, color: '#34d399' }}
-                >
-                  {s.tss} TSS
-                </div>
+        {recentSessions.map((s, i) => (
+          <div
+            key={`${s.date}-${i}`}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '10px 0',
+              borderBottom: '1px solid #4a4a6833',
+            }}
+          >
+            <span style={{ fontSize: 12, color: '#e8e8f0' }}>{s.note}</span>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, color: '#7e7e9a' }}>{s.date}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#34d399' }}>
+                {s.tss} TSS
               </div>
             </div>
-          ))}
+          </div>
+        ))}
       </div>
 
       {(() => {
