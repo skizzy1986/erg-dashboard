@@ -24,7 +24,6 @@ import {
   RHR_BASELINE,
   HRV_BASELINE,
 } from './constants/trainingConfig.js';
-import { SEASON } from './constants/schedule.js';
 import { C } from './constants/ui.js';
 import { normType } from './utils/formatting.js';
 
