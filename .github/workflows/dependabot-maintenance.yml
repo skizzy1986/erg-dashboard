@@ -1,0 +1,86 @@
+name: Dependabot maintenance
+
+# Keeps the Dependabot auto-merge pipeline flowing despite the "branches must be
+# up to date" protection rule. When the first grouped Monday PR merges, the
+# others fall behind and stall: Dependabot only reliably self-rebases on
+# conflicts, not merely-behind branches.
+#
+# rebase-behind nudges stalled PRs with an "@dependabot rebase" comment —
+# Dependabot's own push retriggers CI, which lets an already-armed auto-merge
+# complete. (gh pr update-branch would NOT work here: a GITHUB_TOKEN push never
+# retriggers the required checks, so auto-merge would stall forever.)
+#
+# stall-alert opens/updates a tracking issue for Dependabot PRs open >3 days —
+# usually a failing check or a major bump awaiting manual review.
+
+on:
+  schedule:
+    # Mondays, after the ~01:37 UTC Dependabot batch, to un-stall the merge cascade
+    - cron: '17 4,8,12,16 * * 1'
+    # Thursdays, for the stalled-PR sweep
+    - cron: '17 9 * * 4'
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  rebase-behind:
+    name: Rebase Dependabot PRs that fell behind
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 4,8,12,16 * * 1'
+    steps:
+      - name: Comment "@dependabot rebase" on behind PRs
+        run: |
+          gh pr list --author 'app/dependabot' --state open \
+            --json number,mergeStateStatus \
+            --jq '.[] | select(.mergeStateStatus == "BEHIND") | .number' |
+          while read -r pr; do
+            echo "PR #$pr is behind — requesting rebase"
+            gh pr comment "$pr" --body '@dependabot rebase'
+          done
+
+  stall-alert:
+    name: Flag Dependabot PRs open more than 3 days
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 9 * * 4'
+    steps:
+      - name: Open or update the tracking issue
+        run: |
+          cutoff=$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          stalled=$(gh pr list --author 'app/dependabot' --state open \
+            --json number,title,createdAt,statusCheckRollup |
+            jq -r --arg cutoff "$cutoff" '
+              [ .[] | select(.createdAt < $cutoff) |
+                "- #\(.number) \(.title) (open since \(.createdAt[:10]), checks: \(
+                  [.statusCheckRollup[]? | (.conclusion // "PENDING")] |
+                  if length == 0 then "none"
+                  elif all(. == "SUCCESS") then "green"
+                  else "not green" end))"
+              ] | join("\n")')
+
+          title='Dependabot PRs need attention'
+          existing=$(gh issue list --state open --search "\"$title\" in:title" \
+            --json number,title |
+            jq -r --arg t "$title" '.[] | select(.title == $t) | .number' | head -1)
+
+          if [ -z "$stalled" ]; then
+            echo "No Dependabot PRs open >3 days."
+            if [ -n "$existing" ]; then
+              gh issue close "$existing" --comment 'All Dependabot PRs resolved — closing.'
+            fi
+            exit 0
+          fi
+
+          body=$(printf 'These Dependabot PRs have been open for more than 3 days — stalled auto-merge, failing checks, or majors awaiting manual review:\n\n%s\n\n_Maintained automatically by the Dependabot maintenance workflow._' "$stalled")
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body "$body"
+            echo "Updated issue #$existing"
+          else
+            gh issue create --title "$title" --body "$body" --label dependencies
+          fi

@@ -1,10 +1,19 @@
 name: Dependabot auto-merge
 
-# Auto-approves and enables auto-merge for Dependabot patch/minor PRs. Auto-merge
-# only completes once the required CI gates (lint, test, build) are green, so the
-# existing checks remain authoritative. Major updates are left for manual review.
+# Enables auto-merge for Dependabot patch/minor PRs. Auto-merge only completes
+# once the required CI gates (lint, test, build) are green, so the existing
+# checks remain authoritative. Major updates are left for manual review.
+#
+# No approval step: branch protection does not require reviews, and GitHub
+# Actions is not permitted to approve PRs in this repo (the approve attempt is
+# what broke the 2026-07-02 run on PR #124).
 #
 # Prerequisite: repo Settings → General → "Allow auto-merge" must be enabled.
+#
+# Caveat: the merge is performed with GITHUB_TOKEN, so the resulting push to
+# main does not trigger push-to-main workflows (CI, CodeQL, e2e, Lighthouse,
+# doctrine-sha-guard). All of them also run on the PR and/or on schedule, and
+# Vercel deploys via its own GitHub App, so nothing load-bearing is skipped.
 
 on: pull_request
 
@@ -14,7 +23,7 @@ permissions:
 
 jobs:
   auto-merge:
-    name: Approve and auto-merge
+    name: Enable auto-merge
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
@@ -24,13 +33,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve and enable auto-merge (patch & minor)
+      - name: Enable auto-merge (patch & minor)
         if: |
           steps.meta.outputs.update-type == 'version-update:semver-patch' ||
           steps.meta.outputs.update-type == 'version-update:semver-minor'
-        run: |
-          gh pr review --approve "$PR_URL"
-          gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
