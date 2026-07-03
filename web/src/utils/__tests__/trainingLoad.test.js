@@ -174,6 +174,88 @@ describe('calcTrainingLoad', () => {
     });
   });
 
+  describe('same-day aggregation', () => {
+    it('sums TSS from two entries on the same date into one result', () => {
+      const result = calcTrainingLoad(
+        [
+          { date: '2026-06-13', tss: 30, note: 'AM erg' },
+          { date: '2026-06-13', tss: 20, note: 'PM strength' },
+        ],
+        '2026-06-13'
+      );
+      expect(result.length).toBe(1);
+      expect(result[0].tss).toBe(50);
+    });
+
+    it('concatenates same-day notes with "; "', () => {
+      const result = calcTrainingLoad([
+        { date: '2026-06-13', tss: 30, note: 'AM erg' },
+        { date: '2026-06-13', tss: 20, note: 'PM strength' },
+      ]);
+      expect(result[0].note).toBe('AM erg; PM strength');
+    });
+
+    it('never emits the literal "undefined" when one same-day note is missing', () => {
+      const result = calcTrainingLoad([
+        { date: '2026-06-13', tss: 30, note: undefined },
+        { date: '2026-06-13', tss: 20, note: 'PM strength' },
+      ]);
+      expect(result[0].note).toBe('PM strength');
+      expect(result[0].note).not.toContain('undefined');
+    });
+
+    it('sums and concatenates notes for 3+ entries on the same date', () => {
+      const result = calcTrainingLoad(
+        [
+          { date: '2026-06-13', tss: 30, note: 'AM erg' },
+          { date: '2026-06-13', tss: 20, note: 'PM strength' },
+          { date: '2026-06-13', tss: 10, note: 'evening mobility' },
+        ],
+        '2026-06-13'
+      );
+      expect(result.length).toBe(1);
+      expect(result[0].tss).toBe(60);
+      expect(result[0].note).toBe('AM erg; PM strength; evening mobility');
+    });
+  });
+
+  describe('M/D/YY date normalization', () => {
+    it('normalizes a single M/D/YY entry (not dropped or miskeyed)', () => {
+      const result = calcTrainingLoad(
+        [{ date: '7/1/26', tss: 50, note: 'test' }],
+        '2026-07-01'
+      );
+      expect(result.length).toBe(1);
+      expect(result[0].tss).toBe(50);
+    });
+
+    it('builds a correct range from out-of-lexical-order M/D/YY dates', () => {
+      const result = calcTrainingLoad(
+        [
+          { date: '6/12/26', tss: 10, note: '' },
+          { date: '6/2/26', tss: 20, note: '' },
+        ],
+        '2026-06-12'
+      );
+      expect(result.length).toBe(11);
+      expect(result[0].date).toBe('06/02');
+      expect(result[result.length - 1].date).toBe('06/12');
+    });
+
+    it('handles mixed ISO and M/D/YY input', () => {
+      const result = calcTrainingLoad(
+        [
+          { date: '2026-06-01', tss: 10, note: 'a' },
+          { date: '6/2/26', tss: 20, note: 'b' },
+        ],
+        '2026-06-02'
+      );
+      expect(result.length).toBe(2);
+      expect(result[0].tss).toBe(10);
+      expect(result[1].tss).toBe(20);
+    });
+  });
+
   describe('TSS passthrough', () => {
     it('TSS in result matches the input value', () => {
       const [entry] = calcTrainingLoad(oneDay('2026-06-13', 75));

@@ -13,16 +13,17 @@
 //   CRON_SECRET                shared secret; caller must send header x-cron-secret
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildRecords } from "./parser.ts";
+import { checkCronSecret } from "./cronGuard.ts";
 
 Deno.serve(async (req: Request) => {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-  // shared-secret guard (function is deployed with verify_jwt=false)
-  const expected = Deno.env.get("CRON_SECRET");
-  if (expected && req.headers.get("x-cron-secret") !== expected) {
-    return json({ error: "unauthorized" }, 401);
-  }
+  // shared-secret guard (function is deployed with verify_jwt=false).
+  // Fails closed: an unset/empty CRON_SECRET, or any header mismatch,
+  // always returns 401 — see cronGuard.ts for the timing-safe compare.
+  const guardResponse = checkCronSecret(req);
+  if (guardResponse) return guardResponse;
 
   const vitalsUrl  = Deno.env.get("VITALS_CSV_URL");
   const sleepUrl   = Deno.env.get("SLEEP_CSV_URL");

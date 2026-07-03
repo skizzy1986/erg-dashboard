@@ -4,9 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const useErgSessionsMock = vi.fn();
+const useAnchorsMock = vi.fn();
 
 vi.mock('../../hooks/useErgSessions.js', () => ({
   useErgSessions: (...args) => useErgSessionsMock(...args),
+}));
+
+vi.mock('../../hooks/useAnchors.js', () => ({
+  useAnchors: (...args) => useAnchorsMock(...args),
 }));
 
 import ErgView from '../ErgView.jsx';
@@ -26,6 +31,12 @@ function renderView() {
 
 beforeEach(() => {
   useErgSessionsMock.mockReset();
+  useAnchorsMock.mockReset();
+  useAnchorsMock.mockReturnValue({
+    cp: 205,
+    cpStatus: 'provisional',
+    cpAvailable: true,
+  });
 });
 
 describe('ErgView', () => {
@@ -98,6 +109,26 @@ describe('ErgView', () => {
       )
     );
     expect(container).toBeTruthy();
+  });
+
+  it('shows the live CP value and status from anchors', () => {
+    useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
+    const { container } = renderView();
+    expect(container.textContent).toContain('205W');
+    expect(container.textContent).toContain('provisional');
+  });
+
+  it('shows "CP unavailable" when the anchor is missing (no stale 190)', () => {
+    useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
+    useAnchorsMock.mockReturnValue({
+      cp: null,
+      cpStatus: null,
+      cpAvailable: false,
+    });
+    const { container } = renderView();
+    // The CP card degrades explicitly instead of showing a resolved wattage.
+    expect(container.textContent).toContain('CP unavailable');
+    expect(container.textContent).toContain('anchor unreachable');
   });
 
   it('renders without crashing with a session', () => {

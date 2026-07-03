@@ -46,11 +46,11 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     utils/          Pure functions — analysis, formatting, scheduling
     components/     Shared UI components (LogEntry, WorkoutItem, charts)
     views/          Extracted dashboard tabs (desktop + mobile)
-    erg-dashboard.jsx  Monolith being decomposed (~9,700 lines — see refactor)
+    erg-dashboard.jsx  Former monolith, now a ~960-line shell/router (see refactor)
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     main.jsx        Auth gate (Supabase email/password login)
 supabase/
-  functions/        Edge Functions (vitals-import from Google Health CSV)
+  functions/        Edge Functions (vitals-import from Google Health API)
 coach/
   PROJECT_MANAGEMENT_ANALYSIS.md  PM/workflow analysis (2026-06-29)
   work-orders/      DEPRECATED — historical specs; tracking is now GitHub Issues
@@ -77,10 +77,12 @@ coach/
 
 ## Architecture: Strangler Fig Refactor
 
-The main file (`web/src/erg-dashboard.jsx`, **~9,700 lines** as of 2026-06-29 —
-the refactor is in progress and tracked in GitHub issue #52) is being decomposed
-into a modular structure. `App.jsx` has not been reached yet. The safe migration
-order:
+The refactor is nearly complete (tracked in GitHub issue #52). The former
+monolith `web/src/erg-dashboard.jsx` is down to **~960 lines** (2026-07-02) — a
+shell/router that composes the extracted views. Remaining large files:
+`views/ProgramView.jsx` (~3,050 lines, being split into `views/program/*`, #77)
+and `StrengthLogger.jsx` (~1,665 lines, untested, #79). `App.jsx` has not been
+reached yet. The safe migration order:
 
 1. Extract constants and utils (zero risk — pure JS, no JSX)
 2. Extract hooks (low risk — same data, reorganised)
@@ -93,14 +95,82 @@ Use `/refactor` to run each extraction step safely.
 
 ## Supabase Schema
 
-| Table    | Purpose                                        |
-|----------|------------------------------------------------|
-| sessions | All workouts — erg, strength, cycling, rest    |
-| vitals   | Daily health — RHR, HRV, sleep, bodyweight     |
+**14 tables, 23 migrations** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
+2026-07-01. The core calendar, the strength subsystem (Cowork-built, now in active
+coach use), and the context store (Code↔Coach shared memory, added by #94):
 
-sessions columns: `date, type, label, duration, srpe, exercises, watts, hr, distance, status`
+| Table               | Purpose                                                         |
+|---------------------|-----------------------------------------------------------------|
+| `sessions`          | Master training calendar — all modalities (erg, strength, bike, rest) |
+| `vitals`            | Daily health — RHR, HRV, sleep, bodyweight + Google-Health activity  |
+| `templates`         | Strength session templates (5, coach-origin: 2 Upper / 2 Lower / Prehab) |
+| `template_exercises`| Per-template prescriptions (sets/reps/rpe/`set_plan` jsonb/timed)     |
+| `strength_workouts` | Completed strength session container; links to calendar + template   |
+| `strength_sets`     | Per-set actuals (weight/reps/rpe/warmup/hold) — real logged data only |
+| `workout_assignments`| Template→date prescription (pending/in_progress/completed/skipped)   |
+| `exercises`         | Exercise library — 873 rows, **text ids**                            |
+| `exercise_media`    | Demo media per exercise (reference content, not user data)           |
+| `exercise_prefs`    | Per-user, per-exercise preferences (e.g. rest seconds)               |
+| `coach_messages`    | Legacy/experimental in-app chat rail (see Coaching data model)       |
+| `backup_snapshots`  | Daily full-DB JSON snapshots (backup cron)                           |
+| `coach_log`         | **Context store** — append-only diary + decision record (Coach's content) |
+| `anchors`           | **Context store** — current calibration + phase state (one live row/key)  |
 
-Status values: `"logged"` (completed) or `"planned"` (prescription).
+**`sessions` columns:** `date` (**text `MM/DD/YY`**), `type`, `label`, `duration`,
+`srpe`, `prs`, `exercises` (jsonb), `coach_note`, `status`, `coach_flag`,
+`avg_watts`, `avg_hr`, `distance_m`, `source` (default `portal`; Coach writes
+`coach`), `user_id`. **No watt-target columns — targets live in `label` +
+`coach_note`.** Status values: `"actual"`, `"completed"`, or `"logged"` (all mean
+completed — `"logged"` is written by the live PM5 Bluetooth save path, `"actual"`/
+`"completed"` by bulk-imported history), `"planned"` (prescription), or
+`"cancelled"`.
+
+**`vitals`:** `date` is a real `date` type; upsert on `(user_id, date)`. RHR/HRV/
+sleep/bodyweight and the Google-Health columns (`steps_count`, `distance_m`,
+`active_minutes`, `calories_kcal`) auto-fill via the vitals-import cron.
+**`readiness` + `soreness` are the only manual inputs** (morning check-in).
+
+**Strength logging convention:** a coach-logged strength session is a
+`strength_workouts` container with `status='completed'`, `origin='coach'`, linked
+to the calendar via `session_id → sessions.id` and to the template via
+`template_id`; the breakdown goes in `notes` and `prs` lands on the `sessions`
+row. Only populate `strength_sets` when real per-set data exists (in-app logging)
+— never fabricate reps from Fitbod session-level stickers. `workout_assignments`
+is not yet wired into the coach flow.
+
+**Context store (`coach_log` + `anchors`) — the single source of truth both tools
+read (Coach via MCP, Code via DB).** Native `date`/`timestamptz` throughout (not the
+legacy `sessions.date` text pattern); RLS single-owner policy like the modern tables.
+
+- **`coach_log`** — append-only diary + decision record. Columns: `date`,
+  `entry_type` (`diary` | `decision` | `observation`), `body` (the narrative/
+  reasoning), `author` (`coach` | `scott`), `tags` (text[]), `supersedes` (nullable
+  self-FK), `created_at`. **Never edit a row in place** — to reverse a past decision,
+  insert a NEW row with `supersedes` pointing at the one it overrides. History is the
+  record of *why we changed our mind*.
+- **`anchors`** — current calibration + phase state. Columns: `key`, `value` (text),
+  `unit`, `status` (`provisional` | `unvalidated` | `confirmed`), `source`,
+  `valid_from`, `superseded_at` (nullable), `note`. **One live row per key** — a
+  partial unique index on `(user_id, key) where superseded_at is null` makes "current
+  value per key" a one-row read. To update, set `superseded_at = now()` on the old row
+  and insert the new one (don't overwrite). Live keys: `rowing_cp`, `bike_ftp`,
+  `current_phase`, `current_block`, `doctrine_sha`.
+- **`doctrine_sha`** pins the canonical doctrine commit (this file +
+  `.claude/skills/training-science.md`). Doctrine *prose stays in git*; only the SHA
+  lives in a row, so both tools agree which version is live. When a doctrine doc
+  changes, Coach supersedes this anchor.
+- **Lanes:** Code owns the schema (tables, structural seed, migrations); Coach owns
+  row content (diary, decisions, anchor updates) via scoped writes; Scott authorises.
+
+**Data-layer gotchas (honour on every write):**
+- Supply the `user_id` UUID explicitly on inserts — `auth.uid()` is the column
+  default but does not resolve through the MCP connector.
+- Order `sessions` chronologically with `to_date(date,'MM/DD/YY')` (date is text).
+- `UNIQUE(date, label)` on `sessions` — temp-suffix labels before bulk shuffles
+  (`set label = label || '~tmp'`).
+- Vitals upsert: `on conflict (user_id, date) do update`.
+- DDL via `apply_migration` (named), not raw `execute_sql`.
+- Read back every write.
 
 ## Training Science Domain
 
@@ -115,11 +185,20 @@ Status values: `"logged"` (completed) or `"planned"` (prescription).
   Negative = fatigued. The "form" number.
 - **sRPE** — How hard a session felt on a 1–10 scale (subjective).
 - **CP** (Critical Power) — The highest power you can sustain indefinitely.
-  Currently estimated at ~190W; CP test planned for 1 Jul.
-- **Polarized TID** — 80% easy (Zone 2), 20% hard (threshold/VO₂max).
+  **~205W provisional (rowing)**; revalidate via rested 1-min + 4-min tests.
+  Rowing zones off this anchor: **UT2 113–144 / UT1 144–164 / AT 164–205 W**.
+- **Current model — pure base + strength** (reverted from polarised on 2026-06-29):
+  rowing is aerobic volume only (UT1/UT2 — no programmed threshold/VO₂); the bike
+  is a complementary Z1/Z2 aerobic carrier, never a programmed intensity source;
+  strength is **2 Upper + 2 Lower per week**, Lowers ≥3 days apart, alternating
+  RDL-led / quad-unilateral to manage the rehab hamstring.
 - **Microcycle** — One week training pattern. Home weeks = loading. FIFO = deload.
 
 ## Integration Roadmap
+
+**Live now:** **Google Health API** auto-syncs daily vitals into the `vitals`
+table (RHR/HRV/sleep/bodyweight + steps/distance/active-minutes/calories) via the
+`vitals-import` edge function + cron. No manual health-export step.
 
 Planned external data sources (to be built after refactor foundation is solid):
 
@@ -135,11 +214,17 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 | Job | What it checks |
 |---|---|
 | `Lint & Format` | ESLint errors + Prettier formatting + `npm audit --audit-level=high` |
-| `Test & Coverage` | All Vitest tests pass; line ≥50%, function ≥30%, branch ≥35% |
+| `Test & Coverage` | All Vitest tests pass; coverage meets the ratcheting thresholds in `web/vite.config.js` (`test.coverage.thresholds` — the **only** source of truth for the numbers), raised as extractions add tests |
 | `Build` | `npm run build` exits 0 (runs only after Test passes) |
 
-Coverage thresholds are defined in `vite.config.js` (`test.coverage.thresholds`).
-A PR comment with a coverage summary is posted automatically by
+Coverage thresholds live in `web/vite.config.js` (`test.coverage.thresholds`) and
+**ratchet upward**. Scope is explicit — `coverage.all` + `include: ['src/**']`
+with the not-yet-extracted monolith, `StrengthLogger.jsx`, `main.jsx`, and
+pure-data `constants/**` excluded — so the gate measures real coverage instead of
+passing by accident on whatever files a test happened to import. Each refactor
+extraction removes its file from `exclude` and lands tests in the **same** PR;
+the thresholds are then raised toward it. The numbers only go up. A PR comment
+with a coverage summary is posted automatically by
 `davelosert/vitest-coverage-report-action`.
 
 **Branch protection on `main`:** direct pushes are blocked. All changes must
@@ -255,6 +340,20 @@ library documentation. Use it before WebSearch for any library in the stack.
 library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
 vite-plugin-pwa).
 
+### Supabase (coaching data model)
+
+The **integration model was ratified 2026-07-01**: Coach (Claude in chat) operates
+natively via the **Supabase MCP connector, writing directly to the DB** (`source='coach'`)
+— reading vitals, and inserting/updating `sessions`, `strength_workouts`, etc. This
+is the live coaching rail, so **Code and Coach share one source of truth: this file
+plus the schema above.** The in-app Anthropic-API path (`coach_messages` table) was
+trialed and set aside — treat it as legacy/experimental unless revived.
+
+**Bridge discipline persists** even though Code holds repo + schema + deploy: Scott
+authorises consequential/destructive/schema changes; review structure before material
+writes; read back every write. Honour the data-layer gotchas under *Supabase Schema*
+on every insert.
+
 ## Change Procedure (PR-centric)
 
 > The standing workflow is defined in **[`WORKFLOW.md`](WORKFLOW.md)**: every
@@ -302,4 +401,4 @@ without needing to prompt Coach.
 - Always run `npm test` before committing
 - Always run `npm run lint` and `npm run format:check` before pushing — CI will fail if either does not pass
 - Never bypass the pre-commit hook (`--no-verify`) without an explicit reason
-- Coverage thresholds (50% lines, 30% functions, 35% branches — see `web/vite.config.js`) are enforced in CI — new code should include tests
+- Coverage thresholds (the ratchet in `web/vite.config.js` — the only source of truth for the numbers) are enforced in CI — new code should include tests, and the numbers only go up

@@ -12,6 +12,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { exchangeToken, listDataPoints } from "./client.ts";
 import { mapResponses } from "./mapper.ts";
+import { checkCronSecret } from "./cronGuard.ts";
 
 function ymd(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
@@ -30,11 +31,11 @@ Deno.serve(async (req: Request) => {
     } catch (_) { /* swallow — a Slack outage never fails the import */ }
   };
 
-  // 1. shared-secret guard (function is deployed with verify_jwt=false)
-  const expected = Deno.env.get("CRON_SECRET");
-  if (expected && req.headers.get("x-cron-secret") !== expected) {
-    return json({ error: "unauthorized" }, 401);
-  }
+  // 1. shared-secret guard (function is deployed with verify_jwt=false).
+  // Fails closed: an unset/empty CRON_SECRET, or any header mismatch,
+  // always returns 401 — see cronGuard.ts for the timing-safe compare.
+  const guardResponse = checkCronSecret(req);
+  if (guardResponse) return guardResponse;
 
   // 2. validate required env
   const clientId     = Deno.env.get("GOOGLE_HEALTH_CLIENT_ID");
@@ -51,7 +52,6 @@ Deno.serve(async (req: Request) => {
     ["VITALS_USER_ID", userId],
     ["SUPABASE_URL", supaUrl],
     ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
-    ["CRON_SECRET", expected],
   ].filter(([, v]) => !v).map(([k]) => k);
   if (missing.length) return json({ error: "missing env", missing }, 500);
 

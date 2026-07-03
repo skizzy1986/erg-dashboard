@@ -1,10 +1,10 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
-import { CRITICAL_POWER } from '../constants/trainingConfig.js';
 import { wattsToPace500, formatPace, classifyZone } from '../utils/pace.js';
+import { useAnchors } from './useAnchors.js';
 
-export function enrich(s) {
-  const cp = CRITICAL_POWER.cpEstimate;
+export function enrich(s, cp) {
   let pace_500m = null;
   if (s.avg_watts) {
     pace_500m = wattsToPace500(s.avg_watts);
@@ -24,7 +24,9 @@ export function enrich(s) {
 }
 
 export function useErgSessions() {
-  return useQuery({
+  // Zone classification keys off live Critical Power (anchors.rowing_cp).
+  const { cp } = useAnchors();
+  const query = useQuery({
     queryKey: ['erg-sessions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -37,8 +39,15 @@ export function useErgSessions() {
         .order('date', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data ?? []).map(enrich);
+      return data ?? [];
     },
     staleTime: 60_000,
   });
+
+  const data = useMemo(
+    () => (query.data ?? []).map((s) => enrich(s, cp)),
+    [query.data, cp]
+  );
+
+  return { ...query, data };
 }

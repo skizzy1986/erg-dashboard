@@ -79,13 +79,14 @@ Three required checks on every PR (`.github/workflows/ci-web.yml`):
 | Gate | Checks |
 |---|---|
 | **Lint & Format** | ESLint + Prettier + `npm audit --audit-level=high` |
-| **Test & Coverage** | Vitest passes; line ≥50%, function ≥30%, branch ≥35% |
+| **Test & Coverage** | Vitest passes; coverage meets the ratcheting thresholds in `web/vite.config.js` |
 | **Build** | `npm run build` exits 0 (runs after Test) |
 
 `main` is protected: no direct pushes, branch must be up to date, all checks
-green. A coverage comment posts automatically. The coverage numbers are the
-source of truth in `web/vite.config.js` (`test.coverage.thresholds`) — update
-them there, then mirror here.
+green. A coverage comment posts automatically. The coverage numbers live in
+**one place only** — `web/vite.config.js` (`test.coverage.thresholds`). Do not
+mirror them into docs; they ratchet upward with every extraction and mirrored
+copies drift.
 
 ## 5. Merge and clean up
 
@@ -145,6 +146,19 @@ Issue ──▶ /feature or /orchestrate ──▶ research → spec → build �
 
 Pick an issue, run the pipeline (or hand-build for small changes), and the output
 is a PR linked back to the issue. Same rail, every time.
+
+## Doctrine SHA
+
+The `doctrine_sha` anchor (Supabase `anchors` table) pins the canonical commit of
+the doctrine docs — `CLAUDE.md` + `.claude/skills/training-science.md` — so Code
+and Coach agree which doctrine version is live. **When you change either doc, the
+anchor must be superseded to the new `main` commit.** That update is a DB write in
+Coach's content lane (Scott authorises), not a git change.
+
+You don't have to remember: the **Doctrine SHA guard**
+(`.github/workflows/doctrine-sha-guard.yml`) fires whenever those docs land on
+`main` and opens/updates a single tracking issue carrying the new SHA. Close the
+issue once Coach has superseded the anchor.
 
 ## Project-management agents
 

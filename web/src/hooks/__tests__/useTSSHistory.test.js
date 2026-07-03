@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const fromMock = vi.fn();
+const inMock = vi.fn();
 
 vi.mock('../../supabaseClient.js', () => ({
   supabase: {
@@ -27,6 +28,10 @@ function mockQuery(data, error = null) {
   const chain = {
     select: () => chain,
     eq: () => chain,
+    in: (...args) => {
+      inMock(...args);
+      return chain;
+    },
     gt: () => chain,
     order: () => Promise.resolve({ data, error }),
   };
@@ -35,6 +40,7 @@ function mockQuery(data, error = null) {
 
 beforeEach(() => {
   fromMock.mockReset();
+  inMock.mockReset();
 });
 
 describe('useTSSHistory', () => {
@@ -47,7 +53,20 @@ describe('useTSSHistory', () => {
     expect(result.current.data).toEqual([]);
   });
 
-  it('maps sessions to { date, tss } using duration * srpe / 60', async () => {
+  it("filters on status via .in(['actual', 'completed', 'logged']), not .eq('logged')", async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(inMock).toHaveBeenCalledWith('status', [
+      'actual',
+      'completed',
+      'logged',
+    ]);
+  });
+
+  it('maps sessions to { date, tss } using duration * srpe / 60 (numeric duration)', async () => {
     mockQuery([{ date: '2026-06-20', duration: 60, srpe: 7 }]);
     const { result } = renderHook(() => useTSSHistory(), {
       wrapper: makeWrapper(),
@@ -64,6 +83,43 @@ describe('useTSSHistory', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // 45 * 6 / 60 = 4.5 → rounds to 5
     expect(result.current.data[0].tss).toBe(5);
+  });
+
+  it('parses mm:ss duration "45:00" (45 * 6 / 60 = 5)', async () => {
+    mockQuery([{ date: '2026-06-20', duration: '45:00', srpe: 6 }]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(5);
+  });
+
+  it('parses minutes-suffix duration "57m" (57 * 5 / 60 = 4.75 → 5)', async () => {
+    mockQuery([{ date: '2026-06-20', duration: '57m', srpe: 5 }]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(5);
+  });
+
+  it('parses hours+minutes duration "1h4m" (64 * 10 / 60 = 10.67 → 11)', async () => {
+    mockQuery([{ date: '2026-06-20', duration: '1h4m', srpe: 10 }]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(11);
+  });
+
+  it('degrades unparseable duration to tss 0 without NaN', async () => {
+    mockQuery([{ date: '2026-06-20', duration: 'garbage', srpe: 8 }]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(0);
+    expect(Number.isNaN(result.current.data[0].tss)).toBe(false);
   });
 
   it('returns multiple sessions in ascending date order', async () => {

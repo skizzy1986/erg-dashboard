@@ -15,6 +15,7 @@ export function formatPace(secs) {
 
 export function classifyZone(watts, cp) {
   if (watts == null) return null;
+  if (!Number.isFinite(cp) || cp <= 0) return null;
   const pct = watts / cp;
   if (pct < 0.55) return 'Recovery';
   if (pct < 0.7) return 'UT2';

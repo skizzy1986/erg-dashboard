@@ -304,17 +304,23 @@ const ZONE_POWER_PCT = [
   { zone: 'AN', pctLow: 1.05, pctHigh: 1.3 },
 ];
 
-export const PACE_ZONES = ZONE_POWER_PCT.map(({ zone, pctLow, pctHigh }) => {
-  const cp = CRITICAL_POWER.cpEstimate;
-  const hz = HR_ZONES.find((z) => z.zone === zone);
-  const wattsLow = Math.round(cp * pctLow);
-  const wattsHigh = Math.round(cp * pctHigh);
-  return {
-    zone,
-    color: hz?.color ?? '#666',
-    wattsLow,
-    wattsHigh,
-    paceFloor: pctHigh > 0 ? wattsToPace500(wattsHigh) : 300,
-    paceCeil: pctLow > 0 ? wattsToPace500(wattsLow) : 300,
-  };
-});
+// Derive the power/pace zone bands from a Critical Power value. Pure — the live
+// app path calls this with the current `anchors.rowing_cp`; PACE_ZONES below is a
+// static fallback keyed off the seed constant for non-live contexts.
+export function derivePaceZones(cp) {
+  return ZONE_POWER_PCT.map(({ zone, pctLow, pctHigh }) => {
+    const hz = HR_ZONES.find((z) => z.zone === zone);
+    const wattsLow = Math.round(cp * pctLow);
+    const wattsHigh = Math.round(cp * pctHigh);
+    return {
+      zone,
+      color: hz?.color ?? '#666',
+      wattsLow,
+      wattsHigh,
+      paceFloor: pctHigh > 0 ? wattsToPace500(wattsHigh) : 300,
+      paceCeil: pctLow > 0 ? wattsToPace500(wattsLow) : 300,
+    };
+  });
+}
+
+export const PACE_ZONES = derivePaceZones(CRITICAL_POWER.cpEstimate);

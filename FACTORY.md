@@ -5,10 +5,11 @@ How feature work runs here, adapted from the "software factory with Claude Code"
 ## The five layers
 1. **Context** — explore before building (`codebase-researcher` runs first).
 2. **Knowledge** — `CLAUDE.md` (durable facts), these agents, and the `.claude/` config.
-3. **Agents** — seven specialists in `.claude/agents/`, each with least-privilege tools:
-   - `codebase-researcher` (Read/Grep/Glob) · `story-writer` (Read) · `spec-writer` (Read/Grep/Glob) — read-only
-   - `backend-builder`, `frontend-builder`, `test-verifier` (Read/Edit/Write/Bash) — write
-   - `implementation-validator` (Read/Grep/Glob) — read-only judge
+3. **Agents** — twelve pipeline specialists in `.claude/agents/`, each with least-privilege tools (plus the 232-agent Agency advisory library — see `.claude/AGENTS.md` for the routing map):
+   - `codebase-researcher` (Read/Grep/Glob) · `researcher` (+WebSearch/WebFetch) · `story-writer` (Read) · `spec-writer` (Read/Grep/Glob) — read-only
+   - `backend-builder`, `frontend-builder`, `feature-builder`, `test-verifier`, `refactor-agent` (Read/Edit/Write/Bash) — write
+   - `implementation-validator`, `code-reviewer` (Read/Grep/Glob) — read-only judges
+   - `orchestrator` — coordinates the chain
 4. **Workflow** — the chain in `.claude/commands/orchestrate.md`, with three human gates.
 5. **Delivery** — PR + the validator's verdict + confirm Vercel goes READY.
 
@@ -18,7 +19,7 @@ The lane/least-privilege idea we hand-rolled (read-only by default, escalate to 
 ## Run it
 - `/orchestrate <feature idea>` — runs the whole chain with the three approval gates.
 - Or invoke an agent directly for a one-off (e.g. ask for `codebase-researcher` before a manual change).
-- Start smaller if seven feels like a lot: researcher → builder → validator is a valid minimal chain.
+- Start smaller if twelve feels like a lot: researcher → builder → validator is a valid minimal chain.
 
 ## Gates (don't skip)
 1. After the **story** — right problem?

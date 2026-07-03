@@ -61,3 +61,5 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run build
+      - name: Bundle-size budget
+        run: npm run size

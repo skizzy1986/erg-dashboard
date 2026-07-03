@@ -17,11 +17,12 @@ import {
   POWER_DURATION,
   FTP_TEST,
   CALIBRATION_STATUS,
-  PACE_ZONES,
+  derivePaceZones,
   HR130_POWER,
 } from '../constants/trainingConfig.js';
 import { formatPace } from '../utils/pace.js';
 import { useErgSessions } from '../hooks/useErgSessions.js';
+import { useAnchors } from '../hooks/useAnchors.js';
 
 // ── ERG TREND DATA ─────────────────────────────────────────────
 // workingPace in seconds/500m (excludes warmup split)
@@ -217,6 +218,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
   const [tidScope, setTidScope] = useState(30);
   const ergQuery = useErgSessions();
   const sessions = ergQuery.data ?? [];
+  // Live Critical Power from the anchors context store (no hardcoded fallback).
+  const { cp, cpStatus, cpAvailable } = useAnchors();
+  const paceZones = cpAvailable ? derivePaceZones(cp) : [];
 
   const hr130Now =
     [...HR130_POWER].filter((p) => !p.setupArtifact).pop()?.watts ?? null;
@@ -247,7 +251,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
     .map((z) => ({
       zone: z,
       count: zoned.filter((s) => s.zone === z).length,
-      color: PACE_ZONES.find((p) => p.zone === z)?.color ?? '#666',
+      color: paceZones.find((p) => p.zone === z)?.color ?? '#666',
     }))
     .filter((z) => z.count > 0);
   const total = zoneCounts.reduce((acc, z) => acc + z.count, 0);
@@ -315,7 +319,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div style={{ fontSize: 9, color: '#6c6c88', marginBottom: 10 }}>
           Split per 500m from logged power. Lower = faster. Zone bands shaded.
         </div>
-        <PaceTrendChart data={sessions} paceZones={PACE_ZONES} />
+        <PaceTrendChart data={sessions} paceZones={paceZones} />
         <div
           style={{
             marginTop: 8,
@@ -966,8 +970,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
           {[
             [
               'CRITICAL POWER',
-              CRITICAL_POWER.cpEstimate + 'W',
-              'est. — 30min test confirms',
+              cpAvailable ? cp + 'W' : 'CP unavailable',
+              cpAvailable ? cpStatus : 'anchor unreachable',
               '#00d4ff',
             ],
             [
