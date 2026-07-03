@@ -10,13 +10,12 @@ import StrengthView from './views/StrengthView.jsx';
 import MobilityView from './views/MobilityView.jsx';
 import OverviewView from './views/OverviewView.jsx';
 import ProgramView from './views/ProgramView.jsx';
-import WorkoutItem from './components/WorkoutItem.jsx';
-import LogSessionForm from './components/LogSessionForm.jsx';
-import LogEntry from './components/LogEntry.jsx';
+import CalendarView from './views/CalendarView.jsx';
+import PlanView from './views/PlanView.jsx';
+import LogView from './views/LogView.jsx';
 import ErgTooltip from './components/ErgTooltip.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
 import {
-  SRPE_GUIDE,
   CALIBRATION_STATUS,
   CRITICAL_POWER,
   POWER_DURATION,
@@ -25,20 +24,8 @@ import {
   RHR_BASELINE,
   HRV_BASELINE,
 } from './constants/trainingConfig.js';
-import {
-  MICROCYCLE,
-  SEASON,
-  EVENT_LADDER,
-  PHASE_CONTEXT,
-} from './constants/schedule.js';
 import { C } from './constants/ui.js';
 import { normType } from './utils/formatting.js';
-import {
-  getRosterMode,
-  resolveDay,
-  dayStatus,
-  daySessions,
-} from './utils/schedule.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -435,342 +422,18 @@ export default function App() {
           )}
 
           {/* ── PLAN VIEW (today + future prescriptions from status='planned') ── */}
-          {view === 'plan' &&
-            (() => {
-              // session dates are "M/D/YY" → Date for sorting/today-filtering
-              const parsePlanDate = (k) => {
-                const [m, d, y] = (k || '').split('/').map(Number);
-                return new Date(2000 + (y || 0), (m || 1) - 1, d || 1);
-              };
-              const now = new Date();
-              const today0 = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate()
-              );
-              const items = plannedSessions
-                .map((e) => ({
-                  e,
-                  dt: parsePlanDate(e.date),
-                  done: loggedKeys.has(`${e.date}|${e.type}`),
-                }))
-                .filter((x) => x.dt >= today0)
-                .sort((a, b) => a.dt - b.dt);
-              return (
-                <>
-                  <div
-                    style={{
-                      background: '#2a2a48',
-                      border: '1px solid #4a4a68',
-                      borderLeft: '3px dashed #00d4ff',
-                      borderRadius: 6,
-                      padding: '11px 14px',
-                      marginBottom: 14,
-                      fontSize: 11,
-                      color: '#aaaacc',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <span style={{ color: '#00d4ff', fontWeight: 700 }}>
-                      THE PLAN.{' '}
-                    </span>
-                    Upcoming prescriptions from Coach (today forward). A dashed
-                    border marks a planned session; tap any card for the
-                    targets. Cards mark ✓ done once you log the matching
-                    session.
-                  </div>
-                  {items.length === 0 ? (
-                    <div
-                      style={{
-                        background: '#2a2a48',
-                        border: '1px solid #4a4a68',
-                        borderRadius: 6,
-                        padding: '18px 16px',
-                        fontSize: 11,
-                        color: '#7e7e9a',
-                        textAlign: 'center',
-                      }}
-                    >
-                      No upcoming planned sessions.
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: isWide ? 'grid' : 'flex',
-                        gridTemplateColumns: isWide ? '1fr 1fr' : undefined,
-                        flexDirection: 'column',
-                        gap: 6,
-                        alignItems: isWide ? 'start' : undefined,
-                      }}
-                    >
-                      {items.map(({ e, done }, i) => (
-                        <LogEntry
-                          key={`plan-${e.date}-${e.label}-${i}`}
-                          entry={e}
-                          done={done}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+          {view === 'plan' && (
+            <PlanView
+              plannedSessions={plannedSessions}
+              loggedKeys={loggedKeys}
+              isWide={isWide}
+            />
+          )}
 
           {/* ── CALENDAR VIEW ── */}
-          {view === 'calendar' &&
-            (() => {
-              const dayNames = [
-                'Sun',
-                'Mon',
-                'Tue',
-                'Wed',
-                'Thu',
-                'Fri',
-                'Sat',
-              ];
-              const monthNames = [
-                'Jan',
-                'Feb',
-                'Mar',
-                'Apr',
-                'May',
-                'Jun',
-                'Jul',
-                'Aug',
-                'Sep',
-                'Oct',
-                'Nov',
-                'Dec',
-              ];
-              const now = new Date();
-              const today0 = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate()
-              );
-              // Window: 3 days back (to show recent completed work) → 14 forward.
-              // Each day carries its own roster mode + completion status.
-              const BACK = 3,
-                FWD = 14;
-              const days = [];
-              let sawSwitch = false,
-                firstMode = getRosterMode(today0);
-              for (let i = -BACK; i < FWD; i++) {
-                const d = new Date(today0);
-                d.setDate(today0.getDate() + i);
-                const dow = dayNames[d.getDay()];
-                const mode = getRosterMode(d);
-                if (i >= 0 && mode !== firstMode) sawSwitch = true;
-                const sess = resolveDay(d); // override-aware
-                const status = dayStatus(d, today0, loggedSessions); // done / today / upcoming / missed
-                days.push({
-                  date: d,
-                  dow,
-                  sess,
-                  isToday: i === 0,
-                  isPast: i < 0,
-                  mode,
-                  isOverride: !!(sess && sess.override),
-                  status,
-                });
-              }
-              const todayMode = firstMode;
-              const todayCycle = MICROCYCLE[todayMode] || MICROCYCLE.home;
-              return (
-                <>
-                  <div
-                    style={{
-                      background: '#2a2a48',
-                      border: '1px solid #4a4a68',
-                      borderLeft: '3px solid #00d4ff',
-                      borderRadius: 6,
-                      padding: '11px 14px',
-                      marginBottom: 14,
-                      fontSize: 11,
-                      color: '#aaaacc',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <span style={{ color: '#00d4ff', fontWeight: 700 }}>
-                      YOUR WEEKS ·{' '}
-                    </span>
-                    {todayCycle.label.split('—')[0].trim()} ·{' '}
-                    {PHASE_CONTEXT.phaseLabel}.{' '}
-                    <span style={{ color: '#34d399' }}>✓ done</span> ·{' '}
-                    <span style={{ color: '#00d4ff' }}>● today</span> ·
-                    upcoming.
-                    {sawSwitch ? ' Roster switches mid-view (home↔FIFO).' : ''}
-                  </div>
-                  <div
-                    style={{
-                      display: isWide ? 'grid' : 'flex',
-                      gridTemplateColumns: isWide ? '1fr 1fr' : undefined,
-                      flexDirection: 'column',
-                      gap: 8,
-                    }}
-                  >
-                    {days.map((d, i) => {
-                      const sessions = daySessions(d.sess);
-                      const railObj = {
-                        top: d.dow.toUpperCase(),
-                        big: d.date.getDate(),
-                        bottom: monthNames[d.date.getMonth()],
-                      };
-                      const st = d.status.state;
-                      const statusColor =
-                        st === 'done'
-                          ? '#34d399'
-                          : st === 'today'
-                            ? '#00d4ff'
-                            : st === 'missed'
-                              ? '#7e7e9a'
-                              : '#6c6c88';
-                      const statusLabel =
-                        st === 'done'
-                          ? `✓ DONE${d.status.logged.length > 1 ? ' ×' + d.status.logged.length : ''}`
-                          : st === 'today'
-                            ? '● TODAY'
-                            : st === 'missed'
-                              ? '— not logged'
-                              : 'UPCOMING';
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 3,
-                            opacity:
-                              st === 'missed'
-                                ? 0.5
-                                : st === 'done' && d.isPast
-                                  ? 0.85
-                                  : 1,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 6,
-                              paddingLeft: 54,
-                              marginBottom: 1,
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: 7,
-                                color: statusColor,
-                                letterSpacing: 2,
-                                fontWeight: 700,
-                              }}
-                            >
-                              {statusLabel}
-                            </span>
-                            {d.isOverride && (
-                              <span
-                                style={{
-                                  fontSize: 7,
-                                  color: '#ff6b35',
-                                  letterSpacing: 2,
-                                }}
-                              >
-                                ⇄ SWAPPED
-                              </span>
-                            )}
-                          </div>
-                          {sessions.length === 0 ? (
-                            <WorkoutItem
-                              session={null}
-                              rail={railObj}
-                              highlight={d.isToday}
-                              showRail={true}
-                            />
-                          ) : (
-                            sessions.map((s, j) => (
-                              <WorkoutItem
-                                key={j}
-                                session={{ ...s, done: st === 'done' }}
-                                rail={railObj}
-                                highlight={d.isToday && j === 0}
-                                showRail={j === 0}
-                              />
-                            ))
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Upcoming events from the ladder */}
-                  <div
-                    style={{
-                      background: 'linear-gradient(135deg,#ffd70010,#1e1e30)',
-                      border: '1px solid #ffd70030',
-                      borderLeft: '3px solid #ffd700',
-                      borderRadius: 6,
-                      padding: '12px 14px',
-                      marginTop: 14,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 9,
-                        letterSpacing: 2,
-                        color: '#ffd700',
-                        marginBottom: 8,
-                      }}
-                    >
-                      UPCOMING EVENTS · SEASON 1 LADDER
-                    </div>
-                    {EVENT_LADDER.slice(0, 5).map((e, i) => {
-                      const col =
-                        e.kind === 'TARGET'
-                          ? '#ff2d55'
-                          : e.kind === 'competition'
-                            ? '#ff6b35'
-                            : e.kind === 'optional'
-                              ? '#a78bfa'
-                              : '#00d4ff';
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            display: 'flex',
-                            gap: 10,
-                            marginBottom: 6,
-                            paddingBottom: 6,
-                            borderBottom: i < 4 ? '1px solid #3e3e5a' : 'none',
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 78,
-                              flexShrink: 0,
-                              fontSize: 9,
-                              fontWeight: 700,
-                              color: col,
-                            }}
-                          >
-                            {e.date}
-                          </div>
-                          <div
-                            style={{
-                              flex: 1,
-                              fontSize: 10,
-                              color: '#aaaacc',
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {e.name}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
+          {view === 'calendar' && (
+            <CalendarView loggedSessions={loggedSessions} isWide={isWide} />
+          )}
 
           {/* ── PROGRAM VIEW ── */}
           {view === 'program' && (
@@ -817,122 +480,11 @@ export default function App() {
 
           {/* ── LOG VIEW ── */}
           {view === 'log' && (
-            <>
-              <div
-                style={{
-                  background: '#2a2a48',
-                  border: '1px solid #4a4a68',
-                  borderLeft: '3px solid #ffd700',
-                  borderRadius: 6,
-                  padding: '11px 14px',
-                  marginBottom: 14,
-                  fontSize: 11,
-                  color: '#aaaacc',
-                  lineHeight: 1.6,
-                }}
-              >
-                <span style={{ color: '#ffd700', fontWeight: 700 }}>
-                  SESSION LOG:{' '}
-                </span>
-                Share Concept2 links or Fitbod screenshots to add sessions. sRPE
-                captured every session.
-              </div>
-
-              {/* Interactive log form — writes to the database */}
-              <LogSessionForm onSaved={fetchSessions} />
-
-              {/* sRPE scale reference */}
-              <div
-                style={{
-                  background: '#2a2a48',
-                  border: '1px solid #4a4a68',
-                  borderLeft: '3px solid #ff6b35',
-                  borderRadius: 6,
-                  padding: '12px 14px',
-                  marginBottom: 14,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    color: '#ff6b35',
-                    marginBottom: 8,
-                  }}
-                >
-                  sRPE SCALE · TALK-TEST ANCHORED (asked every session)
-                </div>
-                {SRPE_GUIDE.map((s, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      gap: 10,
-                      marginBottom: 6,
-                      alignItems: 'baseline',
-                    }}
-                  >
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        width: 30,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: s.color,
-                      }}
-                    >
-                      {s.range}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: '#e8e8f0',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {s.label}
-                      </span>
-                      <span
-                        style={{ fontSize: 10, color: '#888', marginLeft: 6 }}
-                      >
-                        — {s.anchor}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                <div
-                  style={{
-                    fontSize: 8,
-                    color: '#7e7e9a',
-                    lineHeight: 1.5,
-                    marginTop: 6,
-                    fontStyle: 'italic',
-                  }}
-                >
-                  Over-rating easy work is the common error — anchor to the talk
-                  test. TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) +
-                  watts/HR (output) cross-checked every session. All agree =
-                  confidence; diverge = early fatigue/stress signal.
-                </div>
-              </div>
-              <div
-                style={{
-                  display: isWide ? 'grid' : 'flex',
-                  gridTemplateColumns: isWide ? '1fr 1fr' : undefined,
-                  flexDirection: 'column',
-                  gap: 6,
-                  alignItems: isWide ? 'start' : undefined,
-                }}
-              >
-                {loggedSessions.map((entry, i) => (
-                  <LogEntry
-                    key={`${entry.date}-${entry.label}-${i}`}
-                    entry={entry}
-                  />
-                ))}
-              </div>
-            </>
+            <LogView
+              loggedSessions={loggedSessions}
+              isWide={isWide}
+              onSaved={fetchSessions}
+            />
           )}
 
           {/* ── JOURNAL VIEW (longitudinal spine) ── */}
