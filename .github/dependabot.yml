@@ -1,7 +1,20 @@
 version: 2
 updates:
+  # Root package.json holds only tooling (husky); the app lives in web/
   - package-ecosystem: npm
     directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /web
     schedule:
       interval: weekly
       day: monday

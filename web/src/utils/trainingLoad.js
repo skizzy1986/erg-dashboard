@@ -1,15 +1,38 @@
+import { toISODate } from './dateFormat.js';
+
 export function calcTrainingLoad(tssData, endDate) {
   const CTL_K = Math.exp(-1 / 42);
   const ATL_K = Math.exp(-1 / 7);
   const tssMap = {};
   tssData.forEach((d) => {
-    tssMap[d.date] = { tss: d.tss, note: d.note };
+    const key = toISODate(d.date);
+    const existing = tssMap[key];
+    if (existing) {
+      tssMap[key] = {
+        tss: existing.tss + d.tss,
+        note: d.note
+          ? existing.note
+            ? `${existing.note}; ${d.note}`
+            : d.note
+          : existing.note,
+      };
+    } else {
+      tssMap[key] = { tss: d.tss, note: d.note };
+    }
   });
 
-  const start = new Date(tssData[0].date);
+  const isoDates = tssData.map((d) => toISODate(d.date));
+  const minIso = isoDates.reduce(
+    (min, iso) => (iso < min ? iso : min),
+    isoDates[0]
+  );
+  const maxIso = isoDates.reduce(
+    (max, iso) => (iso > max ? iso : max),
+    isoDates[0]
+  );
+  const start = new Date(minIso);
   const today = new Date().toISOString().split('T')[0];
-  const lastEntry = tssData[tssData.length - 1].date;
-  const resolvedEnd = endDate ?? (lastEntry > today ? lastEntry : today);
+  const resolvedEnd = endDate ?? (maxIso > today ? maxIso : today);
   const end = new Date(resolvedEnd);
   const results = [];
   let ctl = 0,
