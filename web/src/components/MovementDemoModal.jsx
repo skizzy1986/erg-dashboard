@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { MOVEMENT_DEMOS } from '../constants/movementDemos.js';
 import { slugForExerciseName } from '../utils/movementSlug.js';
 
-// Placeholder for the 3D figure — swapped for MovementFigure3D once the
-// mannequin/orbit-control pipeline is built (plan step 2).
-function FigurePlaceholder() {
+// three.js/@react-three/fiber are heavy — load them only when a curated
+// demo is actually opened, not as part of the main app bundle.
+const MovementFigure3D = lazy(() => import('./MovementFigure3D.jsx'));
+
+function FigureLoading() {
   return (
     <div
       style={{
@@ -19,7 +21,7 @@ function FigurePlaceholder() {
         fontSize: 13,
       }}
     >
-      3D figure coming soon
+      Loading 3D figure…
     </div>
   );
 }
@@ -74,7 +76,13 @@ export default function MovementDemoModal({ exerciseName, onClose }) {
             </button>
           </div>
           <div className="sheet-body demo-wrap">
-            <FigurePlaceholder />
+            <Suspense fallback={<FigureLoading />}>
+              <MovementFigure3D
+                pose={phase.pose}
+                primaryMuscles={phase.primaryMuscles}
+                secondaryMuscles={phase.secondaryMuscles}
+              />
+            </Suspense>
             <div className="seg" style={{ marginTop: 12 }}>
               {demo.phases.map((p, i) => (
                 <button

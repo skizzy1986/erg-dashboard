@@ -2,6 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import MovementDemoModal from '../MovementDemoModal.jsx';
 
+// react-three-fiber's <Canvas> requires a WebGL context, unavailable under
+// jsdom — mock the 3D figure out and test the modal's non-3D chrome only.
+vi.mock('../MovementFigure3D.jsx', () => ({
+  default: () => null,
+}));
+
 vi.mock('../../constants/movementDemos.js', () => ({
   MOVEMENT_DEMOS: {
     'back-squat': {

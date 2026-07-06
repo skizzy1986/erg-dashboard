@@ -8,11 +8,17 @@
 // the monolith is finally code-split), never raise it without a deliberate
 // reason. Current build sits at ~360 KB gzipped; budget set with modest
 // headroom so a real regression trips it but normal noise does not.
+//
+// Raised 400 -> 650: the 3D movement-demo figure (three.js + @react-three/
+// fiber + @react-three/drei, ~230 KB gzipped) is lazy-loaded via React.lazy
+// and only fetched when a curated exercise demo is actually opened — it does
+// not affect the initial page load — but this script sums every file in
+// dist/assets, lazy chunks included, so the budget has to account for it.
 import { readdirSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
-const MAX_GZIP_KB = 400;
+const MAX_GZIP_KB = 650;
 const ASSET_DIR = join(process.cwd(), 'dist', 'assets');
 
 function gzippedAssets(dir) {
