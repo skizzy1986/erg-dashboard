@@ -3,18 +3,19 @@
    ───────────────────────────────────────────────────────────────
    Coach-assigned workouts, templates (per-set plans), last-performance
    reference, live set logging + rest timer, exercise picker over the
-   873-row library, muscle-heatmap + animated movement demo, history/PRs.
+   873-row library, 3D movement demo (MovementDemoModal), history/PRs.
    Mounted as a scoped React component inside the dashboard's Logger tab:
    reuses the dashboard's shared Supabase auth/session, palette mapped to
    the dashboard theme, the prototype's own login/header dropped.
    ═══════════════════════════════════════════════════════════════ */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase as sb } from './supabaseClient.js';
 import {
   saveDraft as _saveDraft,
   loadDraft,
   clearDraft,
 } from './utils/strengthDraft.js';
+import MovementDemoModal from './components/MovementDemoModal.jsx';
 
 const CSS = `
 .slog{ --bg:#08080d; --panel:#2a2a48; --panel2:#1e1e30; --line:#4a4a68;
@@ -98,18 +99,9 @@ const CSS = `
 .slog .demo-btn{flex:0 0 auto;background:var(--panel2);color:var(--mut);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:13px;font-weight:600}
 .slog .demo-btn:active{border-color:var(--accent)}
 .slog .demo-wrap{padding-bottom:20px}
-.slog .demo-map{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
-.slog .demo-map svg{display:block;width:100%;height:auto;max-height:320px}
-.slog .demo-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:10px;justify-content:center}
-.slog .demo-legend i{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
 .slog .demo-muscles{font-size:13px;color:var(--mut);margin-top:12px}
 .slog .demo-muscles b{color:var(--txt)}
 .slog .demo-tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:2px 8px;margin:2px 3px;font-size:12px;text-transform:capitalize}
-.slog .demo-viewer{margin-top:16px}
-.slog .demo-video{width:100%;border-radius:12px;background:#000;display:block;max-height:360px;object-fit:contain}
-.slog .demo-cap{font-size:12px;color:var(--mut);text-align:center;margin-top:9px}
-.slog .demo-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
-.slog .demo-controls .lbl{font-size:12px;color:var(--mut);font-weight:600}
 .slog .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .slog .seg button{background:var(--panel2);color:var(--mut);padding:8px 13px;font-size:13px;font-weight:700}
 .slog .seg button.on{background:var(--accent);color:#04222b}
@@ -146,7 +138,7 @@ const SKELETON = `
   <div id="sheet"></div>
 `;
 
-function mountStrengthLogger(root) {
+function mountStrengthLogger(root, openDemo) {
   /* ---------- helpers ---------- */
   const $ = (s) => root.querySelector(s);
   const el = (t, c, h) => {
@@ -498,7 +490,7 @@ function mountStrengthLogger(root) {
     if (ex.exercise_id) {
       const db = el('button', 'demo-btn', '◐ Demo');
       db.title = 'Movement & muscles worked';
-      db.onclick = () => openExerciseDemo(ex.exercise_id, ex.exercise_name);
+      db.onclick = () => openDemo(ex.exercise_id, ex.exercise_name);
       rmv.appendChild(db);
     }
     const rb = el('button', 'btn xs sec', '✕');
@@ -1124,10 +1116,6 @@ function mountStrengthLogger(root) {
     runSearch();
   }
   function closeSheet() {
-    if (_demoTimer) {
-      clearInterval(_demoTimer);
-      _demoTimer = null;
-    }
     const s = $('#sheet');
     if (s) s.innerHTML = '';
   }
@@ -1180,329 +1168,6 @@ function mountStrengthLogger(root) {
     closeSheet();
     renderWorkout();
     toast(x.name + ' added');
-  }
-
-  /* ---------- EXERCISE DEMO (heatmap + movement) ---------- */
-  const REGIONS = new Set([
-    'shoulders',
-    'chest',
-    'abdominals',
-    'biceps',
-    'triceps',
-    'forearms',
-    'lats',
-    'back',
-    'traps',
-    'quadriceps',
-    'hamstrings',
-    'glutes',
-    'calves',
-  ]);
-  function normalizeMuscle(name) {
-    if (!name) return null;
-    const k = String(name).trim().toLowerCase();
-    const MAP = {
-      abdominals: 'abdominals',
-      abs: 'abdominals',
-      biceps: 'biceps',
-      triceps: 'triceps',
-      forearms: 'forearms',
-      chest: 'chest',
-      pectorals: 'chest',
-      shoulders: 'shoulders',
-      deltoids: 'shoulders',
-      delts: 'shoulders',
-      lats: 'lats',
-      'latissimus dorsi': 'lats',
-      'middle back': 'back',
-      'lower back': 'back',
-      spine: 'back',
-      'erector spinae': 'back',
-      traps: 'traps',
-      trapezius: 'traps',
-      neck: 'traps',
-      quadriceps: 'quadriceps',
-      quads: 'quadriceps',
-      adductors: 'quadriceps',
-      hamstrings: 'hamstrings',
-      glutes: 'glutes',
-      abductors: 'glutes',
-      calves: 'calves',
-    };
-    return MAP[k] || (REGIONS.has(k) ? k : null);
-  }
-  function applyHeatmap(rootEl, primary, secondary) {
-    const prim = new Set((primary || []).map(normalizeMuscle).filter(Boolean));
-    const sec = new Set((secondary || []).map(normalizeMuscle).filter(Boolean));
-    rootEl.querySelectorAll('.muscle').forEach((n) => {
-      const m = n.getAttribute('data-muscle');
-      n.setAttribute(
-        'fill',
-        prim.has(m) ? '#ef4444' : sec.has(m) ? '#f59e0b' : '#46525f'
-      );
-    });
-  }
-  function heatmapSVG() {
-    const M = (d, a) =>
-      `<g>${a.map((s) => `<${s.t} class="muscle" data-muscle="${d}" fill="#46525f" ${s.a}/>`).join('')}</g>`;
-    return `<svg viewBox="0 0 470 426" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Muscles worked">
-      <text x="120" y="13" text-anchor="middle" fill="#8b97a7" font-size="12" font-family="sans-serif">FRONT</text>
-      <text x="340" y="13" text-anchor="middle" fill="#8b97a7" font-size="12" font-family="sans-serif">BACK</text>
-      <g fill="#2b3441">
-        <circle cx="120" cy="38" r="19"/><rect x="113" y="54" width="14" height="14" rx="4"/>
-        <rect x="100" y="188" width="40" height="26" rx="8"/>
-        <circle cx="58" cy="208" r="7"/><circle cx="182" cy="208" r="7"/>
-        <ellipse cx="104" cy="404" rx="12" ry="7"/><ellipse cx="136" cy="404" rx="12" ry="7"/>
-        <circle cx="340" cy="38" r="19"/><rect x="333" y="54" width="14" height="14" rx="4"/>
-        <circle cx="278" cy="208" r="7"/><circle cx="402" cy="208" r="7"/>
-        <ellipse cx="324" cy="404" rx="12" ry="7"/><ellipse cx="356" cy="404" rx="12" ry="7"/>
-      </g>
-      ${M('shoulders', [
-        { t: 'ellipse', a: 'cx="86" cy="90" rx="16" ry="14"' },
-        { t: 'ellipse', a: 'cx="154" cy="90" rx="16" ry="14"' },
-      ])}
-      ${M('chest', [
-        { t: 'ellipse', a: 'cx="105" cy="114" rx="17" ry="13"' },
-        { t: 'ellipse', a: 'cx="135" cy="114" rx="17" ry="13"' },
-      ])}
-      ${M('abdominals', [{ t: 'rect', a: 'x="104" y="130" width="32" height="56" rx="9"' }])}
-      ${M('biceps', [
-        { t: 'ellipse', a: 'cx="72" cy="128" rx="11" ry="23"' },
-        { t: 'ellipse', a: 'cx="168" cy="128" rx="11" ry="23"' },
-      ])}
-      ${M('forearms', [
-        { t: 'ellipse', a: 'cx="64" cy="178" rx="10" ry="24"' },
-        { t: 'ellipse', a: 'cx="176" cy="178" rx="10" ry="24"' },
-      ])}
-      ${M('quadriceps', [
-        { t: 'ellipse', a: 'cx="104" cy="258" rx="16" ry="44"' },
-        { t: 'ellipse', a: 'cx="136" cy="258" rx="16" ry="44"' },
-      ])}
-      ${M('calves', [
-        { t: 'ellipse', a: 'cx="105" cy="350" rx="13" ry="34"' },
-        { t: 'ellipse', a: 'cx="135" cy="350" rx="13" ry="34"' },
-      ])}
-      ${M('shoulders', [
-        { t: 'ellipse', a: 'cx="306" cy="90" rx="15" ry="13"' },
-        { t: 'ellipse', a: 'cx="374" cy="90" rx="15" ry="13"' },
-      ])}
-      ${M('traps', [{ t: 'path', a: 'd="M322 76 q18 -12 36 0 l-6 22 q-12 6 -24 0 z"' }])}
-      ${M('lats', [
-        { t: 'ellipse', a: 'cx="316" cy="130" rx="13" ry="22"' },
-        { t: 'ellipse', a: 'cx="364" cy="130" rx="13" ry="22"' },
-      ])}
-      ${M('back', [{ t: 'rect', a: 'x="328" y="118" width="24" height="70" rx="8"' }])}
-      ${M('triceps', [
-        { t: 'ellipse', a: 'cx="292" cy="128" rx="11" ry="23"' },
-        { t: 'ellipse', a: 'cx="388" cy="128" rx="11" ry="23"' },
-      ])}
-      ${M('forearms', [
-        { t: 'ellipse', a: 'cx="284" cy="178" rx="10" ry="24"' },
-        { t: 'ellipse', a: 'cx="396" cy="178" rx="10" ry="24"' },
-      ])}
-      ${M('glutes', [
-        { t: 'ellipse', a: 'cx="326" cy="220" rx="15" ry="16"' },
-        { t: 'ellipse', a: 'cx="354" cy="220" rx="15" ry="16"' },
-      ])}
-      ${M('hamstrings', [
-        { t: 'ellipse', a: 'cx="324" cy="276" rx="14" ry="38"' },
-        { t: 'ellipse', a: 'cx="356" cy="276" rx="14" ry="38"' },
-      ])}
-      ${M('calves', [
-        { t: 'ellipse', a: 'cx="324" cy="350" rx="13" ry="34"' },
-        { t: 'ellipse', a: 'cx="356" cy="350" rx="13" ry="34"' },
-      ])}
-    </svg>`;
-  }
-  const _mediaCache = {};
-  let _demoTimer = null;
-  const EXIMG_BASE =
-    'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/';
-  const exImg = (p) => EXIMG_BASE + encodeURI(p);
-  async function fetchExerciseMedia(id) {
-    if (id in _mediaCache) return _mediaCache[id];
-    const { data } = await sb
-      .from('exercise_with_media')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-    _mediaCache[id] = data || null;
-    return _mediaCache[id];
-  }
-  async function openExerciseDemo(id, name) {
-    const bg = el('div', 'sheet-bg');
-    bg.onclick = (e) => {
-      if (e.target === bg) closeSheet();
-    };
-    const sh = el('div', 'sheet');
-    sh.innerHTML = `<div class="sheet-hd"><h3>${esc(name)}</h3><button class="btn xs sec" id="dmClose">Close</button></div>
-      <div class="sheet-body demo-wrap"><div id="dmBody"><div class="empty"><span class="spin"></span></div></div></div>`;
-    bg.appendChild(sh);
-    $('#sheet').innerHTML = '';
-    $('#sheet').appendChild(bg);
-    $('#dmClose').onclick = closeSheet;
-    const m = await fetchExerciseMedia(id);
-    const body = $('#dmBody');
-    if (!body) return;
-    if (!m) {
-      body.innerHTML =
-        '<div class="empty">No library data for this exercise.</div>';
-      return;
-    }
-    const tag = (a) =>
-      a && a.length
-        ? a.map((x) => `<span class="demo-tag">${esc(x)}</span>`).join('')
-        : '<span style="opacity:.5">—</span>';
-    body.innerHTML = `
-      <div class="demo-map">${heatmapSVG()}
-        <div class="demo-legend">
-          <span><i style="background:#ef4444"></i>Primary</span>
-          <span><i style="background:#f59e0b"></i>Secondary</span>
-          <span><i style="background:#46525f"></i>Not emphasised</span>
-        </div>
-      </div>
-      <div class="demo-muscles"><b>Primary:</b> ${tag(m.primary_muscles)}<br><b>Secondary:</b> ${tag(m.secondary_muscles)}</div>
-      <div class="demo-viewer" id="dmViewer"></div>`;
-    applyHeatmap(body, m.primary_muscles, m.secondary_muscles);
-    renderMovement($('#dmViewer'), m);
-  }
-  function renderMovement(host, m) {
-    if (_demoTimer) {
-      clearInterval(_demoTimer);
-      _demoTimer = null;
-    }
-    const angles = [];
-    if (m.video_front_url) angles.push({ k: 'Front', url: m.video_front_url });
-    if (m.video_side_url) angles.push({ k: 'Side', url: m.video_side_url });
-    if (m.media_tier === 'video' && angles.length) {
-      let cur = 0,
-        rate = 1;
-      const vid = el('video', 'demo-video');
-      vid.loop = true;
-      vid.muted = true;
-      vid.playsInline = true;
-      vid.autoplay = true;
-      vid.setAttribute('preload', 'metadata');
-      if (m.poster_front_url) vid.poster = m.poster_front_url;
-      vid.src = angles[0].url;
-      host.appendChild(vid);
-      const ctr = el('div', 'demo-controls');
-      if (angles.length > 1) {
-        const seg = el('div', 'seg');
-        angles.forEach((a, i) => {
-          const b = el('button', i === 0 ? 'on' : '', a.k);
-          b.onclick = () => {
-            if (i === cur) return;
-            const t = vid.currentTime;
-            cur = i;
-            vid.src = angles[i].url;
-            vid.onloadedmetadata = () => {
-              try {
-                vid.currentTime = t;
-              } catch (e) {}
-              vid.playbackRate = rate;
-              vid.play();
-            };
-            [...seg.children].forEach((x) => x.classList.remove('on'));
-            b.classList.add('on');
-          };
-          seg.appendChild(b);
-        });
-        ctr.appendChild(el('span', 'lbl', 'Angle'));
-        ctr.appendChild(seg);
-      }
-      const spd = el('div', 'seg');
-      [
-        ['1×', 1],
-        ['0.5×', 0.5],
-        ['0.25×', 0.25],
-      ].forEach(([lbl, r]) => {
-        const b = el('button', r === 1 ? 'on' : '', lbl);
-        b.onclick = () => {
-          rate = r;
-          vid.playbackRate = r;
-          [...spd.children].forEach((x) => x.classList.remove('on'));
-          b.classList.add('on');
-        };
-        spd.appendChild(b);
-      });
-      ctr.appendChild(el('span', 'lbl', 'Speed'));
-      ctr.appendChild(spd);
-      host.appendChild(ctr);
-      vid.playbackRate = rate;
-      return;
-    }
-    const frames = (m.images || []).filter(Boolean).map(exImg);
-    if (frames.length >= 2) {
-      frames.forEach((u) => {
-        const i = new Image();
-        i.src = u;
-      });
-      let idx = 0,
-        playing = true,
-        period = 900;
-      const img = el('img', 'demo-video');
-      img.alt = 'Exercise movement demonstration';
-      img.src = frames[0];
-      host.appendChild(img);
-      const showFrame = (i) => {
-        idx = (i + frames.length) % frames.length;
-        img.src = frames[idx];
-      };
-      const run = () => {
-        if (_demoTimer) clearInterval(_demoTimer);
-        _demoTimer = playing
-          ? setInterval(() => showFrame(idx + 1), period)
-          : null;
-      };
-      const ctr = el('div', 'demo-controls');
-      const playSeg = el('div', 'seg');
-      const pb = el('button', 'on', '⏸ Pause');
-      pb.onclick = () => {
-        playing = !playing;
-        pb.textContent = playing ? '⏸ Pause' : '▶ Play';
-        if (playing) run();
-        else if (_demoTimer) {
-          clearInterval(_demoTimer);
-          _demoTimer = null;
-        }
-      };
-      playSeg.appendChild(pb);
-      ctr.appendChild(playSeg);
-      const spd = el('div', 'seg');
-      [
-        ['1×', 900],
-        ['0.5×', 1800],
-        ['0.25×', 3600],
-      ].forEach(([lbl, ms]) => {
-        const b = el('button', ms === 900 ? 'on' : '', lbl);
-        b.onclick = () => {
-          period = ms;
-          [...spd.children].forEach((x) => x.classList.remove('on'));
-          b.classList.add('on');
-          if (playing) run();
-        };
-        spd.appendChild(b);
-      });
-      ctr.appendChild(el('span', 'lbl', 'Speed'));
-      ctr.appendChild(spd);
-      host.appendChild(ctr);
-      host.appendChild(
-        el(
-          'div',
-          'demo-cap',
-          'Animated start → end positions from your exercise library.'
-        )
-      );
-      run();
-      return;
-    }
-    if (frames.length === 1) {
-      host.innerHTML = `<img class="demo-video" src="${esc(frames[0])}" alt="Exercise demonstration">`;
-      return;
-    }
-    host.innerHTML =
-      '<div class="demo-fallback">🎬 Demonstration coming soon.<br>The muscle map above is live from your library data.</div>';
   }
 
   /* ---------- HISTORY + PRs ---------- */
@@ -1635,17 +1300,19 @@ function mountStrengthLogger(root) {
     clearInterval(restTimer);
     clearTimeout(_tick);
     clearTimeout(_draftTimer);
-    if (_demoTimer) clearInterval(_demoTimer);
   };
 }
 
 export default function StrengthLogger() {
   const rootRef = useRef(null);
   const initRef = useRef(false);
+  const [demo, setDemo] = useState(null);
   useEffect(() => {
     if (initRef.current) return; // guard against double-invoke
     initRef.current = true;
-    const cleanup = mountStrengthLogger(rootRef.current);
+    const cleanup = mountStrengthLogger(rootRef.current, (id, name) =>
+      setDemo({ id, name })
+    );
     return () => {
       try {
         cleanup && cleanup();
@@ -1660,6 +1327,12 @@ export default function StrengthLogger() {
         ref={rootRef}
         dangerouslySetInnerHTML={{ __html: SKELETON }}
       />
+      {demo && (
+        <MovementDemoModal
+          exerciseName={demo.name}
+          onClose={() => setDemo(null)}
+        />
+      )}
     </>
   );
 }
