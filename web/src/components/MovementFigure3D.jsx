@@ -202,7 +202,7 @@ export default function MovementFigure3D({
         height: 320,
       }}
     >
-      <Canvas camera={{ position: [0, 0.1, 2.6], fov: 35 }}>
+      <Canvas frameloop="demand" camera={{ position: [0, 0.1, 2.6], fov: 35 }}>
         <ambientLight intensity={0.7} />
         <directionalLight position={[2, 3, 3]} intensity={0.7} />
         <Mannequin
