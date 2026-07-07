@@ -1,223 +1,88 @@
+import { Suspense, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { muscleColor } from '../utils/muscleColor.js';
+import { OrbitControls, ContactShadows, useGLTF } from '@react-three/drei';
+import { SkeletonUtils } from 'three-stdlib';
 
-const DEG = Math.PI / 180;
-const BODY_COLOR = '#3a3a5a';
+// A real rigged Ready Player Me humanoid, vendored as a static asset. The
+// `new URL(..., import.meta.url)` form lets Vite hash + rewrite the URL
+// (respecting `base`) instead of inlining the 1.8MB binary.
+const MODEL_URL = new URL('../assets/movement-figure.glb', import.meta.url)
+  .href;
 
-function Overlay({ muscle, position, radius, primary, secondary }) {
-  return (
-    <mesh position={position}>
-      <sphereGeometry args={[radius, 12, 12]} />
-      <meshStandardMaterial color={muscleColor(muscle, primary, secondary)} />
-    </mesh>
-  );
+function Figure() {
+  const { scene } = useGLTF(MODEL_URL);
+  // Clone so we own an independent skinned instance (safe under StrictMode
+  // double-mount, and required once per-phase bone posing lands).
+  const model = useMemo(() => {
+    const cloned = SkeletonUtils.clone(scene);
+    cloned.traverse((o) => {
+      if (o.isMesh) {
+        o.castShadow = true;
+        o.receiveShadow = false;
+        o.frustumCulled = false;
+      }
+    });
+    return cloned;
+  }, [scene]);
+  // Feet sit at y≈0 already; drop very slightly so shoes meet the shadow plane.
+  return <primitive object={model} position={[0, -0.02, 0]} />;
 }
 
-function Arm({ side, shoulderAngle, elbowAngle, primary, secondary }) {
-  const x = side === 'L' ? -0.28 : 0.28;
-  return (
-    <group position={[x, 0.35, 0]} rotation={[0, 0, shoulderAngle * DEG]}>
-      <mesh position={[0, -0.2, 0]}>
-        <capsuleGeometry args={[0.08, 0.24, 4, 8]} />
-        <meshStandardMaterial color={BODY_COLOR} />
-      </mesh>
-      <Overlay
-        muscle="shoulders"
-        position={[0, -0.02, 0]}
-        radius={0.09}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="biceps"
-        position={[0, -0.2, 0.09]}
-        radius={0.06}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="triceps"
-        position={[0, -0.2, -0.09]}
-        radius={0.06}
-        primary={primary}
-        secondary={secondary}
-      />
-      <group position={[0, -0.4, 0]} rotation={[elbowAngle * DEG, 0, 0]}>
-        <mesh position={[0, -0.175, 0]}>
-          <capsuleGeometry args={[0.07, 0.21, 4, 8]} />
-          <meshStandardMaterial color={BODY_COLOR} />
-        </mesh>
-        <Overlay
-          muscle="forearms"
-          position={[0, -0.175, 0]}
-          radius={0.05}
-          primary={primary}
-          secondary={secondary}
-        />
-        <mesh position={[0, -0.38, 0]}>
-          <sphereGeometry args={[0.06, 8, 8]} />
-          <meshStandardMaterial color={BODY_COLOR} />
-        </mesh>
-      </group>
-    </group>
-  );
-}
-
-function Leg({ side, hipAngle, kneeAngle, primary, secondary }) {
-  const x = side === 'L' ? -0.14 : 0.14;
-  return (
-    <group position={[x, -0.45, 0]} rotation={[hipAngle * DEG, 0, 0]}>
-      <mesh position={[0, -0.25, 0]}>
-        <capsuleGeometry args={[0.11, 0.3, 4, 8]} />
-        <meshStandardMaterial color={BODY_COLOR} />
-      </mesh>
-      <Overlay
-        muscle="glutes"
-        position={[0, -0.04, -0.08]}
-        radius={0.08}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="quadriceps"
-        position={[0, -0.25, 0.09]}
-        radius={0.08}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="hamstrings"
-        position={[0, -0.25, -0.09]}
-        radius={0.07}
-        primary={primary}
-        secondary={secondary}
-      />
-      <group position={[0, -0.5, 0]} rotation={[kneeAngle * DEG, 0, 0]}>
-        <mesh position={[0, -0.25, 0]}>
-          <capsuleGeometry args={[0.09, 0.3, 4, 8]} />
-          <meshStandardMaterial color={BODY_COLOR} />
-        </mesh>
-        <Overlay
-          muscle="calves"
-          position={[0, -0.25, -0.07]}
-          radius={0.06}
-          primary={primary}
-          secondary={secondary}
-        />
-        <mesh position={[0, -0.52, 0.05]}>
-          <boxGeometry args={[0.1, 0.06, 0.2]} />
-          <meshStandardMaterial color={BODY_COLOR} />
-        </mesh>
-      </group>
-    </group>
-  );
-}
-
-function Mannequin({ pose, primaryMuscles, secondaryMuscles }) {
-  const p = pose || {};
-  const primary = primaryMuscles || [];
-  const secondary = secondaryMuscles || [];
-  return (
-    <group rotation={[0, 0, (p.torso || 0) * DEG]}>
-      <mesh position={[0, 0, 0]}>
-        <capsuleGeometry args={[0.22, 0.45, 4, 8]} />
-        <meshStandardMaterial color={BODY_COLOR} />
-      </mesh>
-      <Overlay
-        muscle="chest"
-        position={[0, 0.12, 0.2]}
-        radius={0.1}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="abdominals"
-        position={[0, -0.15, 0.2]}
-        radius={0.09}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="back"
-        position={[0, 0.05, -0.2]}
-        radius={0.11}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Overlay
-        muscle="lats"
-        position={[0, -0.1, -0.18]}
-        radius={0.1}
-        primary={primary}
-        secondary={secondary}
-      />
-      <mesh position={[0, 0.59, 0]}>
-        <sphereGeometry args={[0.14, 12, 12]} />
-        <meshStandardMaterial color={BODY_COLOR} />
-      </mesh>
-      <Arm
-        side="L"
-        shoulderAngle={p.shoulderL || 0}
-        elbowAngle={p.elbowL || 0}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Arm
-        side="R"
-        shoulderAngle={p.shoulderR || 0}
-        elbowAngle={p.elbowR || 0}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Leg
-        side="L"
-        hipAngle={p.hipL || 0}
-        kneeAngle={p.kneeL || 0}
-        primary={primary}
-        secondary={secondary}
-      />
-      <Leg
-        side="R"
-        hipAngle={p.hipR || 0}
-        kneeAngle={p.kneeR || 0}
-        primary={primary}
-        secondary={secondary}
-      />
-    </group>
-  );
-}
-
-export default function MovementFigure3D({
-  pose,
-  primaryMuscles,
-  secondaryMuscles,
-}) {
+export default function MovementFigure3D() {
   return (
     <div
       style={{
-        background: 'var(--panel2)',
+        background:
+          'radial-gradient(120% 90% at 50% 15%, #26263f 0%, var(--panel2) 70%)',
         border: '1px solid var(--line)',
         borderRadius: 12,
-        height: 320,
+        height: 360,
+        overflow: 'hidden',
       }}
     >
-      <Canvas frameloop="demand" camera={{ position: [0, 0.1, 2.6], fov: 35 }}>
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[2, 3, 3]} intensity={0.7} />
-        <Mannequin
-          pose={pose}
-          primaryMuscles={primaryMuscles}
-          secondaryMuscles={secondaryMuscles}
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        gl={{ preserveDrawingBuffer: true, antialias: true }}
+        camera={{ position: [0, 0.95, 3.7], fov: 30 }}
+      >
+        {/* Soft studio lighting — neutral so the avatar's own materials read
+            cleanly, with one key light for form + shadow. */}
+        <hemisphereLight args={['#dfe6ff', '#2a2a3e', 0.9]} />
+        <ambientLight intensity={0.25} />
+        <directionalLight
+          position={[2.5, 4, 3]}
+          intensity={1.8}
+          castShadow
+          shadow-mapSize={[1024, 1024]}
+          shadow-bias={-0.0002}
+        />
+        <directionalLight position={[-3, 2, -2]} intensity={0.5} />
+        <Suspense fallback={null}>
+          <Figure />
+        </Suspense>
+        <ContactShadows
+          position={[0, 0, 0]}
+          opacity={0.5}
+          scale={4}
+          blur={2.6}
+          far={2}
+          resolution={512}
+          color="#000000"
         />
         <OrbitControls
+          makeDefault
           enablePan={false}
           enableZoom={false}
-          minPolarAngle={Math.PI / 2.15}
-          maxPolarAngle={Math.PI / 2.15}
-          target={[0, 0, 0]}
+          autoRotate
+          autoRotateSpeed={0.8}
+          target={[0, 0.95, 0]}
+          minPolarAngle={Math.PI / 2.35}
+          maxPolarAngle={Math.PI / 2.35}
         />
       </Canvas>
     </div>
   );
 }
+
+useGLTF.preload(MODEL_URL);

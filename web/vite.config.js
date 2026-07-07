@@ -60,6 +60,10 @@ export default defineConfig({
       : []),
   ],
   base: './',
+  // .glb (3D movement-demo figure) is a binary asset Vite must copy to dist and
+  // hash, not try to parse. The `new URL(..., import.meta.url)` reference in
+  // MovementFigure3D.jsx resolves to the hashed URL (respecting `base`).
+  assetsInclude: ['**/*.glb'],
   // 'hidden' emits source maps for Sentry upload without referencing them from
   // the shipped bundles, so production source stays out of the browser.
   build: { sourcemap: uploadSourceMaps ? 'hidden' : false },
