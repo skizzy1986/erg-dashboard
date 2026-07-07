@@ -1,31 +1,39 @@
 import { Suspense, useMemo } from 'react';
+import { Box3, Vector3 } from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, useGLTF } from '@react-three/drei';
 import { SkeletonUtils } from 'three-stdlib';
 
-// A real rigged Ready Player Me humanoid, vendored as a static asset. The
+// A real rigged humanoid, vendored as a static asset. The
 // `new URL(..., import.meta.url)` form lets Vite hash + rewrite the URL
-// (respecting `base`) instead of inlining the 1.8MB binary.
+// (respecting `base`) instead of inlining the binary.
 const MODEL_URL = new URL('../assets/movement-figure.glb', import.meta.url)
   .href;
+const TARGET_HEIGHT = 1.7; // metres — camera/lighting are framed for this
 
 function Figure() {
   const { scene } = useGLTF(MODEL_URL);
   // Clone so we own an independent skinned instance (safe under StrictMode
-  // double-mount, and required once per-phase bone posing lands).
+  // double-mount, and required once per-phase bone posing lands), then
+  // normalise scale + position so ANY source model (Mixamo cm, RPM m, …)
+  // lands the same height, centred, feet on the shadow plane.
   const model = useMemo(() => {
     const cloned = SkeletonUtils.clone(scene);
     cloned.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = true;
-        o.receiveShadow = false;
         o.frustumCulled = false;
       }
     });
+    const box = new Box3().setFromObject(cloned);
+    const size = box.getSize(new Vector3());
+    const center = box.getCenter(new Vector3());
+    const s = TARGET_HEIGHT / (size.y || 1);
+    cloned.scale.setScalar(s);
+    cloned.position.set(-center.x * s, -box.min.y * s, -center.z * s);
     return cloned;
   }, [scene]);
-  // Feet sit at y≈0 already; drop very slightly so shoes meet the shadow plane.
-  return <primitive object={model} position={[0, -0.02, 0]} />;
+  return <primitive object={model} />;
 }
 
 export default function MovementFigure3D() {
@@ -46,7 +54,7 @@ export default function MovementFigure3D() {
         gl={{ preserveDrawingBuffer: true, antialias: true }}
         camera={{ position: [0, 0.95, 3.7], fov: 30 }}
       >
-        {/* Soft studio lighting — neutral so the avatar's own materials read
+        {/* Soft studio lighting — neutral so the model's own materials read
             cleanly, with one key light for form + shadow. */}
         <hemisphereLight args={['#dfe6ff', '#2a2a3e', 0.9]} />
         <ambientLight intensity={0.25} />
