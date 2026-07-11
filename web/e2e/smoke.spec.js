@@ -28,7 +28,7 @@ function fakeSession() {
   };
 }
 
-// Every dashboard tab (matches the NAV in erg-dashboard.jsx).
+// Every dashboard tab (matches the NAV in App.jsx).
 const TABS = [
   'overview',
   'calendar',
@@ -48,7 +48,7 @@ const TABS = [
 // Label shown on each nav button is the tab key, uppercased.
 const NAV_LABEL = (tab) => tab.toUpperCase();
 
-// The ErrorBoundary fallback in erg-dashboard.jsx renders this sentence when a
+// The ErrorBoundary fallback in App.jsx renders this sentence when a
 // view crashes on render. Its absence is the "mounted without error" signal.
 const ERROR_BOUNDARY_TEXT = 'hit a render error';
 

@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
-import App from './erg-dashboard.jsx';
+import App from './App.jsx';
 import { supabase } from './supabaseClient.js';
 import { usePWAInstall } from './hooks/usePWAInstall.js';
 import { useIsMobile } from './hooks/useIsMobile.js';
