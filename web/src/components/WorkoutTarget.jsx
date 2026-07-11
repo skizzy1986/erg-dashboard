@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { THEME } from '../constants/theme.js';
 
 const C = {
-  panel: '#1a1a2e',
-  border: '#4a4a68',
-  accent: '#ffd700',
-  text: '#e8e8f0',
-  muted: '#7e7e9a',
+  panel: THEME.surface,
+  border: THEME.border,
+  accent: THEME.gold,
+  text: THEME.text,
+  muted: THEME.muted,
 };
 
 export default function WorkoutTarget({ session }) {

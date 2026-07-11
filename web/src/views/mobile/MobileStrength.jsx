@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useStrengthPRs } from '../../hooks/useStrengthPRs.js';
 import StrengthLogger from '../../StrengthLogger.jsx';
+import { THEME } from '../../constants/theme.js';
 
 const C = {
-  bg: '#0a0a0f',
-  panel: '#2a2a48',
-  accent: '#34d399',
-  text: '#e8e8f0',
-  muted: '#7e7e9a',
+  bg: THEME.bg,
+  panel: THEME.raised,
+  accent: THEME.green,
+  text: THEME.text,
+  muted: THEME.muted,
 };
 
 export default function MobileStrength() {

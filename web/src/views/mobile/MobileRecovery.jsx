@@ -13,14 +13,15 @@ import { useVitalsSync } from '../../hooks/useVitalsSync.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { DAILY_TSS } from '../../constants/tssData.js';
+import { THEME } from '../../constants/theme.js';
 
 const C = {
-  bg: '#0a0a0f',
-  panel: '#2a2a48',
-  accent: '#34d399',
-  text: '#e8e8f0',
-  muted: '#7e7e9a',
-  err: '#ff2d55',
+  bg: THEME.bg,
+  panel: THEME.raised,
+  accent: THEME.green,
+  text: THEME.text,
+  muted: THEME.muted,
+  err: THEME.red,
 };
 
 const tickStyle = { fontSize: 9, fill: C.muted };
