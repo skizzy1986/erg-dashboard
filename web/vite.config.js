@@ -77,17 +77,16 @@ export default defineConfig({
       // gate passes by accident. `all: true` counts every in-scope src file.
       all: true,
       include: ['src/**'],
-      // Excluded from the coverage denominator (documented why each is here):
-      //  - erg-dashboard.jsx: the not-yet-decomposed monolith (#52). Each
-      //    extraction PR removes the file(s) it extracts from this list in the
-      //    same PR, so a file cannot leave `exclude` without hitting threshold.
+      // Excluded from the coverage denominator (documented why each is here).
+      // The former monolith (now App.jsx) is fully included in coverage; each
+      // extraction PR removes the file(s) it extracts from this list in the
+      // same PR, so a file cannot leave `exclude` without hitting threshold.
       //  - StrengthLogger.jsx: large untested component, extraction tracked (#79).
       //  - main.jsx: auth/bootstrap entry point, not unit-testable in jsdom.
       //  - constants/**: pure data tables — no logic to cover; counting them
       //    only distorts the denominator.
       //  - test-setup.js: the test harness itself.
       exclude: [
-        'src/erg-dashboard.jsx',
         'src/StrengthLogger.jsx',
         'src/main.jsx',
         'src/constants/**',
