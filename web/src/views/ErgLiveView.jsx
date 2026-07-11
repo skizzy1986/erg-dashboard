@@ -6,17 +6,18 @@ import { supabase } from '../supabaseClient';
 import LiveMetric from '../components/LiveMetric';
 import WorkoutTarget from '../components/WorkoutTarget';
 import { parsePace } from '../services/pm5Bluetooth';
+import { THEME } from '../constants/theme.js';
 
 const C = {
-  bg: '#08080d',
-  panel: '#1a1a2e',
-  border: '#4a4a68',
-  accent: '#34d399',
-  cyan: '#00d4ff',
-  gold: '#ffd700',
-  text: '#e8e8f0',
-  muted: '#7e7e9a',
-  err: '#ff2d55',
+  bg: THEME.bg,
+  panel: THEME.surface,
+  border: THEME.border,
+  accent: THEME.green,
+  cyan: THEME.cyan,
+  gold: THEME.gold,
+  text: THEME.text,
+  muted: THEME.muted,
+  err: THEME.red,
 };
 
 const SRPE_GUIDE = [

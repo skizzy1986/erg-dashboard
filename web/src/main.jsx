@@ -12,8 +12,15 @@ import MobileApp from './views/mobile/MobileApp.jsx';
 import { createNotificationChannels } from './utils/notifications.js';
 import { initSentry } from './utils/sentry.js';
 import ErrorFallback from './components/ErrorFallback.jsx';
+import { THEME } from './constants/theme.js';
+import { cssVars } from './utils/themeCss.js';
 
 initSentry();
+
+const themeStyle = document.createElement('style');
+themeStyle.id = 'theme-vars';
+themeStyle.textContent = cssVars(THEME);
+document.head.appendChild(themeStyle);
 
 if (Capacitor.isNativePlatform()) {
   BluetoothLowEnergy.shimWebBluetooth();
@@ -28,14 +35,14 @@ const queryClient = new QueryClient({
 
 // ── THEME TOKENS (match the dashboard) ───────────────────────────
 const C = {
-  bg: '#0a0a0f',
-  panel: '#2a2a48',
-  field: '#08080d',
-  border: '#4a4a68',
-  accent: '#34d399',
-  text: '#e8e8f0',
-  muted: '#7e7e9a',
-  err: '#ff2d55',
+  bg: THEME.bg,
+  panel: THEME.raised,
+  field: THEME.field,
+  border: THEME.border,
+  accent: THEME.green,
+  text: THEME.text,
+  muted: THEME.muted,
+  err: THEME.red,
 };
 
 // ── LOGIN SCREEN ─────────────────────────────────────────────────

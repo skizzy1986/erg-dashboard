@@ -1,0 +1,17 @@
+export const THEME = {
+  bg: '#08080d',
+  surface: '#1a1a2e',
+  raised: '#2a2a48',
+  field: '#08080d',
+  border: '#4a4a68',
+  text: '#e8e8f0',
+  muted: '#7e7e9a',
+  cyan: '#00d4ff',
+  green: '#34d399',
+  gold: '#ffd700',
+  orange: '#ff6b35',
+  red: '#ff2d55',
+  purple: '#a78bfa',
+  pink: '#f472b6',
+  teal: '#2dd4bf',
+};

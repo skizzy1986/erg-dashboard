@@ -1,18 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCoach } from '../hooks/useCoach.js';
 import { calcTrainingLoad } from '../utils/trainingLoad.js';
+import { THEME } from '../constants/theme.js';
 
 const C = {
-  bg: '#08080d',
-  panel: '#1a1a2e',
-  border: '#4a4a68',
-  cyan: '#00d4ff',
-  text: '#e8e8f0',
-  muted: '#7e7e9a',
-  err: '#ff2d55',
-  userBubble: '#2a2a48',
-  userBubbleBorder: '#4a4a68',
-  assistantBorder: '#00d4ff',
+  bg: THEME.bg,
+  panel: THEME.surface,
+  border: THEME.border,
+  cyan: THEME.cyan,
+  text: THEME.text,
+  muted: THEME.muted,
+  err: THEME.red,
+  userBubble: THEME.raised,
+  userBubbleBorder: THEME.border,
+  assistantBorder: THEME.cyan,
 };
 
 const STARTER_PROMPTS = [
