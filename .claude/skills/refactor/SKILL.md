@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Extract one module from a named large file (erg-dashboard.jsx remainder, views/ProgramView.jsx, StrengthLogger.jsx) following the strangler-fig pattern. One safe extraction at a time; the app stays fully functional throughout. Never rewrites — only moves code.
+description: Extract one module from a named large file (App.jsx remainder, views/ProgramView.jsx, StrengthLogger.jsx) following the strangler-fig pattern. One safe extraction at a time; the app stays fully functional throughout. Never rewrites — only moves code.
 argument-hint: <module-name>
 ---
 
@@ -15,7 +15,7 @@ Extract ONE module from a named large file, strangler-fig style.
 /refactor <module-name>
 ```
 
-Current extraction targets: the `web/src/erg-dashboard.jsx` shell remainder,
+Current extraction targets: the `web/src/App.jsx` shell remainder,
 `web/src/views/ProgramView.jsx` (#77), `web/src/StrengthLogger.jsx` (#79).
 
 ## Process

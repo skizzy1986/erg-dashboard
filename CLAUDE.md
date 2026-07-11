@@ -46,7 +46,7 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     utils/          Pure functions — analysis, formatting, scheduling
     components/     Shared UI components (LogEntry, WorkoutItem, charts)
     views/          Extracted dashboard tabs (desktop + mobile)
-    erg-dashboard.jsx  Former monolith, now a ~960-line shell/router (see refactor)
+    App.jsx         Entry shell/router (~515 lines) — the former erg-dashboard.jsx monolith
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     main.jsx        Auth gate (Supabase email/password login)
 supabase/
@@ -77,12 +77,12 @@ coach/
 
 ## Architecture: Strangler Fig Refactor
 
-The refactor is nearly complete (tracked in GitHub issue #52). The former
-monolith `web/src/erg-dashboard.jsx` is down to **~960 lines** (2026-07-02) — a
+The monolith decomposition is complete (#52, closed by PR #145 on 2026-07-11):
+the former `web/src/erg-dashboard.jsx` is now `web/src/App.jsx` — a ~515-line
 shell/router that composes the extracted views. Remaining large files:
-`views/ProgramView.jsx` (~3,050 lines, being split into `views/program/*`, #77)
-and `StrengthLogger.jsx` (~1,665 lines, untested, #79). `App.jsx` has not been
-reached yet. The safe migration order:
+`views/ProgramView.jsx` (~1,900 lines, being split into `views/program/*`, #77)
+and `StrengthLogger.jsx` (~1,665 lines, untested, #79). The migration order
+that got here (kept for reference):
 
 1. Extract constants and utils (zero risk — pure JS, no JSX)
 2. Extract hooks (low risk — same data, reorganised)

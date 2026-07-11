@@ -22,7 +22,7 @@ with the right context and gates on your approval.
 | Command | Use for |
 |---|---|
 | `/feature <desc>` or `/orchestrate` | New feature or bug fix — full chain: research → story → spec → build+test → verify → review+validate → PR |
-| `/refactor <module>` | One strangler-fig extraction (erg-dashboard.jsx remainder, ProgramView #77, StrengthLogger #79) |
+| `/refactor <module>` | One strangler-fig extraction (App.jsx remainder, ProgramView #77, StrengthLogger #79) |
 | `/research <topic>` | Investigate an API/library/concept before building |
 
 ### Pipeline roles (stage → Agency agent)

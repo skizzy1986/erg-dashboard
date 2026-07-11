@@ -16,6 +16,11 @@
 > (dormant integrations) and the StrengthLogger test gap remain open, tracked
 > in issues #116 and #114.
 
+> **Addendum 2026-07-11.** The rename landed: `erg-dashboard.jsx` → `web/src/App.jsx`
+> (~515-line shell/router; PR #145, closing #52). Finding 5 is now fully
+> **resolved**; the remaining large-file splits are ProgramView (#77) and
+> StrengthLogger (#79).
+
 ---
 
 ## Executive summary

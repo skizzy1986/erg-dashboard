@@ -89,11 +89,11 @@ Browser / Android APK
         └── vitals-sync       — on-demand sync trigger
 ```
 
-The former monolith `web/src/erg-dashboard.jsx` (now ~960 lines — a shell/router)
-has been decomposed into the modular structure above using a strangler-fig
-refactor — one safe extraction at a time, app stays functional throughout. The
-tail end (Program sub-tabs, StrengthLogger, the App.jsx rename) is tracked in
-issue #52.
+The former 9,733-line monolith has been decomposed into the modular structure
+above using a strangler-fig refactor — one safe extraction at a time, app stays
+functional throughout — and the entry point is now `web/src/App.jsx` (~515
+lines, renamed in PR #145, closing #52). The remaining large-file splits
+(Program sub-tabs #77, StrengthLogger #79) are tracked separately.
 
 ---
 
@@ -152,7 +152,7 @@ erg-dashboard/
 │   │   ├── views/            desktop views (CoachView, ErgLiveView, …)
 │   │   │   └── mobile/       mobile-specific views (MobileApp, MobileRecovery, …)
 │   │   ├── services/         pm5Bluetooth.js (BLE abstraction)
-│   │   ├── erg-dashboard.jsx shell/router (~960 lines, formerly the monolith)
+│   │   ├── App.jsx           shell/router (~515 lines, formerly erg-dashboard.jsx)
 │   │   └── main.jsx          auth gate (Supabase email/password)
 │   ├── android/              Capacitor Android project
 │   ├── capacitor.config.json
