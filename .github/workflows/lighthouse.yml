@@ -9,6 +9,13 @@ name: Lighthouse — Web
 # because CI-runner timing is noisier than the deterministic DOM audits.
 # NOTE: Lighthouse 12 removed the standalone PWA category, so it is not asserted
 # here; PWA installability is covered indirectly by best-practices + the build.
+#
+# lighthouserc.json lives at the REPO ROOT (not web/) on purpose: this workflow
+# has no `defaults.run.working-directory: web`, so the action resolves
+# `configPath` and `staticDistDir: web/dist` from the repo root.
+#
+# Path filtering is job-level (`changes` job + `if:`), not workflow-level
+# `on.paths` — see the note in ci-web.yml for why (required-check safety).
 
 on:
   push:
@@ -20,9 +27,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect web changes
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'web/**'
+              - 'lighthouserc.json'
+              - '.github/workflows/lighthouse.yml'
+
   lighthouse:
     name: Lighthouse
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6

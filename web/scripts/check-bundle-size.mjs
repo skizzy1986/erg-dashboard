@@ -8,7 +8,7 @@
 // the monolith is finally code-split), never raise it without a deliberate
 // reason. Current build sits at ~360 KB gzipped; budget set with modest
 // headroom so a real regression trips it but normal noise does not.
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
@@ -42,6 +42,14 @@ const assets = gzippedAssets(ASSET_DIR);
 const totalBytes = assets.reduce((sum, a) => sum + a.gzip, 0);
 const totalKb = totalBytes / 1024;
 const budgetBytes = MAX_GZIP_KB * 1024;
+
+// Machine-readable summary for CI reporting (report-bundle-size.mjs diffs it
+// against the main-branch baseline). Written before the budget check so the
+// PR comment still shows the delta when the gate fails.
+writeFileSync(
+  join(process.cwd(), 'dist', 'bundle-size.json'),
+  JSON.stringify({ budgetKb: MAX_GZIP_KB, total: totalBytes, assets }, null, 2)
+);
 
 const kb = (b) => `${(b / 1024).toFixed(1)} KB`;
 console.log('Bundle size (gzipped):');
