@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { C, ICON } from '../constants/ui.js';
+import { THEME } from '../constants/theme.js';
 
 export default function LogEntry({ entry, done = false }) {
   const [open, setOpen] = useState(false);
-  const color = C[entry.type] || '#888';
+  const color = C[entry.type] || THEME.grey;
   const isErg = !!entry._isErg;
   const planned = entry.status === 'planned';
   // Flat erg metrics replaced the removed `splits` field. Planned erg rows
@@ -19,13 +20,13 @@ export default function LogEntry({ entry, done = false }) {
   return (
     <div
       style={{
-        borderTop: `1px solid ${open ? color + '50' : '#4a4a68'}`,
-        borderRight: `1px solid ${open ? color + '50' : '#4a4a68'}`,
-        borderBottom: `1px solid ${open ? color + '50' : '#4a4a68'}`,
+        borderTop: `1px solid ${open ? color + '50' : THEME.border}`,
+        borderRight: `1px solid ${open ? color + '50' : THEME.border}`,
+        borderBottom: `1px solid ${open ? color + '50' : THEME.border}`,
         borderLeft: `3px ${planned ? 'dashed' : 'solid'} ${color}`,
         borderRadius: 6,
         overflow: 'hidden',
-        background: open ? `${color}10` : '#2a2a48',
+        background: open ? `${color}10` : THEME.raised,
         opacity: done ? 0.5 : 1,
       }}
     >
@@ -57,7 +58,7 @@ export default function LogEntry({ entry, done = false }) {
               style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: '#fff',
+                color: THEME.white,
                 lineHeight: 1.3,
               }}
             >
@@ -69,8 +70,8 @@ export default function LogEntry({ entry, done = false }) {
                     fontSize: 8,
                     letterSpacing: 1.5,
                     fontWeight: 700,
-                    color: '#34d399',
-                    border: '1px solid #34d39966',
+                    color: THEME.green,
+                    border: `1px solid ${THEME.green}66`,
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -97,11 +98,11 @@ export default function LogEntry({ entry, done = false }) {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 11, color: '#7e7e9a' }}>
+            <div style={{ fontSize: 11, color: THEME.muted }}>
               {entry.date}
               {entry.duration ? ` · ${entry.duration}` : ''}
               {entry.srpe != null && (
-                <span style={{ color: '#ffd700' }}> · sRPE {entry.srpe}</span>
+                <span style={{ color: THEME.gold }}> · sRPE {entry.srpe}</span>
               )}
             </div>
           </div>
@@ -113,7 +114,7 @@ export default function LogEntry({ entry, done = false }) {
                 {entry.avg_watts}W
               </div>
             )}
-            <div style={{ fontSize: 10, color: '#7e7e9a' }}>
+            <div style={{ fontSize: 10, color: THEME.muted }}>
               {fmtDist(entry.distance_m)}
               {entry.avg_hr != null ? ` · ${entry.avg_hr}bpm` : ''}
             </div>
@@ -162,7 +163,7 @@ export default function LogEntry({ entry, done = false }) {
                   <div
                     key={k}
                     style={{
-                      background: '#08080d',
+                      background: THEME.bg,
                       borderRadius: 4,
                       padding: '7px 8px',
                     }}
@@ -170,7 +171,7 @@ export default function LogEntry({ entry, done = false }) {
                     <div
                       style={{
                         fontSize: 8,
-                        color: '#7e7e9a',
+                        color: THEME.muted,
                         letterSpacing: 2,
                         marginBottom: 2,
                       }}
@@ -187,7 +188,7 @@ export default function LogEntry({ entry, done = false }) {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   fontStyle: 'italic',
                   marginBottom: entry.coachNote ? 8 : 0,
                 }}
@@ -207,7 +208,7 @@ export default function LogEntry({ entry, done = false }) {
               }}
             >
               <thead>
-                <tr style={{ borderBottom: '1px solid #4a4a68' }}>
+                <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
                   {[
                     ['Exercise', '42%'],
                     ['Top Wt', '19%'],
@@ -218,7 +219,7 @@ export default function LogEntry({ entry, done = false }) {
                       key={h}
                       style={{
                         padding: '5px 4px',
-                        color: '#7e7e9a',
+                        color: THEME.muted,
                         fontSize: 9,
                         letterSpacing: 0.5,
                         width: w,
@@ -231,11 +232,14 @@ export default function LogEntry({ entry, done = false }) {
               </thead>
               <tbody>
                 {entry.exercises.map((ex, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #1e1e30' }}>
+                  <tr
+                    key={i}
+                    style={{ borderBottom: `1px solid ${THEME.surfaceAlt}` }}
+                  >
                     <td
                       style={{
                         padding: '6px 4px',
-                        color: ex.pr ? '#ffd700' : '#aaaacc',
+                        color: ex.pr ? THEME.gold : THEME.textSubtle,
                         wordBreak: 'break-word',
                         lineHeight: 1.3,
                       }}
@@ -246,7 +250,7 @@ export default function LogEntry({ entry, done = false }) {
                     <td
                       style={{
                         padding: '6px 4px',
-                        color: '#e8e8f0',
+                        color: THEME.text,
                         fontWeight: ex.pr ? 700 : 400,
                         wordBreak: 'break-word',
                       }}
@@ -256,7 +260,7 @@ export default function LogEntry({ entry, done = false }) {
                     <td
                       style={{
                         padding: '6px 4px',
-                        color: '#aaaacc',
+                        color: THEME.textSubtle,
                         wordBreak: 'break-word',
                       }}
                     >
@@ -265,7 +269,7 @@ export default function LogEntry({ entry, done = false }) {
                     <td
                       style={{
                         padding: '6px 4px',
-                        color: '#aaaacc',
+                        color: THEME.textSubtle,
                         wordBreak: 'break-word',
                       }}
                     >
@@ -279,7 +283,7 @@ export default function LogEntry({ entry, done = false }) {
             <div
               style={{
                 fontSize: 10,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 fontStyle: 'italic',
                 marginBottom: entry.coachNote ? 8 : 0,
               }}
@@ -295,7 +299,7 @@ export default function LogEntry({ entry, done = false }) {
             <div
               style={{
                 marginTop: 10,
-                background: '#08080d',
+                background: THEME.bg,
                 borderRadius: 4,
                 padding: '10px 12px',
                 fontSize: 11,

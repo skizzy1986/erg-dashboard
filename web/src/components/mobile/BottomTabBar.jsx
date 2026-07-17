@@ -1,4 +1,5 @@
 import React from 'react';
+import { THEME } from '../../constants/theme.js';
 
 const TABS = [
   { id: 'analytics', label: 'Analytics', icon: '📊' },
@@ -24,8 +25,8 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-around',
-        background: '#2a2a48',
-        borderTop: '1px solid #4a4a68',
+        background: THEME.raised,
+        borderTop: `1px solid ${THEME.border}`,
       }}
     >
       {TABS.map(({ id, label, icon }) => (
@@ -53,7 +54,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
               fontSize: 9,
               letterSpacing: 1,
               fontWeight: activeTab === id ? 700 : 400,
-              color: activeTab === id ? '#34d399' : '#7e7e9a',
+              color: activeTab === id ? THEME.green : THEME.muted,
             }}
           >
             {label}
