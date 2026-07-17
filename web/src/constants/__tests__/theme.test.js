@@ -17,12 +17,20 @@ const EXPECTED_KEYS = [
   'purple',
   'pink',
   'teal',
+  'surfaceAlt',
+  'neutral',
+  'textSubtle',
+  'textFaint',
+  'textDim',
+  'divider',
+  'grey',
+  'white',
 ];
 
 describe('THEME', () => {
-  it('has exactly the 15 expected keys (no more, no fewer)', () => {
+  it('has exactly the 23 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(THEME);
-    expect(keys).toHaveLength(15);
+    expect(keys).toHaveLength(23);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -48,5 +56,13 @@ describe('THEME', () => {
     expect(THEME.purple).toBe('#a78bfa');
     expect(THEME.pink).toBe('#f472b6');
     expect(THEME.teal).toBe('#2dd4bf');
+    expect(THEME.surfaceAlt).toBe('#1e1e30');
+    expect(THEME.neutral).toBe('#3a3a4a');
+    expect(THEME.textSubtle).toBe('#aaaacc');
+    expect(THEME.textFaint).toBe('#6c6c88');
+    expect(THEME.textDim).toBe('#5a5a74');
+    expect(THEME.divider).toBe('#3e3e5a');
+    expect(THEME.grey).toBe('#888888');
+    expect(THEME.white).toBe('#ffffff');
   });
 });

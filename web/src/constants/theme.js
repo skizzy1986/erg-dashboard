@@ -14,4 +14,12 @@ export const THEME = {
   purple: '#a78bfa',
   pink: '#f472b6',
   teal: '#2dd4bf',
+  surfaceAlt: '#1e1e30',
+  neutral: '#3a3a4a',
+  textSubtle: '#aaaacc',
+  textFaint: '#6c6c88',
+  textDim: '#5a5a74',
+  divider: '#3e3e5a',
+  grey: '#888888',
+  white: '#ffffff',
 };
