@@ -19,7 +19,7 @@ Testing Library. Full briefing: `CLAUDE.md`.
 - `web/src/hooks/` — React hooks; Supabase calls live here
 - `web/src/components/` — reusable JSX, props in, no direct Supabase calls
 - `web/src/views/` — tab-level JSX, composes components
-- `web/src/erg-dashboard.jsx` — legacy shell/router (~960 lines); targeted edits only
+- `web/src/App.jsx` — entry shell/router (~515 lines); targeted edits only
 
 ## Code style (non-negotiable)
 

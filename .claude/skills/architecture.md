@@ -3,7 +3,8 @@ name: architecture
 description: >
   Target folder structure, layer rules, and migration line-number map for the
   erg-dashboard refactor. Read when asked where to put code, how to structure
-  a new feature, or how to safely extract a module from erg-dashboard.jsx.
+  a new feature, or how to safely extract a module from App.jsx or another
+  large file.
 ---
 
 ## Target Structure
@@ -54,9 +55,9 @@ src/
       StrengthChart.jsx e1RM trend + StrengthTooltip
 
   views/                Extract by TAB ID, one per PR. Find each tab by its
-                        section heading / tab constant in erg-dashboard.jsx —
-                        do NOT trust absolute line numbers: the monolith is
-                        ~8,715 lines and every extraction shifts the offsets.
+                        section heading / tab constant in App.jsx (formerly
+                        erg-dashboard.jsx) — do NOT trust absolute line
+                        numbers: every extraction shifts the offsets.
     CoachView.jsx       ✓ extracted    AI coach tab
     ErgView.jsx         ✓ extracted    erg analytics, HR130, pace/splits
     ErgLiveView.jsx     ✓ extracted    live PM5 Bluetooth
@@ -77,8 +78,8 @@ src/
     ProgramMicrocycle.jsx 2-week roster
     ProgramYear.jsx       EVENT_PATHWAY year view
 
-  App.jsx     Global state + nav tabs + ErrorBoundary + view dispatch (~200 lines;
-              not reached yet — entry point is still main.jsx + erg-dashboard.jsx)
+  App.jsx     Global state + nav tabs + ErrorBoundary + view dispatch (~515 lines;
+              ✓ renamed from erg-dashboard.jsx in PR #145, closing #52)
   main.jsx    Auth gate (unchanged)
   supabaseClient.js  Supabase init (unchanged)
 ```
