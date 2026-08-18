@@ -8,8 +8,10 @@ name: E2E — Web Smoke
 #
 # The job runs in the official Playwright container (browsers + OS deps baked
 # in) instead of `npx playwright install --with-deps` every run. The image tag
-# MUST match the @playwright/test version in web/package-lock.json — bump them
-# together (a version mismatch means untested browser builds).
+# MUST match the @playwright/test version in web/package-lock.json, so it is
+# READ FROM the lockfile by the `changes` job rather than hand-maintained — a
+# hardcoded tag silently rotted every time Dependabot bumped the npm package
+# (every smoke test then died on a missing browser binary).
 #
 # Path filtering is job-level (`changes` job + `if:`), not workflow-level
 # `on.paths` — see the note in ci-web.yml for why (required-check safety).
@@ -33,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       web: ${{ steps.filter.outputs.web }}
+      pw: ${{ steps.pw.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -42,6 +45,10 @@ jobs:
             web:
               - 'web/**'
               - '.github/workflows/e2e-web.yml'
+      - id: pw
+        name: Read Playwright version from the lockfile
+        run: |
+          echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
 
   e2e:
     name: Playwright Smoke
@@ -49,7 +56,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.web == 'true'
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.pw }}-noble
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6

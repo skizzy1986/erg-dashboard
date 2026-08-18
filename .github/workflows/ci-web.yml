@@ -50,7 +50,12 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
-      - run: npm audit --audit-level=high
+      # Scoped to production dependencies: dev-only transitive advisories
+      # (eslint/vitest/workbox tooling) must not block application PRs. An
+      # unscoped gate deadlocked the repo for a month in 2026-08 — it failed
+      # every web PR, including the Dependabot PRs carrying the fixes, and no
+      # single bump could clear it. Anything reaching users is still gated.
+      - run: npm audit --omit=dev --audit-level=high
 
   test:
     name: Test & Coverage
