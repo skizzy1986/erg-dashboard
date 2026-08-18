@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { formatPace } from '../utils/pace.js';
+import { THEME } from '../constants/theme.js';
 
 export function PaceTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -15,8 +16,8 @@ export function PaceTooltip({ active, payload }) {
   return (
     <div
       style={{
-        background: '#2a2a48',
-        border: '1px solid #4a4a68',
+        background: THEME.raised,
+        border: `1px solid ${THEME.border}`,
         borderRadius: 6,
         padding: '10px 12px',
         fontSize: 11,
@@ -25,7 +26,7 @@ export function PaceTooltip({ active, payload }) {
     >
       <div
         style={{
-          color: '#7e7e9a',
+          color: THEME.muted,
           marginBottom: 4,
           fontSize: 9,
           letterSpacing: 2,
@@ -33,11 +34,11 @@ export function PaceTooltip({ active, payload }) {
       >
         {d.date_display}
       </div>
-      <div style={{ color: '#00d4ff', fontWeight: 700, fontSize: 14 }}>
+      <div style={{ color: THEME.cyan, fontWeight: 700, fontSize: 14 }}>
         {d.pace_500m_str}
-        <span style={{ fontSize: 10, color: '#7e7e9a' }}> /500m</span>
+        <span style={{ fontSize: 10, color: THEME.muted }}> /500m</span>
       </div>
-      <div style={{ color: '#888', fontSize: 10, marginTop: 2 }}>
+      <div style={{ color: THEME.grey, fontSize: 10, marginTop: 2 }}>
         {d.avg_watts != null ? `${d.avg_watts}W` : '—'}
         {d.zone ? ` · ${d.zone}` : ''}
       </div>

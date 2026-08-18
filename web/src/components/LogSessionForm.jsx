@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
+import { THEME } from '../constants/theme.js';
 
 export default function LogSessionForm({ onSaved }) {
   const queryClient = useQueryClient();
@@ -34,12 +35,12 @@ export default function LogSessionForm({ onSaved }) {
             : "max · can't talk";
   const srpeColor =
     srpe <= 4
-      ? '#34d399'
+      ? THEME.green
       : srpe <= 6
-        ? '#ffd700'
+        ? THEME.gold
         : srpe <= 8
-          ? '#ff6b35'
-          : '#ff2d55';
+          ? THEME.orange
+          : THEME.red;
 
   const setRow = (i, field, val) =>
     setRows(rows.map((r, j) => (j === i ? { ...r, [field]: val } : r)));
@@ -115,12 +116,12 @@ export default function LogSessionForm({ onSaved }) {
   };
 
   const inp = {
-    background: '#08080d',
-    border: '1px solid #4a4a68',
+    background: THEME.field,
+    border: `1px solid ${THEME.border}`,
     borderRadius: 4,
     padding: '7px 9px',
     fontSize: 11,
-    color: '#e8e8f0',
+    color: THEME.text,
     fontFamily: 'inherit',
     width: '100%',
     boxSizing: 'border-box',
@@ -128,7 +129,7 @@ export default function LogSessionForm({ onSaved }) {
   const lbl = {
     fontSize: 8,
     letterSpacing: 1,
-    color: '#7e7e9a',
+    color: THEME.muted,
     marginBottom: 3,
     display: 'block',
   };
@@ -139,14 +140,14 @@ export default function LogSessionForm({ onSaved }) {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: '#34d39915',
-          border: '1px solid #34d399',
+          background: `${THEME.green}15`,
+          border: `1px solid ${THEME.green}`,
           borderRadius: 6,
           padding: '12px',
           marginBottom: 14,
           fontSize: 12,
           fontWeight: 700,
-          color: '#34d399',
+          color: THEME.green,
           cursor: 'pointer',
           fontFamily: 'inherit',
           letterSpacing: 1,
@@ -160,8 +161,8 @@ export default function LogSessionForm({ onSaved }) {
   return (
     <div
       style={{
-        background: '#2a2a48',
-        border: '1px solid #34d399',
+        background: THEME.raised,
+        border: `1px solid ${THEME.green}`,
         borderRadius: 6,
         padding: '14px 16px',
         marginBottom: 14,
@@ -179,7 +180,7 @@ export default function LogSessionForm({ onSaved }) {
           style={{
             fontSize: 12,
             fontWeight: 700,
-            color: '#34d399',
+            color: THEME.green,
             letterSpacing: 1,
           }}
         >
@@ -193,7 +194,7 @@ export default function LogSessionForm({ onSaved }) {
           style={{
             background: 'none',
             border: 'none',
-            color: '#7e7e9a',
+            color: THEME.muted,
             fontSize: 16,
             cursor: 'pointer',
           }}
@@ -283,7 +284,7 @@ export default function LogSessionForm({ onSaved }) {
           <div
             key={i}
             style={{
-              background: '#08080d',
+              background: THEME.bg,
               borderRadius: 5,
               padding: '9px 10px',
             }}
@@ -299,9 +300,9 @@ export default function LogSessionForm({ onSaved }) {
                 onClick={() => removeRow(i)}
                 style={{
                   background: 'none',
-                  border: '1px solid #4a4a68',
+                  border: `1px solid ${THEME.border}`,
                   borderRadius: 4,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   cursor: 'pointer',
                   padding: '0 9px',
                   fontSize: 12,
@@ -343,7 +344,7 @@ export default function LogSessionForm({ onSaved }) {
                 alignItems: 'center',
                 gap: 6,
                 fontSize: 10,
-                color: '#ffd700',
+                color: THEME.gold,
                 cursor: 'pointer',
               }}
             >
@@ -351,7 +352,7 @@ export default function LogSessionForm({ onSaved }) {
                 type="checkbox"
                 checked={r.pr}
                 onChange={(e) => setRow(i, 'pr', e.target.checked)}
-                style={{ accentColor: '#ffd700' }}
+                style={{ accentColor: THEME.gold }}
               />
               🏆 PR
             </label>
@@ -362,9 +363,9 @@ export default function LogSessionForm({ onSaved }) {
         onClick={addRow}
         style={{
           background: 'none',
-          border: '1px dashed #4a4a68',
+          border: `1px dashed ${THEME.border}`,
           borderRadius: 4,
-          color: '#7e7e9a',
+          color: THEME.muted,
           cursor: 'pointer',
           padding: '7px',
           width: '100%',
@@ -380,7 +381,7 @@ export default function LogSessionForm({ onSaved }) {
         <div
           style={{
             fontSize: 10,
-            color: msg.type === 'ok' ? '#34d399' : '#ff2d55',
+            color: msg.type === 'ok' ? THEME.green : THEME.red,
             marginBottom: 10,
             lineHeight: 1.5,
           }}
@@ -393,13 +394,13 @@ export default function LogSessionForm({ onSaved }) {
         disabled={saving}
         style={{
           width: '100%',
-          background: saving ? '#4a4a68' : '#34d399',
+          background: saving ? THEME.border : THEME.green,
           border: 'none',
           borderRadius: 6,
           padding: '12px',
           fontSize: 12,
           fontWeight: 700,
-          color: '#08080d',
+          color: THEME.bg,
           cursor: saving ? 'default' : 'pointer',
           fontFamily: 'inherit',
           letterSpacing: 1,

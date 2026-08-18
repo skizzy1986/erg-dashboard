@@ -1,4 +1,5 @@
 import React from 'react';
+import { THEME } from '../constants/theme.js';
 
 const SIZES = {
   large: { value: 52, label: 9, unit: 11, gap: 2 },
@@ -10,7 +11,7 @@ export default function LiveMetric({
   label,
   value,
   unit,
-  accent = '#00d4ff',
+  accent = THEME.cyan,
   size = 'normal',
   dimmed = false,
 }) {
@@ -29,7 +30,7 @@ export default function LiveMetric({
         style={{
           fontSize: s.label,
           letterSpacing: 2,
-          color: '#7e7e9a',
+          color: THEME.muted,
           fontWeight: 600,
           textTransform: 'uppercase',
         }}
@@ -49,7 +50,9 @@ export default function LiveMetric({
         {value ?? '--'}
       </div>
       {unit && (
-        <div style={{ fontSize: s.unit, color: '#4a4a68', letterSpacing: 1 }}>
+        <div
+          style={{ fontSize: s.unit, color: THEME.border, letterSpacing: 1 }}
+        >
           {unit}
         </div>
       )}

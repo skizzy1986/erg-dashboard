@@ -1,4 +1,5 @@
 import React from 'react';
+import { THEME } from '../constants/theme.js';
 
 export default function StrengthTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -6,8 +7,8 @@ export default function StrengthTooltip({ active, payload }) {
   return (
     <div
       style={{
-        background: '#2a2a48',
-        border: '1px solid #4a4a68',
+        background: THEME.raised,
+        border: `1px solid ${THEME.border}`,
         borderRadius: 6,
         padding: '10px 12px',
         fontSize: 11,
@@ -16,7 +17,7 @@ export default function StrengthTooltip({ active, payload }) {
     >
       <div
         style={{
-          color: '#7e7e9a',
+          color: THEME.muted,
           marginBottom: 4,
           fontSize: 9,
           letterSpacing: 2,
@@ -25,7 +26,8 @@ export default function StrengthTooltip({ active, payload }) {
         {d.date}
       </div>
       <div style={{ color: payload[0].stroke, fontWeight: 700, fontSize: 14 }}>
-        {d.e1rm}kg<span style={{ fontSize: 10, color: '#7e7e9a' }}> e1RM</span>
+        {d.e1rm}kg
+        <span style={{ fontSize: 10, color: THEME.muted }}> e1RM</span>
       </div>
     </div>
   );

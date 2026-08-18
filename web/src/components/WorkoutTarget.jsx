@@ -78,7 +78,7 @@ export default function WorkoutTarget({ session }) {
               style={{
                 marginTop: 8,
                 fontSize: 11,
-                color: '#a0a0b8',
+                color: C.muted,
                 lineHeight: 1.6,
                 borderLeft: `2px solid ${C.accent}`,
                 paddingLeft: 10,
