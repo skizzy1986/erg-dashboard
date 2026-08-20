@@ -18,3 +18,33 @@ export function toISODate(value) {
 
   return '';
 }
+
+function localLogDate(d) {
+  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+}
+
+// Inverse of toISODate: produces the unpadded "M/D/YY" text that sessions.date
+// stores (verified against production — 92/92 rows are unpadded). Accepts a
+// Date, an ISO "YYYY-MM-DD" string, or an already-"M/D/YY" string (idempotent);
+// anything unparseable falls back to today. Always reads LOCAL calendar fields
+// — toISOString() would shift the day either side of midnight in a non-UTC zone
+// and file the session against the wrong date.
+export function toLogDate(value) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime())
+      ? localLogDate(new Date())
+      : localLogDate(value);
+  }
+
+  const s = value == null ? '' : String(value).trim();
+
+  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(s)) return s;
+
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, yyyy, mo, day] = iso;
+    return `${Number(mo)}/${Number(day)}/${yyyy.slice(2)}`;
+  }
+
+  return localLogDate(new Date());
+}

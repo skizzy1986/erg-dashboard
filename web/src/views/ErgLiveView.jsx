@@ -5,8 +5,9 @@ import { useOfflineQueue } from '../hooks/useOfflineQueue';
 import { supabase } from '../supabaseClient';
 import LiveMetric from '../components/LiveMetric';
 import WorkoutTarget from '../components/WorkoutTarget';
-import { parsePace } from '../services/pm5Bluetooth';
+import { parsePace, formatElapsed } from '../services/pm5Bluetooth';
 import { THEME } from '../constants/theme.js';
+import { toISODate, toLogDate } from '../utils/dateFormat.js';
 
 const C = {
   bg: THEME.bg,
@@ -34,7 +35,13 @@ const SRPE_GUIDE = [
 ];
 
 // ── SCREEN A: Connect ─────────────────────────────────────────────
-function ConnectScreen({ onConnect, connecting, error, todaySession }) {
+function ConnectScreen({
+  onConnect,
+  connecting,
+  error,
+  todaySession,
+  pending,
+}) {
   return (
     <div
       style={{
@@ -73,6 +80,21 @@ function ConnectScreen({ onConnect, connecting, error, todaySession }) {
       {todaySession && (
         <div style={{ width: '100%', maxWidth: 420 }}>
           <WorkoutTarget session={todaySession} />
+        </div>
+      )}
+
+      {pending > 0 && (
+        <div
+          style={{
+            fontSize: 10,
+            letterSpacing: 2,
+            color: C.gold,
+            border: `1px solid ${C.gold}`,
+            borderRadius: 6,
+            padding: '6px 12px',
+          }}
+        >
+          {pending} PENDING SYNC
         </div>
       )}
 
@@ -275,11 +297,11 @@ function RowingScreen({ metrics, status, todaySession, onEnd }) {
 }
 
 // ── SCREEN C: Session Summary + Save ─────────────────────────────
-function SummaryScreen({ summary, onSave, onDiscard, saving }) {
+function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
   const [srpe, setSrpe] = useState(5);
   const [notes, setNotes] = useState('');
-
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const saving = saveState === 'saving';
+  const settled = saveState === 'saved' || saveState === 'queued';
 
   return (
     <div
@@ -422,91 +444,216 @@ function SummaryScreen({ summary, onSave, onDiscard, saving }) {
         />
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 12 }}>
-        <button
-          onClick={() => onSave({ srpe, notes, date: todayStr })}
-          disabled={saving}
+      {/* Outcome — the session stays on screen until DONE is pressed, so a
+          failed save can never be mistaken for a successful one. */}
+      {saveState === 'saved' && (
+        <div
           style={{
-            flex: 1,
+            fontSize: 12,
+            letterSpacing: 2,
+            color: C.accent,
+            border: `1px solid ${C.accent}`,
+            borderRadius: 8,
+            padding: '12px 16px',
+            textAlign: 'center',
+          }}
+        >
+          SAVED TO LOG
+        </div>
+      )}
+      {saveState === 'queued' && (
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: 2,
+            color: C.gold,
+            border: `1px solid ${C.gold}`,
+            borderRadius: 8,
+            padding: '12px 16px',
+            textAlign: 'center',
+          }}
+        >
+          SAVED LOCALLY — WILL SYNC
+        </div>
+      )}
+      {saveState === 'failed' && (
+        <div
+          style={{
+            fontSize: 12,
+            letterSpacing: 1,
+            color: C.err,
+            border: `1px solid ${C.err}`,
+            borderRadius: 8,
+            padding: '12px 16px',
+            textAlign: 'center',
+            lineHeight: 1.6,
+          }}
+        >
+          SAVE FAILED — NOT STORED
+          <br />
+          <span style={{ letterSpacing: 0, fontSize: 11 }}>
+            Device storage is full. Free some space, then tap SAVE SESSION
+            again.
+          </span>
+        </div>
+      )}
+
+      {/* Actions */}
+      {settled ? (
+        <button
+          onClick={onDone}
+          style={{
             padding: '14px',
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: 1,
-            background: saving ? C.border : C.accent,
+            background: C.accent,
             color: C.bg,
             border: 'none',
             borderRadius: 8,
-            cursor: saving ? 'default' : 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          {saving ? 'SAVING…' : 'SAVE SESSION'}
-        </button>
-        <button
-          onClick={onDiscard}
-          style={{
-            padding: '14px 20px',
-            fontSize: 12,
-            letterSpacing: 1,
-            background: 'transparent',
-            border: `1px solid ${C.border}`,
-            borderRadius: 8,
-            color: C.muted,
             cursor: 'pointer',
             fontFamily: 'inherit',
           }}
         >
-          DISCARD
+          DONE
         </button>
-      </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => onSave({ srpe, notes })}
+            disabled={saving}
+            style={{
+              flex: 1,
+              padding: '14px',
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 1,
+              background: saving ? C.border : C.accent,
+              color: C.bg,
+              border: 'none',
+              borderRadius: 8,
+              cursor: saving ? 'default' : 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {saving ? 'SAVING…' : 'SAVE SESSION'}
+          </button>
+          <button
+            onClick={onDiscard}
+            style={{
+              padding: '14px 20px',
+              fontSize: 12,
+              letterSpacing: 1,
+              background: 'transparent',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              color: C.muted,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            DISCARD
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── MAIN EXPORT ───────────────────────────────────────────────────
-export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
-  const { status, metrics, summary, error, connect, reset } = usePM5();
-  const { addToQueue } = useOfflineQueue();
-  const queryClient = useQueryClient();
-  const [saving, setSaving] = useState(false);
+// Postgres unique_violation on sessions' UNIQUE(date, label). The row is
+// already in the table, so this is a successful save, not a failure — queueing
+// it would guarantee a permanently undrainable entry.
+function isDuplicate(dbError) {
+  return (
+    dbError?.code === '23505' || /duplicate key/i.test(dbError?.message || '')
+  );
+}
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
+  const { status, metrics, summary, error, connect, reset, finish } = usePM5();
+  const { addToQueue, pending } = useOfflineQueue();
+  const queryClient = useQueryClient();
+  const [saveState, setSaveState] = useState('idle');
+  // idle | saving | saved | queued | failed
+
+  // sessions.date is text "M/D/YY", so both sides are normalised to ISO before
+  // comparing. `_isErg` is the raw-type flag from useSessionLog — `type` has
+  // already been through normType() by then and reads "Z2 Aerobic", never 'erg'.
+  const todayISO = toISODate(toLogDate(new Date()));
   const todaySession =
-    plannedSessions.find((s) => s.date === todayStr && s.type === 'erg') ||
+    plannedSessions.find((s) => s._isErg && toISODate(s.date) === todayISO) ||
     null;
 
-  async function saveSession({ srpe, notes, date }) {
-    setSaving(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  async function saveSession({ srpe, notes }) {
+    setSaveState('saving');
+
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(
+      now.getMinutes()
+    ).padStart(2, '0')}`;
+
+    let user = null;
+    let authFailed = false;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user ?? null;
+    } catch {
+      authFailed = true;
+    }
+
     const row = {
-      date,
+      date: toLogDate(now),
       type: 'erg',
-      label: todaySession?.label ?? 'Erg Session',
-      duration: Math.round((summary.elapsedTime || 0) / 60),
+      // The time suffix keeps UNIQUE(date, label) satisfied for a second
+      // session on the same day. Computed once here so it stays stable if the
+      // row goes to the offline queue.
+      label: `${todaySession?.label ?? 'Erg Session'} ${hhmm}`,
+      duration: formatElapsed(summary.elapsedTime || 0),
       srpe,
-      watts: summary.avgWatts,
-      distance: summary.distance,
+      // `||` not `??` — the PM5 reports 0 when a field was never measured.
+      distance_m: summary.distance || null,
+      avg_watts: summary.avgWatts || null,
       status: 'logged',
       source: 'bluetooth',
       exercises: notes ? [{ name: 'Notes', notes }] : [],
       user_id: user?.id,
     };
 
-    if (navigator.onLine) {
-      const { error: dbError } = await supabase.from('sessions').insert(row);
-      if (dbError) {
+    const queue = () => {
+      try {
         addToQueue(row);
+        setSaveState('queued');
+      } catch {
+        // localStorage quota exceeded — the row is nowhere. Say so instead of
+        // claiming a save.
+        setSaveState('failed');
       }
-    } else {
-      addToQueue(row);
+    };
+
+    if (authFailed || !navigator.onLine) {
+      queue();
+      return;
     }
 
-    queryClient.invalidateQueries({ queryKey: ['sessions'] });
-    queryClient.invalidateQueries({ queryKey: ['erg-sessions'] });
-    setSaving(false);
+    let dbError;
+    try {
+      ({ error: dbError } = await supabase.from('sessions').insert(row));
+    } catch (err) {
+      dbError = err;
+    }
+
+    if (!dbError || isDuplicate(dbError)) {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['erg-sessions'] });
+      setSaveState('saved');
+    } else {
+      queue();
+    }
+  }
+
+  function done() {
+    setSaveState('idle');
     reset();
     if (onSessionSaved) onSessionSaved();
   }
@@ -518,6 +665,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
         connecting={false}
         error={error}
         todaySession={todaySession}
+        pending={pending}
       />
     );
   }
@@ -529,6 +677,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
         connecting={true}
         error={null}
         todaySession={todaySession}
+        pending={pending}
       />
     );
   }
@@ -539,7 +688,8 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
         summary={summary}
         onSave={saveSession}
         onDiscard={reset}
-        saving={saving}
+        onDone={done}
+        saveState={saveState}
       />
     );
   }
@@ -549,12 +699,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
       metrics={metrics}
       status={status}
       todaySession={todaySession}
-      onEnd={() => {
-        // Manual end — build summary from last known metrics
-        if (metrics) {
-          reset();
-        }
-      }}
+      onEnd={finish}
     />
   );
 }

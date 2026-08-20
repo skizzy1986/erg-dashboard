@@ -117,6 +117,12 @@ export function usePM5() {
     setStatus('finished');
   }
 
+  // Manual END: the PM5 never sends a FINISHED packet, so build the summary
+  // from the last metrics we saw rather than dropping the session on the floor.
+  function finish() {
+    buildSummary(metrics || {});
+  }
+
   const disconnect = useCallback(() => {
     disconnectPM5(deviceRef.current);
     deviceRef.current = null;
@@ -130,5 +136,14 @@ export function usePM5() {
     setError(null);
   }
 
-  return { status, metrics, summary, error, connect, disconnect, reset };
+  return {
+    status,
+    metrics,
+    summary,
+    error,
+    connect,
+    disconnect,
+    reset,
+    finish,
+  };
 }

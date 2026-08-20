@@ -2,17 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
 import { THEME } from '../constants/theme.js';
+import { toLogDate } from '../utils/dateFormat.js';
 
 export default function LogSessionForm({ onSaved }) {
   const queryClient = useQueryClient();
-  const today = new Date();
-  const todayKey =
-    today.getMonth() +
-    1 +
-    '/' +
-    today.getDate() +
-    '/' +
-    String(today.getFullYear()).slice(-2);
+  const todayKey = toLogDate(new Date());
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(todayKey);
   const [label, setLabel] = useState('');
