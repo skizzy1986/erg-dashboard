@@ -687,7 +687,10 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
       <SummaryScreen
         summary={summary}
         onSave={saveSession}
-        onDiscard={reset}
+        onDiscard={() => {
+          setSaveState('idle');
+          reset();
+        }}
         onDone={done}
         saveState={saveState}
       />
