@@ -16,7 +16,7 @@ TrainingPeaks, Ergzone) with a unified, fully personalised training system.
 
 | Layer      | Technology                     | Purpose                              |
 |------------|--------------------------------|--------------------------------------|
-| UI         | React 18 + Vite                | Frontend single-page app             |
+| UI         | React 19 + Vite                | Frontend single-page app             |
 | Charts     | Recharts                       | Data visualisation                   |
 | Math       | mathjs                         | Linear regression for aerobic trend  |
 | Backend    | Supabase                       | Postgres DB, Auth, Edge Functions    |
@@ -45,12 +45,17 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     hooks/          Custom React hooks (data fetching, derived state)
     utils/          Pure functions — analysis, formatting, scheduling
     components/     Shared UI components (LogEntry, WorkoutItem, charts)
+      mobile/       Mobile-only shared components (BottomTabBar)
+    services/       Device/native integrations (pm5Bluetooth.js)
     views/          Extracted dashboard tabs (desktop + mobile)
-    App.jsx         Entry shell/router (~515 lines) — the former erg-dashboard.jsx monolith
+      mobile/       Mobile tab views
+      program/      ProgramView split-out pieces (#77)
+    App.jsx         Entry shell/router (~447 lines) — the former erg-dashboard.jsx monolith
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     main.jsx        Auth gate (Supabase email/password login)
 supabase/
-  functions/        Edge Functions (vitals-import from Google Health API)
+  functions/        Edge Functions (vitals-import, vitals-import-api,
+                    vitals-sync, coach-chat)
 coach/
   PROJECT_MANAGEMENT_ANALYSIS.md  PM/workflow analysis (2026-06-29)
   work-orders/      DEPRECATED — historical specs; tracking is now GitHub Issues
@@ -79,7 +84,7 @@ coach/
 ## Architecture: Strangler Fig Refactor
 
 The monolith decomposition is complete (#52, closed by PR #145 on 2026-07-11):
-the former `web/src/erg-dashboard.jsx` is now `web/src/App.jsx` — a ~515-line
+the former `web/src/erg-dashboard.jsx` is now `web/src/App.jsx` — a ~447-line
 shell/router that composes the extracted views. Remaining large files:
 `views/ProgramView.jsx` (~1,900 lines, being split into `views/program/*`, #77)
 and `StrengthLogger.jsx` (~1,665 lines, untested, #79). The migration order
@@ -220,8 +225,8 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 
 Coverage thresholds live in `web/vite.config.js` (`test.coverage.thresholds`) and
 **ratchet upward**. Scope is explicit — `coverage.all` + `include: ['src/**']`
-with the not-yet-extracted monolith, `StrengthLogger.jsx`, `main.jsx`, and
-pure-data `constants/**` excluded — so the gate measures real coverage instead of
+with `StrengthLogger.jsx`, `main.jsx`, `test-setup.js`, and pure-data
+`constants/**` excluded (the former monolith, now `App.jsx`, is fully included) — so the gate measures real coverage instead of
 passing by accident on whatever files a test happened to import. Each refactor
 extraction removes its file from `exclude` and lands tests in the **same** PR;
 the thresholds are then raised toward it. The numbers only go up. A PR comment
