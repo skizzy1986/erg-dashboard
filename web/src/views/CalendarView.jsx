@@ -1,4 +1,6 @@
 import WorkoutItem from '../components/WorkoutItem.jsx';
+import BenchmarkBadge from '../components/BenchmarkBadge.jsx';
+import { useBenchmarkStatuses } from '../hooks/useBenchmarkStatuses.js';
 import {
   getRosterMode,
   resolveDay,
@@ -13,6 +15,9 @@ import {
 
 // ── CALENDAR VIEW ──
 export default function CalendarView({ loggedSessions, isWide }) {
+  // Resolved once for the FULL ladder; the panel below indexes into it
+  // positionally, so the badges stay aligned if the slice is ever widened.
+  const benchmarkStatuses = useBenchmarkStatuses();
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthNames = [
     'Jan',
@@ -198,6 +203,7 @@ export default function CalendarView({ loggedSessions, isWide }) {
           UPCOMING EVENTS · SEASON 1 LADDER
         </div>
         {EVENT_LADDER.slice(0, 5).map((e, i) => {
+          const bench = benchmarkStatuses[i];
           const col =
             e.kind === 'TARGET'
               ? '#ff2d55'
@@ -237,6 +243,14 @@ export default function CalendarView({ loggedSessions, isWide }) {
                 }}
               >
                 {e.name}
+                {bench && (
+                  <BenchmarkBadge
+                    status={bench.status}
+                    fuzzy={bench.fuzzy}
+                    daysOverdue={bench.daysOverdue}
+                    daysUntilStart={bench.daysUntilStart}
+                  />
+                )}
               </div>
             </div>
           );
