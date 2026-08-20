@@ -61,7 +61,8 @@ coach/
 .claude/
   agents/       Agency agent library (232 agents, 16 divisions) — staffs the pipeline
   skills/       Pipeline definitions (/orchestrate, /feature, /refactor, /research),
-                erg-context.md spawn preamble, and domain knowledge docs
+                /daily task brief, erg-context.md spawn preamble, and domain
+                knowledge docs
   settings.json Hooks configuration (automation triggers)
 ```
 
@@ -251,6 +252,7 @@ approval gates. It never advances without explicit go-ahead.
 /orchestrate <idea>      →  the canonical pipeline
 /refactor <module>       →  strangler-fig extraction (Minimal Change Engineer)
 /research <topic>        →  research only (Trend Researcher)
+/daily                   →  today's 30-min task list (read-only, no pipeline)
 ```
 
 ### The canonical chain (stage → Agency agent)
