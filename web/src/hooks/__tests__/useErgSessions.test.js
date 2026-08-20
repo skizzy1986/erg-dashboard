@@ -165,6 +165,66 @@ describe('useErgSessions', () => {
     expect(result.current.data[0].date_display).toBe('6/13');
   });
 
+  // sessions.date is TEXT "M/D/YY" in production — the fixtures above are ISO
+  // only because the read side used to assume it. These cover the live format.
+  it('formats date_display as M/D from the live M/D/YY text format', async () => {
+    mockQuery([{ id: 9, date: '8/7/26', type: 'erg', avg_watts: 150 }]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].date_display).toBe('8/7');
+  });
+
+  it('strips the zero padding from a padded MM/DD/YY date', async () => {
+    mockQuery([{ id: 10, date: '06/09/26', type: 'erg', avg_watts: 150 }]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].date_display).toBe('6/9');
+  });
+
+  it('falls back to the raw date string when it cannot be parsed', async () => {
+    mockQuery([{ id: 11, date: 'not-a-date', type: 'erg', avg_watts: 150 }]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].date_display).toBe('not-a-date');
+  });
+
+  // Postgres sorts the TEXT date lexically, so it hands back "12/31/25" above
+  // "1/1/26". The hook must re-sort newest-first on the normalized key.
+  it('re-sorts newest-first across a year boundary', async () => {
+    mockQuery([
+      { id: 12, date: '12/31/25', type: 'erg', avg_watts: 150 },
+      { id: 13, date: '1/1/26', type: 'erg', avg_watts: 150 },
+      { id: 14, date: '2/14/26', type: 'erg', avg_watts: 150 },
+    ]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data.map((s) => s.date)).toEqual([
+      '2/14/26',
+      '1/1/26',
+      '12/31/25',
+    ]);
+  });
+
+  it('sorts ISO and M/D/YY dates into one correct order', async () => {
+    mockQuery([
+      { id: 15, date: '2026-06-13', type: 'erg', avg_watts: 150 },
+      { id: 16, date: '8/7/26', type: 'erg', avg_watts: 150 },
+    ]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data.map((s) => s.id)).toEqual([16, 15]);
+  });
+
   it('sets isError on supabase error', async () => {
     mockQuery(null, { message: 'boom' });
     const { result } = renderHook(() => useErgSessions(), {

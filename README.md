@@ -7,7 +7,7 @@ fully personalised app.
 [![CI — Web](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-web.yml/badge.svg)](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-web.yml)
 [![CI — Android](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-android.yml/badge.svg)](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-android.yml)
 
-**v1.3.0** · React 18 + Supabase + Capacitor Android · Deployed on Vercel
+**v1.3.0** · React 19 + Supabase + Capacitor Android · Deployed on Vercel
 
 ---
 
@@ -48,7 +48,7 @@ Recovery, Strength, Session Log, Coach. PWA installable on iOS/web.
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18 + Vite |
+| Frontend | React 19 + Vite |
 | State / data fetching | TanStack React Query v5 |
 | Charts | Recharts |
 | Backend | Supabase (Postgres, Auth, Edge Functions on Deno) |
@@ -66,7 +66,7 @@ Recovery, Strength, Session Log, Coach. PWA installable on iOS/web.
 
 ```
 Browser / Android APK
-  └── React 18 SPA (web/src/)
+  └── React 19 SPA (web/src/)
         ├── views/          — one component per tab (10 desktop + 5 mobile)
         ├── hooks/          — data fetching (React Query + Supabase), derived state
         ├── components/     — shared UI (charts, forms, log entries)
