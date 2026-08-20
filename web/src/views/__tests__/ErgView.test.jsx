@@ -155,4 +155,55 @@ describe('ErgView', () => {
     const { container } = renderView();
     expect(container).toBeTruthy();
   });
+
+  // withinLast7Days used to build a Date from the raw string, which is Invalid
+  // Date for the live "M/D/YY" format — so this counter always read 0.
+  it('counts a recent M/D/YY session in SESSIONS / WK', () => {
+    const d = new Date(Date.now() - 2 * 86400000);
+    const mdy = `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+    useErgSessionsMock.mockReturnValue({
+      data: [
+        {
+          id: 1,
+          date: mdy,
+          label: '60min UT1',
+          duration: 60,
+          srpe: 6,
+          avg_watts: 150,
+          avg_hr: 130,
+          distance_m: 13500,
+          pace_500m: 132.6,
+          pace_500m_str: '2:12.6',
+          zone: 'UT1',
+          hardPush: false,
+          date_display: '8/18',
+        },
+      ],
+      isLoading: false,
+    });
+    const { getByText } = renderView();
+    expect(getByText('SESSIONS / WK').nextSibling.textContent).toBe('1');
+  });
+
+  it('does not count a session older than 7 days in SESSIONS / WK', () => {
+    useErgSessionsMock.mockReturnValue({
+      data: [
+        {
+          id: 1,
+          date: '1/2/26',
+          label: 'old row',
+          duration: 60,
+          avg_watts: 150,
+          pace_500m: 132.6,
+          pace_500m_str: '2:12.6',
+          zone: 'UT1',
+          hardPush: false,
+          date_display: '1/2',
+        },
+      ],
+      isLoading: false,
+    });
+    const { getByText } = renderView();
+    expect(getByText('SESSIONS / WK').nextSibling.textContent).toBe('0');
+  });
 });

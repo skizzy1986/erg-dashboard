@@ -99,12 +99,12 @@ export default defineConfig({
       //   measured: lines 48.98 / functions 46.81 / branches 40.38
       thresholds: {
         // Global floor — ratcheted up as extractions land tests (measured
-        // lines 71.76 / functions 71.52 / branches 68.62 on 2026-07-11, after
-        // the App.jsx rename brought the former monolith into scope with its
-        // render test; ~4 points headroom for denominator drift).
-        lines: 68,
-        functions: 67,
-        branches: 64,
+        // lines 76.86 / functions 75.45 / branches 72.00 on 2026-08-20, after
+        // the PM5 save-path tests (#173) and the erg date-handling tests (#184)
+        // landed; ~4 points headroom for denominator drift).
+        lines: 72,
+        functions: 71,
+        branches: 68,
         // Commercial-baseline gate (80/80/70) for new/extracted code, applied
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.

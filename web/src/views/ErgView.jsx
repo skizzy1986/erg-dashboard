@@ -21,6 +21,7 @@ import {
   HR130_POWER,
 } from '../constants/trainingConfig.js';
 import { formatPace } from '../utils/pace.js';
+import { toISODate } from '../utils/dateFormat.js';
 import { useErgSessions } from '../hooks/useErgSessions.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 
@@ -206,8 +207,9 @@ const statLabel = {
 };
 
 function withinLast7Days(dateStr) {
-  if (!dateStr) return false;
-  const d = new Date(dateStr + 'T00:00:00');
+  const iso = toISODate(dateStr);
+  if (!iso) return false;
+  const d = new Date(iso + 'T00:00:00');
   if (Number.isNaN(d.getTime())) return false;
   const now = new Date();
   const cutoff = new Date(now.getTime() - 7 * 86400000);

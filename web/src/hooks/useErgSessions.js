@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
 import { wattsToPace500, formatPace, classifyZone } from '../utils/pace.js';
+import { toISODate } from '../utils/dateFormat.js';
 import { useAnchors } from './useAnchors.js';
 
 export function enrich(s, cp) {
@@ -12,7 +13,7 @@ export function enrich(s, cp) {
     const secs = parseFloat(s.duration) * 60;
     pace_500m = secs / (s.distance_m / 500);
   }
-  const [month, day] = (s.date || '').split('-').slice(1);
+  const [, month, day] = toISODate(s.date).split('-');
   return {
     ...s,
     pace_500m,
@@ -44,8 +45,19 @@ export function useErgSessions() {
     staleTime: 60_000,
   });
 
+  // sessions.date is TEXT "M/D/YY", so the server-side .order() above sorts it
+  // lexically ("12/31/25" lands above "1/1/26"). Re-sort on the normalized ISO
+  // key. The .limit(50) is still applied to that lexical order server-side, so
+  // past 50 rows this fetches the wrong 50 — see #184.
   const data = useMemo(
-    () => (query.data ?? []).map((s) => enrich(s, cp)),
+    () =>
+      (query.data ?? [])
+        .map((s) => enrich(s, cp))
+        .sort((a, b) => {
+          const ai = toISODate(a.date);
+          const bi = toISODate(b.date);
+          return ai < bi ? 1 : ai > bi ? -1 : 0;
+        }),
     [query.data, cp]
   );
 
