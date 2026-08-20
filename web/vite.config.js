@@ -110,6 +110,21 @@ export default defineConfig({
         // the monolith is decomposed and its exclusions fall away.
         'src/utils/sentry.js': { lines: 80, functions: 80, branches: 70 },
         'src/utils/dateFormat.js': { lines: 80, functions: 80, branches: 70 },
+        'src/utils/eventLadderDates.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/utils/benchmarkStatus.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/components/BenchmarkStatusBanner.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/components/ErrorFallback.jsx': {
           lines: 80,
           functions: 80,

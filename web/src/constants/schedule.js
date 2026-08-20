@@ -315,6 +315,9 @@ export const EVENT_LADDER = [
     date: 'Wed 1 Jul 26',
     name: 'CP Test #1 (4-min)',
     kind: 'benchmark',
+    windowStart: '2026-07-01',
+    windowEnd: '2026-07-01',
+    matchTerms: ['cp test', 'cp retest'],
     phase: 'Base',
     serves:
       'Keystone pt 1 — first clean rowing-test anchor on fresh legs (post-FIFO taper). 4-min all-out (C2 protocol, pace-able, on the ranking). Sets a trustworthy threshold anchor; CP+W′ model completed by test #2 next home week. Unlocks %CP pacing + Power Guide.',
@@ -323,6 +326,9 @@ export const EVENT_LADDER = [
     date: '~Mid Jul 26',
     name: 'CP Test #2 (2nd duration)',
     kind: 'benchmark',
+    windowStart: '2026-07-11',
+    windowEnd: '2026-07-20',
+    matchTerms: ['cp test', 'cp retest'],
     phase: 'Base',
     serves:
       'Keystone pt 2 — second maximal effort at a different duration (e.g. 1-min + the 4-min, or a longer 7-10min piece) to complete the 2-point power-duration model. More reliable than any single all-out test. Builds CP + W′ properly.',
@@ -331,6 +337,9 @@ export const EVENT_LADDER = [
     date: '~Early Aug 26',
     name: '5k Time Trial',
     kind: 'benchmark',
+    windowStart: '2026-08-01',
+    windowEnd: '2026-08-10',
+    matchTerms: ['5k', '5000m', 'time trial'],
     phase: 'Base end',
     serves:
       'First real read on the 5000m format + what base built. Do fresh, low-stakes.',
@@ -355,6 +364,9 @@ export const EVENT_LADDER = [
     date: '~Mid Jan 27',
     name: '2k Test',
     kind: 'benchmark',
+    windowStart: '2027-01-11',
+    windowEnd: '2027-01-20',
+    matchTerms: ['2k', '2000m'],
     phase: 'Peak lead-in',
     serves:
       'Universal rowing benchmark — best single fitness measure, predicts across all distances. Pre-peak data.',
@@ -363,6 +375,9 @@ export const EVENT_LADDER = [
     date: 'Late Jan 27',
     name: '1000m + 1-min tune-ups',
     kind: 'benchmark',
+    windowStart: '2027-01-21',
+    windowEnd: '2027-01-31',
+    matchTerms: ['1000m', '1-min', 'tune-up'],
     phase: 'Peak',
     serves:
       'Race-specific rehearsals at Worlds distances, ~3-4wk out. Dial pacing, not compete.',

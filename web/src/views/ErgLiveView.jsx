@@ -646,6 +646,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
     if (!dbError || isDuplicate(dbError)) {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       queryClient.invalidateQueries({ queryKey: ['erg-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['benchmark-sessions'] });
       setSaveState('saved');
     } else {
       queue();

@@ -83,6 +83,7 @@ export default function LogSessionForm({ onSaved }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['benchmark-sessions'] });
       setMsg({ type: 'ok', text: 'Saved! Session added to your log.' });
       reset();
       if (onSaved) onSaved();

@@ -1,4 +1,5 @@
 import WorkoutItem from '../components/WorkoutItem.jsx';
+import BenchmarkStatusBanner from '../components/BenchmarkStatusBanner.jsx';
 import {
   getRosterMode,
   resolveDay,
@@ -177,6 +178,7 @@ export default function CalendarView({ loggedSessions, isWide }) {
       </div>
 
       {/* Upcoming events from the ladder */}
+      <BenchmarkStatusBanner />
       <div
         style={{
           background: 'linear-gradient(135deg,#ffd70010,#1e1e30)',
