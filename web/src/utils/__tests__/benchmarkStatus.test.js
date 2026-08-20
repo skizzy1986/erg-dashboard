@@ -253,6 +253,23 @@ describe('resolveLadderStatuses — matching precision (P4, P5, AC7)', () => {
     expect(s.done).toBe(false);
   });
 
+  // The discriminating case. '40min' above does not contain '4min' at all, so a
+  // naive label.includes(keyword) rejects it too and the test cannot tell the
+  // two implementations apart. '24min' does contain '4min', so substring
+  // matching would wrongly clear CP Test #1 here and whole-token must not.
+  it('P4 does not let a 24min row substring-match the 4min CP test', () => {
+    const label = 'UT2 24min recovery @ 130-142W';
+    expect(label.toLowerCase().includes('4min')).toBe(true);
+
+    const [s] = resolve(
+      [CP1],
+      [{ id: 80, date: '7/1/26', label, status: 'completed' }]
+    );
+    expect(s.status).toBe('overdue');
+    expect(s.done).toBe(false);
+    expect(s.matchedSessionId).toBeNull();
+  });
+
   it('P5 lets only the earlier benchmark claim a shared CP session', () => {
     const shared = {
       id: 200,
@@ -265,6 +282,26 @@ describe('resolveLadderStatuses — matching precision (P4, P5, AC7)', () => {
     expect(first.matchedSessionId).toBe(200);
     expect(second.status).toBe('overdue');
     expect(second.matchedSessionId).toBeNull();
+  });
+
+  // Claim order falls back to ladder position when two benchmarks open on the
+  // same day; without the tie-break the winner would depend on sort stability.
+  it('P5b breaks a claim-order tie on ladder position', () => {
+    const shape = { kind: 'benchmark', phase: 'Base', serves: 'calibration' };
+    const a = { ...shape, date: '~Mid Jul 26', name: 'CP Test A (4-min)' };
+    const b = { ...shape, date: '~Mid Jul 26', name: 'CP Test B (4-min)' };
+    const shared = {
+      id: 201,
+      date: '7/12/26',
+      label: 'CP test 4min max',
+      status: 'completed',
+    };
+
+    const [first, second] = resolve([a, b], [shared]);
+    expect(first.window.start).toBe(second.window.start);
+    expect(first.matchedSessionId).toBe(201);
+    expect(second.matchedSessionId).toBeNull();
+    expect(second.status).toBe('overdue');
   });
 
   it('AC7 keeps same-month benchmarks in different years independent', () => {

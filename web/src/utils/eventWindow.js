@@ -49,7 +49,7 @@ function daysInMonth(year, monthIndex) {
 // Lowercases, folds "4-min" to "4min" (a hyphen between a digit and a letter is
 // a spelling artefact, not a separator), then splits on every other
 // non-alphanumeric run. Whole tokens only — substring matching would let a
-// "40min" recovery row satisfy a "4min" CP test.
+// "24min" recovery row satisfy a "4min" CP test.
 export function tokenize(text) {
   if (!text) return [];
   return String(text)
