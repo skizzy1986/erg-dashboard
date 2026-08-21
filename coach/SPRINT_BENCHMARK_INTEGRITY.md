@@ -26,9 +26,10 @@
 | T8 — Calibration tier upgrade pass | [#181](https://github.com/skizzy1986/erg-dashboard/issues/181) | open | — |
 
 **Follow-ups raised while building the above** (not sprint tasks): #184 (closed)
-· #187 read-side date ordering · #188 real session↔ladder link · #192 benchmark
-reschedule state · #194 `useSessionLog` counts cancelled as completed · #195
-offline-queue invalidation.
+· #187 read-side date ordering (**closed** by #198) · #188 real session↔ladder
+link · #192 benchmark reschedule state · #194 `useSessionLog` counts cancelled
+as completed · #195 offline-queue invalidation · #196 benchmark-status-unavailable
+line. Their state moves too — check the issues, not this list.
 
 > **Why this header exists.** On 2026-08-21 a session read the previous
 > "no GitHub issues exist yet" note, took T2 as un-started, and rebuilt the
