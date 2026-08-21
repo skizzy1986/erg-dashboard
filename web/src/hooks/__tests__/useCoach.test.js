@@ -23,7 +23,6 @@ vi.mock('../useVitals.js', () => ({
     readinessLabel: 'FATIGUED',
   }),
 }));
-vi.mock('../useSessions.js', () => ({ useSessions: () => ({ data: [] }) }));
 
 import { buildTrainingContext } from '../useCoach.js';
 

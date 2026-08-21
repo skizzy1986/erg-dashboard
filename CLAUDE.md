@@ -122,7 +122,11 @@ coach use), and the context store (Code↔Coach shared memory, added by #94):
 | `coach_log`         | **Context store** — append-only diary + decision record (Coach's content) |
 | `anchors`           | **Context store** — current calibration + phase state (one live row/key)  |
 
-**`sessions` columns:** `date` (**text `MM/DD/YY`**), `type`, `label`, `duration`,
+**`sessions` columns:** `date` (**text `M/D/YY`, unpadded** — the write column),
+`date_iso` (**generated `date`, read-only** — derived from `date` by
+`session_date_to_iso()`, indexed, and the only correct thing to `order by`; an
+insert that names it is rejected, and a `date` that will not parse is rejected by
+the `sessions_date_parseable` check), `type`, `label`, `duration`,
 `srpe`, `prs`, `exercises` (jsonb), `coach_note`, `status`, `coach_flag`,
 `avg_watts`, `avg_hr`, `distance_m`, `source` (default `portal`; Coach writes
 `coach`), `user_id`. **No watt-target columns — targets live in `label` +
@@ -171,7 +175,10 @@ legacy `sessions.date` text pattern); RLS single-owner policy like the modern ta
 **Data-layer gotchas (honour on every write):**
 - Supply the `user_id` UUID explicitly on inserts — `auth.uid()` is the column
   default but does not resolve through the MCP connector.
-- Order `sessions` chronologically with `to_date(date,'MM/DD/YY')` (date is text).
+- Order `sessions` chronologically with **`date_iso`** (generated + indexed), never the
+  text `date` — lexical order silently returns the wrong rows under a `LIMIT`. On
+  descending, pass `NULLS LAST` (`nullsFirst: false` from supabase-js). Do not use
+  `to_date(...)`: it is STABLE, so it cannot be indexed or used in a generated column.
 - `UNIQUE(date, label)` on `sessions` — temp-suffix labels before bulk shuffles
   (`set label = label || '~tmp'`).
 - Vitals upsert: `on conflict (user_id, date) do update`.

@@ -12,7 +12,11 @@ export function useTSSHistory() {
         .select('date, duration, srpe')
         .in('status', COMPLETED_STATUSES)
         .gt('srpe', 0)
-        .order('date', { ascending: true });
+        // date_iso, not the lexically-sorting TEXT date (#187). This ordering
+        // is a contract, not a correctness requirement: calcTrainingLoad keys a
+        // map by date and walks day-by-day, so CTL/ATL/TSB are unaffected by
+        // input order. Do not re-file the old ordering as a CTL bug.
+        .order('date_iso', { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data ?? []).map((s) => ({
         date: s.date,

@@ -33,7 +33,9 @@ Testing Library. Full briefing: `CLAUDE.md`.
 ## Supabase gotchas (honour on every write)
 
 - Supply `user_id` explicitly on inserts. RLS is always on — never bypass it.
-- `sessions.date` is TEXT `MM/DD/YY` — order with `to_date(date,'MM/DD/YY')`.
+- `sessions.date` is TEXT `M/D/YY` — **write** it, never order by it. Order by the
+  generated `date_iso` date column (`nullsFirst: false` on desc). `date_iso` is
+  read-only; an insert naming it is rejected.
 - `UNIQUE(date, label)` on `sessions` — temp-suffix labels before bulk shuffles.
 - Vitals upsert on `(user_id, date)`. Migrations are additive and reversible;
   DDL via `apply_migration`, never raw `execute_sql`.
