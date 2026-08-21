@@ -1,0 +1,42 @@
+/* Generated from src/constants/theme.js by .design-sync/gen-css.mjs — do not hand-edit.
+   SplitIQ ships no stylesheet of its own: components carry inline styles and
+   index.html paints the ground before React mounts. This file is the design
+   system's token layer plus that ground, so every design built with SplitIQ
+   starts on the same dark surface the app uses. */
+:root {
+  --color-bg: #08080d;
+  --color-surface: #1a1a2e;
+  --color-raised: #2a2a48;
+  --color-field: #08080d;
+  --color-border: #4a4a68;
+  --color-text: #e8e8f0;
+  --color-muted: #7e7e9a;
+  --color-cyan: #00d4ff;
+  --color-green: #34d399;
+  --color-gold: #ffd700;
+  --color-orange: #ff6b35;
+  --color-red: #ff2d55;
+  --color-purple: #a78bfa;
+  --color-pink: #f472b6;
+  --color-teal: #2dd4bf;
+  --color-surfaceAlt: #1e1e30;
+  --color-neutral: #3a3a4a;
+  --color-textSubtle: #aaaacc;
+  --color-textFaint: #6c6c88;
+  --color-textDim: #5a5a74;
+  --color-divider: #3e3e5a;
+  --color-grey: #888888;
+  --color-white: #ffffff;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  /* !important: SplitIQ is a dark-only surface — index.html paints this ground
+     before React mounts, and preview-card templates default their body to
+     white, which would render every component on the wrong ground. */
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
