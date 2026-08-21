@@ -377,7 +377,7 @@ export const EVENT_LADDER = [
     kind: 'benchmark',
     windowStart: '2027-01-21',
     windowEnd: '2027-01-31',
-    matchTerms: ['1000m', '1-min', 'tune-up'],
+    matchTerms: ['1000m', 'tune-up'],
     phase: 'Peak',
     serves:
       'Race-specific rehearsals at Worlds distances, ~3-4wk out. Dial pacing, not compete.',

@@ -2,10 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   deriveBenchmarkStatuses,
   matchBenchmarkSession,
+  labelMatchesTerms,
+  normaliseLabel,
   BENCHMARK_MATCH_TOLERANCE_BEFORE_DAYS,
   BENCHMARK_MATCH_TOLERANCE_AFTER_DAYS,
   UPCOMING_WINDOW_DAYS,
 } from '../benchmarkStatus.js';
+import SOURCE from '../benchmarkStatus.js?raw';
 import { resolveEventWindow } from '../eventLadderDates.js';
 import { EVENT_LADDER } from '../../constants/schedule.js';
 
@@ -346,5 +349,213 @@ describe('matchBenchmarkSession details', () => {
 
   it('tolerates a non-array entries argument', () => {
     expect(deriveBenchmarkStatuses(null, [], { today: TODAY })).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B1 + S1 delta. Real matchTerms straight off EVENT_LADDER — a test that
+// invents its own terms would not notice a term regressing in the constant.
+// ---------------------------------------------------------------------------
+
+const TERMS = {
+  cp: entryNamed('CP Test #1 (4-min)').matchTerms,
+  fiveK: entryNamed('5k Time Trial').matchTerms,
+  twoK: entryNamed('2k Test').matchTerms,
+  thousand: entryNamed('1000m + 1-min tune-ups').matchTerms,
+};
+
+const BENCHMARK_ENTRIES = EVENT_LADDER.filter((e) => e.kind === 'benchmark');
+const ALL_TERMS = BENCHMARK_ENTRIES.flatMap((e) => e.matchTerms);
+
+// Vite's `?raw` import gives the module's own source text — no fs, no
+// path juggling, and it tracks the file if it ever moves.
+
+describe('labelMatchesTerms — boundary (B1)', () => {
+  it('T5.1 does not read 18.5km as a 5k (live session 92)', () => {
+    // The decimal-point trap: `\b` would accept this, because the `.` before
+    // the `5` is itself a word boundary.
+    const label = 'Zwift Loopin Lava — 35:45, 18.5km, 212m';
+    expect(labelMatchesTerms(label, TERMS.fiveK)).toBe(false);
+    expect(labelMatchesTerms(label, ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.2 does not read 22km as a 2k', () => {
+    const label = 'Zwift Alpe — 1:12:00, 22km, 1035m';
+    expect(labelMatchesTerms(label, TERMS.twoK)).toBe(false);
+    expect(labelMatchesTerms(label, ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.3 does not read 12km as a 2k', () => {
+    const label = 'Bike Z2 45min — 12km';
+    expect(labelMatchesTerms(label, TERMS.twoK)).toBe(false);
+    expect(labelMatchesTerms(label, ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.4 does not read 21000m as a 1000m', () => {
+    const label = 'Zwift Tempus — 41:00, 21000m';
+    expect(labelMatchesTerms(label, TERMS.thousand)).toBe(false);
+    expect(labelMatchesTerms(label, ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.5 does not read a 1-min warm-up as the tune-ups benchmark', () => {
+    const label = 'Warm-up 1-min bursts x5';
+    expect(labelMatchesTerms(label, TERMS.thousand)).toBe(false);
+    expect(labelMatchesTerms(label, ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.6 does not read 3x1-min bursts as the tune-ups benchmark', () => {
+    const label = '3x1-min bursts';
+    expect(labelMatchesTerms(label, TERMS.thousand)).toBe(false);
+    expect(labelMatchesTerms(label, ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.7 rejects the decimal-bearing live labels 88 and 90', () => {
+    for (const label of [
+      'Off-program 10187m/45:00 @ ~150W (2:12.5/500)',
+      'UT1 Steady 50min @ 164W (2:08.8/500) + 10min WU',
+    ]) {
+      expect(labelMatchesTerms(label, TERMS.fiveK), label).toBe(false);
+      expect(labelMatchesTerms(label, TERMS.twoK), label).toBe(false);
+      expect(labelMatchesTerms(label, ALL_TERMS), label).toBe(false);
+    }
+  });
+
+  it('T5.8 rejects km distances and leading-digit forms', () => {
+    expect(labelMatchesTerms('Zwift ride 5km climb', TERMS.fiveK)).toBe(false);
+    expect(labelMatchesTerms('15000m long row', TERMS.fiveK)).toBe(false);
+    expect(labelMatchesTerms('21000m', TERMS.thousand)).toBe(false);
+    for (const label of ['Zwift ride 5km climb', '15000m long row', '21000m']) {
+      expect(labelMatchesTerms(label, ALL_TERMS), label).toBe(false);
+    }
+  });
+
+  it('T5.9 still matches the plural tune-ups on the singular term', () => {
+    expect(labelMatchesTerms('1000m + 1-min tune-ups', ['tune-up'])).toBe(true);
+    expect(labelMatchesTerms('1,000m tune-ups', ['tune-up'])).toBe(true);
+    expect(labelMatchesTerms('1000m tune-up rehearsal', ['tune-up'])).toBe(
+      true
+    );
+    for (const label of [
+      '1000m + 1-min tune-ups',
+      '1,000m tune-ups',
+      '1000m tune-up rehearsal',
+    ]) {
+      expect(labelMatchesTerms(label, TERMS.thousand), label).toBe(true);
+    }
+  });
+
+  it('T5.10 still matches the live CP test labels (45 and 61)', () => {
+    for (const label of [
+      'CP Test - 4min MAX (GATED)',
+      'CP RETEST — 1min + 4min max (rested, fed)',
+    ]) {
+      expect(labelMatchesTerms(label, TERMS.cp), label).toBe(true);
+    }
+  });
+
+  it('T5.11 still matches the plausible time-trial and 2k labels', () => {
+    for (const label of ['5k TT', '5K Time Trial (rested)', '5000m Time Trial'])
+      expect(labelMatchesTerms(label, TERMS.fiveK), label).toBe(true);
+    for (const label of ['2k Test', '2,000m Test'])
+      expect(labelMatchesTerms(label, TERMS.twoK), label).toBe(true);
+  });
+
+  it('T5.12 uses no regex lookbehind anywhere (iOS Safari < 16.4)', () => {
+    expect(SOURCE).toContain('labelMatchesTerms');
+    expect(SOURCE).not.toContain('(?<');
+  });
+
+  it('holds end-to-end: no MUST-NOT-MATCH label clears a benchmark', () => {
+    const traps = [
+      'Zwift Loopin Lava — 35:45, 18.5km, 212m',
+      'Zwift Alpe — 1:12:00, 22km, 1035m',
+      'Bike Z2 45min — 12km',
+      'Zwift Tempus — 41:00, 21000m',
+      'Warm-up 1-min bursts x5',
+      '3x1-min bursts',
+      'Baseline 10,000m',
+      'Long Row — 10,000m',
+      'AM — Long Row 10,000m',
+      '60min Row — 12,957m',
+      'Zwift ride 5km climb',
+      '15000m long row',
+      '21000m',
+    ];
+    // Dated inside every benchmark's match reach and marked completed, so
+    // only the label test can reject them.
+    const rows = run([
+      ...SESSIONS,
+      ...traps.map((label, i) => ({
+        id: 600 + i,
+        date: '8/5/26',
+        label,
+        status: 'completed',
+      })),
+    ]);
+    expect(rows.filter((r) => r.status === 'done').length).toBe(0);
+    expect(rows.filter((r) => r.status === 'overdue').length).toBe(3);
+  });
+});
+
+describe('normaliseLabel — thousands separators (S1)', () => {
+  it('T5.13 matches the comma form of 5,000m (live 19, 20, 25)', () => {
+    expect(normaliseLabel('5,000m')).toBe('5000m');
+    for (const label of ['5,000m', 'PM — 5,000m'])
+      expect(labelMatchesTerms(label, TERMS.fiveK), label).toBe(true);
+  });
+
+  it('T5.14 matches the comma form of 2,000m', () => {
+    expect(labelMatchesTerms('2,000m Test', TERMS.twoK)).toBe(true);
+  });
+
+  it('T5.15 adds no new hit for the 10,000m long rows (live 27, 21, 24, 29)', () => {
+    for (const label of [
+      'Baseline 10,000m',
+      'Long Row — 10,000m',
+      'AM — Long Row 10,000m',
+    ]) {
+      expect(labelMatchesTerms(label, TERMS.fiveK), label).toBe(false);
+      expect(labelMatchesTerms(label, TERMS.thousand), label).toBe(false);
+      expect(labelMatchesTerms(label, ALL_TERMS), label).toBe(false);
+    }
+  });
+
+  it('T5.16 adds no new hit for 12,957m (live 37)', () => {
+    expect(labelMatchesTerms('60min Row — 12,957m', ALL_TERMS)).toBe(false);
+  });
+
+  it('T5.17 strips every separator in one pass and still rejects 1,000,000m', () => {
+    expect(normaliseLabel('1,000,000m')).toBe('1000000m');
+    expect(labelMatchesTerms('1,000,000m', TERMS.thousand)).toBe(false);
+  });
+
+  it('lower-cases and tolerates a null label', () => {
+    expect(normaliseLabel('5K Time Trial')).toBe('5k time trial');
+    expect(normaliseLabel(null)).toBe('');
+    expect(normaliseLabel(undefined)).toBe('');
+    expect(labelMatchesTerms(null, TERMS.fiveK)).toBe(false);
+  });
+
+  it('ignores falsy terms and a non-array terms argument', () => {
+    expect(labelMatchesTerms('5k TT', ['', null, undefined])).toBe(false);
+    expect(labelMatchesTerms('5k TT', null)).toBe(false);
+  });
+
+  it('escapes regex metacharacters in a term instead of interpreting them', () => {
+    expect(labelMatchesTerms('a+b test', ['a+b'])).toBe(true);
+    expect(labelMatchesTerms('aab test', ['a+b'])).toBe(false);
+  });
+});
+
+describe('EVENT_LADDER matchTerms', () => {
+  it("T5.18 no benchmark carries '1-min', and the tune-ups entry is exactly ['1000m','tune-up']", () => {
+    expect(BENCHMARK_ENTRIES.length).toBe(5);
+    for (const e of BENCHMARK_ENTRIES) {
+      expect(e.matchTerms, e.name).not.toContain('1-min');
+    }
+    expect(entryNamed('1000m + 1-min tune-ups').matchTerms).toEqual([
+      '1000m',
+      'tune-up',
+    ]);
   });
 });

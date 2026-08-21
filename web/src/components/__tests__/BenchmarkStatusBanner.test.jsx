@@ -78,14 +78,63 @@ describe('BenchmarkStatusBanner', () => {
     expect(container.textContent).not.toMatch(/ALL CLEAR/i);
   });
 
-  it('renders nothing when the sessions query fails', () => {
+  it('states the status is unavailable when the sessions query fails, with no signal row', () => {
     useBenchmarkSessionsMock.mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
     });
     const { container } = renderView({ today: new Date(2026, 7, 20) });
+    expect(
+      screen.getByText('BENCHMARK STATUS UNAVAILABLE')
+    ).toBeInTheDocument();
+    // A negative statement about the data — never an affirmative all-clear,
+    // and never dressed as a signal.
+    expect(container.textContent).not.toMatch(/OVERDUE/);
+    expect(container.textContent).not.toMatch(/DUE IN/);
+    expect(container.textContent).not.toContain('\u26a0');
+    expect(container.textContent).not.toContain('\u25cf');
+    expect(container.textContent).not.toMatch(/DONE/i);
+    expect(container.textContent).not.toMatch(/UP TO DATE/i);
+    expect(container.textContent).not.toMatch(/ALL CLEAR/i);
+  });
+
+  it('never shows the unavailable line while the query is still loading', () => {
+    useBenchmarkSessionsMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
+    const { container } = renderView({ today: new Date(2026, 7, 20) });
     expect(container.firstChild).toBeNull();
+    expect(container.textContent).not.toContain('UNAVAILABLE');
+  });
+
+  it('keeps the unavailable line but drops the heading in compact mode', () => {
+    useBenchmarkSessionsMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+    renderView({ today: new Date(2026, 7, 20), compact: true });
+    expect(
+      screen.getByText('BENCHMARK STATUS UNAVAILABLE')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('BENCHMARKS')).not.toBeInTheDocument();
+  });
+
+  it('renders the unavailable line in the recessive muted token, never a signal colour', () => {
+    useBenchmarkSessionsMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+    renderView({ today: new Date(2026, 7, 20) });
+    const line = screen.getByText('BENCHMARK STATUS UNAVAILABLE');
+    expect(line.style.color).toBe(rgb(THEME.muted));
+    for (const signal of [THEME.orange, THEME.gold, THEME.red]) {
+      expect(line.style.color).not.toBe(rgb(signal));
+    }
   });
 
   it('renders nothing when no benchmark is due', () => {
