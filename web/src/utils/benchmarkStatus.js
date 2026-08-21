@@ -30,6 +30,15 @@ function baseState(entry, index) {
   };
 }
 
+// A Zwift/bike row ends "<time>, 22.4km, 1,000m" — that trailing field is
+// ELEVATION, and once commas stopped splitting digit groups it tokenises to
+// '1000m' and satisfies the 1000m/2k rowing benchmarks. Scott's rowing labels
+// spell distance '5,000m' and never carry a km token; every ride row does, so
+// the km token separates the two cases exactly.
+function hasRideDistance(tokens) {
+  return tokens.some((t) => /^\d+(?:\.\d+)?km$/.test(t));
+}
+
 // Ranks two eligible candidates: a session dated inside the entry's own window
 // beats one only in the grace/forward slack, then the earlier date wins, then
 // the lower id. Never "nearest to the window" — session 61 (7/5, four days off
@@ -57,6 +66,7 @@ function findMatch(sessions, keywords, searchStart, searchEnd, consumed, win) {
     if (!iso || iso < searchStart || iso > searchEnd) continue;
     const tokens = tokenize(s.label);
     if (!tokens.some((t) => keywords.includes(t))) continue;
+    if (hasRideDistance(tokens)) continue;
     const cand = {
       session: s,
       iso,

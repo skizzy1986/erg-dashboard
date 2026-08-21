@@ -15,12 +15,26 @@ import { useBenchmarkStatuses } from '../useBenchmarkStatuses.js';
 import { EVENT_LADDER } from '../../constants/schedule.js';
 
 const TODAY = '2026-08-20';
-const LADDER = [EVENT_LADDER[1]]; // '~Mid Jul 26' · CP Test #2 (2nd duration)
+// The full ladder, not just entry 1. AC5 is the criterion the shipped defect
+// violated, and a one-entry ladder removes the entry that does the stealing —
+// this test was blind to its own bug. IDX is CP Test #2's position.
+const LADDER = EVENT_LADDER;
+const IDX = 1;
 
 const RETEST = {
   id: 61,
   date: '7/5/26',
   label: 'CP RETEST — 1min + 4min max (rested, fed)',
+};
+
+// CP Test #1, genuinely completed eight days early. Present in the live table,
+// so the full-ladder tests below must carry it: without it CP Test #1 has no
+// candidate of its own and legitimately competes for the retest.
+const CP1_DONE = {
+  id: 45,
+  date: '6/23/26',
+  label: 'CP Test - 4min MAX (GATED)',
+  status: 'completed',
 };
 
 let payload = { data: [], error: null };
@@ -59,7 +73,7 @@ describe('useBenchmarkStatuses', () => {
   it('reports unknown while the sessions query is still pending', () => {
     mockSessions();
     const { result } = setup();
-    expect(result.current).toHaveLength(1);
+    expect(result.current).toHaveLength(EVENT_LADDER.length);
     expect(result.current[0].status).toBe('unknown');
   });
 
@@ -83,16 +97,23 @@ describe('useBenchmarkStatuses', () => {
   // existing invalidateQueries({ queryKey: ['sessions'] }) call sites: the
   // benchmark key is a prefix match of theirs.
   it('AC5 flips from overdue to quiet when the cancelled retest is completed', async () => {
-    payload = { data: [{ ...RETEST, status: 'cancelled' }], error: null };
+    payload = {
+      data: [{ ...RETEST, status: 'cancelled' }, CP1_DONE],
+      error: null,
+    };
     mockSessions();
     const { result, client } = setup();
-    await waitFor(() => expect(result.current[0].status).toBe('overdue'));
+    await waitFor(() => expect(result.current[IDX].status).toBe('overdue'));
 
-    payload = { data: [{ ...RETEST, status: 'logged' }], error: null };
+    payload = {
+      data: [{ ...RETEST, status: 'logged' }, CP1_DONE],
+      error: null,
+    };
     await client.invalidateQueries({ queryKey: ['sessions'] });
 
-    await waitFor(() => expect(result.current[0].status).toBe('quiet'));
-    expect(result.current[0].matchedSessionId).toBe(61);
+    await waitFor(() => expect(result.current[IDX].status).toBe('quiet'));
+    expect(result.current[IDX].matchedSessionId).toBe(61);
+    expect(result.current[0].matchedSessionId).toBe(45);
   });
 
   // D1 — the clearing row must survive the payload size, not just the first page.
@@ -104,13 +125,13 @@ describe('useBenchmarkStatuses', () => {
       status: 'completed',
     }));
     payload = {
-      data: [...filler, { ...RETEST, status: 'completed' }],
+      data: [...filler, { ...RETEST, status: 'completed' }, CP1_DONE],
       error: null,
     };
     mockSessions();
     const { result } = setup();
-    await waitFor(() => expect(result.current[0].status).toBe('quiet'));
-    expect(result.current[0].matchedSessionId).toBe(61);
+    await waitFor(() => expect(result.current[IDX].status).toBe('quiet'));
+    expect(result.current[IDX].matchedSessionId).toBe(61);
   });
 
   it('defaults to the full live ladder', async () => {

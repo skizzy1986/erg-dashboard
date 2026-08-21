@@ -337,6 +337,58 @@ describe('resolveLadderStatuses — non-benchmark and unparseable entries (AC6, 
 });
 
 describe('resolveLadderStatuses — matching precision (P4, P5, AC7)', () => {
+  // A ride row ends "<time>, 22.4km, 1,000m" and that last field is ELEVATION.
+  // Once commas stopped splitting digit groups it tokenises to '1000m', which
+  // is a keyword of the 1000m benchmark — so the comma rule that made '5,000m'
+  // work also opened this. The km token is what separates a ride from a row.
+  it("P6 does not let a ride's elevation satisfy a distance benchmark", () => {
+    const K1000 = EVENT_LADDER.find((e) => e.name.startsWith('1000m'));
+    const [s] = resolveLadderStatuses(
+      [K1000],
+      [
+        {
+          id: 500,
+          date: '1/20/27',
+          label: 'Zwift Alpe du Zwift — 1:12:30, 22.4km, 1,000m',
+          status: 'completed',
+        },
+      ],
+      { today: '2027-02-05', sessionsReady: true }
+    );
+    expect(s.status).toBe('overdue');
+    expect(s.matchedSessionId).toBeNull();
+  });
+
+  it('P6b still clears a rowed 5,000m, which carries no km token', () => {
+    const [s] = resolve(
+      [TT5K],
+      [{ id: 25, date: '8/5/26', label: 'PM — 5,000m', status: 'completed' }]
+    );
+    expect(s.status).toBe('quiet');
+    expect(s.matchedSessionId).toBe(25);
+  });
+
+  // Same-date rows are common here (7/20/26 -> 84/85/86), so the id tie-break
+  // is a live path, not a defensive one.
+  it('P7 breaks a same-date tie on the lower session id', () => {
+    const rows = [
+      {
+        id: 86,
+        date: '6/29/26',
+        label: 'CP test 4min max',
+        status: 'completed',
+      },
+      {
+        id: 84,
+        date: '6/29/26',
+        label: 'CP test 4min max',
+        status: 'completed',
+      },
+    ];
+    expect(resolve([CP1], rows)[0].matchedSessionId).toBe(84);
+    expect(resolve([CP1], [...rows].reverse())[0].matchedSessionId).toBe(84);
+  });
+
   it('P4 does not let a 40min recovery row satisfy a 4min CP test', () => {
     const [s] = resolve(
       [CP1],

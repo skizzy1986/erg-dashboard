@@ -15,7 +15,8 @@ vi.mock('../../supabaseClient.js', () => ({
 
 import CalendarView from '../CalendarView.jsx';
 
-// Real rows, live labels. Session 61's date sorts ABOVE 45's under the text
+// Live ids and labels; session 61's status is the counterfactual under test
+// (it is cancelled in the table). Its date sorts ABOVE 45's under the text
 // ordering the server applies, so this is the payload order the app receives.
 const PAYLOAD = [
   {
@@ -99,16 +100,25 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
     expect(screen.getByText(/UPCOMING EVENTS/i)).toBeInTheDocument();
   });
 
-  it('clears the 5k badge when the trial is logged as 5,000m', async () => {
+  // Waits on a POSITIVE render before asserting the 5k's badge is gone. An
+  // absence assertion on its own satisfies on the first tick while the query is
+  // still pending — it passes against an empty payload and against the pre-fix
+  // code, which is the toothless shape this file exists to prevent. Leaving CP
+  // Test #2 overdue gives the wait something real to settle on: pre-fix, the 5k
+  // is still overdue too and the count is 2.
+  it('clears only the 5k badge when the trial is logged as 5,000m', async () => {
     mockSessions([
-      ...PAYLOAD,
+      { ...PAYLOAD[0], status: 'cancelled' },
+      PAYLOAD[1],
       { id: 25, date: '8/3/26', label: 'PM — 5,000m', status: 'completed' },
     ]);
     renderView();
 
-    await waitFor(() => expect(fromMock).toHaveBeenCalledWith('sessions'));
-    await waitFor(() =>
-      expect(screen.queryByText(/^OVERDUE/)).not.toBeInTheDocument()
-    );
+    const badges = await screen.findAllByText(/^OVERDUE/);
+    expect(badges).toHaveLength(1);
+    expect(badges[0].parentElement.textContent).toContain('CP Test #2');
+
+    const badged = badges.map((b) => b.parentElement.textContent).join('|');
+    expect(badged).not.toContain('5k Time Trial');
   });
 });
