@@ -1,4 +1,50 @@
 import { toISODate } from './dateFormat.js';
+import { parseDurationMinutes } from './duration.js';
+
+// Which calibration anchor a session's watts should be measured against.
+// Rowing watts against rowing CP, bike watts against bike FTP — comparing bike
+// power to CP would overstate every ride. Anything else (strength, mobility)
+// has no power model at all.
+function thresholdFor(type, cp, ftp) {
+  const t = (type ?? '').toLowerCase();
+  if (t.includes('erg') || t.includes('row')) return cp;
+  if (t.includes('bike') || t.includes('cycl') || t.includes('ride'))
+    return ftp;
+  return null;
+}
+
+// Load for one session, in the app's "sRPE-hours" unit: an hour at sRPE r
+// contributes r.
+//
+// sRPE wins whenever it exists. When it does not — every Strava-backfilled
+// session, because sRPE is subjective and was never captured after the fact —
+// fall back to power: intensity factor (avg watts / threshold), squared per the
+// standard TrainingPeaks model, scaled so an hour at threshold reads 10, i.e.
+// an hour at sRPE 10. Without this fallback those sessions contribute nothing
+// and the CTL/ATL/TSB curve coasts on whatever was last rated by hand.
+//
+// Known offset, deliberately NOT calibrated away: on the two sessions carrying
+// both signals (150 W, sRPE 7) power reads ~24% below the sRPE figure. At 73%
+// of CP an RPE of 7 is genuinely elevated, and that gap is read as fatigue in
+// this project's own coaching notes. Tuning a factor to close it on n=2 would
+// erase the signal rather than measure it.
+export function sessionLoad(session, { cp, ftp } = {}) {
+  const minutes = parseDurationMinutes(session?.duration);
+  if (!(minutes > 0)) return 0;
+  const hours = minutes / 60;
+
+  if (session.srpe > 0) return Math.round(hours * session.srpe);
+
+  const threshold = thresholdFor(session.type, cp, ftp);
+  const watts = session.avg_watts;
+  // A missing anchor degrades to zero rather than a hardcoded default: useAnchors
+  // returns null when it cannot resolve one, and inventing a threshold here would
+  // silently rewrite history the next time CP is revalidated.
+  if (!(threshold > 0) || !(watts > 0)) return 0;
+
+  const intensity = watts / threshold;
+  return Math.round(hours * intensity * intensity * 10);
+}
 
 export function calcTrainingLoad(tssData, endDate) {
   const CTL_K = Math.exp(-1 / 42);
