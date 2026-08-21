@@ -98,6 +98,40 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
     renderView();
     expect(screen.queryByText(/OVERDUE/)).not.toBeInTheDocument();
     expect(screen.getByText(/UPCOMING EVENTS/i)).toBeInTheDocument();
+    // Pending is not unavailable. A slow first read must not flash the outage
+    // line and then replace it with badges.
+    expect(screen.queryByText(/UNAVAILABLE/i)).not.toBeInTheDocument();
+  });
+
+  // A failed read resolves every entry to `unknown`, which renders no badge.
+  // Silence is exactly what "no benchmarks due" looks like, so an outage that
+  // says nothing is the feature's own failure mode arriving by another door.
+  it('says so when the sessions read fails, instead of rendering silence', async () => {
+    fromMock.mockImplementation(() => {
+      const chain = {
+        select: () => chain,
+        order: () => chain,
+        limit: () => Promise.resolve({ data: null, error: new Error('nope') }),
+      };
+      return chain;
+    });
+    renderView();
+
+    expect(
+      await screen.findByText(/BENCHMARK STATUS UNAVAILABLE/i)
+    ).toBeInTheDocument();
+    // The ladder itself still renders; only the benchmark verdicts are unknown.
+    expect(screen.getByText(/UPCOMING EVENTS/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^OVERDUE/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^DUE/)).not.toBeInTheDocument();
+  });
+
+  it('shows no outage line once the read succeeds', async () => {
+    mockSessions(PAYLOAD);
+    renderView();
+
+    await screen.findByText(/^OVERDUE/);
+    expect(screen.queryByText(/UNAVAILABLE/i)).not.toBeInTheDocument();
   });
 
   // Waits on a POSITIVE render before asserting the 5k's badge is gone. An
