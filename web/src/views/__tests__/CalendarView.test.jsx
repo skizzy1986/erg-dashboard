@@ -9,6 +9,7 @@ const statusesMock = vi.fn();
 // the wall clock; the resolver itself is covered in benchmarkStatus.test.js.
 vi.mock('../../hooks/useBenchmarkStatuses.js', () => ({
   useBenchmarkStatuses: (...args) => statusesMock(...args),
+  useBenchmarkDataUnavailable: () => false,
 }));
 
 import CalendarView from '../CalendarView.jsx';
