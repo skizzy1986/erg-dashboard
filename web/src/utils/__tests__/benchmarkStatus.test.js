@@ -10,8 +10,8 @@ const CP2 = EVENT_LADDER[1]; // '~Mid Jul 26'    · CP Test #2 (2nd duration)
 const TT5K = EVENT_LADDER[2]; // '~Early Aug 26' · 5k Time Trial
 const TEST2K = EVENT_LADDER[5]; // '~Mid Jan 27' · 2k Test
 
-// Real rows, real labels — the five completed sessions that actually sit inside
-// the ~Mid Jul window. None of them is a CP test, which is exactly why
+// Real rows, real labels, verified field-by-field against the live DB — the five
+// completed sessions that actually sit inside the ~Mid Jul window. None of them is a CP test, which is exactly why
 // window-only matching (any session in the window ⇒ done) is disqualified.
 const MID_JUL_DONE = [
   {
@@ -28,17 +28,17 @@ const MID_JUL_DONE = [
   },
   {
     id: 91,
-    date: '7/15/26',
+    date: '7/14/26',
     label: 'UT1 Steady 50min @ 158W + 10min WU',
-    status: 'logged',
+    status: 'completed',
   },
   {
     id: 79,
-    date: '7/17/26',
+    date: '7/16/26',
     label: 'UT2 40min recovery @ 130-142W',
     status: 'completed',
   },
-  { id: 86, date: '7/20/26', label: 'Lower 1 (RDL-led)', status: 'actual' },
+  { id: 86, date: '7/20/26', label: 'Lower 1 (RDL-led)', status: 'completed' },
 ];
 
 // The only session that names the CP retest — and it was cancelled.
@@ -60,19 +60,19 @@ const SESSION_45 = {
 const EARLY_AUG_DONE = [
   {
     id: 97,
-    date: '8/1/26',
+    date: '8/2/26',
     label: 'UT1 45min Ramp SR — peaks 250W',
     status: 'completed',
   },
   {
     id: 98,
-    date: '8/5/26',
+    date: '8/4/26',
     label: '40min progressive build — final 10min @ 220W',
-    status: 'logged',
+    status: 'completed',
   },
   {
     id: 90,
-    date: '8/10/26',
+    date: '8/7/26',
     label: 'UT1 Steady 50min @ 164W (2:08.8/500) + 10min WU',
     status: 'completed',
   },
@@ -158,6 +158,106 @@ describe('resolveLadderStatuses — the real ladder today (AC3)', () => {
       ['5k Time Trial', 'overdue'],
     ]);
   });
+});
+
+// The defect that shipped: every test above resolves a ONE-ENTRY ladder, which
+// removes the entry that does the stealing. These resolve the WHOLE ladder, in
+// the payload order the server actually returns.
+describe('resolveLadderStatuses — the whole ladder, real payload order', () => {
+  // sessions.date is TEXT, so .order('date', {ascending:false}) puts '7/5/26'
+  // above '6/23/26'. Selecting the first eligible row in payload order let CP
+  // Test #1 — whose search range runs forward to today, fifty days past its own
+  // one-day window — consume session 61 and leave CP Test #2 permanently
+  // overdue. Best-fit selection assigns each session to the benchmark it
+  // belongs to regardless of how the rows arrive.
+  const TEXT_DESC_PAYLOAD = [
+    {
+      id: 61,
+      date: '7/5/26',
+      label: 'CP RETEST — 1min + 4min max (rested, fed)',
+      status: 'completed',
+    },
+    {
+      id: 45,
+      date: '6/23/26',
+      label: 'CP Test - 4min MAX (GATED)',
+      status: 'completed',
+    },
+  ];
+
+  it('does not let CP Test #1 steal the session belonging to CP Test #2', () => {
+    const [first, second] = resolve(EVENT_LADDER, TEXT_DESC_PAYLOAD);
+    expect([first.matchedSessionId, second.matchedSessionId]).toEqual([45, 61]);
+    expect([first.status, second.status]).toEqual(['quiet', 'quiet']);
+  });
+
+  it('assigns the same way when the payload arrives in ascending date order', () => {
+    const [first, second] = resolve(
+      EVENT_LADDER,
+      [...TEXT_DESC_PAYLOAD].reverse()
+    );
+    expect([first.matchedSessionId, second.matchedSessionId]).toEqual([45, 61]);
+  });
+
+  it('AC3c leaves CP Test #2 overdue when only session 45 exists', () => {
+    const [first, second] = resolve(EVENT_LADDER, [
+      SESSION_45,
+      CANCELLED_RETEST,
+    ]);
+    expect(first.status).toBe('quiet');
+    expect(first.matchedSessionId).toBe(45);
+    expect(second.status).toBe('overdue');
+    expect(second.matchedSessionId).toBeNull();
+  });
+
+  // AC4, as the story actually reads it: Scott does the missed retest today and
+  // the badge clears — with CP Test #1 already accounted for by session 45.
+  it('AC4 clears CP Test #2 when the retest is logged today', () => {
+    const loggedToday = {
+      id: 210,
+      date: '8/20/26',
+      label: 'CP RETEST — 1min + 4min max',
+      status: 'logged',
+    };
+    const states = resolve(EVENT_LADDER, [
+      loggedToday,
+      SESSION_45,
+      ...MID_JUL_DONE,
+      CANCELLED_RETEST,
+      ...EARLY_AUG_DONE,
+    ]);
+    expect(states[0].matchedSessionId).toBe(45);
+    expect(states[1].status).toBe('quiet');
+    expect(states[1].matchedSessionId).toBe(210);
+    const loud = states.filter((st) => st.status !== 'quiet');
+    expect(loud.map((st) => st.entry.name)).toEqual(['5k Time Trial']);
+  });
+});
+
+describe('resolveLadderStatuses — 5k naming (FIX 2)', () => {
+  const in5kWindow = (id, label) => [
+    { id, date: '8/3/26', label, status: 'completed' },
+  ];
+
+  it.each([['5,000m'], ['PM — 5,000m'], ['5000m Time Trial'], ['5k TT']])(
+    'clears the 5k benchmark from a session labelled %s',
+    (label) => {
+      const [st] = resolve([TT5K], in5kWindow(30, label));
+      expect(st.status).toBe('quiet');
+      expect(st.matchedSessionId).toBe(30);
+    }
+  );
+
+  // One character from a false clear: the comma fold must not turn '18.5km'
+  // into a '5k' token. A bike ride is not a 5k time trial.
+  it.each([['Zwift Loopin Lava — 35:45, 18.5km, 212m'], ['Erg Session 14:32']])(
+    'does not clear the 5k benchmark from %s',
+    (label) => {
+      const [st] = resolve([TT5K], in5kWindow(31, label));
+      expect(st.status).toBe('overdue');
+      expect(st.done).toBe(false);
+    }
+  );
 });
 
 describe('resolveLadderStatuses — what counts as done (AC4)', () => {
