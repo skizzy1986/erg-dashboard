@@ -1,5 +1,100 @@
 import { describe, it, expect } from 'vitest';
-import { calcTrainingLoad, deriveTargets } from '../trainingLoad.js';
+import {
+  calcTrainingLoad,
+  deriveTargets,
+  sessionLoad,
+} from '../trainingLoad.js';
+
+const ANCHORS = { cp: 205, ftp: 250 };
+
+describe('sessionLoad', () => {
+  it('uses sRPE when it exists: an hour at sRPE 7 is 7', () => {
+    expect(sessionLoad({ duration: '60:00', srpe: 7 }, ANCHORS)).toBe(7);
+  });
+
+  it('scales sRPE by duration', () => {
+    expect(sessionLoad({ duration: '30:00', srpe: 8 }, ANCHORS)).toBe(4);
+  });
+
+  it('prefers sRPE over watts when a session carries both', () => {
+    const both = { duration: '60:00', srpe: 7, type: 'erg', avg_watts: 150 };
+    expect(sessionLoad(both, ANCHORS)).toBe(7);
+    expect(sessionLoad({ ...both, srpe: null }, ANCHORS)).toBe(5);
+  });
+
+  it('falls back to power when sRPE is missing', () => {
+    // (152/205)^2 * 10 = 5.50 for one hour
+    expect(
+      sessionLoad(
+        { duration: '60:00', srpe: null, type: 'erg', avg_watts: 152 },
+        ANCHORS
+      )
+    ).toBe(5);
+  });
+
+  it('puts an hour at threshold at 10 — the sRPE 10 equivalent', () => {
+    expect(
+      sessionLoad(
+        { duration: '60:00', srpe: null, type: 'erg', avg_watts: 205 },
+        ANCHORS
+      )
+    ).toBe(10);
+  });
+
+  it('reads an easy paddle as genuinely easy', () => {
+    // 118 W recovery for 21:13 -> 0.354h * 3.31 = 1.2
+    expect(
+      sessionLoad(
+        { duration: '21:13', srpe: null, type: 'erg', avg_watts: 118 },
+        ANCHORS
+      )
+    ).toBe(1);
+  });
+
+  it('measures bike watts against FTP and rowing watts against CP', () => {
+    const ride = { duration: '60:00', srpe: null, avg_watts: 196 };
+    expect(sessionLoad({ ...ride, type: 'cycling' }, ANCHORS)).toBe(6);
+    expect(sessionLoad({ ...ride, type: 'bike' }, ANCHORS)).toBe(6);
+    // Same watts judged against the lower rowing CP would overstate the ride.
+    expect(sessionLoad({ ...ride, type: 'erg' }, ANCHORS)).toBe(9);
+  });
+
+  it('gives strength sessions no power model', () => {
+    expect(
+      sessionLoad(
+        { duration: '50:08', srpe: null, type: 'strength', avg_watts: 200 },
+        ANCHORS
+      )
+    ).toBe(0);
+  });
+
+  it('degrades to zero when the anchor is missing rather than inventing one', () => {
+    const s = { duration: '60:00', srpe: null, type: 'erg', avg_watts: 152 };
+    expect(sessionLoad(s, { cp: null, ftp: 250 })).toBe(0);
+    expect(sessionLoad(s, {})).toBe(0);
+    expect(sessionLoad(s)).toBe(0);
+  });
+
+  it('returns zero for a session with neither signal', () => {
+    expect(
+      sessionLoad({ duration: '45:00', srpe: null, type: 'erg' }, ANCHORS)
+    ).toBe(0);
+    expect(
+      sessionLoad(
+        { duration: '45:00', srpe: null, type: 'erg', avg_watts: 0 },
+        ANCHORS
+      )
+    ).toBe(0);
+  });
+
+  it('returns zero for an unparseable or absent duration', () => {
+    expect(
+      sessionLoad({ duration: 'garbage', srpe: 7, type: 'erg' }, ANCHORS)
+    ).toBe(0);
+    expect(sessionLoad({ srpe: 7 }, ANCHORS)).toBe(0);
+    expect(sessionLoad(undefined, ANCHORS)).toBe(0);
+  });
+});
 
 const CTL_K = Math.exp(-1 / 42);
 const ATL_K = Math.exp(-1 / 7);

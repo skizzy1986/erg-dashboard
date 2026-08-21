@@ -6,6 +6,7 @@ import React from 'react';
 const fromMock = vi.fn();
 const inMock = vi.fn();
 const orderMock = vi.fn();
+const orMock = vi.fn();
 
 vi.mock('../../supabaseClient.js', () => ({
   supabase: {
@@ -25,27 +26,57 @@ function makeWrapper() {
   return Wrapper;
 }
 
-function mockQuery(data, error = null) {
-  const chain = {
-    select: () => chain,
-    eq: () => chain,
-    in: (...args) => {
-      inMock(...args);
-      return chain;
-    },
-    gt: () => chain,
-    order: (...args) => {
-      orderMock(...args);
-      return Promise.resolve({ data, error });
-    },
-  };
-  fromMock.mockReturnValue(chain);
+// useTSSHistory now reads CP/FTP through useAnchors, so both hooks call
+// supabase.from(). Branch by table so the anchors query and the sessions query
+// each resolve independently.
+function mockQuery(data, error = null, { cp = 205, ftp = 250 } = {}) {
+  fromMock.mockImplementation((table) => {
+    if (table === 'anchors') {
+      const rows = [];
+      if (cp != null)
+        rows.push({
+          key: 'rowing_cp',
+          value: String(cp),
+          status: 'provisional',
+        });
+      if (ftp != null)
+        rows.push({
+          key: 'bike_ftp',
+          value: String(ftp),
+          status: 'unvalidated',
+        });
+      const anchorChain = {
+        select: () => anchorChain,
+        is: () => Promise.resolve({ data: rows, error: null }),
+      };
+      return anchorChain;
+    }
+    const chain = {
+      select: () => chain,
+      eq: () => chain,
+      in: (...args) => {
+        inMock(...args);
+        return chain;
+      },
+      gt: () => chain,
+      or: (...args) => {
+        orMock(...args);
+        return chain;
+      },
+      order: (...args) => {
+        orderMock(...args);
+        return Promise.resolve({ data, error });
+      },
+    };
+    return chain;
+  });
 }
 
 beforeEach(() => {
   fromMock.mockReset();
   inMock.mockReset();
   orderMock.mockReset();
+  orMock.mockReset();
 });
 
 describe('useTSSHistory', () => {
@@ -156,6 +187,90 @@ describe('useTSSHistory', () => {
       '2026-06-01',
       '2026-06-10',
     ]);
+  });
+
+  it('keeps sessions carrying EITHER sRPE or watts, not just sRPE', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(orMock).toHaveBeenCalledWith('srpe.gt.0,avg_watts.gt.0');
+  });
+
+  it('derives load from watts when sRPE was never captured', async () => {
+    // 152 W against CP 205 for 60min: (152/205)^2 * 10 * 1h = 5.50 -> 5
+    mockQuery([
+      {
+        date: '8/6/26',
+        duration: '60:00',
+        srpe: null,
+        type: 'erg',
+        avg_watts: 152,
+      },
+    ]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(5);
+  });
+
+  it('measures bike watts against FTP, not rowing CP', async () => {
+    // 196 W against FTP 250 for 60min = 6.1 -> 6. Against CP 205 it would be 9.
+    mockQuery([
+      {
+        date: '7/1/26',
+        duration: '60:00',
+        srpe: null,
+        type: 'cycling',
+        avg_watts: 196,
+      },
+    ]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(6);
+  });
+
+  it('prefers a real sRPE over the power fallback', async () => {
+    // sRPE 7 for 60min = 7; the power model would say 5 for the same row.
+    mockQuery([
+      {
+        date: '7/3/26',
+        duration: '60:00',
+        srpe: 7,
+        type: 'erg',
+        avg_watts: 150,
+      },
+    ]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(7);
+  });
+
+  it('degrades to zero when the CP anchor is unreachable rather than inventing one', async () => {
+    mockQuery(
+      [
+        {
+          date: '8/6/26',
+          duration: '60:00',
+          srpe: null,
+          type: 'erg',
+          avg_watts: 152,
+        },
+      ],
+      null,
+      { cp: null }
+    );
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data[0].tss).toBe(0);
   });
 
   it('throws (isError) when supabase returns an error', async () => {
