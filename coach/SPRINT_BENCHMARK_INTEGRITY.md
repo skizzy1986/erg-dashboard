@@ -1,12 +1,42 @@
 # Sprint Plan: Benchmark Integrity — 2026-08-18 → 2026-09-18 (re-timed)
 
-> **STATUS: GATE 1 — PROPOSED, AWAITING SCOTT'S APPROVAL.**
-> Originally produced 2026-07-16; re-timed 2026-08-18 after the original
-> window elapsed with the gate unanswered. All eight task findings were
-> re-verified against main @ `514520d` (2026-08-18) — every one still holds.
-> Nothing below is committed work: no spec, no code, no GitHub issues exist
-> yet. On approval, each task becomes an issue and runs through the full gated
-> pipeline (`/orchestrate`) individually.
+> **STATUS: APPROVED AND IN FLIGHT. GitHub Issues are the source of truth,
+> not this file.** Approved at Gate 1 on 2026-08-18. All eight tasks are now
+> tracked as issues #174–#181 under the sprint tracking issue **#182**.
+>
+> **Before starting any task in this document, check its issue state first.**
+> The status table below is a snapshot and goes stale the moment a PR merges;
+> #182 does not. A task with a closed issue is DONE — do not rebuild it.
+>
+> This file remains useful as the *reasoning* behind the sprint — why these
+> eight, in this order, and what each is guarding against. It is not a work
+> queue.
+
+## Task status — snapshot 2026-08-21, verify against #182
+
+| Task | Issue | State | Landed by |
+|---|---|---|---|
+| T1 — Fix live erg capture | [#174](https://github.com/skizzy1986/erg-dashboard/issues/174) | ✅ **DONE** | PR #173 |
+| T2 — Benchmark due/overdue indicator | [#175](https://github.com/skizzy1986/erg-dashboard/issues/175) | ✅ **DONE** | PRs #189, #190 |
+| T3 — Reconcile CP 190 → live anchor | [#176](https://github.com/skizzy1986/erg-dashboard/issues/176) | open | — |
+| T4 — Confidence Migration panel | [#177](https://github.com/skizzy1986/erg-dashboard/issues/177) | open | — |
+| T5 — Pre-benchmark checklist | [#178](https://github.com/skizzy1986/erg-dashboard/issues/178) | open | — |
+| T6 — Live-wire ergTrend / deriveTargets | [#179](https://github.com/skizzy1986/erg-dashboard/issues/179) | open | — |
+| T7 — Populate `POWER_DURATION.actualW` | [#180](https://github.com/skizzy1986/erg-dashboard/issues/180) | open | — |
+| T8 — Calibration tier upgrade pass | [#181](https://github.com/skizzy1986/erg-dashboard/issues/181) | open | — |
+
+**Follow-ups raised while building the above** (not sprint tasks): #184 (closed)
+· #187 read-side date ordering (**closed** by #198) · #188 real session↔ladder
+link · #192 benchmark reschedule state · #194 `useSessionLog` counts cancelled
+as completed · #195 offline-queue invalidation · #196 benchmark-status-unavailable
+line. Their state moves too — check the issues, not this list.
+
+> **Why this header exists.** On 2026-08-21 a session read the previous
+> "no GitHub issues exist yet" note, took T2 as un-started, and rebuilt the
+> whole feature — through a full seven-stage pipeline — a day after it had
+> already merged. The duplicate PR was closed unmerged. One issue-tracker
+> check would have prevented it. If you are reading a task section below,
+> its issue state governs; this document does not.
 
 ## What changed between 2026-07-16 and 2026-08-18
 
@@ -84,7 +114,7 @@ value instead of a stale hardcoded one.
 
 ### T1 — Fix live erg session capture (the P1 bug)
 
-**Size: M — Week 1 (no dependencies, ships first)**
+**Size: M — Week 1** · Issue [#174](https://github.com/skizzy1986/erg-dashboard/issues/174) · ✅ **DONE — shipped in PR #173.** Do not rebuild.
 
 **Story:** As Scott, I want a session I complete on the live PM5 view to
 actually save to my training log, so that a rowed benchmark (or any live
@@ -123,7 +153,7 @@ backfilling historical bluetooth data (none exists — greenfield).
 
 ### T2 — Benchmark due/overdue indicator
 
-**Size: M — Week 1 (independent of T1)**
+**Size: M — Week 1** · Issue [#175](https://github.com/skizzy1986/erg-dashboard/issues/175) · ✅ **DONE — shipped in PRs #189 and #190.** Do not rebuild. The shipped design differs from the sketch below: matching is whole-token with a 14-day backward grace and claim-once assignment, not the scheme described here.
 
 **Story:** As Scott, I want the app to tell me when a scheduled benchmark test
 (CP retest, 5k, future 2k) is due or overdue, so that a test doesn't silently
@@ -162,7 +192,7 @@ the in-flight split.
 
 ### T3 — Reconcile displayed CP (190) with live anchor (205)
 
-**Size: S — Week 2**
+**Size: S — Week 2** · Issue [#176](https://github.com/skizzy1986/erg-dashboard/issues/176) · open
 
 **Story:** As Scott, I want every screen that shows a CP/FTP number to match
 the current live anchor, so that I'm not making training decisions off a
@@ -196,7 +226,7 @@ same pattern.
 
 ### T4 — Refresh the Confidence Migration panel (JournalView)
 
-**Size: M — Week 2 (after T3 — same constants surface)**
+**Size: M — Week 2 (after T3)** · Issue [#177](https://github.com/skizzy1986/erg-dashboard/issues/177) · open
 
 **Story:** As Scott, I want the PENDING→MEASURED calibration panel in my
 Journal to reflect what's actually true today, so that I stop seeing "CP test
@@ -224,7 +254,7 @@ parity.
 
 ### T5 — Pre-benchmark prep checklist tied to the overdue engine
 
-**Size: S — Week 2/3 boundary (depends on T2)**
+**Size: S — Week 2/3 boundary (T2 is done, so this is unblocked)** · Issue [#178](https://github.com/skizzy1986/erg-dashboard/issues/178) · open
 
 **Story:** As Scott, I want the test protocol (fresh, fueled, DF 125, gate
 vitals, separate warmup) surfaced a few days before a benchmark, so that I
@@ -249,7 +279,7 @@ approaching) — per-benchmark checklists, not one merged list.
 
 ### T6 — Wire ergTrend / HR130_POWER / deriveTargets off live data
 
-**Size: L — Week 3 (candidate to split: chart data PR, then target-derivation PR)**
+**Size: L — Week 3 (candidate to split: chart data PR, then target-derivation PR)** · Issue [#179](https://github.com/skizzy1986/erg-dashboard/issues/179) · open
 
 **Story:** As Scott, I want my aerobic trend chart and UT1/UT2 targets to
 reflect my actual logged sessions and the live CP anchor, so that the numbers
@@ -281,7 +311,7 @@ write back to `anchors`.
 ### T7 — Populate `POWER_DURATION.actualW` from the landed benchmark
 
 **Size: M — Week 4 (depends on T1 + a logged benchmark session; Coach must
-schedule the test — flagged above)**
+schedule the test — flagged above)** · Issue [#180](https://github.com/skizzy1986/erg-dashboard/issues/180) · open
 
 **Story:** As Scott, I want my actual 5k result to show up next to the
 predicted-watts table, so that I can see the test versus the projection
@@ -310,7 +340,7 @@ for Scott, raised explicitly, never assumed.
 
 ### T8 — Post-benchmark calibration tier upgrade pass (display only)
 
-**Size: M — Week 4 (depends on T3, T4, T7 — the capstone)**
+**Size: M — Week 4 (depends on T3, T4, T7 — the capstone)** · Issue [#181](https://github.com/skizzy1986/erg-dashboard/issues/181) · open
 
 **Story:** As Scott, I want the calibration confidence panels to actually
 upgrade from PENDING to MEASURED once the 5k and CP revalidation land, so
@@ -341,22 +371,29 @@ separate product decision).
 
 ## Sequencing Summary (weeks from 2026-08-18)
 
-| Week | Task | Size | Dependencies |
-|---|---|---|---|
-| 1 (Aug 18–24) | T1 — Fix live capture bug | M | none |
-| 1 (Aug 18–24) | T2 — Overdue/upcoming benchmark indicator | M | none |
-| 2 (Aug 25–31) | T3 — Reconcile 190 vs live 205 display | S | none |
-| 2 (Aug 25–31) | T4 — Refresh Confidence Migration panel | M | T3 |
-| 2/3 boundary | T5 — Pre-benchmark prep checklist | S | T2 |
-| 3 (Sep 1–7) | T6 — Live-wire ergTrend / HR130 / deriveTargets | L (splittable) | none |
-| 4 (Sep 8–18) | T7 — Populate actualW from landed benchmark | M | T1 + logged benchmark |
-| 4 (Sep 8–18) | T8 — Post-benchmark tier upgrade pass | M | T3, T4, T7 |
+| Week | Task | Size | Dependencies | State |
+|---|---|---|---|---|
+| 1 (Aug 18–24) | T1 — Fix live capture bug | M | none | ✅ done (#174) |
+| 1 (Aug 18–24) | T2 — Overdue/upcoming benchmark indicator | M | none | ✅ done (#175) |
+| 2 (Aug 25–31) | T3 — Reconcile 190 vs live 205 display | S | none | open (#176) |
+| 2 (Aug 25–31) | T4 — Refresh Confidence Migration panel | M | T3 | open (#177) |
+| 2/3 boundary | T5 — Pre-benchmark prep checklist | S | T2 ✅ | open (#178) |
+| 3 (Sep 1–7) | T6 — Live-wire ergTrend / HR130 / deriveTargets | L (splittable) | none | open (#179) |
+| 4 (Sep 8–18) | T7 — Populate actualW from landed benchmark | M | T1 ✅ + logged benchmark | open (#180) |
+| 4 (Sep 8–18) | T8 — Post-benchmark tier upgrade pass | M | T3, T4, T7 | open (#181) |
 
 **Reasoning:** T1 and T2 must be true before the next benchmark attempt — a
 broken capture path or an invisible schedule are the failure modes that lose
 the whole benchmark (July demonstrated the second one for real). T3–T5 are
 trust/visibility fixes that should also precede the test. T6–T8 land as real
 benchmark data starts flowing, with T8 last.
+
+**Both week-1 tasks are now done, which unblocks T5.** The remaining blocker on
+T7/T8 is not code: it is that a benchmark still has to be *scheduled and
+performed*. As of 2026-08-21 `anchors.rowing_cp` is still 205 W provisional,
+untouched since 07-01, and no CP retest or 5k is on the calendar. T2 now
+surfaces all three as overdue — which is the sprint working as designed, and
+also a standing prompt for the Coach-lane decision below.
 
 ## What This Sprint Is Not Building
 
