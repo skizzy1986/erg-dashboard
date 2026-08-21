@@ -91,11 +91,24 @@ describe('benchmarkKeywords', () => {
   it.each([
     ['CP Test #1 (4-min)', ['cp', '4min']],
     ['CP Test #2 (2nd duration)', ['cp']],
-    ['5k Time Trial', ['5k']],
-    ['2k Test', ['2k']],
-    ['1000m + 1-min tune-ups', ['1000m', '1min']],
+    ['5k Time Trial', ['5k', '5000m']],
+    ['2k Test', ['2k', '2000m']],
+    ['1000m + 1-min tune-ups', ['1000m', '1k', '1min']],
   ])('derives %s', (name, expected) => {
     expect(benchmarkKeywords(name)).toEqual(expected);
+  });
+
+  // Scott's real labels spell 5k both ways ('5,000m', 'PM — 5,000m' in the live
+  // table; '5k TT' in newer rows). Both spellings have to reach the same
+  // keyword set or the badge can never clear.
+  it('expands k-notation and metre-notation into each other', () => {
+    expect(benchmarkKeywords('10k Test')).toEqual(['10k', '10000m']);
+    expect(benchmarkKeywords('10000m Test')).toEqual(['10000m', '10k']);
+  });
+
+  it('leaves a distance it cannot round-trip alone', () => {
+    expect(benchmarkKeywords('500m Test')).toEqual(['500m']);
+    expect(benchmarkKeywords('6k5 Test')).toEqual(['6k5']);
   });
 
   it('returns an empty list when nothing identifies the benchmark', () => {
@@ -122,6 +135,36 @@ describe('tokenize', () => {
       '142w',
     ]);
     expect(tokenize('CP Test #1 (4-min)')).toEqual(['cp', 'test', '1', '4min']);
+  });
+
+  // A comma between digits is a thousands separator, not a separator between
+  // two tokens — Scott's real 5k rows are labelled '5,000m'.
+  it('keeps a digit-grouping comma inside one token', () => {
+    expect(tokenize('5,000m')).toEqual(['5000m']);
+    expect(tokenize('PM — 5,000m')).toEqual(['pm', '5000m']);
+    expect(tokenize('1,234,567m')).toEqual(['1234567m']);
+  });
+
+  it('still splits on a comma that is not between digits', () => {
+    expect(tokenize('Row, then bike')).toEqual(['row', 'then', 'bike']);
+    expect(tokenize('5, 000m')).toEqual(['5', '000m']);
+    expect(tokenize('Zwift Loopin Lava — 35:45, 18.5km, 212m')).toEqual([
+      'zwift',
+      'loopin',
+      'lava',
+      '35',
+      '45',
+      '18',
+      '5km',
+      '212m',
+    ]);
+  });
+
+  // The letter-then-digit hyphen must NOT fold: folding it turns 'Row-2k' into
+  // 'row2k' and destroys the token the 2k Test benchmark matches on.
+  it('keeps a digit token that follows a hyphenated word', () => {
+    expect(tokenize('Row-2k test')).toEqual(['row', '2k', 'test']);
+    expect(tokenize('PM-5000m')).toEqual(['pm', '5000m']);
   });
 
   it('returns an empty list for empty input', () => {

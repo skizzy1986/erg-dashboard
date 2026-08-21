@@ -30,17 +30,51 @@ function baseState(entry, index) {
   };
 }
 
-function findMatch(sessions, keywords, searchStart, searchEnd, consumed) {
+// A Zwift/bike row ends "<time>, 22.4km, 1,000m" — that trailing field is
+// ELEVATION, and once commas stopped splitting digit groups it tokenises to
+// '1000m' and satisfies the 1000m/2k rowing benchmarks. Scott's rowing labels
+// spell distance '5,000m' and never carry a km token; every ride row does, so
+// the km token separates the two cases exactly.
+function hasRideDistance(tokens) {
+  return tokens.some((t) => /^\d+(?:\.\d+)?km$/.test(t));
+}
+
+// Ranks two eligible candidates: a session dated inside the entry's own window
+// beats one only in the grace/forward slack, then the earlier date wins, then
+// the lower id. Never "nearest to the window" — session 61 (7/5, four days off
+// the 7/1 window) is nearer than session 45 (6/23, eight days), so nearest-first
+// leaves the steal in place.
+function betterFit(a, b) {
+  if (a.inWindow !== b.inWindow) return a.inWindow;
+  if (a.iso !== b.iso) return a.iso < b.iso;
+  return a.session.id < b.session.id;
+}
+
+// Deterministic best fit, NOT the first row in payload order. The payload is
+// ordered by the TEXT date column, so '7/5/26' sorts above '6/23/26'; combined
+// with a search range that runs forward to today, first-in-order let CP Test #1
+// consume the session that belongs to CP Test #2 and the later badge could
+// never clear. Choosing by date instead of position also makes the result
+// independent of how the server happened to sort the rows.
+function findMatch(sessions, keywords, searchStart, searchEnd, consumed, win) {
   if (keywords.length === 0) return null;
+  let best = null;
   for (const s of sessions) {
     if (!s || !COMPLETED_STATUSES.includes(s.status)) continue;
     if (consumed.has(s.id)) continue;
     const iso = toISODate(s.date);
     if (!iso || iso < searchStart || iso > searchEnd) continue;
     const tokens = tokenize(s.label);
-    if (tokens.some((t) => keywords.includes(t))) return s;
+    if (!tokens.some((t) => keywords.includes(t))) continue;
+    if (hasRideDistance(tokens)) continue;
+    const cand = {
+      session: s,
+      iso,
+      inWindow: iso >= win.start && iso <= win.end,
+    };
+    if (best === null || betterFit(cand, best)) best = cand;
   }
-  return null;
+  return best === null ? null : best.session;
 }
 
 export function resolveLadderStatuses(ladder, sessions, options = {}) {
@@ -91,7 +125,14 @@ export function resolveLadderStatuses(ladder, sessions, options = {}) {
     const match =
       searchStart === null
         ? null
-        : findMatch(rows, st.keywords, searchStart, searchEnd, consumed);
+        : findMatch(
+            rows,
+            st.keywords,
+            searchStart,
+            searchEnd,
+            consumed,
+            st.window
+          );
     if (match) {
       consumed.add(match.id);
       st.done = true;

@@ -46,16 +46,21 @@ function daysInMonth(year, monthIndex) {
   return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 }
 
-// Lowercases, folds "4-min" to "4min" (a hyphen between a digit and a letter is
-// a spelling artefact, not a separator), then splits on every other
-// non-alphanumeric run. Whole tokens only — substring matching would let a
+// Lowercases, drops a comma acting as a digit-group separator ("5,000m" is one
+// token, not "5" and "000m"), folds "4-min" to "4min" (a hyphen between a digit
+// and a letter is a spelling artefact, not a separator), then splits on every
+// other non-alphanumeric run. Whole tokens only — substring matching would let a
 // "24min" recovery row satisfy a "4min" CP test.
+//
+// The letter-then-digit direction is deliberately NOT folded: it would turn
+// "Row-2k test" into "row2k" and destroy the "2k" token the 2k Test benchmark
+// depends on. Only digit-then-letter is a spelling artefact.
 export function tokenize(text) {
   if (!text) return [];
   return String(text)
     .toLowerCase()
+    .replace(/(\d),(?=\d)/g, '$1')
     .replace(/(\d)-(?=[a-z])/g, '$1')
-    .replace(/([a-z])-(?=\d)/g, '$1')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .split(/\s+/)
@@ -66,14 +71,28 @@ export function tokenize(text) {
 // new ladder field, no per-entry map. A token qualifies when it carries a digit
 // without being a bare numeral or an ordinal ('4min', '5k', '1000m'), or when
 // it is an explicit benchmark term ('cp').
+// Scott logs the same distance either way — "5k TT" and "5,000m" are one
+// benchmark — so a k-notation keyword also matches its metre spelling and vice
+// versa. Derived from the pattern, not a lookup table, so 2k/10k work too.
+function distanceAliases(token) {
+  const k = token.match(/^(\d+)k$/);
+  if (k) return [`${k[1]}000m`];
+  const m = token.match(/^(\d+)000m$/);
+  if (m) return [`${m[1]}k`];
+  return [];
+}
+
 export function benchmarkKeywords(name) {
   const out = [];
+  const add = (t) => {
+    if (!out.includes(t)) out.push(t);
+  };
   for (const t of tokenize(name)) {
     const digitBearing =
       /\d/.test(t) && !/^\d+$/.test(t) && !/^\d+(st|nd|rd|th)$/.test(t);
-    if ((digitBearing || BENCHMARK_TERMS.includes(t)) && !out.includes(t)) {
-      out.push(t);
-    }
+    if (!digitBearing && !BENCHMARK_TERMS.includes(t)) continue;
+    add(t);
+    for (const alias of distanceAliases(t)) add(alias);
   }
   return out;
 }
