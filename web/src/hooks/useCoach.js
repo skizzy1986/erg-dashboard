@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
 import { useTSSHistory } from './useTSSHistory.js';
 import { useVitals } from './useVitals.js';
-import { useSessions } from './useSessions.js';
 
 export function buildTrainingContext(
   latestLoad,
@@ -78,7 +77,6 @@ export function useCoach() {
 
   const tssQuery = useTSSHistory();
   const vitals = useVitals();
-  const sessions = useSessions();
 
   const setModel = (m) => {
     setModelState(m);

@@ -5,6 +5,7 @@ import React from 'react';
 
 const fromMock = vi.fn();
 const inMock = vi.fn();
+const orderMock = vi.fn();
 
 vi.mock('../../supabaseClient.js', () => ({
   supabase: {
@@ -33,7 +34,10 @@ function mockQuery(data, error = null) {
       return chain;
     },
     gt: () => chain,
-    order: () => Promise.resolve({ data, error }),
+    order: (...args) => {
+      orderMock(...args);
+      return Promise.resolve({ data, error });
+    },
   };
   fromMock.mockReturnValue(chain);
 }
@@ -41,6 +45,7 @@ function mockQuery(data, error = null) {
 beforeEach(() => {
   fromMock.mockReset();
   inMock.mockReset();
+  orderMock.mockReset();
 });
 
 describe('useTSSHistory', () => {
@@ -122,7 +127,23 @@ describe('useTSSHistory', () => {
     expect(Number.isNaN(result.current.data[0].tss)).toBe(false);
   });
 
-  it('returns multiple sessions in ascending date order', async () => {
+  // Ordering happens in Postgres, so a mock cannot demonstrate it — asserting
+  // on an already-ordered fixture would prove nothing. Pin the query contract
+  // instead: date_iso, never the lexically-sorting TEXT date column (#187).
+  it('orders on the derived date_iso column, not the text date', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useTSSHistory(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(orderMock).toHaveBeenCalledWith('date_iso', {
+      ascending: true,
+      nullsFirst: false,
+    });
+    expect(orderMock).not.toHaveBeenCalledWith('date', expect.anything());
+  });
+
+  it('maps every returned row, preserving the order the server sent', async () => {
     mockQuery([
       { date: '2026-06-01', duration: 60, srpe: 5 },
       { date: '2026-06-10', duration: 60, srpe: 8 },
@@ -131,8 +152,10 @@ describe('useTSSHistory', () => {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.length).toBe(2);
-    expect(result.current.data[0].date).toBe('2026-06-01');
+    expect(result.current.data.map((d) => d.date)).toEqual([
+      '2026-06-01',
+      '2026-06-10',
+    ]);
   });
 
   it('throws (isError) when supabase returns an error', async () => {
