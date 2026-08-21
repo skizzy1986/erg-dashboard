@@ -11,3 +11,10 @@ playwright-report
 .playwright
 # Lighthouse CI local run output
 .lighthouseci/
+
+# design-sync (claude.ai/design) — staged scripts, build output, machine state
+web/.ds-sync/
+web/ds-bundle/
+web/.design-sync/.cache/
+web/.design-sync/learnings/
+web/.design-sync/node_modules
