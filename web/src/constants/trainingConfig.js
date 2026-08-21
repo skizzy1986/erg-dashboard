@@ -1,4 +1,5 @@
-// Training science constants — update after CP test (1 Jul) or athlete baseline changes.
+// Training science constants — static reference data only. Live calibration values
+// (CP/FTP) come from the `anchors` table via useAnchors(); never mirror one here.
 
 import { wattsToPace500 } from '../utils/pace.js';
 
@@ -41,6 +42,9 @@ export const SRPE_GUIDE = [
   },
 ];
 
+// Static calibration rows. The load-model row's `basis` quotes the CP anchor, so
+// it is left anchor-free here and resolved at render time by
+// deriveCalibrationStatus() — never bake a CP number into this array.
 export const CALIBRATION_STATUS = [
   {
     metric: 'Power @ HR130',
@@ -86,13 +90,13 @@ export const CALIBRATION_STATUS = [
     upgrade: 'Intake-vs-weight regression at end of calibration (~Jun 24)',
   },
   {
+    key: 'load-model',
     metric: 'TSS / CTL / ATL / TSB',
     tier: 2,
     conf: 'Estimated',
     color: '#ffd700',
-    basis:
-      'CP/FTP est. 190W (untested), strength TSS ±30%, CTL needs 42d (have ~3wk)',
-    upgrade: '4-min CP test (1 Jul) → real anchor recalibrates everything',
+    basis: 'strength TSS ±30%, CTL needs 42d',
+    upgrade: 'A rested CP retest → real anchor recalibrates everything',
   },
   {
     metric: 'Daily net calories',
@@ -144,8 +148,26 @@ export const CALIBRATION_STATUS = [
   },
 ];
 
+// Resolve the calibration rows against the live CP anchor. Pure — callers pass the
+// `{ cp, cpAvailable, cpStatus }` shape from useAnchors(). When the anchor is
+// unavailable the row says so; it never falls back to a stale hardcoded CP.
+// Confidence tiers are deliberately untouched here — see #181.
+export function deriveCalibrationStatus({
+  cp,
+  cpAvailable = false,
+  cpStatus = null,
+} = {}) {
+  return CALIBRATION_STATUS.map((row) => {
+    if (row.key !== 'load-model') return row;
+    const anchor = cpAvailable
+      ? `CP ${cp}W (${cpStatus ?? 'status unknown'})`
+      : 'CP anchor unavailable';
+    return { ...row, basis: `${anchor}, ${row.basis}` };
+  });
+}
+
 export const CRITICAL_POWER = {
-  cpEstimate: 190, // W — provisional (= current FTP placeholder). 30min test confirms.
+  // No cpEstimate — CP is read live from `anchors.rowing_cp` via useAnchors().
   wPrime: null, // J — anaerobic reserve. Needs a short max effort (1-min) to model.
   northStar: '2k pace', // rowing's true benchmark — race-pace zones key off this
   status:
@@ -196,7 +218,7 @@ export const POWER_DURATION = [
 ];
 
 export const FTP_TEST = {
-  when: '~2 weeks out — fresh day, ideal post-FIFO return (~Jun 24+)',
+  when: 'Overdue — take the next genuinely fresh day, not the back end of a hard block',
   protocol:
     '30min continuous at the hardest STEADY pace you can hold the full 30 (not a sprint). CP ≈ 95% of the 30min avg power. This is a Critical Power test in rowing terms. Or 4×8min progressive steps to map HR-power.',
   prereq:
@@ -304,9 +326,10 @@ const ZONE_POWER_PCT = [
   { zone: 'AN', pctLow: 1.05, pctHigh: 1.3 },
 ];
 
-// Derive the power/pace zone bands from a Critical Power value. Pure — the live
-// app path calls this with the current `anchors.rowing_cp`; PACE_ZONES below is a
-// static fallback keyed off the seed constant for non-live contexts.
+// Derive the power/pace zone bands from a Critical Power value. Pure — callers
+// pass the current `anchors.rowing_cp` (see ErgView). There is deliberately no
+// static PACE_ZONES export: a second set of bands keyed off a seed constant would
+// silently diverge from the live one.
 export function derivePaceZones(cp) {
   return ZONE_POWER_PCT.map(({ zone, pctLow, pctHigh }) => {
     const hz = HR_ZONES.find((z) => z.zone === zone);
@@ -322,5 +345,3 @@ export function derivePaceZones(cp) {
     };
   });
 }
-
-export const PACE_ZONES = derivePaceZones(CRITICAL_POWER.cpEstimate);

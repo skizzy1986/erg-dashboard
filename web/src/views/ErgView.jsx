@@ -16,7 +16,7 @@ import {
   CRITICAL_POWER,
   POWER_DURATION,
   FTP_TEST,
-  CALIBRATION_STATUS,
+  deriveCalibrationStatus,
   derivePaceZones,
   HR130_POWER,
 } from '../constants/trainingConfig.js';
@@ -223,6 +223,11 @@ export default function ErgView({ tsbNow, ctlNow }) {
   // Live Critical Power from the anchors context store (no hardcoded fallback).
   const { cp, cpStatus, cpAvailable } = useAnchors();
   const paceZones = cpAvailable ? derivePaceZones(cp) : [];
+  const calibrationStatus = deriveCalibrationStatus({
+    cp,
+    cpAvailable,
+    cpStatus,
+  });
 
   const hr130Now =
     [...HR130_POWER].filter((p) => !p.setupArtifact).pop()?.watts ?? null;
@@ -1131,59 +1136,63 @@ export default function ErgView({ tsbNow, ctlNow }) {
                   ? 'ESTIMATED — WIDE BARS'
                   : 'FRAGILE — SKEPTICISM'}
             </div>
-            {CALIBRATION_STATUS.filter((c) => c.tier === tier).map((c) => (
-              <div
-                key={c.metric}
-                style={{
-                  background: '#08080d',
-                  borderLeft: `2px solid ${c.color}`,
-                  borderRadius: 3,
-                  padding: '7px 10px',
-                  marginBottom: 4,
-                }}
-              >
+            {calibrationStatus
+              .filter((c) => c.tier === tier)
+              .map((c) => (
                 <div
+                  key={c.metric}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
+                    background: '#08080d',
+                    borderLeft: `2px solid ${c.color}`,
+                    borderRadius: 3,
+                    padding: '7px 10px',
+                    marginBottom: 4,
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: '#e8e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
                     }}
                   >
-                    {c.metric}
-                  </span>
-                  <span style={{ fontSize: 9, color: c.color }}>{c.conf}</span>
-                </div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    color: '#7e7e9a',
-                    lineHeight: 1.4,
-                    marginTop: 2,
-                  }}
-                >
-                  {c.basis}
-                </div>
-                {c.upgrade !== '—' && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: '#e8e8f0',
+                      }}
+                    >
+                      {c.metric}
+                    </span>
+                    <span style={{ fontSize: 9, color: c.color }}>
+                      {c.conf}
+                    </span>
+                  </div>
                   <div
                     style={{
                       fontSize: 9,
-                      color: '#00d4ff99',
+                      color: '#7e7e9a',
                       lineHeight: 1.4,
                       marginTop: 2,
                     }}
                   >
-                    ↑ {c.upgrade}
+                    {c.basis}
                   </div>
-                )}
-              </div>
-            ))}
+                  {c.upgrade !== '—' && (
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: '#00d4ff99',
+                        lineHeight: 1.4,
+                        marginTop: 2,
+                      }}
+                    >
+                      ↑ {c.upgrade}
+                    </div>
+                  )}
+                </div>
+              ))}
           </div>
         ))}
         <div

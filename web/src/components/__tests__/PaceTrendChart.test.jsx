@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import PaceTrendChart, { PaceTooltip, CustomDot } from '../PaceTrendChart.jsx';
-import { PACE_ZONES } from '../../constants/trainingConfig.js';
+import { derivePaceZones } from '../../constants/trainingConfig.js';
+
+// Fixture zones. Derived here rather than imported, because there is no static
+// PACE_ZONES export any more — the app derives bands from the live CP anchor.
+const PACE_ZONES = derivePaceZones(205);
 
 describe('PaceTrendChart', () => {
   it('renders without crashing with empty data', () => {

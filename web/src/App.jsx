@@ -16,10 +16,6 @@ import LogView from './views/LogView.jsx';
 import ErgTooltip from './components/ErgTooltip.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
 import {
-  CALIBRATION_STATUS,
-  CRITICAL_POWER,
-  POWER_DURATION,
-  FTP_TEST,
   DAILY_TSS,
   RHR_BASELINE,
   HRV_BASELINE,
