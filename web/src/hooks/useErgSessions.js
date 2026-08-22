@@ -55,10 +55,10 @@ export function useErgSessions() {
   });
 
   // enrich() derives pace/zone/date_display; the sort is defence, not
-  // correctness — the query above already returns date_iso order, and
-  // toISODate() accepts exactly the shapes session_date_to_iso() does. Keep it:
-  // the map is here anyway, and it holds ordering through a rollback or the
-  // window where PostgREST has not reloaded its schema cache.
+  // correctness — the query above already returns date_iso order. What it still
+  // guards is a date the generated column could not parse: those arrive as
+  // date_iso NULL, land last under NULLS LAST, and would otherwise keep that
+  // position here. The map is here anyway, so the sort is close to free.
   const data = useMemo(
     () =>
       (query.data ?? [])
