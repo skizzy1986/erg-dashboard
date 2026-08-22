@@ -280,9 +280,6 @@ export const EST_MHR = 170; // Working training MHR — conservative calibration
 export const SRPE_SCALE =
   'Rate each session 1–10 within 30min of finishing: 1–2 very easy · 3–4 easy (UT2 target) · 5–6 moderate (UT1 target) · 7–8 hard (threshold, Phase 2) · 9–10 maximal (race/test only). UT2 sessions scoring 5+ = going too hard. UT1 scoring 7+ = drifting. Trend matters: same session scoring harder week-on-week = fatigue accumulating, flag it.';
 
-export const RHR_BASELINE = 57; // bpm — quietly trending DOWN 58→56 across the week (good)
-export const HRV_BASELINE = 30; // ms  — sheet-accurate; trough 18 (6/12) → peak 37 (6/17) → 31 now
-
 export const HR130_POWER = [
   // actual readings (HR-anchored sessions, chest strap)
   { date: '6/8', watts: 130, type: 'actual', setupArtifact: true }, // 60min, HR avg 123 — partly drag/strap settling, excluded from the fit

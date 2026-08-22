@@ -1,44 +1,77 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import React from 'react';
-import { RHR_BASELINE, HRV_BASELINE } from '../../constants/trainingConfig.js';
+import {
+  RHR_DEFAULT as RHR_BASELINE,
+  HRV_DEFAULT as HRV_BASELINE,
+  computeReadiness,
+  computePersonalBaselines,
+} from '../../utils/recoveryAnalytics.js';
 
-// Drive the readiness branches by controlling the last recoveryLog entry.
+// Vitals now come from useVitals, not the static recoveryLog constant.
 // LIPID_REF / HORMONE_REF / NIGGLES / bpLog / bloodsLog stay real.
-const { recRows } = vi.hoisted(() => ({ recRows: [] }));
-vi.mock('../../constants/logs.js', async (importOriginal) => {
-  const actual = await importOriginal();
-  return { ...actual, recoveryLog: recRows };
-});
+const useVitalsMock = vi.fn();
+vi.mock('../../hooks/useVitals.js', () => ({
+  useVitals: () => useVitalsMock(),
+}));
 
 import { LIPID_REF, HORMONE_REF, NIGGLES } from '../../constants/logs.js';
 import RecoveryView from '../RecoveryView.jsx';
 
 const day = (over = {}) => ({
-  date: '6/20',
+  date: '2026-06-20',
   rhr: RHR_BASELINE,
   hrv: HRV_BASELINE,
   sleep: 8,
   sleepScore: 85,
   ...over,
 });
-const setRows = (rows) => {
-  recRows.length = 0;
-  recRows.push(...rows);
+
+// Build the hook's real return shape from rows, so these tests exercise the
+// actual readiness maths rather than a hand-written score.
+const setRows = (rows, tsbNow = 0) => {
+  const latest = rows[0] ?? null;
+  const personalBaselines = computePersonalBaselines(rows);
+  const readiness = computeReadiness(latest, personalBaselines, tsbNow);
+  useVitalsMock.mockReturnValue({
+    latest,
+    readiness,
+    readinessScore: readiness.score,
+    readinessLabel: readiness.status,
+    personalBaselines,
+    tsbNow,
+    vitalsHistory: rows.slice().reverse(),
+    history: [],
+    hasPersonalBaselines:
+      personalBaselines.rhrPersonal && personalBaselines.hrvPersonal,
+    isLoading: false,
+    isError: false,
+  });
 };
-const renderView = (latest = { tsb: -5 }) =>
-  render(<RecoveryView latest={latest} isWide={true} />);
+const renderView = () => render(<RecoveryView isWide={true} />);
 
 beforeEach(() => {
   cleanup();
-  setRows([day({ date: '6/18' }), day({ date: '6/19' }), day()]);
+  useVitalsMock.mockReset();
+  setRows([day(), day({ date: '2026-06-19' }), day({ date: '2026-06-18' })]);
 });
 
 describe('RecoveryView', () => {
-  it('shows the empty state when there is no recovery data', () => {
+  it('says vitals are unavailable when the read returns nothing', () => {
     setRows([]);
     renderView();
-    expect(screen.getByText(/No recovery data yet/i)).toBeInTheDocument();
+    expect(screen.getByText('VITALS UNAVAILABLE')).toBeInTheDocument();
+  });
+
+  it('says loading, not unavailable, while the first read is pending', () => {
+    setRows([]);
+    useVitalsMock.mockReturnValue({
+      ...useVitalsMock(),
+      isLoading: true,
+    });
+    renderView();
+    expect(screen.getByText(/Loading vitals/i)).toBeInTheDocument();
+    expect(screen.queryByText('VITALS UNAVAILABLE')).not.toBeInTheDocument();
   });
 
   it('renders the readiness composite and trend/log sections', () => {
@@ -52,20 +85,36 @@ describe('RecoveryView', () => {
 
   it('reports READY when vitals are at baseline', () => {
     setRows([day()]);
-    renderView({ tsb: 0 });
+    renderView();
     expect(screen.getByText('READY')).toBeInTheDocument();
   });
 
   it('reports CAUTION on moderately elevated RHR', () => {
-    setRows([day({ rhr: RHR_BASELINE + 10 })]); // score ~60
-    renderView({ tsb: 0 });
+    setRows([day({ rhr: RHR_BASELINE + 6 })]); // 100 - 24 = 76
+    renderView();
     expect(screen.getByText('CAUTION')).toBeInTheDocument();
   });
 
-  it('reports REST when vitals are badly suppressed', () => {
-    setRows([day({ rhr: RHR_BASELINE + 20 })]); // score ~20
-    renderView({ tsb: 0 });
-    expect(screen.getByText('REST')).toBeInTheDocument();
+  it('reports FATIGUED when vitals are badly suppressed', () => {
+    setRows([day({ rhr: RHR_BASELINE + 20 })]); // 100 - 80 = 20
+    renderView();
+    expect(screen.getByText('FATIGUED')).toBeInTheDocument();
+  });
+
+  it('says NO DATA rather than scoring a day with no RHR', () => {
+    setRows([day({ rhr: null })]);
+    renderView();
+    expect(screen.getByText('NO DATA')).toBeInTheDocument();
+    expect(screen.getByText(/nothing to score/i)).toBeInTheDocument();
+  });
+
+  it('labels a defaulted baseline as default, not as the athlete average', () => {
+    // Three rows is far short of the 14 needed, so both baselines are the
+    // population defaults and must not be presented as "your avg".
+    setRows([day(), day({ date: '2026-06-19' }), day({ date: '2026-06-18' })]);
+    renderView();
+    expect(screen.getAllByText(/default \d/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/your avg/)).not.toBeInTheDocument();
   });
 
   it('handles a missing sleep score without crashing', () => {

@@ -1,17 +1,22 @@
-import { RHR_BASELINE, HRV_BASELINE } from '../constants/trainingConfig.js';
+import { RHR_DEFAULT, HRV_DEFAULT } from './recoveryAnalytics.js';
 
 // ── ADAPTIVE DECISION ENGINE ──────────────────────────────────
 // The coaching brain: reads current recovery/load data, fires rules
 // (R3–R5), cross-checks plan vs. body, and fuses everything into one
 // autoregulation signal + a daily readiness score.
 
-export function evaluateRules(recovery, recentSrpe, tsb) {
+// `baselines` comes from computePersonalBaselines (a rolling trimmed mean of the
+// last 28 days). It used to read two static constants, so the rule compared
+// today against a number hand-set in June rather than against the athlete.
+export function evaluateRules(recovery, recentSrpe, tsb, baselines = {}) {
+  const rhrBaseline = baselines.rhrBaseline ?? RHR_DEFAULT;
+  const hrvBaseline = baselines.hrvBaseline ?? HRV_DEFAULT;
   const flags = [];
   if (!recovery) return flags;
   if (
     recovery.hrv != null &&
-    recovery.hrv < HRV_BASELINE &&
-    recovery.rhr > RHR_BASELINE
+    recovery.hrv < hrvBaseline &&
+    recovery.rhr > rhrBaseline
   ) {
     flags.push({
       id: 'R4',
@@ -85,30 +90,4 @@ export function autoregulate(tsb, readiness, firedRules) {
       "Clear to train as planned. Form and recovery support it — if it's a quality day, you can commit to it.";
   }
   return { signal, color, guidance };
-}
-
-// ── DAILY READINESS — RHR/HRV/sleep/TSB → 0-100 score ─────────
-// Deductions off a 100 ceiling: elevated RHR and suppressed HRV vs.
-// baseline, sleep debt, and deep TSB fatigue. Null HRV/sleep mark the
-// score partial (computed on what's present) rather than blocking it.
-export function calcReadiness(day, tsb) {
-  if (!day || typeof day.rhr !== 'number') {
-    return { score: null, status: 'NO DATA', color: '#888', partial: true };
-  }
-  let score = 100;
-  const rhrDelta = day.rhr - RHR_BASELINE;
-  if (rhrDelta > 0) score -= rhrDelta * 4;
-  if (day.hrv != null) {
-    const hrvDelta = HRV_BASELINE - day.hrv;
-    if (hrvDelta > 0) score -= hrvDelta * 1.5;
-  }
-  if (day.sleep != null && day.sleep < 7) score -= (7 - day.sleep) * 8;
-  // Explicit null guard, matching evaluateRules/autoregulate: a missing TSB
-  // must read as "no signal", not as a zero that quietly skips the deduction.
-  if (tsb != null && tsb < -20) score -= (Math.abs(tsb) - 20) * 0.8;
-  score = Math.max(0, Math.min(100, Math.round(score)));
-  const status = score >= 75 ? 'READY' : score >= 50 ? 'CAUTION' : 'REST';
-  const color = score >= 75 ? '#34d399' : score >= 50 ? '#ffd700' : '#ff2d55';
-  const partial = day.hrv == null || day.sleep == null;
-  return { score, status, color, partial };
 }

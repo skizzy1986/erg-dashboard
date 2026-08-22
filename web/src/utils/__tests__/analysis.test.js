@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { RHR_BASELINE, HRV_BASELINE } from '../../constants/trainingConfig.js';
 import {
-  evaluateRules,
-  checkConsistency,
-  autoregulate,
-  calcReadiness,
-} from '../analysis.js';
+  RHR_DEFAULT as RHR_BASELINE,
+  HRV_DEFAULT as HRV_BASELINE,
+} from '../recoveryAnalytics.js';
+import { evaluateRules, checkConsistency, autoregulate } from '../analysis.js';
 
 const ids = (flags) => flags.map((f) => f.id);
 
@@ -145,78 +143,21 @@ describe('autoregulate', () => {
   });
 });
 
-describe('calcReadiness', () => {
-  it('returns NO DATA when the day or RHR is missing', () => {
-    expect(calcReadiness(null, 0)).toMatchObject({
-      score: null,
-      status: 'NO DATA',
-      partial: true,
-    });
-    expect(calcReadiness({ rhr: 'x' }, 0).status).toBe('NO DATA');
-  });
-
-  it('scores a clean day at the top of the range (READY)', () => {
-    const r = calcReadiness(
-      { rhr: RHR_BASELINE, hrv: HRV_BASELINE, sleep: 8 },
-      0
-    );
-    expect(r.score).toBe(100);
-    expect(r.status).toBe('READY');
-    expect(r.color).toBe('#34d399');
-    expect(r.partial).toBe(false);
-  });
-
-  it('deducts for elevated RHR, suppressed HRV, sleep debt, and deep TSB', () => {
-    const elevatedRhr = calcReadiness(
-      { rhr: RHR_BASELINE + 5, hrv: HRV_BASELINE, sleep: 8 },
-      0
-    );
-    expect(elevatedRhr.score).toBe(80); // 100 - 5*4
-    const lowHrv = calcReadiness(
-      { rhr: RHR_BASELINE, hrv: HRV_BASELINE - 10, sleep: 8 },
-      0
-    );
-    expect(lowHrv.score).toBe(85); // 100 - 10*1.5
-    const lowSleep = calcReadiness(
-      { rhr: RHR_BASELINE, hrv: HRV_BASELINE, sleep: 5 },
-      0
-    );
-    expect(lowSleep.score).toBe(84); // 100 - (7-5)*8
-    const deepTsb = calcReadiness(
-      { rhr: RHR_BASELINE, hrv: HRV_BASELINE, sleep: 8 },
-      -40
-    );
-    expect(deepTsb.score).toBe(84); // 100 - (40-20)*0.8
-  });
-
-  it('clamps the score to 0 and reports REST/CAUTION thresholds', () => {
-    const wrecked = calcReadiness(
-      { rhr: RHR_BASELINE + 30, hrv: HRV_BASELINE - 30, sleep: 2 },
-      -60
-    );
-    expect(wrecked.score).toBe(0);
-    expect(wrecked.status).toBe('REST');
-    expect(wrecked.color).toBe('#ff2d55');
-
-    const caution = calcReadiness(
-      { rhr: RHR_BASELINE + 6, hrv: HRV_BASELINE, sleep: 8 },
-      0
-    );
-    expect(caution.score).toBe(76); // still READY boundary check below
-    const cautionLow = calcReadiness(
-      { rhr: RHR_BASELINE + 10, hrv: HRV_BASELINE, sleep: 8 },
-      0
-    );
-    expect(cautionLow.status).toBe('CAUTION'); // 60 → CAUTION
-    expect(cautionLow.color).toBe('#ffd700');
-  });
-
-  it('marks the score partial when HRV or sleep is absent', () => {
-    expect(calcReadiness({ rhr: RHR_BASELINE, sleep: 8 }, 0).partial).toBe(
-      true
-    );
+describe('evaluateRules baselines', () => {
+  it('judges R4 against supplied personal baselines, not the defaults', () => {
+    const day = { hrv: 45, rhr: 50, sleep: 8 };
+    // Against population defaults (30/57) this day looks fine: HRV is well
+    // above 30 and RHR well below 57.
+    expect(ids(evaluateRules(day, 4, 0))).not.toContain('R4');
+    // Against this athlete's own baselines it is a clear under-recovery day.
     expect(
-      calcReadiness({ rhr: RHR_BASELINE, hrv: HRV_BASELINE }, 0).partial
-    ).toBe(true);
+      ids(evaluateRules(day, 4, 0, { hrvBaseline: 55, rhrBaseline: 46 }))
+    ).toContain('R4');
+  });
+
+  it('falls back to the population defaults when no baselines are passed', () => {
+    const day = { hrv: HRV_BASELINE - 5, rhr: RHR_BASELINE + 3, sleep: 8 };
+    expect(ids(evaluateRules(day, 4, 0))).toContain('R4');
+    expect(ids(evaluateRules(day, 4, 0, {}))).toContain('R4');
   });
 });

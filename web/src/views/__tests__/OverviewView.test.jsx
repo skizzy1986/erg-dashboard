@@ -1,6 +1,37 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import {
+  RHR_DEFAULT,
+  HRV_DEFAULT,
+  computeReadiness,
+  computePersonalBaselines,
+} from '../../utils/recoveryAnalytics.js';
+
+// The home screen reads vitals through useVitals now, not the static
+// recoveryLog constant.
+const useVitalsMock = vi.fn();
+vi.mock('../../hooks/useVitals.js', () => ({
+  useVitals: () => useVitalsMock(),
+}));
+
 import OverviewView from '../OverviewView.jsx';
+
+const vitalsRow = {
+  date: '2026-08-21',
+  rhr: RHR_DEFAULT,
+  hrv: HRV_DEFAULT,
+  sleep: 8,
+};
+
+beforeEach(() => {
+  useVitalsMock.mockReset();
+  const personalBaselines = computePersonalBaselines([vitalsRow]);
+  useVitalsMock.mockReturnValue({
+    latest: vitalsRow,
+    readiness: computeReadiness(vitalsRow, personalBaselines, -5),
+    personalBaselines,
+  });
+});
 
 const loadData = Array.from({ length: 14 }, (_, i) => ({
   date: `6/${i + 7}`,
@@ -57,6 +88,31 @@ const baseProps = {
 };
 
 describe('OverviewView', () => {
+  it('scores readiness off live vitals, not a static log', () => {
+    // A badly suppressed day must reach the home screen. Previously this read
+    // the last entry of the recoveryLog constant, so the number was frozen in
+    // June no matter what the athlete's actual vitals said.
+    const bad = { ...vitalsRow, rhr: RHR_DEFAULT + 20 };
+    const personalBaselines = computePersonalBaselines([bad]);
+    useVitalsMock.mockReturnValue({
+      latest: bad,
+      readiness: computeReadiness(bad, personalBaselines, -5),
+      personalBaselines,
+    });
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText('20')).toBeInTheDocument();
+  });
+
+  it('shows a dash for readiness when there is no vitals reading', () => {
+    useVitalsMock.mockReturnValue({
+      latest: null,
+      readiness: computeReadiness(null, {}, null),
+      personalBaselines: computePersonalBaselines([]),
+    });
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText(/readiness\s+—/)).toBeInTheDocument();
+  });
+
   it('says the training load is unavailable rather than showing a zero', () => {
     // `latest` is null whenever the training-load read fails or comes back
     // empty. The tiles must not render a number, and nothing may claim a form
