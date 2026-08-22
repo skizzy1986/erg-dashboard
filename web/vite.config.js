@@ -99,12 +99,13 @@ export default defineConfig({
       //   measured: lines 48.98 / functions 46.81 / branches 40.38
       thresholds: {
         // Global floor — ratcheted up as extractions land tests (measured
-        // lines 79.92 / functions 77.47 / branches 74.49 on 2026-08-21, after
-        // the sessions date_iso ordering fix (#187) added the first
-        // useSessions.js tests; ~4 points headroom for denominator drift).
-        lines: 75,
-        functions: 73,
-        branches: 70,
+        // lines 84.31 / functions 79.33 / branches 76.31 on 2026-08-22, after
+        // wiring the Coach training context (#199) put useCoach.sendMessage
+        // under test for the first time; ~4 points headroom for denominator
+        // drift).
+        lines: 80,
+        functions: 75,
+        branches: 72,
         // Commercial-baseline gate (80/80/70) for new/extracted code, applied
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.
@@ -132,6 +133,7 @@ export default defineConfig({
           branches: 70,
         },
         'src/hooks/useSessions.js': { lines: 80, functions: 80, branches: 70 },
+        'src/hooks/useCoach.js': { lines: 80, functions: 80, branches: 70 },
         'src/hooks/useTSSHistory.js': {
           lines: 80,
           functions: 80,

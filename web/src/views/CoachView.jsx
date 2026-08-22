@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCoach } from '../hooks/useCoach.js';
-import { calcTrainingLoad } from '../utils/trainingLoad.js';
 import { THEME } from '../constants/theme.js';
 
 const C = {
@@ -57,15 +56,11 @@ export default function CoachView() {
     sendMessage,
     clearHistory,
     vitals,
-    tssQuery,
+    latestLoad,
   } = useCoach();
   const [input, setInput] = useState('');
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
-
-  const tssData = tssQuery.data ?? [];
-  const loadData = tssData.length ? calcTrainingLoad(tssData) : [];
-  const latestLoad = loadData[loadData.length - 1] ?? null;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });

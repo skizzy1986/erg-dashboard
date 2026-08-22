@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 // Mock supabaseClient so the import of useCoach.js doesn't fail at module load time
 vi.mock('../../supabaseClient.js', () => ({
@@ -24,7 +24,7 @@ vi.mock('../useVitals.js', () => ({
   }),
 }));
 
-import { buildTrainingContext } from '../useCoach.js';
+import { buildTrainingContext, todayISO } from '../useCoach.js';
 
 // buildTrainingContext is a pure exported function — no mocking needed
 describe('buildTrainingContext', () => {
@@ -129,5 +129,37 @@ describe('buildTrainingContext', () => {
     expect(result).not.toContain('Readiness:');
     expect(result).not.toContain("Today's session:");
     expect(result).not.toContain('Recent sessions');
+  });
+});
+
+// The header date and the "today's session" match both key off todayISO. It
+// reads LOCAL calendar fields, not toISOString(): Perth is UTC+8, so a UTC
+// day would name yesterday for the whole Perth morning — precisely when
+// readiness is checked and today's prescription asked about.
+describe('todayISO', () => {
+  const realTZ = globalThis.process.env.TZ;
+
+  afterEach(() => {
+    globalThis.process.env.TZ = realTZ;
+    vi.useRealTimers();
+  });
+
+  it('reports the local day, not the UTC one, when the two differ', () => {
+    globalThis.process.env.TZ = 'Australia/Perth';
+    vi.useFakeTimers();
+    // 04:00 Thursday in Perth is still Wednesday in UTC.
+    vi.setSystemTime(new Date('2026-08-21T20:00:00Z'));
+
+    expect(todayISO()).toBe('2026-08-22');
+    expect(new Date().toISOString().split('T')[0]).toBe('2026-08-21');
+  });
+
+  it('feeds the context header the local day', () => {
+    globalThis.process.env.TZ = 'Australia/Perth';
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-21T20:00:00Z'));
+
+    const result = buildTrainingContext(null, null, 0, 'READY', [], null);
+    expect(result).toContain('CURRENT TRAINING DATA (as of 2026-08-22):');
   });
 });
