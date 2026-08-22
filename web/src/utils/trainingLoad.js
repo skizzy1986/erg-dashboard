@@ -13,15 +13,22 @@ function thresholdFor(type, cp, ftp) {
   return null;
 }
 
-// Load for one session, in the app's "sRPE-hours" unit: an hour at sRPE r
-// contributes r.
+// Load for one session, in classic TSS units: an hour at threshold reads 100,
+// and so does an hour at sRPE 10.
 //
 // sRPE wins whenever it exists. When it does not — every Strava-backfilled
 // session, because sRPE is subjective and was never captured after the fact —
-// fall back to power: intensity factor (avg watts / threshold), squared per the
-// standard TrainingPeaks model, scaled so an hour at threshold reads 10, i.e.
-// an hour at sRPE 10. Without this fallback those sessions contribute nothing
-// and the CTL/ATL/TSB curve coasts on whatever was last rated by hand.
+// fall back to power: intensity factor (avg watts / threshold), squared and
+// scaled by 100, which is exactly the standard TrainingPeaks TSS formula.
+// Without this fallback those sessions contribute nothing and the CTL/ATL/TSB
+// curve coasts on whatever was last rated by hand.
+//
+// The unit matters as much as the formula. Every threshold downstream — the
+// TSB bands in App.jsx and MobileAnalytics, LoadTooltip, useCoach's
+// GREEN/AMBER/RED, calcReadiness's `tsb < -20` deduction — was calibrated for
+// classic TSS. An earlier sRPE-hours unit (an hour at sRPE 7 → 7) left every
+// one of those bands ~10x too wide, which pinned TSB mid-range and meant the
+// fatigue deduction could never fire. Do not rescale one side without the other.
 //
 // Known offset, deliberately NOT calibrated away: on the two sessions carrying
 // both signals (150 W, sRPE 7) power reads ~24% below the sRPE figure. At 73%
@@ -33,7 +40,7 @@ export function sessionLoad(session, { cp, ftp } = {}) {
   if (!(minutes > 0)) return 0;
   const hours = minutes / 60;
 
-  if (session.srpe > 0) return Math.round(hours * session.srpe);
+  if (session.srpe > 0) return Math.round(hours * session.srpe * 10);
 
   const threshold = thresholdFor(session.type, cp, ftp);
   const watts = session.avg_watts;
@@ -43,7 +50,7 @@ export function sessionLoad(session, { cp, ftp } = {}) {
   if (!(threshold > 0) || !(watts > 0)) return 0;
 
   const intensity = watts / threshold;
-  return Math.round(hours * intensity * intensity * 10);
+  return Math.round(hours * intensity * intensity * 100);
 }
 
 export function calcTrainingLoad(tssData, endDate) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // App.jsx fetches sessions directly via the supabase client:
@@ -104,8 +104,17 @@ vi.mock('../views/StrengthView.jsx', () => ({
 vi.mock('../views/MobilityView.jsx', () => ({
   default: () => <div>MobilityView-stub</div>,
 }));
+// Surfaces the load props so a test can assert what App derived and passed
+// down, rather than reaching into OverviewView's own rendering.
 vi.mock('../views/OverviewView.jsx', () => ({
-  default: () => <div>OverviewView-stub</div>,
+  default: ({ latest, loadUnavailable }) => (
+    <div>
+      OverviewView-stub
+      <span data-testid="ctl">{latest ? latest.ctl : 'none'}</span>
+      <span data-testid="tsb">{latest ? latest.tsb : 'none'}</span>
+      <span data-testid="unavailable">{String(loadUnavailable)}</span>
+    </div>
+  ),
 }));
 vi.mock('../views/ProgramView.jsx', () => ({
   default: () => <div>ProgramView-stub</div>,
@@ -120,7 +129,30 @@ vi.mock('../views/LogView.jsx', () => ({
   default: () => <div>LogView-stub</div>,
 }));
 
+// App reads CTL/ATL/TSB through useTSSHistory (react-query + supabase). Mock it
+// so these tests stay about App's own wiring, and so each case can choose
+// between a live series, an empty read, and a still-pending one.
+const tssHistoryMock = vi.fn();
+vi.mock('../hooks/useTSSHistory.js', () => ({
+  useTSSHistory: () => tssHistoryMock(),
+}));
+
 import App from '../App.jsx';
+
+// Two sessions on consecutive days, in classic TSS units.
+const LIVE_TSS = [
+  { date: '8/5/26', tss: 55 },
+  { date: '8/6/26', tss: 70 },
+];
+
+beforeEach(() => {
+  tssHistoryMock.mockReset();
+  tssHistoryMock.mockReturnValue({
+    data: LIVE_TSS,
+    isLoading: false,
+    isError: false,
+  });
+});
 
 // nav label (uppercased) → the stub marker its branch renders.
 const NAV = [
@@ -156,6 +188,47 @@ describe('App', () => {
       fireEvent.click(screen.getByRole('button', { name: label }));
       expect(screen.getByText(marker)).toBeInTheDocument();
     }
+  }, 30000);
+
+  it('derives CTL/ATL/TSB from the live session history, not a static seed', async () => {
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+
+    // calcTrainingLoad walks day-by-day to today and decays, so the exact value
+    // moves with the clock. What matters is that a real series produced a real
+    // reading and the view was not told the data is unavailable.
+    expect(screen.getByTestId('ctl').textContent).not.toBe('none');
+    expect(Number(screen.getByTestId('ctl').textContent)).toBeGreaterThan(0);
+    expect(screen.getByTestId('unavailable').textContent).toBe('false');
+  }, 30000);
+
+  it('says the load is unavailable rather than rendering a fabricated zero', async () => {
+    tssHistoryMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+
+    expect(screen.getByTestId('ctl').textContent).toBe('none');
+    expect(screen.getByTestId('tsb').textContent).toBe('none');
+    expect(screen.getByTestId('unavailable').textContent).toBe('true');
+  }, 30000);
+
+  it('treats a still-pending first read as pending, not unavailable', async () => {
+    // A slow read must not flash an outage line and then replace it with real
+    // numbers (#196) — no reading yet, but nothing is claimed to be broken.
+    tssHistoryMock.mockReturnValue({
+      data: [],
+      isLoading: true,
+      isError: false,
+    });
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+
+    expect(screen.getByTestId('ctl').textContent).toBe('none');
+    expect(screen.getByTestId('unavailable').textContent).toBe('false');
   }, 30000);
 
   it('updates the responsive layout on window resize', async () => {

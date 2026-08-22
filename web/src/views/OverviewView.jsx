@@ -33,6 +33,7 @@ import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 
 export default function OverviewView({
   latest,
+  loadUnavailable,
   tsbColor,
   loadData,
   loggedSessions,
@@ -44,6 +45,10 @@ export default function OverviewView({
   isWide,
   nowTick,
 }) {
+  // `latest` is null when the training-load read fails or returns no sessions.
+  // evaluateRules/autoregulate/calcReadiness all guard `tsb != null`, so the
+  // rules engine degrades to "no TSB signal" rather than reading a fabricated 0.
+  const tsbNow = latest?.tsb ?? null;
   return (
     <>
       {/* ── CONDENSED TODAY STATUS STRIP (live, mobile-first) ── */}
@@ -56,9 +61,9 @@ export default function OverviewView({
           }
           return null;
         })();
-        const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
-        const readiness = calcReadiness(todayRec, latest.tsb);
-        const sig = autoregulate(latest.tsb, readiness, fired);
+        const fired = evaluateRules(todayRec, lastSrpe, tsbNow);
+        const readiness = calcReadiness(todayRec, tsbNow);
+        const sig = autoregulate(tsbNow, readiness, fired);
         const upcoming = getUpcomingSessions(nowTick, loggedSessions);
         return (
           <div
@@ -535,7 +540,7 @@ export default function OverviewView({
           }
           return null;
         })();
-        const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
+        const fired = evaluateRules(todayRec, lastSrpe, tsbNow);
         const consistency = checkConsistency(fired, false);
         return (
           <div
@@ -755,9 +760,9 @@ export default function OverviewView({
           }
           return null;
         })();
-        const fired = evaluateRules(todayRec, lastSrpe, latest.tsb);
-        const readiness = calcReadiness(todayRec, latest.tsb);
-        const auto = autoregulate(latest.tsb, readiness, fired);
+        const fired = evaluateRules(todayRec, lastSrpe, tsbNow);
+        const readiness = calcReadiness(todayRec, tsbNow);
+        const auto = autoregulate(tsbNow, readiness, fired);
         const t = deriveTargets(HR130_POWER);
         return (
           <div
@@ -893,8 +898,10 @@ export default function OverviewView({
             <div style={{ fontSize: 8, color: '#6c6c88', lineHeight: 1.5 }}>
               Targets computed from {t.source}. Recompute automatically as new
               HR130 points land. ● {auto.signal} fuses TSB (
-              {latest.tsb > 0 ? '+' : ''}
-              {latest.tsb}), readiness, and fired rules.{' '}
+              {tsbNow == null
+                ? 'unavailable'
+                : (tsbNow > 0 ? '+' : '') + tsbNow}
+              ), readiness, and fired rules.{' '}
               <span style={{ color: '#7e7e9a' }}>
                 TSB rests on estimated CP until the test — direction meaningful,
                 absolute soft.
@@ -929,6 +936,18 @@ export default function OverviewView({
             Est. FTP {ftp}W · update after threshold test
           </div>
         </div>
+        {loadUnavailable && (
+          <div
+            style={{
+              fontSize: 9,
+              letterSpacing: 2,
+              color: '#7e7e9a',
+              marginTop: 6,
+            }}
+          >
+            TRAINING LOAD UNAVAILABLE
+          </div>
+        )}
 
         {/* Current values */}
         <div
@@ -941,9 +960,14 @@ export default function OverviewView({
           }}
         >
           {[
-            ['CTL', 'Fitness', latest.ctl, '#00d4ff'],
-            ['ATL', 'Fatigue', latest.atl, '#ff6b35'],
-            ['TSB', 'Form', (latest.tsb > 0 ? '+' : '') + latest.tsb, tsbColor],
+            ['CTL', 'Fitness', latest ? latest.ctl : '—', '#00d4ff'],
+            ['ATL', 'Fatigue', latest ? latest.atl : '—', '#ff6b35'],
+            [
+              'TSB',
+              'Form',
+              latest ? (latest.tsb > 0 ? '+' : '') + latest.tsb : '—',
+              tsbColor,
+            ],
           ].map(([k, sub, v, c]) => (
             <div
               key={k}
@@ -1042,13 +1066,15 @@ export default function OverviewView({
             lineHeight: 1.5,
           }}
         >
-          {latest.tsb > 10
-            ? '✅ Fresh — good form, ready for hard sessions'
-            : latest.tsb > -10
-              ? '⚡ Neutral — balanced load and recovery'
-              : latest.tsb > -30
-                ? '⚠️ Fatigued — normal mid-week training load. Protect Thursday rest.'
-                : "🔴 High fatigue — rest day is critical. Don't add sessions."}
+          {tsbNow == null
+            ? 'No training-load reading — form status unknown.'
+            : tsbNow > 10
+              ? '✅ Fresh — good form, ready for hard sessions'
+              : tsbNow > -10
+                ? '⚡ Neutral — balanced load and recovery'
+                : tsbNow > -30
+                  ? '⚠️ Fatigued — normal mid-week training load. Protect Thursday rest.'
+                  : "🔴 High fatigue — rest day is critical. Don't add sessions."}
         </div>
         <div
           style={{

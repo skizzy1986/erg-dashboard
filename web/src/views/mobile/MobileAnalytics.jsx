@@ -1,10 +1,9 @@
 import React, { useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
-import { calcTrainingLoad } from '../../utils/trainingLoad.js';
-import { DAILY_TSS } from '../../constants/tssData.js';
+import { calcTrainingLoad, sessionLoad } from '../../utils/trainingLoad.js';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
-import { parseDurationMinutes } from '../../utils/duration.js';
+import { useAnchors } from '../../hooks/useAnchors.js';
 import { toISODate } from '../../utils/dateFormat.js';
 import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 
@@ -30,11 +29,18 @@ function typeColor(type) {
 }
 
 export default function MobileAnalytics() {
-  const { data: tssHistory } = useTSSHistory();
+  const { data: tssHistory, isLoading: loadPending } = useTSSHistory();
   const { data: sessionsData } = useSessions();
-  const tssSource = tssHistory?.length ? tssHistory : DAILY_TSS;
-  const loadData = useMemo(() => calcTrainingLoad(tssSource), [tssSource]);
-  const latest = loadData[loadData.length - 1];
+  const { cp, ftp } = useAnchors();
+  // No stale seed fallback: an empty read means we have nothing to show, not
+  // that training stopped in June. calcTrainingLoad would walk from an Invalid
+  // Date on an empty series, so guard before calling it.
+  const loadData = useMemo(
+    () => (tssHistory?.length ? calcTrainingLoad(tssHistory) : []),
+    [tssHistory]
+  );
+  const latest = loadData[loadData.length - 1] ?? null;
+  const loadUnavailable = latest == null && !loadPending;
 
   const weeklyData = useMemo(() => {
     const buckets = [];
@@ -58,19 +64,24 @@ export default function MobileAnalytics() {
       .slice(0, 5)
       .map((s) => ({
         date: s.date,
-        tss: Math.round(
-          (parseDurationMinutes(s.duration) * (s.srpe ?? 0)) / 60
-        ),
+        // Same sessionLoad the chart above uses. This list previously kept a
+        // private sRPE-only copy of the formula, so a power-only session read 0
+        // here while the chart counted it — two numbers for one session.
+        tss: sessionLoad(s, { cp, ftp }),
         note: s.label ?? s.type ?? '',
       }));
-  }, [sessionsData]);
+  }, [sessionsData, cp, ftp]);
 
-  const recentSessions = recentLive.length
-    ? recentLive
-    : DAILY_TSS.slice().reverse().slice(0, 5);
+  const recentSessions = recentLive;
 
-  const color = tsbColor(latest.tsb);
-  const signal = tsbSignal(latest.tsb);
+  const color = latest ? tsbColor(latest.tsb) : '#7e7e9a';
+  // Pending renders nothing rather than the outage line, so a slow first read
+  // does not flash "unavailable" and then replace it with a real signal (#196).
+  const signal = latest
+    ? tsbSignal(latest.tsb)
+    : loadUnavailable
+      ? 'TRAINING LOAD UNAVAILABLE'
+      : '';
   const dateStr = new Date().toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
@@ -127,7 +138,7 @@ export default function MobileAnalytics() {
             fontFamily: "'DM Mono', monospace",
           }}
         >
-          {latest.tsb.toFixed(1)}
+          {latest ? latest.tsb.toFixed(1) : '—'}
         </div>
         <div
           style={{
@@ -168,7 +179,7 @@ export default function MobileAnalytics() {
               fontFamily: "'DM Mono', monospace",
             }}
           >
-            {latest.ctl.toFixed(1)}
+            {latest ? latest.ctl.toFixed(1) : '—'}
           </div>
         </div>
         <div
@@ -197,7 +208,7 @@ export default function MobileAnalytics() {
               fontFamily: "'DM Mono', monospace",
             }}
           >
-            {latest.atl.toFixed(1)}
+            {latest ? latest.atl.toFixed(1) : '—'}
           </div>
         </div>
       </div>

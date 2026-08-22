@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import OverviewView from '../OverviewView.jsx';
 
 const loadData = Array.from({ length: 14 }, (_, i) => ({
@@ -57,6 +57,29 @@ const baseProps = {
 };
 
 describe('OverviewView', () => {
+  it('says the training load is unavailable rather than showing a zero', () => {
+    // `latest` is null whenever the training-load read fails or comes back
+    // empty. The tiles must not render a number, and nothing may claim a form
+    // status — a fabricated 0 would read as a confident "neutral".
+    render(
+      <OverviewView {...baseProps} latest={null} loadUnavailable={true} />
+    );
+    expect(screen.getByText('TRAINING LOAD UNAVAILABLE')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByText(/form status unknown/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Fresh — good form/)).not.toBeInTheDocument();
+  });
+
+  it('does not show the outage line while the read is still pending', () => {
+    // loadUnavailable is false during a pending first read (#196).
+    render(
+      <OverviewView {...baseProps} latest={null} loadUnavailable={false} />
+    );
+    expect(
+      screen.queryByText('TRAINING LOAD UNAVAILABLE')
+    ).not.toBeInTheDocument();
+  });
+
   it('renders the overview dashboard without crashing', () => {
     const { container } = render(<OverviewView {...baseProps} />);
     expect(container.textContent.length).toBeGreaterThan(200);

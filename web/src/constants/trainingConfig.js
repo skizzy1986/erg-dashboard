@@ -280,31 +280,6 @@ export const EST_MHR = 170; // Working training MHR — conservative calibration
 export const SRPE_SCALE =
   'Rate each session 1–10 within 30min of finishing: 1–2 very easy · 3–4 easy (UT2 target) · 5–6 moderate (UT1 target) · 7–8 hard (threshold, Phase 2) · 9–10 maximal (race/test only). UT2 sessions scoring 5+ = going too hard. UT1 scoring 7+ = drifting. Trend matters: same session scoring harder week-on-week = fatigue accumulating, flag it.';
 
-export const DAILY_TSS = [
-  { date: '2026-05-22', tss: 14, note: '5k erg' },
-  { date: '2026-05-24', tss: 15, note: '5k erg' },
-  { date: '2026-05-25', tss: 55, note: '10k erg (hard push)' },
-  { date: '2026-05-31', tss: 40, note: 'Upper strength' },
-  { date: '2026-06-03', tss: 55, note: 'Combined strength' },
-  { date: '2026-06-04', tss: 89, note: '10k erg + upper strength' },
-  { date: '2026-06-05', tss: 121, note: '10k baseline + lower strength' },
-  { date: '2026-06-06', tss: 35, note: '10k easy' },
-  { date: '2026-06-07', tss: 50, note: 'Upper strength' },
-  { date: '2026-06-08', tss: 100, note: '60min row + upper strength' },
-  { date: '2026-06-09', tss: 87, note: '30min row + lower strength' },
-  { date: '2026-06-10', tss: 98, note: '45min Z2 + Upper Day 2 (sRPE 8)' },
-  {
-    date: '2026-06-12',
-    tss: 103,
-    note: '45min UT1 + Lower Day 2 (both sRPE 6)',
-  },
-  {
-    date: '2026-06-13',
-    tss: 75,
-    note: '60min UT1 long row (sRPE 6 — first full hour)',
-  },
-];
-
 export const RHR_BASELINE = 57; // bpm — quietly trending DOWN 58→56 across the week (good)
 export const HRV_BASELINE = 30; // ms  — sheet-accurate; trough 18 (6/12) → peak 37 (6/17) → 31 now
 

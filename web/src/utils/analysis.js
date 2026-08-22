@@ -103,7 +103,9 @@ export function calcReadiness(day, tsb) {
     if (hrvDelta > 0) score -= hrvDelta * 1.5;
   }
   if (day.sleep != null && day.sleep < 7) score -= (7 - day.sleep) * 8;
-  if (tsb < -20) score -= (Math.abs(tsb) - 20) * 0.8;
+  // Explicit null guard, matching evaluateRules/autoregulate: a missing TSB
+  // must read as "no signal", not as a zero that quietly skips the deduction.
+  if (tsb != null && tsb < -20) score -= (Math.abs(tsb) - 20) * 0.8;
   score = Math.max(0, Math.min(100, Math.round(score)));
   const status = score >= 75 ? 'READY' : score >= 50 ? 'CAUTION' : 'REST';
   const color = score >= 75 ? '#34d399' : score >= 50 ? '#ffd700' : '#ff2d55';

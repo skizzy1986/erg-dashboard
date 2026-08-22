@@ -12,7 +12,6 @@ import { useVitals } from '../../hooks/useVitals.js';
 import { useVitalsSync } from '../../hooks/useVitalsSync.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
-import { DAILY_TSS } from '../../constants/tssData.js';
 import { THEME } from '../../constants/theme.js';
 
 const C = {
@@ -43,9 +42,13 @@ export default function MobileRecovery() {
     isError: syncFailed,
   } = useVitalsSync();
   const { data: tssHistory } = useTSSHistory();
-  const tssSource = tssHistory?.length ? tssHistory : DAILY_TSS;
-  const loadData = useMemo(() => calcTrainingLoad(tssSource), [tssSource]);
-  const tsbValue = loadData[loadData.length - 1]?.tsb ?? 0;
+  // No stale seed fallback, and no `?? 0`: a missing reading is not a TSB of
+  // zero, which would render as a confident "neutral form".
+  const loadData = useMemo(
+    () => (tssHistory?.length ? calcTrainingLoad(tssHistory) : []),
+    [tssHistory]
+  );
+  const tsbValue = loadData[loadData.length - 1]?.tsb ?? null;
 
   const todayStr = new Date().toLocaleDateString('en-GB', {
     weekday: 'short',
@@ -399,14 +402,16 @@ export default function MobileRecovery() {
                     fontSize: 24,
                     fontWeight: 700,
                     color:
-                      tsbValue > 10
-                        ? '#34d399'
-                        : tsbValue > -10
-                          ? '#ffd700'
-                          : '#ff2d55',
+                      tsbValue == null
+                        ? '#7e7e9a'
+                        : tsbValue > 10
+                          ? '#34d399'
+                          : tsbValue > -10
+                            ? '#ffd700'
+                            : '#ff2d55',
                   }}
                 >
-                  {tsbValue.toFixed(1)}
+                  {tsbValue == null ? '—' : tsbValue.toFixed(1)}
                 </div>
               </div>
             )}

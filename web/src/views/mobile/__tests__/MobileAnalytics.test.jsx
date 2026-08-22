@@ -4,6 +4,7 @@ import MobileAnalytics from '../MobileAnalytics.jsx';
 
 const mockUseTSSHistory = vi.fn();
 const mockUseSessions = vi.fn();
+const mockUseAnchors = vi.fn();
 
 vi.mock('../../../hooks/useTSSHistory.js', () => ({
   useTSSHistory: () => mockUseTSSHistory(),
@@ -11,21 +12,64 @@ vi.mock('../../../hooks/useTSSHistory.js', () => ({
 vi.mock('../../../hooks/useSessions.js', () => ({
   useSessions: () => mockUseSessions(),
 }));
+// The recent-session list now derives load through sessionLoad, which needs the
+// live CP/FTP anchors — the same ones the chart above it is computed from.
+vi.mock('../../../hooks/useAnchors.js', () => ({
+  useAnchors: () => mockUseAnchors(),
+}));
 
 beforeEach(() => {
   mockUseTSSHistory.mockReset();
   mockUseSessions.mockReset();
+  mockUseAnchors.mockReset();
+  mockUseAnchors.mockReturnValue({ cp: 205, ftp: 250 });
 });
 
 describe('MobileAnalytics', () => {
-  it('falls back to the DAILY_TSS seed when both hooks return empty', () => {
-    mockUseTSSHistory.mockReturnValue({ data: [] });
+  it('says the load is unavailable instead of falling back to a stale seed', () => {
+    // Previously this fell through to a hardcoded DAILY_TSS array that stopped
+    // on 2026-06-13, so an outage rendered two-month-old numbers as current.
+    mockUseTSSHistory.mockReturnValue({ data: [], isLoading: false });
     mockUseSessions.mockReturnValue({ data: [] });
     render(<MobileAnalytics />);
-    // last entry in constants/tssData.js
+    expect(screen.getByText('TRAINING LOAD UNAVAILABLE')).toBeInTheDocument();
     expect(
-      screen.getByText('60min UT1 long row (sRPE 6 — first full hour)')
-    ).toBeInTheDocument();
+      screen.queryByText('60min UT1 long row (sRPE 6 — first full hour)')
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not claim unavailable while the first read is still pending', () => {
+    // A slow read must not flash an outage line and then replace it (#196).
+    mockUseTSSHistory.mockReturnValue({ data: [], isLoading: true });
+    mockUseSessions.mockReturnValue({ data: [] });
+    render(<MobileAnalytics />);
+    expect(
+      screen.queryByText('TRAINING LOAD UNAVAILABLE')
+    ).not.toBeInTheDocument();
+  });
+
+  it('scores a power-only session in the recent list, matching the chart', () => {
+    // This list used to keep a private sRPE-only formula, so a Strava-imported
+    // session with watts but no sRPE read 0 here while the chart counted it.
+    mockUseTSSHistory.mockReturnValue({ data: [], isLoading: false });
+    mockUseSessions.mockReturnValue({
+      data: [
+        {
+          id: 9,
+          date: '8/6/26',
+          type: 'erg',
+          label: 'Power only row',
+          duration: '60:00',
+          srpe: null,
+          avg_watts: 152,
+          status: 'logged',
+        },
+      ],
+    });
+    render(<MobileAnalytics />);
+    // (152/205)^2 * 100 = 55, the same value sessionLoad feeds the chart.
+    expect(screen.getByText('Power only row')).toBeInTheDocument();
+    expect(screen.getByText('55 TSS')).toBeInTheDocument();
   });
 
   it('renders live recent sessions when useSessions returns completed rows', () => {
