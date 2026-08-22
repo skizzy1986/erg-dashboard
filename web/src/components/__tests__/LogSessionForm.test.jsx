@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 
 // Mock the supabase client before importing the component under test.
 const insertMock = vi.fn();
@@ -92,6 +93,30 @@ describe('LogSessionForm', () => {
     expect(row.label).toBe('Lower 2');
     expect(row.user_id).toBe('user-123');
     expect(row.exercises).toEqual([expect.objectContaining({ name: 'Squat' })]);
+  });
+
+  // The column is nullable with no default, so omitting status wrote NULL —
+  // which is not in COMPLETED_STATUSES. The row showed up in the log and was
+  // invisible to CTL/ATL/TSB and to the benchmark matcher. Assert membership of
+  // the list the consumers actually gate on, not just the literal: a future
+  // edit to either side has to keep them agreeing.
+  it('saves a status the load and benchmark consumers count as completed', async () => {
+    const client = makeClient();
+    renderWithClient(<LogSessionForm />, client);
+
+    fireEvent.click(screen.getByText(/LOG A STRENGTH SESSION/i));
+    fireEvent.change(screen.getByPlaceholderText('Lower 2'), {
+      target: { value: 'Lower 2' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Exercise name'), {
+      target: { value: 'Squat' },
+    });
+    fireEvent.click(screen.getByText('SUBMIT SESSION'));
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
+    const row = insertMock.mock.calls[0][0];
+    expect(row.status).toBe('completed');
+    expect(COMPLETED_STATUSES).toContain(row.status);
   });
 
   it('surfaces an error message and does not invalidate when the insert fails', async () => {
