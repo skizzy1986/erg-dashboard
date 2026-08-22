@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const fromMock = vi.fn();
+const orderMock = vi.fn();
+const limitMock = vi.fn();
 
 vi.mock('../../supabaseClient.js', () => ({
   supabase: {
@@ -51,8 +53,14 @@ function mockQuery(data, error = null, cp = 205) {
     const chain = {
       select: () => chain,
       eq: () => chain,
-      order: () => chain,
-      limit: () => Promise.resolve({ data, error }),
+      order: (...args) => {
+        orderMock(...args);
+        return chain;
+      },
+      limit: (...args) => {
+        limitMock(...args);
+        return Promise.resolve({ data, error });
+      },
     };
     return chain;
   });
@@ -60,6 +68,8 @@ function mockQuery(data, error = null, cp = 205) {
 
 beforeEach(() => {
   fromMock.mockReset();
+  orderMock.mockReset();
+  limitMock.mockReset();
 });
 
 describe('useErgSessions', () => {
@@ -194,8 +204,9 @@ describe('useErgSessions', () => {
     expect(result.current.data[0].date_display).toBe('not-a-date');
   });
 
-  // Postgres sorts the TEXT date lexically, so it hands back "12/31/25" above
-  // "1/1/26". The hook must re-sort newest-first on the normalized key.
+  // The DB returns date_iso order; these fixtures are deliberately scrambled to
+  // pin the client-side guard that survives a rollback or a stale PostgREST
+  // schema cache. They are NOT evidence the server order is wrong.
   it('re-sorts newest-first across a year boundary', async () => {
     mockQuery([
       { id: 12, date: '12/31/25', type: 'erg', avg_watts: 150 },
@@ -223,6 +234,62 @@ describe('useErgSessions', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data.map((s) => s.id)).toEqual([16, 15]);
+  });
+
+  it('orders on the derived date_iso column with NULLS LAST', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(orderMock).toHaveBeenCalledWith('date_iso', {
+      ascending: false,
+      nullsFirst: false,
+    });
+  });
+
+  it('never orders on the lexically-sorting text date column (#187)', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(orderMock).not.toHaveBeenCalledWith('date', expect.anything());
+  });
+
+  it('breaks ties on id so the limit boundary is deterministic', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(orderMock).toHaveBeenCalledWith('id', { ascending: false });
+  });
+
+  it('requests a 50-row recency window', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(limitMock).toHaveBeenCalledWith(50);
+  });
+
+  it('sorts an unparseable date last, mirroring NULLS LAST', async () => {
+    mockQuery([
+      { id: 17, date: 'garbage', type: 'erg', avg_watts: 150 },
+      { id: 18, date: '8/7/26', type: 'erg', avg_watts: 150 },
+      { id: 19, date: '5/22/26', type: 'erg', avg_watts: 150 },
+    ]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data.map((s) => s.date)).toEqual([
+      '8/7/26',
+      '5/22/26',
+      'garbage',
+    ]);
   });
 
   it('sets isError on supabase error', async () => {

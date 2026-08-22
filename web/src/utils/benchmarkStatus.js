@@ -50,11 +50,11 @@ function betterFit(a, b) {
   return a.session.id < b.session.id;
 }
 
-// Deterministic best fit, NOT the first row in payload order. The payload is
-// ordered by the TEXT date column, so '7/5/26' sorts above '6/23/26'; combined
-// with a search range that runs forward to today, first-in-order let CP Test #1
-// consume the session that belongs to CP Test #2 and the later badge could
-// never clear. Choosing by date instead of position also makes the result
+// Deterministic best fit, NOT the first row in payload order. The payload used
+// to be ordered by the TEXT date column, so '7/5/26' sorted above '6/23/26';
+// combined with a search range that runs forward to today, first-in-order let
+// CP Test #1 consume the session that belongs to CP Test #2 and the later badge
+// could never clear. Choosing by date instead of position also makes the result
 // independent of how the server happened to sort the rows.
 function findMatch(sessions, keywords, searchStart, searchEnd, consumed, win) {
   if (keywords.length === 0) return null;
