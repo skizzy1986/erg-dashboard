@@ -22,15 +22,11 @@ const mockCoachState = {
   sendMessage: mockSendMessage,
   clearHistory: mockClearHistory,
   vitals: { latest: null, readinessScore: 0, readinessLabel: 'FATIGUED' },
-  tssQuery: { data: [] },
+  latestLoad: null,
 };
 
 vi.mock('../../hooks/useCoach.js', () => ({
   useCoach: () => mockCoachState,
-}));
-
-vi.mock('../../utils/trainingLoad.js', () => ({
-  calcTrainingLoad: () => [],
 }));
 
 import CoachView from '../CoachView.jsx';
@@ -44,6 +40,8 @@ function resetCoachState(overrides = {}) {
       isStreaming: false,
       error: null,
       model: 'sonnet',
+      latestLoad: null,
+      vitals: { latest: null, readinessScore: 0, readinessLabel: 'FATIGUED' },
     },
     overrides
   );
@@ -55,6 +53,19 @@ beforeEach(() => {
 });
 
 describe('CoachView', () => {
+  // The only behaviour that moved when latestLoad stopped being derived here
+  // and started arriving from useCoach (#199).
+  it('renders the load and readiness badge from the hook', () => {
+    resetCoachState({
+      latestLoad: { tsb: -8.2, ctl: 34.1, atl: 42.3 },
+      vitals: { latest: {}, readinessScore: 68, readinessLabel: 'CAUTION' },
+    });
+    render(<CoachView />);
+    expect(screen.getByText(/TSB -8\.2/)).toBeTruthy();
+    expect(screen.getByText(/CTL 34\.1/)).toBeTruthy();
+    expect(screen.getByText(/Readiness 68 CAUTION/)).toBeTruthy();
+  });
+
   it('renders starter prompt chips when messages is empty', () => {
     render(<CoachView />);
     expect(screen.getByText("How's my training load looking?")).toBeTruthy();
