@@ -36,8 +36,13 @@ export function buildTrainingContext(
   const lines = [`CURRENT TRAINING DATA (as of ${today}):`];
 
   if (latestLoad) {
+    // Boundaries match the dashboard's own bands (App.jsx, MobileAnalytics,
+    // LoadTooltip) so the Coach and the screen never disagree about the same
+    // number. They are classic-TSS values — #208 rescaled sessionLoad from
+    // sRPE-hours, and the old GREEN cut of 5 was a pre-rescale figure that
+    // would now read "fresh" over most of the dashboard's neutral band.
     const tsbSignal =
-      latestLoad.tsb > 5 ? 'GREEN' : latestLoad.tsb > -10 ? 'AMBER' : 'RED';
+      latestLoad.tsb > 10 ? 'GREEN' : latestLoad.tsb > -10 ? 'AMBER' : 'RED';
     lines.push(
       `TSB: ${latestLoad.tsb} (${tsbSignal}) | CTL: ${latestLoad.ctl} | ATL: ${latestLoad.atl}`
     );

@@ -41,10 +41,13 @@ describe('buildTrainingContext', () => {
     expect(result).toContain('ATL: 42.3');
   });
 
+  // Boundaries are the dashboard's own (>10 / >-10), on the classic-TSS scale
+  // #208 rescaled sessionLoad to. Pinned so the Coach cannot drift away from
+  // what App.jsx, MobileAnalytics and LoadTooltip show for the same number.
   it('labels TSB signal correctly', () => {
     expect(
       buildTrainingContext(
-        { tsb: 10, ctl: 30, atl: 20 },
+        { tsb: 25, ctl: 30, atl: 20 },
         null,
         0,
         'READY',
@@ -72,6 +75,22 @@ describe('buildTrainingContext', () => {
         null
       )
     ).toContain('RED');
+  });
+
+  it('puts the GREEN/AMBER boundary at 10, matching the dashboard', () => {
+    const at = (tsb) =>
+      buildTrainingContext(
+        { tsb, ctl: 30, atl: 30 },
+        null,
+        0,
+        'READY',
+        [],
+        null
+      );
+    expect(at(11)).toContain('GREEN');
+    expect(at(10)).toContain('AMBER');
+    expect(at(-10)).toContain('RED');
+    expect(at(-9)).toContain('AMBER');
   });
 
   it('includes readiness and vitals when present', () => {
