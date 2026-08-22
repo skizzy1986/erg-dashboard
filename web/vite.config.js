@@ -126,6 +126,16 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/components/BenchmarkLinkControl.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useLinkBenchmarkSession.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/utils/dateFormat.js': { lines: 80, functions: 80, branches: 70 },
         'src/utils/invalidateSessionQueries.js': {
           lines: 80,

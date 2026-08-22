@@ -15,21 +15,25 @@ vi.mock('../../supabaseClient.js', () => ({
 
 import CalendarView from '../CalendarView.jsx';
 
-// Live ids and labels; session 61's status is the counterfactual under test
-// (it is cancelled in the table). Its date sorts ABOVE 45's under the text
-// ordering the server applies, so this is the payload order the app receives.
+// Live ids and labels, now carrying explicit links (#188). Session 61's status
+// is the counterfactual under test (it is cancelled in the table). Its date
+// sorts ABOVE 45's under the text ordering the server applies, so this is the
+// payload order the app receives — and the outcome no longer depends on it,
+// because the resolver keys on benchmark_key and never reads sessions.date.
 const PAYLOAD = [
   {
     id: 61,
     date: '7/5/26',
     label: 'CP RETEST — 1min + 4min max (rested, fed)',
     status: 'completed',
+    benchmark_key: 'cp-test-2',
   },
   {
     id: 45,
     date: '6/23/26',
     label: 'CP Test - 4min MAX (GATED)',
     status: 'completed',
+    benchmark_key: 'cp-test-1',
   },
 ];
 
@@ -72,7 +76,7 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
   // Every ladder window below is in the past for any real "today" from
   // 2026-08-20 on, so the outcome does not drift with the wall clock. The day
   // count inside the badge does, hence the prefix match.
-  it('badges only the 5k Time Trial row once both CP tests are accounted for', async () => {
+  it('badges only the 5k Time Trial row once both CP tests are linked', async () => {
     mockSessions(PAYLOAD);
     renderView();
 
@@ -81,7 +85,7 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
     expect(screen.getAllByText(/^OVERDUE/)).toHaveLength(1);
   });
 
-  it('badges CP Test #2 as well when its retest was cancelled', async () => {
+  it('badges CP Test #2 as well when its linked retest was cancelled', async () => {
     mockSessions([{ ...PAYLOAD[0], status: 'cancelled' }, PAYLOAD[1]]);
     renderView();
 
@@ -147,13 +151,19 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
   // absence assertion on its own satisfies on the first tick while the query is
   // still pending — it passes against an empty payload and against the pre-fix
   // code, which is the toothless shape this file exists to prevent. Leaving CP
-  // Test #2 overdue gives the wait something real to settle on: pre-fix, the 5k
-  // is still overdue too and the count is 2.
-  it('clears only the 5k badge when the trial is logged as 5,000m', async () => {
+  // Test #2 overdue gives the wait something real to settle on: without the
+  // link, the 5k is still overdue too and the count is 2.
+  it('clears only the 5k badge when a session carries benchmark_key 5k-tt', async () => {
     mockSessions([
       { ...PAYLOAD[0], status: 'cancelled' },
       PAYLOAD[1],
-      { id: 25, date: '8/3/26', label: 'PM — 5,000m', status: 'completed' },
+      {
+        id: 25,
+        date: '8/3/26',
+        label: 'PM — steady 5,000m',
+        status: 'completed',
+        benchmark_key: '5k-tt',
+      },
     ]);
     renderView();
 
@@ -163,6 +173,27 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
 
     const badged = badges.map((b) => b.parentElement.textContent).join('|');
     expect(badged).not.toContain('5k Time Trial');
+  });
+
+  // AC3, at the view. The label is the strongest possible keyword match for the
+  // 5k, and it clears nothing, because nothing links it.
+  it('leaves the 5k overdue when a session names it but carries no link', async () => {
+    mockSessions([
+      PAYLOAD[0],
+      PAYLOAD[1],
+      {
+        id: 26,
+        date: '8/3/26',
+        label: '5k Time Trial — 5,000m',
+        status: 'completed',
+        benchmark_key: null,
+      },
+    ]);
+    renderView();
+
+    const badges = await screen.findAllByText(/^OVERDUE/);
+    expect(badges).toHaveLength(1);
+    expect(badges[0].parentElement.textContent).toContain('5k Time Trial');
   });
 });
 

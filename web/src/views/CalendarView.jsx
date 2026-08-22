@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import WorkoutItem from '../components/WorkoutItem.jsx';
 import BenchmarkBadge from '../components/BenchmarkBadge.jsx';
+import BenchmarkLinkControl from '../components/BenchmarkLinkControl.jsx';
 import {
   useBenchmarkStatuses,
   useBenchmarkDataUnavailable,
 } from '../hooks/useBenchmarkStatuses.js';
+import { useBenchmarkSessions } from '../hooks/useBenchmarkSessions.js';
+import { useLinkBenchmarkSession } from '../hooks/useLinkBenchmarkSession.js';
 import {
   getRosterMode,
   resolveDay,
@@ -20,6 +24,18 @@ export default function CalendarView({ loggedSessions, isWide }) {
   // the wrong row once the rows are re-ordered by severity.
   const benchmarkStatuses = useBenchmarkStatuses();
   const benchmarksUnavailable = useBenchmarkDataUnavailable();
+  // Same query key useBenchmarkStatuses already reads, so react-query serves it
+  // from cache — this is not a second request.
+  const { data: benchmarkSessions } = useBenchmarkSessions();
+  const link = useLinkBenchmarkSession();
+  // One mutation serves every row, so remember which benchmark issued the write
+  // and show its busy/error state against that row only.
+  const [linkingKey, setLinkingKey] = useState(null);
+  const linkError = link.isError
+    ? link.error?.code === '23505'
+      ? 'Another session already claims this benchmark'
+      : link.error?.message || 'Could not save the link'
+    : null;
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthNames = [
     'Jan',
@@ -270,6 +286,23 @@ export default function CalendarView({ loggedSessions, isWide }) {
                   daysUntilStart={bench.daysUntilStart}
                   rescheduledTo={bench.rescheduledTo}
                 />
+                {/* status 'unknown' means the sessions read is pending or failed
+                    (#188). Rendering then would flash LINK before flipping to
+                    LINKED, and offer a picker over an empty candidate list. */}
+                {e.kind === 'benchmark' && bench.status !== 'unknown' && (
+                  <BenchmarkLinkControl
+                    benchmarkKey={e.key}
+                    benchmarkName={e.name}
+                    linkedSessionId={bench.matchedSessionId}
+                    sessions={benchmarkSessions ?? []}
+                    onLink={(sessionId) => {
+                      setLinkingKey(e.key);
+                      link.mutate({ benchmarkKey: e.key, sessionId });
+                    }}
+                    busy={link.isPending && linkingKey === e.key}
+                    error={linkingKey === e.key ? linkError : null}
+                  />
+                )}
               </div>
             </div>
           );
