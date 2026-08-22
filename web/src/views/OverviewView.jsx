@@ -23,12 +23,12 @@ import {
   evaluateRules,
   checkConsistency,
   autoregulate,
-  calcReadiness,
 } from '../utils/analysis.js';
 import { HR130_POWER } from '../constants/trainingConfig.js';
 import { NUTRITION_TARGETS } from '../constants/nutrition.js';
 import { PHASE_CONTEXT } from '../constants/schedule.js';
-import { nutritionLog, recoveryLog } from '../constants/logs.js';
+import { nutritionLog } from '../constants/logs.js';
+import { useVitals } from '../hooks/useVitals.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 
 export default function OverviewView({
@@ -49,20 +49,27 @@ export default function OverviewView({
   // evaluateRules/autoregulate/calcReadiness all guard `tsb != null`, so the
   // rules engine degrades to "no TSB signal" rather than reading a fabricated 0.
   const tsbNow = latest?.tsb ?? null;
+  // Vitals were read from the static `recoveryLog` constant here, so the home
+  // screen scored readiness off June data. Same hook, same single readiness
+  // definition, as RecoveryView and mobile.
+  const { latest: todayRec, readiness, personalBaselines } = useVitals();
   return (
     <>
       {/* ── CONDENSED TODAY STATUS STRIP (live, mobile-first) ── */}
       {(() => {
         const t = getToday(getRosterMode(nowTick)); // roster auto-switches home/FIFO by date
-        const todayRec = recoveryLog[recoveryLog.length - 1];
         const lastSrpe = (() => {
           for (let i = 0; i < loggedSessions.length; i++) {
             if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe;
           }
           return null;
         })();
-        const fired = evaluateRules(todayRec, lastSrpe, tsbNow);
-        const readiness = calcReadiness(todayRec, tsbNow);
+        const fired = evaluateRules(
+          todayRec,
+          lastSrpe,
+          tsbNow,
+          personalBaselines
+        );
         const sig = autoregulate(tsbNow, readiness, fired);
         const upcoming = getUpcomingSessions(nowTick, loggedSessions);
         return (
@@ -533,14 +540,18 @@ export default function OverviewView({
 
       {/* Adaptive Decision Engine */}
       {(() => {
-        const todayRec = recoveryLog[recoveryLog.length - 1];
         const lastSrpe = (() => {
           for (let i = 0; i < loggedSessions.length; i++) {
             if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe;
           }
           return null;
         })();
-        const fired = evaluateRules(todayRec, lastSrpe, tsbNow);
+        const fired = evaluateRules(
+          todayRec,
+          lastSrpe,
+          tsbNow,
+          personalBaselines
+        );
         const consistency = checkConsistency(fired, false);
         return (
           <div
@@ -753,15 +764,18 @@ export default function OverviewView({
 
       {/* Today's Prescription — live targets + autoregulation */}
       {(() => {
-        const todayRec = recoveryLog[recoveryLog.length - 1];
         const lastSrpe = (() => {
           for (let i = 0; i < loggedSessions.length; i++) {
             if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe;
           }
           return null;
         })();
-        const fired = evaluateRules(todayRec, lastSrpe, tsbNow);
-        const readiness = calcReadiness(todayRec, tsbNow);
+        const fired = evaluateRules(
+          todayRec,
+          lastSrpe,
+          tsbNow,
+          personalBaselines
+        );
         const auto = autoregulate(tsbNow, readiness, fired);
         const t = deriveTargets(HR130_POWER);
         return (

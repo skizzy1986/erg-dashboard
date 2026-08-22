@@ -8,7 +8,6 @@ import {
   ReferenceLine,
 } from 'recharts';
 import {
-  recoveryLog,
   bpLog,
   bloodsLog,
   LIPID_REF,
@@ -16,21 +15,33 @@ import {
   NIGGLES,
 } from '../constants/logs.js';
 import { bpCategory } from '../utils/formatting.js';
-import { calcReadiness } from '../utils/analysis.js';
-import { RHR_BASELINE, HRV_BASELINE } from '../constants/trainingConfig.js';
+import { useVitals } from '../hooks/useVitals.js';
 
 // ── RECOVERY VIEW — HRV/RHR/sleep readiness + trends ──────────
 // Daily readiness composite, vitals trend charts, blood-pressure log,
-// and niggle/blood tracking. Reads static recovery data + the live
-// `latest` training-load snapshot (only latest.tsb is used). `latest` is null
-// when the training-load read fails or returns nothing — the readiness score
-// then omits its TSB term rather than scoring against a fabricated zero.
-export default function RecoveryView({ latest, isWide }) {
-  const tsbNow = latest?.tsb ?? null;
+// and niggle/blood tracking. Vitals come from useVitals — they used to come
+// from the static `recoveryLog` constant, so this screen showed June numbers
+// while mobile showed today's. Baselines are the rolling personal ones, not
+// two constants hand-set in June.
+export default function RecoveryView({ isWide }) {
+  const {
+    latest: today,
+    readiness,
+    personalBaselines,
+    vitalsHistory,
+    hasPersonalBaselines,
+    tsbNow,
+    isLoading: vitalsPending,
+  } = useVitals();
+  const rhrBaseline = personalBaselines.rhrBaseline;
+  const hrvBaseline = personalBaselines.hrvBaseline;
+  // Labelled per metric: HRV coverage is far sparser than RHR, so one flag for
+  // both would present the population default as the athlete's own average.
+  const rhrNote = personalBaselines.rhrPersonal ? 'your avg' : 'default';
+  const hrvNote = personalBaselines.hrvPersonal ? 'your avg' : 'default';
   return (
     <>
       {(() => {
-        const today = recoveryLog[recoveryLog.length - 1];
         if (!today)
           return (
             <div
@@ -41,10 +52,9 @@ export default function RecoveryView({ latest, isWide }) {
                 fontSize: 13,
               }}
             >
-              No recovery data yet.
+              {vitalsPending ? 'Loading vitals…' : 'VITALS UNAVAILABLE'}
             </div>
           );
-        const readiness = calcReadiness(today, tsbNow);
         return (
           <>
             {/* Readiness composite */}
@@ -84,7 +94,7 @@ export default function RecoveryView({ latest, isWide }) {
                       letterSpacing: -1,
                     }}
                   >
-                    {readiness.score}
+                    {readiness.score == null ? '—' : readiness.score}
                     <span style={{ fontSize: 14, color: '#7e7e9a' }}>/100</span>
                   </div>
                 </div>
@@ -108,11 +118,13 @@ export default function RecoveryView({ latest, isWide }) {
                       lineHeight: 1.4,
                     }}
                   >
-                    {readiness.status === 'READY'
-                      ? 'Train as planned'
-                      : readiness.status === 'CAUTION'
-                        ? 'Train but monitor — consider easing intensity'
-                        : 'Prioritise recovery — reduce or rest'}
+                    {readiness.status === 'NO DATA'
+                      ? 'No RHR reading — nothing to score'
+                      : readiness.status === 'READY'
+                        ? 'Train as planned'
+                        : readiness.status === 'CAUTION'
+                          ? 'Train but monitor — consider easing intensity'
+                          : 'Prioritise recovery — reduce or rest'}
                   </div>
                 </div>
               </div>
@@ -132,9 +144,10 @@ export default function RecoveryView({ latest, isWide }) {
                   ? 'unavailable — excluded from this score'
                   : (tsbNow > 0 ? '+' : '') + tsbNow}
                 ). Heuristic, not validated — cross-check against sRPE and how
-                you actually feel. HRV baseline still rebuilding (set during a
-                fatigue trough, skewed low), so treat the score as directional
-                until ~late June.
+                you actually feel.{' '}
+                {hasPersonalBaselines
+                  ? 'Baselines are your own rolling 28-day trimmed mean.'
+                  : 'Fewer than 14 days of vitals, so population defaults are standing in for your baselines — treat the score as directional.'}
               </div>
             </div>
 
@@ -151,10 +164,10 @@ export default function RecoveryView({ latest, isWide }) {
                 [
                   'RESTING HR',
                   `${today.rhr} bpm`,
-                  `baseline ${RHR_BASELINE}`,
-                  today.rhr <= RHR_BASELINE + 2
+                  `${rhrNote} ${rhrBaseline}`,
+                  today.rhr <= rhrBaseline + 2
                     ? '#34d399'
-                    : today.rhr <= RHR_BASELINE + 5
+                    : today.rhr <= rhrBaseline + 5
                       ? '#ffd700'
                       : '#ff2d55',
                 ],
@@ -162,13 +175,13 @@ export default function RecoveryView({ latest, isWide }) {
                   'HRV',
                   today.hrv != null ? `${today.hrv} ms` : '—',
                   today.hrv != null
-                    ? `baseline ${HRV_BASELINE}`
+                    ? `${hrvNote} ${hrvBaseline}`
                     : 'needs overnight wear',
                   today.hrv == null
                     ? '#6c6c88'
-                    : today.hrv >= HRV_BASELINE - 3
+                    : today.hrv >= hrvBaseline - 3
                       ? '#34d399'
-                      : today.hrv >= HRV_BASELINE - 8
+                      : today.hrv >= hrvBaseline - 8
                         ? '#ffd700'
                         : '#ff2d55',
                 ],
@@ -254,7 +267,7 @@ export default function RecoveryView({ latest, isWide }) {
               </div>
               <ResponsiveContainer width="100%" height={150}>
                 <LineChart
-                  data={recoveryLog}
+                  data={vitalsHistory}
                   margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
                 >
                   <XAxis
@@ -268,7 +281,7 @@ export default function RecoveryView({ latest, isWide }) {
                     tickLine={false}
                   />
                   <YAxis
-                    domain={[RHR_BASELINE - 6, RHR_BASELINE + 8]}
+                    domain={[rhrBaseline - 6, rhrBaseline + 8]}
                     tick={{
                       fontSize: 8,
                       fill: '#7e7e9a',
@@ -288,7 +301,7 @@ export default function RecoveryView({ latest, isWide }) {
                     }}
                   />
                   <ReferenceLine
-                    y={RHR_BASELINE}
+                    y={rhrBaseline}
                     stroke="#ff6b35"
                     strokeDasharray="3 3"
                     strokeOpacity={0.4}

@@ -5,8 +5,16 @@ import {
   computePersonalBaselines,
   computeReadinessHistory,
 } from '../utils/recoveryAnalytics.js';
+import { calcTrainingLoad } from '../utils/trainingLoad.js';
+import { useTSSHistory } from './useTSSHistory.js';
 
 export function useVitals() {
+  // Readiness carries a TSB term, so it needs the load series. Sourced here
+  // rather than passed in by every caller, so there is exactly one readiness
+  // number per day and desktop and mobile cannot drift apart again. Shares
+  // useTSSHistory's query key, so react-query serves it from cache.
+  const { data: tssHistory } = useTSSHistory();
+
   const query = useQuery({
     queryKey: ['vitals'],
     queryFn: async () => {
@@ -30,20 +38,28 @@ export function useVitals() {
   const rows = query.data ?? [];
   const latest = rows[0] ?? null;
   const personalBaselines = computePersonalBaselines(rows);
-  const { readinessScore, readinessLabel } = computeReadiness(
-    latest,
-    personalBaselines
-  );
+  const loadData = tssHistory?.length ? calcTrainingLoad(tssHistory) : [];
+  const tsbNow = loadData[loadData.length - 1]?.tsb ?? null;
+  const readiness = computeReadiness(latest, personalBaselines, tsbNow);
   const vitalsHistory = rows.slice().reverse();
   const history = computeReadinessHistory(rows, personalBaselines);
-  const hasPersonalBaselines = rows.length >= 14;
+  // True only when BOTH baselines are actually personal — it used to be
+  // `rows.length >= 14`, which is a count of rows, not of usable readings, so
+  // it read true while a metric was still on its population default.
+  const hasPersonalBaselines =
+    personalBaselines.rhrPersonal && personalBaselines.hrvPersonal;
 
   return {
     ...query,
     latest,
-    readinessScore,
-    readinessLabel,
+    // The full result: { score, status, color, partial }. `score` is null when
+    // there is nothing to score — callers must not render it as a number.
+    readiness,
+    // Legacy aliases kept so existing call sites do not churn.
+    readinessScore: readiness.score,
+    readinessLabel: readiness.status,
     personalBaselines,
+    tsbNow,
     vitalsHistory,
     history,
     hasPersonalBaselines,

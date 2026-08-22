@@ -6,9 +6,11 @@ import {
   joinVitalsTsb,
 } from '../recoveryAnalytics.js';
 
-const RHR_DEFAULT = 57;
-const HRV_DEFAULT = 30;
-const SLEEP_TARGET = 7;
+import {
+  RHR_DEFAULT,
+  HRV_DEFAULT,
+  SLEEP_TARGET,
+} from '../recoveryAnalytics.js';
 
 function makeRows(n, overrides = {}) {
   return Array.from({ length: n }, (_, i) => ({
@@ -26,6 +28,8 @@ describe('computePersonalBaselines', () => {
       rhrBaseline: RHR_DEFAULT,
       hrvBaseline: HRV_DEFAULT,
       sleepTarget: SLEEP_TARGET,
+      rhrPersonal: false,
+      hrvPersonal: false,
     });
   });
 
@@ -56,59 +60,98 @@ describe('computePersonalBaselines', () => {
   });
 });
 
+describe('computePersonalBaselines provenance', () => {
+  it('reports personal-vs-default per metric, not once for the set', () => {
+    // Real shape of this athlete's data: RHR is captured most days, HRV rarely.
+    // A single flag would let a view label the population default "your avg".
+    const rows = makeRows(20).map((r, i) => ({
+      ...r,
+      hrv: i < 5 ? 40 : null,
+    }));
+    const b = computePersonalBaselines(rows);
+    expect(b.rhrPersonal).toBe(true);
+    expect(b.hrvPersonal).toBe(false);
+    expect(b.hrvBaseline).toBe(HRV_DEFAULT);
+  });
+});
+
 describe('computeReadiness', () => {
-  it('returns FATIGUED with score 0 when latest is null', () => {
-    expect(computeReadiness(null)).toEqual({
-      readinessScore: 0,
-      readinessLabel: 'FATIGUED',
+  const atBaseline = {
+    rhr: RHR_DEFAULT,
+    hrv: HRV_DEFAULT,
+    sleep: SLEEP_TARGET,
+  };
+
+  it('reports NO DATA rather than inventing a verdict from absent data', () => {
+    // Both directions used to be wrong: a missing row scored 0 FATIGUED, and a
+    // row whose metrics were all null scored 100 READY.
+    expect(computeReadiness(null)).toMatchObject({
+      score: null,
+      status: 'NO DATA',
+      partial: true,
     });
+    expect(
+      computeReadiness({ rhr: null, hrv: null, sleep: null })
+    ).toMatchObject({ score: null, status: 'NO DATA' });
+    expect(computeReadiness({ rhr: 'x' }).status).toBe('NO DATA');
   });
 
   it('returns score 100 READY when all metrics are at baseline', () => {
-    const r = computeReadiness({
-      rhr: RHR_DEFAULT,
-      hrv: HRV_DEFAULT,
-      sleep: SLEEP_TARGET,
-    });
-    expect(r.readinessScore).toBe(100);
-    expect(r.readinessLabel).toBe('READY');
+    const r = computeReadiness(atBaseline);
+    expect(r.score).toBe(100);
+    expect(r.status).toBe('READY');
+    expect(r.color).toBe('#34d399');
+    expect(r.partial).toBe(false);
   });
 
   it('deducts 4 points per bpm above RHR baseline', () => {
-    const r = computeReadiness({
-      rhr: 62,
-      hrv: HRV_DEFAULT,
-      sleep: SLEEP_TARGET,
-    });
-    expect(r.readinessScore).toBe(80);
+    expect(computeReadiness({ ...atBaseline, rhr: 62 }).score).toBe(80);
   });
 
   it('deducts 1.5 points per ms below HRV baseline', () => {
-    const r = computeReadiness({
-      rhr: RHR_DEFAULT,
-      hrv: 20,
-      sleep: SLEEP_TARGET,
-    });
-    expect(r.readinessScore).toBe(85);
+    expect(computeReadiness({ ...atBaseline, hrv: 20 }).score).toBe(85);
+  });
+
+  it('deducts 8 points per hour of sleep debt', () => {
+    expect(computeReadiness({ ...atBaseline, sleep: 5 }).score).toBe(84);
+  });
+
+  it('deducts for deep TSB fatigue — the term merged in from calcReadiness', () => {
+    expect(computeReadiness(atBaseline, {}, -40).score).toBe(84);
+    // Shallow or absent TSB leaves the score alone.
+    expect(computeReadiness(atBaseline, {}, -10).score).toBe(100);
+    expect(computeReadiness(atBaseline, {}, null).score).toBe(100);
   });
 
   it('uses personalized baselines when provided', () => {
     const baselines = { rhrBaseline: 60, hrvBaseline: 35, sleepTarget: 7 };
-    const r = computeReadiness({ rhr: 60, hrv: 35, sleep: 7 }, baselines);
-    expect(r.readinessScore).toBe(100);
+    expect(
+      computeReadiness({ rhr: 60, hrv: 35, sleep: 7 }, baselines).score
+    ).toBe(100);
   });
 
-  it('handles null metric fields without crashing', () => {
-    expect(() =>
-      computeReadiness({ rhr: null, hrv: null, sleep: null })
-    ).not.toThrow();
-    const r = computeReadiness({ rhr: null, hrv: null, sleep: null });
-    expect(r.readinessScore).toBe(100);
+  it('reports the 80/60 bands', () => {
+    expect(
+      computeReadiness({ ...atBaseline, rhr: RHR_DEFAULT + 4 }).status
+    ).toBe('READY');
+    const caution = computeReadiness({ ...atBaseline, rhr: RHR_DEFAULT + 6 });
+    expect(caution.score).toBe(76);
+    expect(caution.status).toBe('CAUTION');
+    expect(caution.color).toBe('#ffd700');
+    const fatigued = computeReadiness({ ...atBaseline, rhr: RHR_DEFAULT + 11 });
+    expect(fatigued.status).toBe('FATIGUED');
+    expect(fatigued.color).toBe('#ff2d55');
   });
 
   it('clamps score to 0 minimum', () => {
-    const r = computeReadiness({ rhr: 100, hrv: 5, sleep: 3 });
-    expect(r.readinessScore).toBe(0);
+    expect(computeReadiness({ rhr: 100, hrv: 5, sleep: 3 }).score).toBe(0);
+  });
+
+  it('marks the score partial when HRV or sleep is absent', () => {
+    expect(computeReadiness({ rhr: RHR_DEFAULT, sleep: 8 }).partial).toBe(true);
+    expect(
+      computeReadiness({ rhr: RHR_DEFAULT, hrv: HRV_DEFAULT }).partial
+    ).toBe(true);
   });
 });
 

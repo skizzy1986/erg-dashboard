@@ -16,7 +16,6 @@ import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
 import ErgTooltip from './components/ErgTooltip.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
-import { RHR_BASELINE, HRV_BASELINE } from './constants/trainingConfig.js';
 import { C } from './constants/ui.js';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -417,9 +416,7 @@ export default function App() {
           {view === 'mobility' && <MobilityView />}
 
           {/* ── RECOVERY VIEW ── */}
-          {view === 'recovery' && (
-            <RecoveryView latest={latest} isWide={isWide} />
-          )}
+          {view === 'recovery' && <RecoveryView isWide={isWide} />}
 
           {/* ── LOG VIEW ── */}
           {view === 'log' && (
