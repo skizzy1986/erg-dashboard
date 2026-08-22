@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 // Mock the supabase client before importing the hook under test.
 const insertMock = vi.fn();
@@ -19,6 +21,18 @@ import {
 } from '../useOfflineQueue';
 
 const QUEUE_KEY = 'erg_pending_sessions';
+
+function makeClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+}
+
+function makeWrapper(client) {
+  return function Wrapper({ children }) {
+    return React.createElement(QueryClientProvider, { client }, children);
+  };
+}
 
 beforeEach(async () => {
   // drainQueue holds a module-level in-flight guard; let any drain started by
@@ -40,7 +54,9 @@ describe('useOfflineQueue drainQueue user_id backfill', () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
     enqueueSession({ date: '2026-06-25', type: 'erg', label: 'Test' });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     const row = insertMock.mock.calls[0][0];
@@ -59,7 +75,9 @@ describe('useOfflineQueue drainQueue user_id backfill', () => {
       user_id: 'original-owner',
     });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     expect(insertMock.mock.calls[0][0].user_id).toBe('original-owner');
@@ -69,7 +87,9 @@ describe('useOfflineQueue drainQueue user_id backfill', () => {
     getUserMock.mockResolvedValue({ data: { user: null } });
     enqueueSession({ date: '2026-06-25', type: 'erg' });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     expect(insertMock.mock.calls[0][0].user_id).toBeUndefined();
@@ -82,7 +102,9 @@ describe('useOfflineQueue drainQueue user_id backfill', () => {
     });
     enqueueSession({ date: '2026-06-25', type: 'erg' });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     const remaining = JSON.parse(localStorage.getItem(QUEUE_KEY));
@@ -159,7 +181,9 @@ describe('useOfflineQueue legacy-row migration', () => {
       distance: 5000,
     });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     const row = insertMock.mock.calls[0][0];
@@ -182,7 +206,9 @@ describe('useOfflineQueue legacy-row migration', () => {
       distance: 5000,
     });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     const [remaining] = JSON.parse(localStorage.getItem(QUEUE_KEY));
@@ -204,7 +230,9 @@ describe('useOfflineQueue legacy-row migration', () => {
       label: 'Erg Session 07:15',
     });
 
-    const { result } = renderHook(() => useOfflineQueue());
+    const { result } = renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(result.current.pending).toBe(0));
@@ -223,7 +251,9 @@ describe('useOfflineQueue legacy-row migration', () => {
       label: 'Erg Session 07:15',
     });
 
-    renderHook(() => useOfflineQueue());
+    renderHook(() => useOfflineQueue(), {
+      wrapper: makeWrapper(makeClient()),
+    });
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
 
     // A second trigger while the first drain is still awaiting the insert.
@@ -233,5 +263,87 @@ describe('useOfflineQueue legacy-row migration', () => {
 
     await waitFor(() => expect(localStorage.getItem(QUEUE_KEY)).toBe('[]'));
     expect(insertMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useOfflineQueue drain invalidation', () => {
+  it('invalidates every session-reading query once after a successful drain', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'Erg Session' });
+    const client = makeClient();
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useOfflineQueue(), { wrapper: makeWrapper(client) });
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledTimes(3));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['erg-sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['tss-history'] });
+  });
+
+  it('invalidates nothing when the queue is empty', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
+    const client = makeClient();
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useOfflineQueue(), { wrapper: makeWrapper(client) });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(insertMock).not.toHaveBeenCalled();
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+
+  it('invalidates nothing when every queued row fails to insert', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
+    insertMock.mockResolvedValue({
+      error: { code: '08006', message: 'network' },
+    });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'A' });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'B' });
+    const client = makeClient();
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useOfflineQueue(), { wrapper: makeWrapper(client) });
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(invalidateSpy).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(QUEUE_KEY))).toHaveLength(2);
+  });
+
+  it('invalidates once after the loop, not once per drained row', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'A' });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'B' });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'C' });
+    const client = makeClient();
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useOfflineQueue(), { wrapper: makeWrapper(client) });
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledTimes(3));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(invalidateSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('still invalidates on a partial drain and retains the failed row', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
+    insertMock
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: { code: '08006', message: 'network' } });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'lands' });
+    enqueueSession({ date: '6/25/26', type: 'erg', label: 'fails' });
+    const client = makeClient();
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+
+    renderHook(() => useOfflineQueue(), { wrapper: makeWrapper(client) });
+
+    await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledTimes(3));
+    const remaining = JSON.parse(localStorage.getItem(QUEUE_KEY));
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].label).toBe('fails');
   });
 });

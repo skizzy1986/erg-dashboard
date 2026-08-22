@@ -276,6 +276,7 @@ describe('ErgLiveView save outcomes', () => {
     );
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['erg-sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['tss-history'] });
     expect(addToQueueMock).not.toHaveBeenCalled();
   });
 

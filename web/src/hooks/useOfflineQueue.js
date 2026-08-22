@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Network } from '@capacitor/network';
 import { supabase } from '../supabaseClient';
 import { toLogDate } from '../utils/dateFormat.js';
+import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
 
 const QUEUE_KEY = 'erg_pending_sessions';
 
@@ -82,12 +84,18 @@ async function drainQueue() {
 
 export function useOfflineQueue() {
   const [pending, setPending] = useState(readQueue().length);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const sync = async (connected) => {
       if (connected) {
         const synced = await drainQueue();
-        if (synced > 0) setPending(readQueue().length);
+        if (synced > 0) {
+          setPending(readQueue().length);
+          // Once after the loop, not per row: N×3 refetch triggers would race
+          // the inserts still in flight.
+          invalidateSessionQueries(queryClient);
+        }
       }
     };
 
@@ -108,7 +116,7 @@ export function useOfflineQueue() {
       webSync();
       return () => window.removeEventListener('online', webSync);
     }
-  }, []);
+  }, [queryClient]);
 
   function addToQueue(session) {
     enqueueSession(session);
