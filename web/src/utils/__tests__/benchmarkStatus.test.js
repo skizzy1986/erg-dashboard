@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { resolveLadderStatuses, selectUpcoming } from '../benchmarkStatus.js';
+import {
+  compareBenchmarkSeverity,
+  resolveLadderStatuses,
+  selectUpcoming,
+} from '../benchmarkStatus.js';
 import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 import { EVENT_LADDER } from '../../constants/schedule.js';
 
@@ -516,5 +520,182 @@ describe('resolveLadderStatuses — loading (L1) and selectUpcoming', () => {
     const states = resolve([CP2, entry], []);
     expect(selectUpcoming(states).map((s) => s.entry)).toEqual([entry]);
     expect(selectUpcoming(null)).toEqual([]);
+  });
+});
+
+// A benchmark that never happened stays overdue for ever — CP Test #1 would
+// read OVERDUE · 197d by the time its replacement window opens, and a permanent
+// warning is wallpaper. Putting a `planned` row on the calendar is the reschedule
+// gesture; these prove the badge reads it WITHOUT ever treating it as evidence.
+describe('resolveLadderStatuses — rescheduled via a planned session', () => {
+  const planned = (id, date, label) => ({ id, date, label, status: 'planned' });
+  const CP_RETEST = 'CP RETEST — 1min + 4min max';
+
+  it('AC1 never lets a planned session count as done, however good the label', () => {
+    const [s] = resolve([CP2], [planned(300, '9/12/26', CP_RETEST)]);
+    expect(s.done).toBe(false);
+    expect(s.matchedSessionId).toBeNull();
+    expect(s.status).toBe('scheduled');
+  });
+
+  it('AC2 resolves an overdue benchmark with a future planned session to scheduled', () => {
+    const [s] = resolve([CP2], [planned(300, '9/12/26', CP_RETEST)]);
+    expect(s.status).toBe('scheduled');
+    expect(s.rescheduledTo).toBe('2026-09-12');
+    expect(s.plannedSessionId).toBe(300);
+    // The elapsed count survives the second pass: rescheduled is not forgiven.
+    expect(s.daysOverdue).toBe(31);
+  });
+
+  it('AC2 counts a session dated exactly today as a live commitment', () => {
+    const [s] = resolve([CP2], [planned(301, '8/20/26', CP_RETEST)]);
+    expect(s.status).toBe('scheduled');
+    expect(s.rescheduledTo).toBe('2026-08-20');
+  });
+
+  it('AC3 leaves a benchmark overdue when the planned session is in the past', () => {
+    const [s] = resolve([CP2], [planned(302, '8/19/26', CP_RETEST)]);
+    expect(s.status).toBe('overdue');
+    expect(s.rescheduledTo).toBeNull();
+    expect(s.plannedSessionId).toBeNull();
+  });
+
+  // The two `planned` rows that actually sit in the table today. Both are past
+  // AND label-inert, so they fail the date gate and the label gate — the live
+  // verdict is byte-for-byte what it was before this pass existed.
+  it('AC3 leaves the live ladder unchanged against the real planned rows', () => {
+    const REAL_PLANNED = [
+      planned(43, '6/23/26', 'Upper Strength A'),
+      planned(56, '7/1/26', 'Upper B'),
+    ];
+    const states = resolve(EVENT_LADDER, [
+      SESSION_45,
+      ...MID_JUL_DONE,
+      CANCELLED_RETEST,
+      ...EARLY_AUG_DONE,
+      ...REAL_PLANNED,
+    ]);
+    const loud = states.filter((s) => s.status !== 'quiet');
+    expect(loud.map((s) => [s.entry.name, s.status])).toEqual([
+      ['CP Test #2 (2nd duration)', 'overdue'],
+      ['5k Time Trial', 'overdue'],
+    ]);
+  });
+
+  // Same rows, moved into the future: the label gate alone still rejects them,
+  // which proves the live result above is not carried by the date gate only.
+  it('AC3 leaves a benchmark overdue when a future planned label does not match', () => {
+    const [s] = resolve([CP2], [planned(43, '9/1/26', 'Upper Strength A')]);
+    expect(s.status).toBe('overdue');
+  });
+
+  it('does not let a planned ride reschedule a distance benchmark', () => {
+    const K1000 = EVENT_LADDER.find((e) => e.name.startsWith('1000m'));
+    const [s] = resolveLadderStatuses(
+      [K1000],
+      [planned(500, '3/1/27', 'Zwift Alpe du Zwift — 1:12:30, 22.4km, 1,000m')],
+      { today: '2027-02-05', sessionsReady: true }
+    );
+    expect(s.status).toBe('overdue');
+    expect(s.plannedSessionId).toBeNull();
+  });
+
+  it('leaves an upcoming benchmark upcoming, planned session or not', () => {
+    const entry = { date: '25 Aug 26', name: '2k Test', kind: 'benchmark' };
+    const [s] = resolve([entry], [planned(303, '9/1/26', '2k test')]);
+    expect(s.status).toBe('upcoming');
+    expect(s.rescheduledTo).toBeNull();
+  });
+
+  it('leaves a done benchmark quiet, planned session or not', () => {
+    const [s] = resolve(
+      [CP2],
+      [
+        {
+          id: 1,
+          date: '7/15/26',
+          label: 'CP retest 4min max',
+          status: 'completed',
+        },
+        planned(304, '9/12/26', CP_RETEST),
+      ]
+    );
+    expect(s.status).toBe('quiet');
+    expect(s.done).toBe(true);
+    expect(s.rescheduledTo).toBeNull();
+  });
+
+  // One retest on the calendar is one benchmark rescheduled. Sharing it would
+  // silence two badges off a single commitment — the original slip, reinvented.
+  it('does not let one planned session clear two overdue benchmarks', () => {
+    const [first, second] = resolve(
+      [CP1, CP2],
+      [planned(305, '9/1/26', 'CP retest 4min')]
+    );
+    expect(first.status).toBe('scheduled');
+    expect(first.plannedSessionId).toBe(305);
+    expect(second.status).toBe('overdue');
+    expect(second.plannedSessionId).toBeNull();
+  });
+
+  it('picks the earliest future planned session', () => {
+    const [s] = resolve(
+      [CP2],
+      [planned(310, '10/1/26', CP_RETEST), planned(311, '9/1/26', CP_RETEST)]
+    );
+    expect(s.plannedSessionId).toBe(311);
+    expect(s.rescheduledTo).toBe('2026-09-01');
+  });
+
+  it('breaks a same-date planned tie on the lower session id', () => {
+    const rows = [
+      planned(320, '9/1/26', CP_RETEST),
+      planned(315, '9/1/26', CP_RETEST),
+    ];
+    expect(resolve([CP2], rows)[0].plannedSessionId).toBe(315);
+    expect(resolve([CP2], [...rows].reverse())[0].plannedSessionId).toBe(315);
+  });
+
+  it('ignores a planned session with an unreadable date', () => {
+    const [s] = resolve([CP2], [planned(330, 'someday', CP_RETEST)]);
+    expect(s.status).toBe('overdue');
+  });
+
+  it('never reschedules a benchmark whose name yields no keywords', () => {
+    const entry = {
+      date: '~Mid Jul 26',
+      name: 'Critical Power retest',
+      kind: 'benchmark',
+    };
+    const [s] = resolve(
+      [entry],
+      [planned(340, '9/1/26', 'Critical Power retest')]
+    );
+    expect(s.keywords).toEqual([]);
+    expect(s.status).toBe('overdue');
+  });
+});
+
+describe('compareBenchmarkSeverity (AC5)', () => {
+  const st = (status, index) => ({ status, index });
+
+  it('ranks overdue above upcoming above scheduled above the silent states', () => {
+    const rows = [
+      st('unknown', 4),
+      st('scheduled', 2),
+      st('quiet', 3),
+      st('overdue', 0),
+      st('upcoming', 1),
+    ];
+    expect(
+      [...rows].sort(compareBenchmarkSeverity).map((r) => r.status)
+    ).toEqual(['overdue', 'upcoming', 'scheduled', 'quiet', 'unknown']);
+  });
+
+  it('breaks a same-status tie on ladder index', () => {
+    const rows = [st('overdue', 7), st('overdue', 2), st('overdue', 5)];
+    expect(
+      [...rows].sort(compareBenchmarkSeverity).map((r) => r.index)
+    ).toEqual([2, 5, 7]);
   });
 });

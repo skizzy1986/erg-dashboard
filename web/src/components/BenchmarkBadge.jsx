@@ -1,11 +1,18 @@
+import { toLogDate } from '../utils/dateFormat.js';
+
 // Presentational only — props in, no hooks, no data access.
-const COLOURS = { overdue: '#ff2d55', upcoming: '#ffd700' };
+const COLOURS = {
+  overdue: '#ff2d55',
+  upcoming: '#ffd700',
+  scheduled: '#a78bfa',
+};
 
 export default function BenchmarkBadge({
   status,
   fuzzy = false,
   daysOverdue = null,
   daysUntilStart = null,
+  rescheduledTo = null,
 }) {
   const colour = COLOURS[status];
   if (!colour) return null;
@@ -15,6 +22,14 @@ export default function BenchmarkBadge({
     parts.push('OVERDUE');
     if (typeof daysOverdue === 'number' && daysOverdue > 0) {
       parts.push(`${daysOverdue}d`);
+    }
+  } else if (status === 'scheduled') {
+    // Explicitly branched, never folded into the trailing else: a scheduled
+    // benchmark falling through to the upcoming branch would read 'DUE'.
+    parts.push('↻ RESCHEDULED');
+    if (rescheduledTo) parts.push(toLogDate(rescheduledTo));
+    if (typeof daysOverdue === 'number' && daysOverdue > 0) {
+      parts.push(`${daysOverdue}d OVERDUE`);
     }
   } else {
     parts.push('DUE');
