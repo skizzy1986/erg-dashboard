@@ -206,4 +206,52 @@ describe('ErgView', () => {
     const { getByText } = renderView();
     expect(getByText('SESSIONS / WK').nextSibling.textContent).toBe('0');
   });
+
+  describe('CP display tracks the live anchor', () => {
+    beforeEach(() => {
+      useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
+    });
+
+    it('shows the live CP in the calibration panel, not a stale constant', () => {
+      const { container } = renderView();
+      expect(container.textContent).toContain('CP 205W (provisional)');
+      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+    });
+
+    // POWER_DURATION's predicted-watts column still carries pre-anchor estimates
+    // (incl. "~180–190W") — that table belongs to #180, so these assertions are
+    // scoped to the two surfaces that present a *current* CP.
+    it('never presents 190W as the current CP', () => {
+      const { container } = renderView();
+      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+      expect(container.textContent).not.toMatch(/CRITICAL POWER190W/);
+    });
+
+    it('follows the anchor when it changes rather than staying pinned', () => {
+      useAnchorsMock.mockReturnValue({
+        cp: 212,
+        cpStatus: 'confirmed',
+        cpAvailable: true,
+      });
+      const { container } = renderView();
+      expect(container.textContent).toContain('CP 212W (confirmed)');
+    });
+
+    it('says the anchor is unavailable instead of falling back silently', () => {
+      useAnchorsMock.mockReturnValue({
+        cp: null,
+        cpStatus: null,
+        cpAvailable: false,
+      });
+      const { container } = renderView();
+      expect(container.textContent).toContain('CP anchor unavailable');
+      expect(container.textContent).toContain('CP unavailable');
+      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+    });
+
+    it('does not show a past-dated CP test window', () => {
+      const { container } = renderView();
+      expect(container.textContent).not.toContain('~Jun 24+');
+    });
+  });
 });
