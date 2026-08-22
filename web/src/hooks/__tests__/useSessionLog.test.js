@@ -126,3 +126,154 @@ describe('useSessionLog', () => {
     expect(result.current.allSessions[1]._id).toBe(4);
   });
 });
+
+// ── #194: cancelled is SHOWN but not COUNTED ──────────────────────
+// Fixture mirroring the live table's status distribution as of 2026-08-22.
+// Pre-fix, `loggedSessions` measured 90 here (every non-planned row), because
+// the old filter read `status !== 'planned'` — "not planned" meant "done", so
+// the 32 cancelled rows counted as training that never happened.
+const STATUS_DISTRIBUTION = [
+  ['actual', 35],
+  ['completed', 23],
+  ['cancelled', 32],
+  ['planned', 2],
+];
+
+function distributionRows() {
+  const rows = [];
+  let id = 1;
+  for (const [status, n] of STATUS_DISTRIBUTION) {
+    for (let i = 0; i < n; i++) {
+      rows.push({
+        id: id++,
+        date: '7/5/26',
+        type: 'erg',
+        label: `${status} ${i}`,
+        status,
+      });
+    }
+  }
+  return rows;
+}
+
+// The proof case from #194: a real cancelled CP retest.
+const session61 = {
+  id: 61,
+  date: '7/5/26',
+  type: 'erg',
+  label: 'CP RETEST — 1min + 4min max (rested, fed)',
+  status: 'cancelled',
+};
+
+describe('useSessionLog — cancelled is shown but not counted (#194)', () => {
+  it('AC1 keeps cancelled session 61 out of the counted set but in allSessions', async () => {
+    mockQuery([
+      session61,
+      {
+        id: 62,
+        date: '7/6/26',
+        type: 'erg',
+        label: 'UT2 60min',
+        status: 'completed',
+      },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.loggedSessions.some((e) => e._id === 61)).toBe(false);
+    expect(result.current.allSessions.some((e) => e._id === 61)).toBe(true);
+  });
+
+  it('AC2 builds no reconciliation key from a cancelled session', async () => {
+    mockQuery([
+      session61,
+      {
+        id: 62,
+        date: '7/6/26',
+        type: 'erg',
+        label: 'UT2 60min',
+        status: 'completed',
+      },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.loggedKeys.has('7/5/26|Z2 Aerobic')).toBe(false);
+    // Control — proves the assertion above is not passing vacuously.
+    expect(result.current.loggedKeys.has('7/6/26|Z2 Aerobic')).toBe(true);
+  });
+
+  it('AC8 excludes a cancelled row from the counted set no matter what payload it carries', async () => {
+    mockQuery([
+      {
+        id: 70,
+        date: '7/8/26',
+        type: 'strength',
+        label: 'Lower B',
+        status: 'cancelled',
+        srpe: 9,
+        exercises: [{ name: 'Squat' }],
+      },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.loggedSessions).toHaveLength(0);
+    expect(result.current.logDisplaySessions.some((e) => e._id === 70)).toBe(
+      true
+    );
+  });
+
+  it('AC9 counts 58 logged of 90 shown on the live status distribution', async () => {
+    mockQuery(distributionRows());
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.allSessions).toHaveLength(92);
+    expect(result.current.loggedSessions).toHaveLength(58);
+    expect(result.current.logDisplaySessions).toHaveLength(90);
+    expect(result.current.plannedSessions).toHaveLength(2);
+  });
+
+  it('AC11 shows session 61 in the display list and preserves display order', async () => {
+    const rows = [
+      {
+        id: 60,
+        date: '7/4/26',
+        type: 'erg',
+        label: 'UT2 45min',
+        status: 'actual',
+      },
+      session61,
+      {
+        id: 62,
+        date: '7/6/26',
+        type: 'erg',
+        label: 'AT plan',
+        status: 'planned',
+      },
+      {
+        id: 63,
+        date: '7/7/26',
+        type: 'erg',
+        label: 'UT1 40min',
+        status: 'logged',
+      },
+    ];
+    mockQuery(rows);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    const display = result.current.logDisplaySessions;
+    expect(display.some((e) => e._id === 61)).toBe(true);
+    expect(display.some((e) => e.status === 'planned')).toBe(false);
+    expect(display.map((e) => e._id)).toEqual([60, 61, 63]);
+  });
+
+  it('AC14 differs from the counted set by exactly the cancelled rows', async () => {
+    mockQuery(distributionRows());
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    const counted = new Set(result.current.loggedSessions.map((e) => e._id));
+    const shownOnly = result.current.logDisplaySessions.filter(
+      (e) => !counted.has(e._id)
+    );
+    expect(shownOnly).toHaveLength(32);
+    expect(shownOnly.every((e) => e.status === 'cancelled')).toBe(true);
+  });
+});

@@ -3,7 +3,7 @@ import LogEntry from '../components/LogEntry.jsx';
 import { SRPE_GUIDE } from '../constants/trainingConfig.js';
 
 // ── LOG VIEW (session log form + sRPE reference + logged history) ──
-export default function LogView({ loggedSessions, isWide, onSaved }) {
+export default function LogView({ logDisplaySessions, isWide, onSaved }) {
   return (
     <>
       <div
@@ -109,7 +109,7 @@ export default function LogView({ loggedSessions, isWide, onSaved }) {
           alignItems: isWide ? 'start' : undefined,
         }}
       >
-        {loggedSessions.map((entry, i) => (
+        {logDisplaySessions.map((entry, i) => (
           <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
         ))}
       </div>

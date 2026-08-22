@@ -110,6 +110,18 @@ describe('dayStatus', () => {
   it('is upcoming for a future day', () => {
     expect(dayStatus(d(2026, 6, 23), todayMidnight, []).state).toBe('upcoming');
   });
+
+  it('AC7 is status-blind BY CONTRACT — a cancelled row still reads done', () => {
+    // Characterization test. dayStatus must never inspect `status`; callers
+    // pass an already-filtered list. If someone adds a redundant second gate
+    // here, this fails loudly — that duplication is what caused #194.
+    const cancelled = [
+      { date: '6/21/26', label: 'CP RETEST', status: 'cancelled' },
+    ];
+    expect(dayStatus(d(2026, 6, 21), todayMidnight, cancelled).state).toBe(
+      'done'
+    );
+  });
 });
 
 describe('getToday', () => {

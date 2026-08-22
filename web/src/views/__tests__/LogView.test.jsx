@@ -24,12 +24,12 @@ function renderWithClient(ui) {
 
 describe('LogView', () => {
   it('renders the session-log intro, sRPE reference, and logged entries', () => {
-    const loggedSessions = [
+    const logDisplaySessions = [
       { type: 'strength', label: 'Upper A', date: '6/9' },
     ];
     renderWithClient(
       <LogView
-        loggedSessions={loggedSessions}
+        logDisplaySessions={logDisplaySessions}
         isWide={false}
         onSaved={vi.fn()}
       />
@@ -37,5 +37,28 @@ describe('LogView', () => {
     expect(screen.getByText(/SESSION LOG:/i)).toBeInTheDocument();
     expect(screen.getByText(/sRPE SCALE/i)).toBeInTheDocument();
     expect(screen.getByText('Upper A')).toBeInTheDocument();
+  });
+
+  it('AC13 renders every display entry, cancelled included', () => {
+    const logDisplaySessions = [
+      { type: 'strength', label: 'Upper A', date: '6/9', status: 'completed' },
+      {
+        type: 'erg',
+        _isErg: true,
+        label: 'CP RETEST — 1min + 4min max (rested, fed)',
+        date: '7/5/26',
+        status: 'cancelled',
+      },
+    ];
+    renderWithClient(
+      <LogView
+        logDisplaySessions={logDisplaySessions}
+        isWide={false}
+        onSaved={vi.fn()}
+      />
+    );
+    expect(screen.getByText('Upper A')).toBeInTheDocument();
+    expect(screen.getByText(/CP RETEST/)).toBeInTheDocument();
+    expect(screen.getByText('CANCELLED')).toBeInTheDocument();
   });
 });

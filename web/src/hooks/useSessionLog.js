@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
 import { normType } from '../utils/formatting.js';
+import { isCompletedStatus } from '../utils/sessionStatus.js';
 
 // ── SESSION LOG (add entries here as block progresses) ──────────
 
@@ -62,12 +63,29 @@ export function useSessionLog() {
   // so they go first; the hardcoded seed follows.
   const allSessions = [...dbSessions, ...sessionLog];
 
-  // ── PLANNED vs LOGGED SPLIT (reconciliation) ──────────────────
-  // Planned rows are forward-looking prescriptions and must NOT appear in the
-  // completed Log, the calendar's done-state, recent sessions, or analytics.
-  // null-status legacy rows count as actual/completed history.
-  const loggedSessions = allSessions.filter((e) => e.status !== 'planned');
-  const plannedSessions = allSessions.filter((e) => e.status === 'planned');
+  // ── THREE-WAY SPLIT: counted / shown / planned ────────────────
+  // One list, two questions. `loggedSessions` is the COUNTED set — training
+  // that actually happened — and drives reconciliation, recent sessions and
+  // analytics. `logDisplaySessions` is the SHOWN set — everything with a
+  // record, cancelled included — because a cancelled session is a decision
+  // worth seeing in the Log, just not one worth counting. Planned rows are
+  // forward-looking prescriptions and appear in neither.
+  // loggedKeys derives from the COUNTED set: a cancelled session must never
+  // reconcile a planned prescription as done.
+  // Both lists are built in one pass so the created_at-desc order established
+  // by the query above survives — the display object does not carry created_at,
+  // so a split-and-remerge could not reproduce it.
+  const loggedSessions = [];
+  const logDisplaySessions = [];
+  const plannedSessions = [];
+  for (const e of allSessions) {
+    if (e.status === 'planned') {
+      plannedSessions.push(e);
+      continue;
+    }
+    logDisplaySessions.push(e);
+    if (isCompletedStatus(e.status)) loggedSessions.push(e);
+  }
   // A planned row is reconciled ("done") once an actual exists for the same
   // date + type. v1 matches on normalized type + date (a planned_id link can
   // come later). Keyed off loggedSessions only.
@@ -77,6 +95,7 @@ export function useSessionLog() {
     dbStatus,
     allSessions,
     loggedSessions,
+    logDisplaySessions,
     plannedSessions,
     loggedKeys,
     fetchSessions,
