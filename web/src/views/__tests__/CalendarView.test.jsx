@@ -132,6 +132,26 @@ describe('CalendarView', () => {
     ]);
   });
 
+  // Slicing happens BEFORE sorting, so severity reorders the visible five but
+  // never changes which five they are. Without that order a benchmark going
+  // overdue deep in the ladder — the 2k Test, when its Jan 2027 window elapses
+  // — would silently displace a nearer event from the panel.
+  it('AC5 sorts within the visible five without changing which five they are', () => {
+    const states = quietStates();
+    const deep = states.length - 1;
+    expect(deep).toBeGreaterThan(4);
+    states[deep] = { ...states[deep], status: 'overdue', daysOverdue: 400 };
+    statusesMock.mockReturnValue(states);
+    renderView();
+
+    const rows = ladderRowTexts();
+    expect(rows).toHaveLength(5);
+    expect(rows.join(' ')).not.toContain(EVENT_LADDER[deep].name);
+    expect(screen.queryByText(/OVERDUE · 400d/)).toBeNull();
+    // Untouched ladder order behind the cut.
+    expect(rows[0]).toContain(EVENT_LADDER[0].name);
+  });
+
   it('AC4/AC5 renders a rescheduled badge and sorts it below the loud rows', () => {
     const states = quietStates();
     states[4] = { ...states[4], status: 'overdue', daysOverdue: 12 };

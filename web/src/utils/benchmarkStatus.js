@@ -214,7 +214,7 @@ const SEVERITY_RANK = { overdue: 0, upcoming: 1, scheduled: 2 };
 export function compareBenchmarkSeverity(a, b) {
   const ra = SEVERITY_RANK[a?.status] ?? 3;
   const rb = SEVERITY_RANK[b?.status] ?? 3;
-  return ra === rb ? a.index - b.index : ra - rb;
+  return ra === rb ? (a?.index ?? 0) - (b?.index ?? 0) : ra - rb;
 }
 
 export function selectUpcoming(states) {
