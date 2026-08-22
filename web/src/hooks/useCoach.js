@@ -5,7 +5,10 @@ import { useTSSHistory } from './useTSSHistory.js';
 import { useVitals } from './useVitals.js';
 import { useSessions } from './useSessions.js';
 import { calcTrainingLoad } from '../utils/trainingLoad.js';
-import { COMPLETED_STATUSES } from '../constants/sessionStatus.js';
+import {
+  COMPLETED_STATUSES,
+  PLANNED_STATUS,
+} from '../constants/sessionStatus.js';
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
 import { parseDurationMinutes } from '../utils/duration.js';
 
@@ -124,8 +127,9 @@ export function useCoach() {
       // Both sides through toISODate: sessions.date is TEXT "M/D/YY", so
       // comparing it to an ISO day directly never matches.
       todayPlanned:
-        rows.find((s) => s.status === 'planned' && toISODate(s.date) === iso) ??
-        null,
+        rows.find(
+          (s) => s.status === PLANNED_STATUS && toISODate(s.date) === iso
+        ) ?? null,
     };
   }, [sessionsQuery.data]);
 
