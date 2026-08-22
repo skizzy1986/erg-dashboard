@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -53,6 +53,15 @@ function renderView() {
       <CalendarView loggedSessions={[]} isWide={false} />
     </QueryClientProvider>
   );
+}
+
+// The ladder panel's rows in DOM order, so severity ordering can be asserted
+// on the real surface rather than on the resolver's output.
+function ladderRowTexts() {
+  const heading = screen.getByText(/UPCOMING EVENTS · SEASON 1 LADDER/i);
+  return Array.from(heading.parentElement.children)
+    .filter((el) => el !== heading)
+    .map((el) => el.textContent);
 }
 
 beforeEach(() => {
@@ -154,5 +163,63 @@ describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () 
 
     const badged = badges.map((b) => b.parentElement.textContent).join('|');
     expect(badged).not.toContain('5k Time Trial');
+  });
+});
+
+// Rescheduling end-to-end: a `planned` row on the calendar is the whole gesture
+// — no button, no write, no new hook. The chain under test is the same one the
+// sibling cases use, extended by one pass.
+describe('CalendarView + a rescheduled benchmark (integration)', () => {
+  // Session 61 cancelled leaves CP Test #2 overdue, which is the only state a
+  // planned row is allowed to move.
+  const CP2_OVERDUE = [{ ...PAYLOAD[0], status: 'cancelled' }, PAYLOAD[1]];
+  const RETEST_LABEL = 'CP RETEST — 1min + 4min max';
+
+  // The clock is pinned for these two only. Every other case in this file rests
+  // on windows that are past for any real "today", but a FUTURE planned date is
+  // future only relative to the real one — unpinned, this pair would silently
+  // invert on 12 Sep 2026 rather than keep testing what it was written to test.
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 7, 22));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('AC2 badges CP Test #2 as rescheduled and sorts it below the 5k', async () => {
+    mockSessions([
+      ...CP2_OVERDUE,
+      { id: 300, date: '9/12/26', label: RETEST_LABEL, status: 'planned' },
+    ]);
+    renderView();
+
+    const badge = await screen.findByText(/^↻ RESCHEDULED/);
+    expect(badge.textContent).toContain('9/12/26');
+    expect(badge.parentElement.textContent).toContain(
+      'CP Test #2 (2nd duration)'
+    );
+
+    const overdue = screen.getAllByText(/^OVERDUE/);
+    expect(overdue).toHaveLength(1);
+    expect(overdue[0].parentElement.textContent).toContain('5k Time Trial');
+
+    const rows = ladderRowTexts();
+    expect(rows[0]).toContain('5k Time Trial');
+    expect(rows[1]).toContain('CP Test #2 (2nd duration)');
+  });
+
+  it('AC3 leaves both badges overdue when the planned session is in the past', async () => {
+    mockSessions([
+      ...CP2_OVERDUE,
+      { id: 300, date: '7/12/26', label: RETEST_LABEL, status: 'planned' },
+    ]);
+    renderView();
+
+    await waitFor(() =>
+      expect(screen.getAllByText(/^OVERDUE/)).toHaveLength(2)
+    );
+    expect(screen.queryByText(/RESCHEDULED/)).not.toBeInTheDocument();
   });
 });

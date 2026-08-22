@@ -182,6 +182,11 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/views/CalendarView.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
       },
     },
   },

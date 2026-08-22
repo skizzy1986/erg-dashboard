@@ -10,16 +10,14 @@ import {
   dayStatus,
   daySessions,
 } from '../utils/schedule.js';
-import {
-  MICROCYCLE,
-  EVENT_LADDER,
-  PHASE_CONTEXT,
-} from '../constants/schedule.js';
+import { compareBenchmarkSeverity } from '../utils/benchmarkStatus.js';
+import { MICROCYCLE, PHASE_CONTEXT } from '../constants/schedule.js';
 
 // ── CALENDAR VIEW ──
 export default function CalendarView({ loggedSessions, isWide }) {
-  // Resolved once for the FULL ladder; the panel below indexes into it
-  // positionally, so the badges stay aligned if the slice is ever widened.
+  // Resolved once for the FULL ladder. Each state carries its own entry, so the
+  // panel below renders from the states themselves — a badge cannot drift onto
+  // the wrong row once the rows are re-ordered by severity.
   const benchmarkStatuses = useBenchmarkStatuses();
   const benchmarksUnavailable = useBenchmarkDataUnavailable();
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -67,6 +65,12 @@ export default function CalendarView({ loggedSessions, isWide }) {
   }
   const todayMode = firstMode;
   const todayCycle = MICROCYCLE[todayMode] || MICROCYCLE.home;
+  // Slice BEFORE sort: which five entries are visible stays a ladder decision,
+  // only their order is a severity one. .slice() copies, so the memoized hook
+  // result is never mutated.
+  const visibleEvents = benchmarkStatuses
+    .slice(0, 5)
+    .sort(compareBenchmarkSeverity);
   return (
     <>
       <div
@@ -218,8 +222,8 @@ export default function CalendarView({ loggedSessions, isWide }) {
             BENCHMARK STATUS UNAVAILABLE
           </div>
         )}
-        {EVENT_LADDER.slice(0, 5).map((e, i) => {
-          const bench = benchmarkStatuses[i];
+        {visibleEvents.map((bench, i) => {
+          const e = bench.entry;
           const col =
             e.kind === 'TARGET'
               ? '#ff2d55'
@@ -230,7 +234,7 @@ export default function CalendarView({ loggedSessions, isWide }) {
                   : '#00d4ff';
           return (
             <div
-              key={i}
+              key={bench.index}
               style={{
                 display: 'flex',
                 gap: 10,
@@ -259,14 +263,13 @@ export default function CalendarView({ loggedSessions, isWide }) {
                 }}
               >
                 {e.name}
-                {bench && (
-                  <BenchmarkBadge
-                    status={bench.status}
-                    fuzzy={bench.fuzzy}
-                    daysOverdue={bench.daysOverdue}
-                    daysUntilStart={bench.daysUntilStart}
-                  />
-                )}
+                <BenchmarkBadge
+                  status={bench.status}
+                  fuzzy={bench.fuzzy}
+                  daysOverdue={bench.daysOverdue}
+                  daysUntilStart={bench.daysUntilStart}
+                  rescheduledTo={bench.rescheduledTo}
+                />
               </div>
             </div>
           );

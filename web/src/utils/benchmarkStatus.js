@@ -1,4 +1,7 @@
-import { COMPLETED_STATUSES } from '../constants/sessionStatus.js';
+import {
+  COMPLETED_STATUSES,
+  PLANNED_STATUS,
+} from '../constants/sessionStatus.js';
 import { toISODate } from './dateFormat.js';
 import {
   BENCHMARK_GRACE_DAYS,
@@ -26,6 +29,8 @@ function baseState(entry, index) {
     matchedSessionId: null,
     daysUntilStart: null,
     daysOverdue: null,
+    rescheduledTo: null,
+    plannedSessionId: null,
     keywords: [],
   };
 }
@@ -50,6 +55,15 @@ function betterFit(a, b) {
   return a.session.id < b.session.id;
 }
 
+// Whole-token membership plus the ride-elevation exclusion — the label half of
+// eligibility, shared by the completed-session and planned-session passes. The
+// STATUS half is deliberately not shared: each pass keeps its own gate.
+function labelMatches(label, keywords) {
+  const tokens = tokenize(label);
+  if (!tokens.some((t) => keywords.includes(t))) return false;
+  return !hasRideDistance(tokens);
+}
+
 // Deterministic best fit, NOT the first row in payload order. The payload used
 // to be ordered by the TEXT date column, so '7/5/26' sorted above '6/23/26';
 // combined with a search range that runs forward to today, first-in-order let
@@ -64,9 +78,7 @@ function findMatch(sessions, keywords, searchStart, searchEnd, consumed, win) {
     if (consumed.has(s.id)) continue;
     const iso = toISODate(s.date);
     if (!iso || iso < searchStart || iso > searchEnd) continue;
-    const tokens = tokenize(s.label);
-    if (!tokens.some((t) => keywords.includes(t))) continue;
-    if (hasRideDistance(tokens)) continue;
+    if (!labelMatches(s.label, keywords)) continue;
     const cand = {
       session: s,
       iso,
@@ -75,6 +87,28 @@ function findMatch(sessions, keywords, searchStart, searchEnd, consumed, win) {
     if (best === null || betterFit(cand, best)) best = cand;
   }
   return best === null ? null : best.session;
+}
+
+// The rescheduling counterpart: the soonest FUTURE planned session that names
+// the benchmark. A planned row is a commitment, never evidence — it can only
+// move a badge from 'overdue' to 'scheduled', never to 'done', so the status
+// gate here is PLANNED_STATUS and must never be merged with findMatch's.
+// `today` is inclusive: a session dated today is still a live commitment.
+function findPlannedMatch(sessions, keywords, today, claimed) {
+  if (keywords.length === 0) return null;
+  let best = null;
+  for (const s of sessions) {
+    if (!s || s.status !== PLANNED_STATUS) continue;
+    if (claimed.has(s.id)) continue;
+    const iso = toISODate(s.date);
+    if (!iso || iso < today) continue;
+    if (!labelMatches(s.label, keywords)) continue;
+    const better =
+      best === null ||
+      (iso === best.iso ? s.id < best.session.id : iso < best.iso);
+    if (better) best = { session: s, iso };
+  }
+  return best;
 }
 
 export function resolveLadderStatuses(ladder, sessions, options = {}) {
@@ -155,7 +189,32 @@ export function resolveLadderStatuses(ladder, sessions, options = {}) {
     }
   }
 
+  // Second pass: an overdue benchmark with a future planned session is not
+  // being ignored, it has been moved. Only 'overdue' is an entry point — a
+  // planned row never touches a done, upcoming or quiet benchmark. A SEPARATE
+  // claim set from pass 1: one planned row must not clear two benchmarks.
+  const claimed = new Set();
+  for (const st of pending) {
+    if (st.status !== 'overdue') continue;
+    const hit = findPlannedMatch(rows, st.keywords, today, claimed);
+    if (!hit) continue;
+    claimed.add(hit.session.id);
+    st.status = 'scheduled';
+    st.rescheduledTo = hit.iso;
+    st.plannedSessionId = hit.session.id;
+  }
+
   return states;
+}
+
+// Loudest first: an overdue benchmark outranks one merely due soon, and both
+// outrank one already rescheduled. Ties keep ladder order.
+const SEVERITY_RANK = { overdue: 0, upcoming: 1, scheduled: 2 };
+
+export function compareBenchmarkSeverity(a, b) {
+  const ra = SEVERITY_RANK[a?.status] ?? 3;
+  const rb = SEVERITY_RANK[b?.status] ?? 3;
+  return ra === rb ? (a?.index ?? 0) - (b?.index ?? 0) : ra - rb;
 }
 
 export function selectUpcoming(states) {
