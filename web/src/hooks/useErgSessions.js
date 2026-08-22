@@ -37,7 +37,16 @@ export function useErgSessions() {
         )
         .eq('type', 'erg')
         .eq('status', 'logged')
-        .order('date', { ascending: false })
+        // date_iso, not date: sessions.date is TEXT "M/D/YY" and sorts lexically, so
+        // a LIMIT over it returns the wrong SET of rows (#187). nullsFirst is
+        // mandatory — postgrest-js omits the clause entirely when it is undefined,
+        // and Postgres defaults descending to NULLS FIRST, which would float an
+        // unparseable date to the top as "most recent".
+        // id breaks ties: the PM5 save path suffixes the label with hh:mm so two
+        // sessions can share a date, and without it the 50-row cut is arbitrary and
+        // moves between refetches.
+        .order('date_iso', { ascending: false, nullsFirst: false })
+        .order('id', { ascending: false })
         .limit(50);
       if (error) throw error;
       return data ?? [];
@@ -45,10 +54,11 @@ export function useErgSessions() {
     staleTime: 60_000,
   });
 
-  // sessions.date is TEXT "M/D/YY", so the server-side .order() above sorts it
-  // lexically ("12/31/25" lands above "1/1/26"). Re-sort on the normalized ISO
-  // key. The .limit(50) is still applied to that lexical order server-side, so
-  // past 50 rows this fetches the wrong 50 — see #184.
+  // enrich() derives pace/zone/date_display; the sort is defence, not
+  // correctness — the query above already returns date_iso order, and
+  // toISODate() accepts exactly the shapes session_date_to_iso() does. Keep it:
+  // the map is here anyway, and it holds ordering through a rollback or the
+  // window where PostgREST has not reloaded its schema cache.
   const data = useMemo(
     () =>
       (query.data ?? [])

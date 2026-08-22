@@ -6,10 +6,12 @@ import { supabase } from '../supabaseClient.js';
 // LogSessionForm and ErgLiveView (neither passes `exact`) refetch it too and a
 // freshly-logged test clears its badge without any edit to those files.
 //
-// limit 500 rather than useSessions()' 50: sessions.date is TEXT, so the
-// server-side order is not chronological and a small limit truncates the wrong
-// rows. At ~92 rows today, 500 returns the whole table and set membership stops
-// depending on the broken sort. The resolver filters by date itself.
+// limit 500 rather than useSessions()' 50 because the ladder resolver wants the
+// whole benchmark history, not a recency window: it searches back from each
+// event's own date, so a 50-row cut would hide older attempts. At 92 rows today
+// the limit never binds; ordering by date_iso makes the cut "the most recent
+// 500" if it ever does. The resolver filters by date itself and is
+// order-independent, so no id tiebreaker is needed here.
 export function useBenchmarkSessions() {
   return useQuery({
     queryKey: ['sessions', 'benchmark-window'],
@@ -17,7 +19,7 @@ export function useBenchmarkSessions() {
       const { data, error } = await supabase
         .from('sessions')
         .select('id, date, label, status')
-        .order('date', { ascending: false })
+        .order('date_iso', { ascending: false, nullsFirst: false })
         .limit(500);
       if (error) throw error;
       return data ?? [];

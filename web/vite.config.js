@@ -137,6 +137,16 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/hooks/useErgSessions.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useBenchmarkSessions.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/components/ErrorFallback.jsx': {
           lines: 80,
           functions: 80,
