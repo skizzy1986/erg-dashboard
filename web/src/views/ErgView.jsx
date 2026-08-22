@@ -234,8 +234,16 @@ export default function ErgView({ tsbNow, ctlNow }) {
   const sessionsThisWeek = sessions.filter((s) =>
     withinLast7Days(s.date)
   ).length;
+  // null (training-load read failed or empty) must not coerce to 0 and paint
+  // an amber "neutral" — it is the absence of a reading, not a mid-range one.
   const tsbColor =
-    tsbNow > 5 ? '#34d399' : tsbNow >= -10 ? '#ffd700' : '#ff2d55';
+    tsbNow == null
+      ? '#7e7e9a'
+      : tsbNow > 5
+        ? '#34d399'
+        : tsbNow >= -10
+          ? '#ffd700'
+          : '#ff2d55';
 
   // SECTION 2 — pace improvement summary
   const paced = sessions.filter((s) => s.pace_500m != null);

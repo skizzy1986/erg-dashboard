@@ -102,13 +102,13 @@ describe('useTSSHistory', () => {
     ]);
   });
 
-  it('maps sessions to { date, tss } using duration * srpe / 60 (numeric duration)', async () => {
+  it('maps sessions to { date, tss } using duration * srpe / 60 * 10 (numeric duration)', async () => {
     mockQuery([{ date: '2026-06-20', duration: 60, srpe: 7 }]);
     const { result } = renderHook(() => useTSSHistory(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([{ date: '2026-06-20', tss: 7 }]);
+    expect(result.current.data).toEqual([{ date: '2026-06-20', tss: 70 }]);
   });
 
   it('rounds TSS to nearest integer', async () => {
@@ -117,35 +117,35 @@ describe('useTSSHistory', () => {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    // 45 * 6 / 60 = 4.5 → rounds to 5
-    expect(result.current.data[0].tss).toBe(5);
+    // 45 * 6 / 60 * 10 = 45
+    expect(result.current.data[0].tss).toBe(45);
   });
 
-  it('parses mm:ss duration "45:00" (45 * 6 / 60 = 5)', async () => {
+  it('parses mm:ss duration "45:00" (45 * 6 / 60 * 10 = 45)', async () => {
     mockQuery([{ date: '2026-06-20', duration: '45:00', srpe: 6 }]);
     const { result } = renderHook(() => useTSSHistory(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(5);
+    expect(result.current.data[0].tss).toBe(45);
   });
 
-  it('parses minutes-suffix duration "57m" (57 * 5 / 60 = 4.75 → 5)', async () => {
+  it('parses minutes-suffix duration "57m" (57 * 5 / 60 * 10 = 47.5 → 48)', async () => {
     mockQuery([{ date: '2026-06-20', duration: '57m', srpe: 5 }]);
     const { result } = renderHook(() => useTSSHistory(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(5);
+    expect(result.current.data[0].tss).toBe(48);
   });
 
-  it('parses hours+minutes duration "1h4m" (64 * 10 / 60 = 10.67 → 11)', async () => {
+  it('parses hours+minutes duration "1h4m" (64 * 10 / 60 * 10 = 106.7 → 107)', async () => {
     mockQuery([{ date: '2026-06-20', duration: '1h4m', srpe: 10 }]);
     const { result } = renderHook(() => useTSSHistory(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(11);
+    expect(result.current.data[0].tss).toBe(107);
   });
 
   it('degrades unparseable duration to tss 0 without NaN', async () => {
@@ -213,11 +213,11 @@ describe('useTSSHistory', () => {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(5);
+    expect(result.current.data[0].tss).toBe(55);
   });
 
   it('measures bike watts against FTP, not rowing CP', async () => {
-    // 196 W against FTP 250 for 60min = 6.1 -> 6. Against CP 205 it would be 9.
+    // 196 W against FTP 250 for 60min = 61.5 -> 61. Against CP 205: 91.
     mockQuery([
       {
         date: '7/1/26',
@@ -231,11 +231,11 @@ describe('useTSSHistory', () => {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(6);
+    expect(result.current.data[0].tss).toBe(61);
   });
 
   it('prefers a real sRPE over the power fallback', async () => {
-    // sRPE 7 for 60min = 7; the power model would say 5 for the same row.
+    // sRPE 7 for 60min = 70; the power model would say 54 for the same row.
     mockQuery([
       {
         date: '7/3/26',
@@ -249,7 +249,7 @@ describe('useTSSHistory', () => {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(7);
+    expect(result.current.data[0].tss).toBe(70);
   });
 
   it('degrades to zero when the CP anchor is unreachable rather than inventing one', async () => {

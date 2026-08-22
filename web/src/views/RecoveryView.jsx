@@ -22,8 +22,11 @@ import { RHR_BASELINE, HRV_BASELINE } from '../constants/trainingConfig.js';
 // ── RECOVERY VIEW — HRV/RHR/sleep readiness + trends ──────────
 // Daily readiness composite, vitals trend charts, blood-pressure log,
 // and niggle/blood tracking. Reads static recovery data + the live
-// `latest` training-load snapshot (only latest.tsb is used).
+// `latest` training-load snapshot (only latest.tsb is used). `latest` is null
+// when the training-load read fails or returns nothing — the readiness score
+// then omits its TSB term rather than scoring against a fabricated zero.
 export default function RecoveryView({ latest, isWide }) {
+  const tsbNow = latest?.tsb ?? null;
   return (
     <>
       {(() => {
@@ -41,7 +44,7 @@ export default function RecoveryView({ latest, isWide }) {
               No recovery data yet.
             </div>
           );
-        const readiness = calcReadiness(today, latest.tsb);
+        const readiness = calcReadiness(today, tsbNow);
         return (
           <>
             {/* Readiness composite */}
@@ -124,11 +127,14 @@ export default function RecoveryView({ latest, isWide }) {
                 }}
               >
                 Composite of RHR vs baseline, HRV vs baseline, sleep, and
-                training load (TSB {latest.tsb > 0 ? '+' : ''}
-                {latest.tsb}). Heuristic, not validated — cross-check against
-                sRPE and how you actually feel. HRV baseline still rebuilding
-                (set during a fatigue trough, skewed low), so treat the score as
-                directional until ~late June.
+                training load (TSB{' '}
+                {tsbNow == null
+                  ? 'unavailable — excluded from this score'
+                  : (tsbNow > 0 ? '+' : '') + tsbNow}
+                ). Heuristic, not validated — cross-check against sRPE and how
+                you actually feel. HRV baseline still rebuilding (set during a
+                fatigue trough, skewed low), so treat the score as directional
+                until ~late June.
               </div>
             </div>
 

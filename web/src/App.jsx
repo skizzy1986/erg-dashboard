@@ -1,5 +1,6 @@
-import { useState, useEffect, Component, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, Component, lazy, Suspense } from 'react';
 import { useSessionLog } from './hooks/useSessionLog.js';
+import { useTSSHistory } from './hooks/useTSSHistory.js';
 import StrengthLogger from './StrengthLogger.jsx';
 import ErgLiveView from './views/ErgLiveView.jsx';
 import CoachView from './views/CoachView.jsx';
@@ -15,11 +16,7 @@ import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
 import ErgTooltip from './components/ErgTooltip.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
-import {
-  DAILY_TSS,
-  RHR_BASELINE,
-  HRV_BASELINE,
-} from './constants/trainingConfig.js';
+import { RHR_BASELINE, HRV_BASELINE } from './constants/trainingConfig.js';
 import { C } from './constants/ui.js';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -183,10 +180,24 @@ export default function App() {
   const { loggedSessions, plannedSessions, loggedKeys, fetchSessions } =
     useSessionLog();
 
-  const loadData = calcTrainingLoad(DAILY_TSS);
-  const latest = loadData[loadData.length - 1];
-  const tsbColor =
-    latest.tsb > 10
+  // Live CTL/ATL/TSB. Previously calcTrainingLoad(DAILY_TSS) — a static seed
+  // that stopped on 2026-06-13, so every headline load number on desktop was
+  // decorative while mobile already read this same hook.
+  const { data: tssHistory, isLoading: loadPending } = useTSSHistory();
+  // calcTrainingLoad reduces over isoDates[0], so an empty series would walk
+  // from an Invalid Date. Guard rather than let it produce a garbage row.
+  const loadData = useMemo(
+    () => (tssHistory.length ? calcTrainingLoad(tssHistory) : []),
+    [tssHistory]
+  );
+  const latest = loadData[loadData.length - 1] ?? null;
+  // Pending is deliberately not unavailable (#196): a slow first read must not
+  // flash an outage line and then replace it with real numbers.
+  const loadAvailable = latest != null;
+  const loadUnavailable = !loadAvailable && !loadPending;
+  const tsbColor = !loadAvailable
+    ? '#7e7e9a'
+    : latest.tsb > 10
       ? '#34d399'
       : latest.tsb > -10
         ? '#ffd700'
@@ -372,6 +383,7 @@ export default function App() {
           {view === 'overview' && (
             <OverviewView
               latest={latest}
+              loadUnavailable={loadUnavailable}
               tsbColor={tsbColor}
               loadData={loadData}
               loggedSessions={loggedSessions}
@@ -387,7 +399,10 @@ export default function App() {
 
           {/* ── ERG VIEW ── */}
           {view === 'erg' && (
-            <ErgView tsbNow={latest.tsb} ctlNow={latest.ctl} />
+            <ErgView
+              tsbNow={latest?.tsb ?? null}
+              ctlNow={latest?.ctl ?? null}
+            />
           )}
 
           {/* ── STRENGTH VIEW ── */}

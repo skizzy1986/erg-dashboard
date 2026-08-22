@@ -8,55 +8,81 @@ import {
 const ANCHORS = { cp: 205, ftp: 250 };
 
 describe('sessionLoad', () => {
-  it('uses sRPE when it exists: an hour at sRPE 7 is 7', () => {
-    expect(sessionLoad({ duration: '60:00', srpe: 7 }, ANCHORS)).toBe(7);
+  it('uses sRPE when it exists: an hour at sRPE 7 is 70', () => {
+    expect(sessionLoad({ duration: '60:00', srpe: 7 }, ANCHORS)).toBe(70);
   });
 
   it('scales sRPE by duration', () => {
-    expect(sessionLoad({ duration: '30:00', srpe: 8 }, ANCHORS)).toBe(4);
+    expect(sessionLoad({ duration: '30:00', srpe: 8 }, ANCHORS)).toBe(40);
   });
 
   it('prefers sRPE over watts when a session carries both', () => {
     const both = { duration: '60:00', srpe: 7, type: 'erg', avg_watts: 150 };
-    expect(sessionLoad(both, ANCHORS)).toBe(7);
-    expect(sessionLoad({ ...both, srpe: null }, ANCHORS)).toBe(5);
+    expect(sessionLoad(both, ANCHORS)).toBe(70);
+    expect(sessionLoad({ ...both, srpe: null }, ANCHORS)).toBe(54);
   });
 
   it('falls back to power when sRPE is missing', () => {
-    // (152/205)^2 * 10 = 5.50 for one hour
+    // (152/205)^2 * 100 = 55.0 for one hour
     expect(
       sessionLoad(
         { duration: '60:00', srpe: null, type: 'erg', avg_watts: 152 },
         ANCHORS
       )
-    ).toBe(5);
+    ).toBe(55);
   });
 
-  it('puts an hour at threshold at 10 — the sRPE 10 equivalent', () => {
+  it('puts an hour at threshold at 100 — the sRPE 10 equivalent', () => {
     expect(
       sessionLoad(
         { duration: '60:00', srpe: null, type: 'erg', avg_watts: 205 },
         ANCHORS
       )
-    ).toBe(10);
+    ).toBe(100);
+  });
+
+  // The TSB bands in App.jsx/MobileAnalytics, LoadTooltip, useCoach's
+  // GREEN/AMBER/RED and calcReadiness's `tsb < -20` are all calibrated for
+  // classic TSS. If this unit ever drifts back to sRPE-hours those bands go
+  // ~10x too wide and silently stop firing, so pin the unit here.
+  it('emits classic TSS units, not sRPE-hours', () => {
+    const hourAtThreshold = sessionLoad(
+      { duration: '60:00', srpe: null, type: 'erg', avg_watts: 205 },
+      ANCHORS
+    );
+    const hourAtSrpe10 = sessionLoad({ duration: '60:00', srpe: 10 }, ANCHORS);
+    expect(hourAtThreshold).toBe(100);
+    expect(hourAtSrpe10).toBe(100);
+  });
+
+  // #202 deliberately left power reading ~24% below sRPE on the two sessions
+  // carrying both signals, reading the gap as fatigue rather than tuning it
+  // away. Rescaling the unit must not quietly close it.
+  it('preserves the power-vs-sRPE offset the rescale must not calibrate away', () => {
+    const both = { duration: '60:00', srpe: 7, type: 'erg', avg_watts: 150 };
+    const bySrpe = sessionLoad(both, ANCHORS);
+    const byPower = sessionLoad({ ...both, srpe: null }, ANCHORS);
+    // ~23% below, and still below — not nudged toward parity by the rescale.
+    expect(byPower / bySrpe).toBeGreaterThan(0.7);
+    expect(byPower / bySrpe).toBeLessThan(0.8);
   });
 
   it('reads an easy paddle as genuinely easy', () => {
-    // 118 W recovery for 21:13 -> 0.354h * 3.31 = 1.2
+    // 118 W recovery for 21:13 -> 0.354h * 33.1 = 11.7
     expect(
       sessionLoad(
         { duration: '21:13', srpe: null, type: 'erg', avg_watts: 118 },
         ANCHORS
       )
-    ).toBe(1);
+    ).toBe(12);
   });
 
   it('measures bike watts against FTP and rowing watts against CP', () => {
     const ride = { duration: '60:00', srpe: null, avg_watts: 196 };
-    expect(sessionLoad({ ...ride, type: 'cycling' }, ANCHORS)).toBe(6);
-    expect(sessionLoad({ ...ride, type: 'bike' }, ANCHORS)).toBe(6);
+    expect(sessionLoad({ ...ride, type: 'cycling' }, ANCHORS)).toBe(61);
+    expect(sessionLoad({ ...ride, type: 'bike' }, ANCHORS)).toBe(61);
     // Same watts judged against the lower rowing CP would overstate the ride.
-    expect(sessionLoad({ ...ride, type: 'erg' }, ANCHORS)).toBe(9);
+    expect(sessionLoad({ ...ride, type: 'erg' }, ANCHORS)).toBe(91);
   });
 
   it('gives strength sessions no power model', () => {
