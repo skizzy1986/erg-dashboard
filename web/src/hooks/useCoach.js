@@ -33,7 +33,8 @@ export function buildTrainingContext(
   readinessScore,
   readinessLabel,
   recentSessions,
-  todayPlanned
+  todayPlanned,
+  readinessPartial = false
 ) {
   const today = todayISO();
   const lines = [`CURRENT TRAINING DATA (as of ${today}):`];
@@ -55,9 +56,20 @@ export function buildTrainingContext(
     const rhr = latestVitals.rhr != null ? latestVitals.rhr : '—';
     const hrv = latestVitals.hrv != null ? latestVitals.hrv : '—';
     const sleep = latestVitals.sleep != null ? latestVitals.sleep : '—';
-    lines.push(
-      `Readiness: ${readinessScore}/100 ${readinessLabel} | RHR: ${rhr} | HRV: ${hrv}ms | Sleep: ${sleep}h`
-    );
+    // computeReadiness returns a null score with status NO DATA when there is
+    // no RHR to score (#218). Interpolating that reads "null/100", and the
+    // whole point of that change was that absent data must not reach the Coach
+    // dressed as a verdict — the old code scored a missing row 0 FATIGUED and
+    // it was believed. Report the raw vitals and say the score is missing.
+    // `partial` marks a score computed without HRV or sleep; the Coach is told
+    // so it can weight the number accordingly rather than treat it as complete.
+    const verdict =
+      readinessScore == null
+        ? `Readiness: unavailable (${readinessLabel})`
+        : `Readiness: ${readinessScore}/100 ${readinessLabel}${
+            readinessPartial ? ' (partial — scored without HRV or sleep)' : ''
+          }`;
+    lines.push(`${verdict} | RHR: ${rhr} | HRV: ${hrv}ms | Sleep: ${sleep}h`);
   }
 
   if (todayPlanned) {
@@ -178,7 +190,8 @@ export function useCoach() {
         vitals.readinessScore,
         vitals.readinessLabel,
         recentSessions,
-        todayPlanned
+        todayPlanned,
+        vitals.readiness?.partial ?? false
       );
 
       const {

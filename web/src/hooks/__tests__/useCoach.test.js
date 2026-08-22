@@ -102,6 +102,49 @@ describe('buildTrainingContext', () => {
     expect(result).toContain('Sleep: 6.8h');
   });
 
+  // #218 made computeReadiness return { score: null, status: 'NO DATA' } when
+  // there is no RHR to score, precisely so absent data stops reaching the Coach
+  // as a fabricated verdict. Interpolating that would read "null/100".
+  it('never renders a null readiness score as a number', () => {
+    const vitals = { rhr: null, hrv: 27, sleep: 6.8 };
+    const result = buildTrainingContext(
+      null,
+      vitals,
+      null,
+      'NO DATA',
+      [],
+      null
+    );
+    expect(result).toContain('Readiness: unavailable (NO DATA)');
+    expect(result).not.toContain('null');
+    expect(result).not.toContain('/100');
+    // The vitals it does have are still reported.
+    expect(result).toContain('HRV: 27ms');
+    expect(result).toContain('Sleep: 6.8h');
+  });
+
+  it('marks a partial readiness score as partial', () => {
+    const vitals = { rhr: 58, hrv: null, sleep: null };
+    const result = buildTrainingContext(
+      null,
+      vitals,
+      72,
+      'CAUTION',
+      [],
+      null,
+      true
+    );
+    expect(result).toContain('Readiness: 72/100 CAUTION (partial');
+    expect(result).toContain('scored without HRV or sleep');
+  });
+
+  it('does not mark a complete readiness score as partial', () => {
+    const vitals = { rhr: 58, hrv: 27, sleep: 6.8 };
+    const result = buildTrainingContext(null, vitals, 68, 'CAUTION', [], null);
+    expect(result).toContain('Readiness: 68/100 CAUTION |');
+    expect(result).not.toContain('partial');
+  });
+
   it('uses em dashes for missing vitals fields', () => {
     const vitals = { rhr: null, hrv: null, sleep: null };
     const result = buildTrainingContext(null, vitals, 0, 'FATIGUED', [], null);
