@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
 import { THEME } from '../constants/theme.js';
 import { toLogDate } from '../utils/dateFormat.js';
+import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
 
 export default function LogSessionForm({ onSaved }) {
   const queryClient = useQueryClient();
@@ -82,7 +83,7 @@ export default function LogSessionForm({ onSaved }) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      invalidateSessionQueries(queryClient);
       setMsg({ type: 'ok', text: 'Saved! Session added to your log.' });
       reset();
       if (onSaved) onSaved();

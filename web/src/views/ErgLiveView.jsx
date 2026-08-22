@@ -8,6 +8,7 @@ import WorkoutTarget from '../components/WorkoutTarget';
 import { parsePace, formatElapsed } from '../services/pm5Bluetooth';
 import { THEME } from '../constants/theme.js';
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
+import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
 
 const C = {
   bg: THEME.bg,
@@ -644,8 +645,7 @@ export default function ErgLiveView({ plannedSessions = [], onSessionSaved }) {
     }
 
     if (!dbError || isDuplicate(dbError)) {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['erg-sessions'] });
+      invalidateSessionQueries(queryClient);
       setSaveState('saved');
     } else {
       queue();

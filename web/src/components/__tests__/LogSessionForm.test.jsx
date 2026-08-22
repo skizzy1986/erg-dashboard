@@ -83,6 +83,8 @@ describe('LogSessionForm', () => {
 
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['erg-sessions'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['tss-history'] });
     expect(onSaved).toHaveBeenCalledTimes(1);
 
     const row = insertMock.mock.calls[0][0];
