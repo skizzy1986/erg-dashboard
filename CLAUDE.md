@@ -117,7 +117,7 @@ coach use), and the context store (Code↔Coach shared memory, added by #94):
 | `exercises`         | Exercise library — 873 rows, **text ids**                            |
 | `exercise_media`    | Demo media per exercise (reference content, not user data)           |
 | `exercise_prefs`    | Per-user, per-exercise preferences (e.g. rest seconds)               |
-| `coach_messages`    | Legacy/experimental in-app chat rail (see Coaching data model)       |
+| `coach_messages`    | In-app Coach chat rail (see Coaching data model)                     |
 | `backup_snapshots`  | Daily full-DB JSON snapshots (backup cron)                           |
 | `coach_log`         | **Context store** — append-only diary + decision record (Coach's content) |
 | `anchors`           | **Context store** — current calibration + phase state (one live row/key)  |
@@ -364,8 +364,18 @@ The **integration model was ratified 2026-07-01**: Coach (Claude in chat) operat
 natively via the **Supabase MCP connector, writing directly to the DB** (`source='coach'`)
 — reading vitals, and inserting/updating `sessions`, `strength_workouts`, etc. This
 is the live coaching rail, so **Code and Coach share one source of truth: this file
-plus the schema above.** The in-app Anthropic-API path (`coach_messages` table) was
-trialed and set aside — treat it as legacy/experimental unless revived.
+plus the schema above.**
+
+The in-app Anthropic-API path (`coach_messages` table, the Coach tab) was revived on
+2026-08-22 by #199. **The client assembles the training context and posts it**:
+`buildTrainingContext` in `web/src/hooks/useCoach.js` composes load, readiness,
+today's prescription and the recent microcycle from the same tested utilities the
+dashboard itself uses (`calcTrainingLoad`/`sessionLoad`, `computeReadiness`,
+`COMPLETED_STATUSES`, `toISODate`), and `coach-chat` is a thin Anthropic proxy that
+holds no data logic of its own. It used to rebuild that context server-side against
+column names `vitals` does not have and a `status` filter no row matched, so the
+Coach silently ran on an empty context — **do not reintroduce a second builder in the
+edge function.**
 
 **Bridge discipline persists** even though Code holds repo + schema + deploy: Scott
 authorises consequential/destructive/schema changes; review structure before material

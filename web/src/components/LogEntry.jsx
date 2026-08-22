@@ -7,6 +7,7 @@ export default function LogEntry({ entry, done = false }) {
   const color = C[entry.type] || THEME.grey;
   const isErg = !!entry._isErg;
   const planned = entry.status === 'planned';
+  const cancelled = entry.status === 'cancelled';
   // Flat erg metrics replaced the removed `splits` field. Planned erg rows
   // carry null metrics — we show the prescription (label + coach_note) instead.
   const hasErgMetrics =
@@ -23,11 +24,13 @@ export default function LogEntry({ entry, done = false }) {
         borderTop: `1px solid ${open ? color + '50' : THEME.border}`,
         borderRight: `1px solid ${open ? color + '50' : THEME.border}`,
         borderBottom: `1px solid ${open ? color + '50' : THEME.border}`,
-        borderLeft: `3px ${planned ? 'dashed' : 'solid'} ${color}`,
+        borderLeft: cancelled
+          ? `3px dotted ${THEME.muted}`
+          : `3px ${planned ? 'dashed' : 'solid'} ${color}`,
         borderRadius: 6,
         overflow: 'hidden',
         background: open ? `${color}10` : THEME.raised,
-        opacity: done ? 0.5 : 1,
+        opacity: done ? 0.5 : cancelled ? 0.8 : 1,
       }}
     >
       <div
@@ -60,6 +63,7 @@ export default function LogEntry({ entry, done = false }) {
                 fontWeight: 700,
                 color: THEME.white,
                 lineHeight: 1.3,
+                textDecoration: cancelled ? 'line-through' : undefined,
               }}
             >
               {entry.label}
@@ -95,6 +99,23 @@ export default function LogEntry({ entry, done = false }) {
                   }}
                 >
                   PLANNED
+                </span>
+              )}
+              {cancelled && !done && (
+                <span
+                  style={{
+                    marginLeft: 8,
+                    fontSize: 8,
+                    letterSpacing: 1.5,
+                    fontWeight: 700,
+                    color: THEME.textSubtle,
+                    border: `1px solid ${THEME.textSubtle}99`,
+                    borderRadius: 3,
+                    padding: '1px 5px',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  CANCELLED
                 </span>
               )}
             </div>
@@ -195,7 +216,9 @@ export default function LogEntry({ entry, done = false }) {
               >
                 {planned
                   ? 'Prescription — targets below.'
-                  : 'No metrics logged for this session.'}
+                  : cancelled
+                    ? 'Cancelled — this session was not completed.'
+                    : 'No metrics logged for this session.'}
               </div>
             )
           ) : entry.exercises ? (
@@ -290,9 +313,11 @@ export default function LogEntry({ entry, done = false }) {
             >
               {planned
                 ? 'Prescription — targets below.'
-                : entry.duration
-                  ? `Session · ${entry.duration}`
-                  : 'Session logged.'}
+                : cancelled
+                  ? 'Cancelled — this session was not completed.'
+                  : entry.duration
+                    ? `Session · ${entry.duration}`
+                    : 'Session logged.'}
             </div>
           )}
           {entry.coachNote && (

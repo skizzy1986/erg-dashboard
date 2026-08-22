@@ -74,6 +74,11 @@ export function resolveDay(date) {
 // A planned day is "done" if the session list has any entry on that date.
 // Takes the session list as a param so it works with the MERGED list
 // (hardcoded seed history + live sessions fetched from Supabase).
+// CONTRACT: logEntriesForDate / dayStatus / getUpcomingSessions are
+// STATUS-BLIND. They never inspect `status` — callers must pass an
+// already-filtered list (useSessionLog's `loggedSessions`). Do not add a
+// status gate here: a second gate in a second layer is exactly the drift
+// that let cancelled sessions count as done (#194).
 export function logEntriesForDate(date, sessions) {
   // session dates are "M/D/YY" (e.g. "6/19/26")
   const key =
