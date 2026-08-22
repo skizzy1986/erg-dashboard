@@ -61,6 +61,26 @@ describe('LogEntry', () => {
     expect(screen.getByText(/Prescription/)).toBeInTheDocument();
   });
 
+  it('AC12 renders a cancelled erg session as cancelled, not as a data gap', () => {
+    const entry = {
+      type: 'erg',
+      _isErg: true,
+      label: 'CP RETEST — 1min + 4min max (rested, fed)',
+      date: '7/5/26',
+      status: 'cancelled',
+    };
+    render(<LogEntry entry={entry} />);
+    expect(screen.getByText('CANCELLED')).toBeInTheDocument();
+    expect(screen.queryByText('PLANNED')).not.toBeInTheDocument();
+    expect(screen.queryByText('✓ DONE')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(/CP RETEST/));
+    expect(screen.getByText(/was not completed/)).toBeInTheDocument();
+    expect(
+      screen.queryByText('No metrics logged for this session.')
+    ).not.toBeInTheDocument();
+  });
+
   it('renders a non-erg session with no exercise table', () => {
     const entry = {
       type: 'bike',
