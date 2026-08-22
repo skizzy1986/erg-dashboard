@@ -29,6 +29,7 @@ import { NUTRITION_TARGETS } from '../constants/nutrition.js';
 import { PHASE_CONTEXT } from '../constants/schedule.js';
 import { nutritionLog } from '../constants/logs.js';
 import { useVitals } from '../hooks/useVitals.js';
+import { useAnchors } from '../hooks/useAnchors.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 
 export default function OverviewView({
@@ -41,7 +42,6 @@ export default function OverviewView({
   latestSquat,
   totalErgDist,
   totalSessions,
-  ftp,
   isWide,
   nowTick,
 }) {
@@ -53,6 +53,10 @@ export default function OverviewView({
   // screen scored readiness off June data. Same hook, same single readiness
   // definition, as RecoveryView and mobile.
   const { latest: todayRec, readiness, personalBaselines } = useVitals();
+  // Was a hardcoded 190 threaded down from App.jsx. Load is measured against
+  // the live rowing CP and bike FTP anchors, so a fixed 190 both drifted from
+  // the real value and misdescribed the calculation.
+  const { cp, ftp, cpAvailable } = useAnchors();
   return (
     <>
       {/* ── CONDENSED TODAY STATUS STRIP (live, mobile-first) ── */}
@@ -947,7 +951,9 @@ export default function OverviewView({
             TRAINING LOAD
           </div>
           <div style={{ fontSize: 9, color: '#6c6c88' }}>
-            Est. FTP {ftp}W · update after threshold test
+            {cpAvailable
+              ? `Rowing CP ${cp}W · bike FTP ${ftp ?? '—'}W`
+              : 'CP unavailable'}
           </div>
         </div>
         {loadUnavailable && (
@@ -1099,8 +1105,10 @@ export default function OverviewView({
           }}
         >
           CTL builds over 42 days — values will be underestimated until ~6 weeks
-          of data. TSS calibrated to Est. FTP {ftp}W; update after first
-          threshold session for accuracy.
+          of data.{' '}
+          {cpAvailable
+            ? `Power-derived load is measured against rowing CP ${cp}W and bike FTP ${ftp ?? '—'}W; revalidate with a test to sharpen it.`
+            : 'Power-derived load is unavailable while the CP anchor cannot be read.'}
         </div>
       </div>
 

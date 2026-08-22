@@ -14,6 +14,12 @@ vi.mock('../../hooks/useVitals.js', () => ({
   useVitals: () => useVitalsMock(),
 }));
 
+// CP/FTP labels read the live anchors rather than a hardcoded 190.
+const useAnchorsMock = vi.fn();
+vi.mock('../../hooks/useAnchors.js', () => ({
+  useAnchors: () => useAnchorsMock(),
+}));
+
 import OverviewView from '../OverviewView.jsx';
 
 const vitalsRow = {
@@ -24,6 +30,8 @@ const vitalsRow = {
 };
 
 beforeEach(() => {
+  useAnchorsMock.mockReset();
+  useAnchorsMock.mockReturnValue({ cp: 205, ftp: 250, cpAvailable: true });
   useVitalsMock.mockReset();
   const personalBaselines = computePersonalBaselines([vitalsRow]);
   useVitalsMock.mockReturnValue({
@@ -82,7 +90,6 @@ const baseProps = {
   latestSquat: { e1rm: 118, date: '6/9' },
   totalErgDist: 55000,
   totalSessions: 20,
-  ftp: 190,
   isWide: true,
   nowTick: new Date('2026-06-20T08:00:00'),
 };
@@ -111,6 +118,23 @@ describe('OverviewView', () => {
     });
     render(<OverviewView {...baseProps} />);
     expect(screen.getByText(/readiness\s+—/)).toBeInTheDocument();
+  });
+
+  it('labels load against the live CP/FTP anchors, not a hardcoded 190', () => {
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText(/Rowing CP 205W/)).toBeInTheDocument();
+    expect(screen.queryByText(/190W/)).not.toBeInTheDocument();
+  });
+
+  it('says CP is unavailable rather than showing a stale threshold', () => {
+    useAnchorsMock.mockReturnValue({
+      cp: null,
+      ftp: null,
+      cpAvailable: false,
+    });
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText('CP unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(/190W/)).not.toBeInTheDocument();
   });
 
   it('says the training load is unavailable rather than showing a zero', () => {
