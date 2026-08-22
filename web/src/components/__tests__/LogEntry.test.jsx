@@ -81,6 +81,27 @@ describe('LogEntry', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('AC12b renders a cancelled NON-erg session as cancelled, not as "Session · <duration>"', () => {
+    // 21 of the 32 live cancelled rows are strength or cycling, all carrying a
+    // duration and no exercises — they render through the !isErg fallback, a
+    // different branch from AC12's. Unpatched it read "Session · 45min" under a
+    // CANCELLED chip: an affirmative claim about a session that did not happen.
+    const entry = {
+      type: 'Lower Strength',
+      label: 'Lower B — RDL-led',
+      date: '7/13/26',
+      duration: '45min',
+      status: 'cancelled',
+    };
+    render(<LogEntry entry={entry} />);
+    expect(screen.getByText('CANCELLED')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText(/Lower B/));
+    expect(screen.getByText(/was not completed/)).toBeInTheDocument();
+    expect(screen.queryByText('Session · 45min')).not.toBeInTheDocument();
+    expect(screen.queryByText('Session logged.')).not.toBeInTheDocument();
+  });
+
   it('renders a non-erg session with no exercise table', () => {
     const entry = {
       type: 'bike',

@@ -30,7 +30,7 @@ export default function LogEntry({ entry, done = false }) {
         borderRadius: 6,
         overflow: 'hidden',
         background: open ? `${color}10` : THEME.raised,
-        opacity: done || cancelled ? 0.5 : 1,
+        opacity: done ? 0.5 : cancelled ? 0.8 : 1,
       }}
     >
       <div
@@ -108,8 +108,8 @@ export default function LogEntry({ entry, done = false }) {
                     fontSize: 8,
                     letterSpacing: 1.5,
                     fontWeight: 700,
-                    color: THEME.muted,
-                    border: `1px solid ${THEME.muted}66`,
+                    color: THEME.textSubtle,
+                    border: `1px solid ${THEME.textSubtle}99`,
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -313,9 +313,11 @@ export default function LogEntry({ entry, done = false }) {
             >
               {planned
                 ? 'Prescription — targets below.'
-                : entry.duration
-                  ? `Session · ${entry.duration}`
-                  : 'Session logged.'}
+                : cancelled
+                  ? 'Cancelled — this session was not completed.'
+                  : entry.duration
+                    ? `Session · ${entry.duration}`
+                    : 'Session logged.'}
             </div>
           )}
           {entry.coachNote && (
