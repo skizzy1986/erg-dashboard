@@ -489,14 +489,17 @@ style={{ ...TYPE.label, color: THEME.cyan, marginBottom: SPACE.sm }}
 | Section labels, buttons, prose, nav, coach chat | **UI sans** | Courier at 9–12px is the homemade tell |
 | Metric values, splits, watts, paces, tables, tooltips | **Monospace, tabular figures** | Genuinely correct — digits must not jitter as they tick |
 
-Concretely: one variable sans with real weights — Inter, or IBM Plex Sans to sit beside IBM Plex
-Mono — for everything that is not a number, and DM Mono (or Plex Mono) actually *loaded* for
-everything that is. Self-host both; do not add a Google Fonts request to an app that ships as an
-Android APK from `file://`.
+Concretely: one variable sans with real weights for everything that is not a number, and a numeral
+face actually *loaded* for everything that is. Self-host both; do not add a Google Fonts request to
+an app that ships as an Android APK from `file://`.
 
-This directly amends `conventions.md`'s *"dark-only, data-dense, monospace-numeral"*. Note it keeps
-**monospace-numeral** — that part is right and worth protecting. What changes is that monospace stops
-being the default for everything else.
+> **Superseded on the face, not the argument.** This section proposed Inter or IBM Plex.
+> `HANDOFF.md` §1 sets **Archivo, minimum weight 500** — see §8.1. The split argued for here still
+> holds; the specific families named above do not.
+
+This directly amends `conventions.md`'s old *"dark-only, data-dense, monospace-numeral"* identity.
+Note it keeps **monospace-numeral** — that part is right and worth protecting. What changes is that
+monospace stops being the default for everything else, and that dark is no longer the ground.
 
 Expected impact: larger than the entire layout redesign, for a fraction of the work. It is the
 difference between a terminal readout and a product. **Ship it first, independently of every other
@@ -563,14 +566,15 @@ BREAKPOINT = { compact: 767 }                   // one value; deletes isWide 900
 
 ### 6.6 Two colour corrections (these belong to #183, not the type pass)
 
-1. **`muted` on cards fails AA** (§1.6). Either lighten `muted` toward `#9494b4` (≈4.6:1 on
-   `raised`), or use `textSubtle` (#aaaacc, 6.13:1) wherever muted sits on a card. Retire `textDim`
-   and `border` as *text* colours entirely.
-2. `conventions.md`'s example section label used `color: THEME.muted`. **Done ahead of #183:** the
-   doc and the `PaceTrendChart` preview now use `textSubtle`, which passes on every ground, so the
-   guidance a design agent reads is no longer AA-failing. That is a documentation fix only — the
-   app-side token decision (lighten `muted`, or sweep call sites to `textSubtle`) still belongs to
-   #183, and `src/constants/theme.js` is untouched.
+1. ~~**`muted` on cards fails AA** (§1.6)~~ — **dissolved by the light palette.** The finding was
+   real against the dark tokens, but those values are being deleted. `HANDOFF.md` §1 sets `muted`
+   to `#43485a` against white cards: 9.08:1, comfortably AA. Do not carry the `#9494b4` proposal
+   forward — it was a repair to a palette that no longer exists.
+2. **The live contrast question is now the inverse one.** Every light role token clears AA on white
+   `surface` (`accent` 5.60, `positive` 5.38, `caution` 5.06, `warning` 5.82, `accentAlt` 7.08) and
+   **fails on the `bg` ground** (3.42, 3.28, 3.09, 3.55, 4.33). Role colours are card colours; on
+   the ground use `text` or `muted`. That rule is now stated in `conventions.md`, and it is the
+   constraint §1.6 would have been had it been written against the light system.
 
 ### 6.7 One legitimate use of CSS variables
 
@@ -628,7 +632,12 @@ The `muted` contrast fix is therefore #183's, not S6's. S-1 and the TYPE scale t
 - **`ProgramView.jsx` / `ProgramYear.jsx` internals: untouched.** One line of nav config in S3.
   Decomposition rides with #77; already excluded from #183.
 - **`StrengthLogger.jsx` internals: untouched.** Rewrite is #79. S7 changes only how it is entered.
-- No light mode, no `rgba()`, no Recharts colour props — all deferred by #183.
+- ~~No light mode~~ — **overtaken.** `HANDOFF.md` §1 makes light the only theme and drops dark
+  entirely, via the token seam (`THEME` values become `var(--color-*)`, colour-named keys renamed
+  to roles). That reframes #183 rather than deferring it: the goal is no longer "migrate hex
+  literals to `THEME`" but "no hex literal survives in any component file at all", which is
+  #183's acceptance criterion arrived at from the other direction.
+- No `rgba()`, no Recharts colour props — still deferred by #183.
 - No file over ~800 lines (#114); coverage ratchets up only.
 - Any `web/src/**` change triggers the Android build (`ci-android.yml`).
 
@@ -638,21 +647,23 @@ The `muted` contrast fix is therefore #183's, not S6's. S-1 and the TYPE scale t
 
 ### 8.1 Resolved
 
-1. **Typeface — IBM Plex Sans + IBM Plex Mono, self-hosted.** Sans for chrome, labels and prose;
-   mono for figures. The deciding argument was metric compatibility, not taste: Plex Sans and Plex
-   Mono share vertical metrics and x-height, so a sans label sitting above a mono figure aligns
-   without optical fudging — which is the whole `LiveMetric` construction, repeated across every
-   metric tile. Inter + DM Mono would pair two unrelated families and pay that mismatch at every
-   such seam. Self-hosted rather than Google Fonts: the app ships as an APK served from `file://`,
-   where an external font request is a request that does not arrive.
-2. **The styling seam — approved.** The ten layout primitives in §5.1 accept a `style` prop and
-   merge it last. Domain components (`LogEntry`, `WorkoutItem`, `LiveMetric`) keep closed contracts,
-   so the no-escape-hatch rule still holds everywhere it protected anything real. Density resolves
-   through the token module rather than a drilled prop, which avoids repeating the `isWide` mistake.
-   The asymmetry settled it: approving is reversible, declining is not. A seam that gets abused can
-   be tightened later; a primitive shipped closed can only be opened by another full sweep. See the
-   `dtsPropsFor` risk added to `NOTES.md` — the contract is hand-written, so the seam has to be
-   declared there or the design agent will never see it.
+1. **Typeface — Archivo, minimum weight 500.** Set by `HANDOFF.md` §1 alongside the light redesign,
+   which is where the weight floor comes from: Archivo below 500 fails on light grounds at the sizes
+   this app uses, so any component still setting `fontWeight: 400` has to be raised in the same pass.
+   §6.1's argument for splitting a UI sans from a numeral face still stands on its own terms, but the
+   face it reached for does not — this supersedes it, and the `'DM Mono'` call sites move to Archivo
+   rather than acquiring the face they currently name.
+2. **The styling seam — superseded by the token seam, not built.** §5.1 proposed a `style` prop
+   merged last on ten layout primitives, on the reasoning that theming is otherwise structurally
+   impossible (§1.8). `HANDOFF.md` §1 reaches the same goal by a different route: `THEME`'s values
+   become `var(--color-*)` strings and a `data-theme` attribute on the app root redefines them
+   beneath it. Component source keeps its shape — `color: THEME.accent` still works, resolving
+   through the cascade instead of a prop — so the alias maps (`const C = {…}`) survive untouched and
+   no escape hatch is needed for theming. §1.8's diagnosis was right; its prescription is not the one
+   being built. **A `style` seam may still be wanted for *layout* composition** — arranging
+   primitives in ways their author did not anticipate is a different problem from theming, and the
+   token seam does not solve it. That question is open again, and belongs with whoever builds the
+   primitives.
 3. **`rowing_cp` 205W vs displayed 190** (#176) — resolved, and not either way this brief predicted.
    #203 removed the mirror itself rather than reconciling the two numbers: `CRITICAL_POWER.cpEstimate`
    is gone, the static `PACE_ZONES` table is gone, and `deriveCalibrationStatus()` now resolves from

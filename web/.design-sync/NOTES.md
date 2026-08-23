@@ -22,7 +22,7 @@ before re-running the sync.
 | `.design-sync/base.css` | Generated. The token layer (`--color-*`) plus the app ground. Wired as `cfg.cssEntry`. |
 | `.design-sync/docs/*.md` | Per-component docs. Their `category:` frontmatter is what sets the DS pane groups (session / metrics / charts / tooltips / feedback / mobile) — without them everything lands in `general`. |
 | `.design-sync/previews/*.tsx` | Authored preview stories, one file per component. |
-| `.design-sync/__tests__/entry.test.js` | Guards the barrel: fails if any re-export in `entry.jsx` resolves to `undefined`. Runs in the normal `npm test` suite. |
+| `scripts/check-design-sync-entry.mjs` | Guards the barrel: bundles `entry.jsx` with rolldown and checks every `componentSrcMap` path still exists. `npm run check:design-sync`, wired into CI. Lands from `ci/design-sync-entry-guard`. |
 
 ## Gotchas
 
@@ -86,14 +86,16 @@ Recorded so nobody re-litigates them:
   renamed or removed in a component leaves the uploaded contract silently wrong,
   and the design agent codes against that contract. Diff the components against
   the config when re-syncing.
-- **When the layout primitives land, `dtsPropsFor` must declare their `style`
-  prop.** DESIGN_BRIEF §8.1 approves a `style` passthrough on the §5.1 layout
-  primitives. Because props are hand-written here, a primitive that accepts
-  `style` in code but omits it from the contract reads to the design agent as
-  closed, and the seam goes unused. Declare it as
-  `style?: Record<string, string | number>` — **not** `React.CSSProperties`,
-  which will not resolve (see the `[DTS_REACT]` note above). The domain
-  components keep closed contracts; do not add `style` to those.
+- **The token seam changes what `THEME` values *are*, and the contracts must
+  follow.** `HANDOFF.md` §1 turns every `THEME` value into a
+  `var(--color-*)` string and renames the colour-named keys to roles
+  (`cyan`→`accent`, `gold`→`caution`, …). Component *source* does not change
+  shape — `color: THEME.accent` still works — but two things here do: the
+  accent-token names quoted throughout `conventions.md` and `dtsPropsFor`, and
+  `base.css`, which stops being the token layer and becomes a mirror of the
+  app's own stylesheet. Re-run `gen-css.mjs` and re-read every `accent` default
+  in `dtsPropsFor` in the same change, or designs will resolve tokens that no
+  longer exist.
 - **`entry.jsx` is hand-maintained too.** A new component in
   `src/components/` will not sync until it is added there *and* to
   `cfg.componentSrcMap` *and* given a `.design-sync/docs/<Name>.md` (or it lands
@@ -106,17 +108,15 @@ Recorded so nobody re-litigates them:
   ships the face — `index.html` loads no webfont. Everything therefore renders
   in the Courier/monospace fallback, in the app and in designs alike. This is
   faithful to production, not a bug. **Do not fix it by adding DM Mono:**
-  DESIGN_BRIEF §8.1 settled the typeface on self-hosted IBM Plex Sans + IBM
-  Plex Mono, so these call sites should move to Plex Mono rather than acquire
-  the face they currently name.
-- **When Plex lands in the app, `cfg.extraFonts` must carry it too.**
+  `HANDOFF.md` sets the face to **Archivo**, minimum weight 500 — below that it
+  fails on light grounds at the sizes used. These call sites should move to
+  Archivo rather than acquire the face they currently name.
+- **When Archivo lands in the app, `cfg.extraFonts` must carry it too.**
   `cfg.extraFonts` is **not in `config.json` today** — it has to be added. The
-  bundle serves its own fonts, so an app that self-hosts IBM Plex while this
+  bundle serves its own fonts, so an app that self-hosts Archivo while this
   config stays silent renders every figure in the Courier fallback inside
-  designs. That breaks the pairing the typeface decision was made for: Plex
-  Sans and Plex Mono share vertical metrics, and a fallback mono does not, so
-  `LiveMetric`'s label-over-figure stack misaligns in designs but not in the
-  app. Wire both faces when the app does.
+  designs, at a weight the design system explicitly rules out. Wire the face and
+  its 500+ weights when the app does.
 - **Toolchain assumptions:** the render check runs against **system Chrome**
   (`DS_CHROMIUM_PATH=/c/Program Files/Google/Chrome/Application/chrome.exe`)
   because no playwright browser is cached on this machine. `playwright` itself
