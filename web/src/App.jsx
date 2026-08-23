@@ -155,7 +155,6 @@ const strengthTrend = {
 export default function App() {
   const [view, setView] = useState('overview');
   const [expanded, setExpanded] = useState(null);
-  const [ftp, setFtp] = useState(190);
   const [progTab, setProgTab] = useState('phases'); // phases | week | year
   const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
   const [vw, setVw] = useState(
@@ -212,7 +211,9 @@ export default function App() {
   const ergSessions = loggedSessions.filter((e) => e._isErg);
   const strengthSessions = loggedSessions.filter((e) => e.exercises);
   const latestErg = ergSessions[0]; // dbSessions are newest-first
-  const totalErgDist = 55000; // metres, from logged sessions
+  // Was hardcoded at 55000. The logged erg sessions actually sum to ~216km, so
+  // the headline understated the work by about 4x.
+  const totalErgDist = ergSessions.reduce((m, e) => m + (e.distance_m ?? 0), 0);
   const latestSquat = strengthTrend['Back Squat'].slice(-1)[0];
   const totalSessions = loggedSessions.length;
 
@@ -395,7 +396,6 @@ export default function App() {
               latestSquat={latestSquat}
               totalErgDist={totalErgDist}
               totalSessions={totalSessions}
-              ftp={ftp}
               isWide={isWide}
               nowTick={nowTick}
             />

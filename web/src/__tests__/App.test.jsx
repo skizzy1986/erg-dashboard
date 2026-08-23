@@ -122,12 +122,21 @@ vi.mock('../views/MobilityView.jsx', () => ({
 // Surfaces the load props so a test can assert what App derived and passed
 // down, rather than reaching into OverviewView's own rendering.
 vi.mock('../views/OverviewView.jsx', () => ({
-  default: ({ latest, loadUnavailable, loggedSessions, totalSessions }) => (
+  default: ({
+    latest,
+    loadUnavailable,
+    totalErgDist,
+    ftp,
+    loggedSessions,
+    totalSessions,
+  }) => (
     <div>
       OverviewView-stub
       <span data-testid="ctl">{latest ? latest.ctl : 'none'}</span>
       <span data-testid="tsb">{latest ? latest.tsb : 'none'}</span>
       <span data-testid="unavailable">{String(loadUnavailable)}</span>
+      <span data-testid="ergdist">{String(totalErgDist)}</span>
+      <span data-testid="ftp">{String(ftp)}</span>
       <span data-testid="overview-counted">{loggedSessions?.length}</span>
       <span data-testid="overview-total">{totalSessions}</span>
     </div>
@@ -256,6 +265,21 @@ describe('App', () => {
 
     expect(screen.getByTestId('ctl').textContent).toBe('none');
     expect(screen.getByTestId('unavailable').textContent).toBe('false');
+  }, 30000);
+
+  it('sums erg distance from the logged sessions instead of a hardcoded total', async () => {
+    // The fixture carries one erg row at 12000m. This was `55000` regardless of
+    // what had actually been logged.
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+    expect(screen.getByTestId('ergdist').textContent).toBe('12000');
+  }, 30000);
+
+  it('no longer threads a hardcoded ftp down to the overview', async () => {
+    // CP/FTP now come from the live anchors inside OverviewView.
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+    expect(screen.getByTestId('ftp').textContent).toBe('undefined');
   }, 30000);
 
   it('R9 wires the shown list to LogView and the counted list to every counting consumer (#194)', async () => {
