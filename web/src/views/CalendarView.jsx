@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import WorkoutItem from '../components/WorkoutItem.jsx';
 import BenchmarkBadge from '../components/BenchmarkBadge.jsx';
+import BenchmarkLinkControl from '../components/BenchmarkLinkControl.jsx';
 import {
   useBenchmarkStatuses,
   useBenchmarkDataUnavailable,
 } from '../hooks/useBenchmarkStatuses.js';
+import { useBenchmarkSessions } from '../hooks/useBenchmarkSessions.js';
+import { useLinkBenchmarkSession } from '../hooks/useLinkBenchmarkSession.js';
 import {
   getRosterMode,
   resolveDay,
@@ -20,6 +24,18 @@ export default function CalendarView({ loggedSessions, isWide }) {
   // the wrong row once the rows are re-ordered by severity.
   const benchmarkStatuses = useBenchmarkStatuses();
   const benchmarksUnavailable = useBenchmarkDataUnavailable();
+  // Same query key useBenchmarkStatuses already reads, so react-query serves it
+  // from cache — this is not a second request.
+  const { data: benchmarkSessions } = useBenchmarkSessions();
+  const link = useLinkBenchmarkSession();
+  // One mutation serves every row, so remember which benchmark issued the write
+  // and show its busy/error state against that row only.
+  const [linkingKey, setLinkingKey] = useState(null);
+  const linkError = link.isError
+    ? link.error?.code === '23505'
+      ? 'Another session already claims this benchmark'
+      : link.error?.message || 'Could not save the link'
+    : null;
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthNames = [
     'Jan',
@@ -65,11 +81,14 @@ export default function CalendarView({ loggedSessions, isWide }) {
   }
   const todayMode = firstMode;
   const todayCycle = MICROCYCLE[todayMode] || MICROCYCLE.home;
-  // Slice BEFORE sort: which five entries are visible stays a ladder decision,
-  // only their order is a severity one. .slice() copies, so the memoized hook
-  // result is never mutated.
+  // The whole ladder renders, ordered by severity (#228). It used to be capped
+  // at the first five by position, which hid the 2k Test, the 1000m tune-ups
+  // and the TARGET champs entirely — and meant a benchmark going overdue deep
+  // in the ladder could never surface, however loud (#215). Severity order is
+  // what keeps nine rows from being wallpaper: anything actionable floats.
+  // .slice() still copies, so .sort() never mutates the memoized hook result.
   const visibleEvents = benchmarkStatuses
-    .slice(0, 5)
+    .slice()
     .sort(compareBenchmarkSeverity);
   return (
     <>
@@ -240,7 +259,8 @@ export default function CalendarView({ loggedSessions, isWide }) {
                 gap: 10,
                 marginBottom: 6,
                 paddingBottom: 6,
-                borderBottom: i < 4 ? '1px solid #3e3e5a' : 'none',
+                borderBottom:
+                  i < visibleEvents.length - 1 ? '1px solid #3e3e5a' : 'none',
               }}
             >
               <div
@@ -270,6 +290,23 @@ export default function CalendarView({ loggedSessions, isWide }) {
                   daysUntilStart={bench.daysUntilStart}
                   rescheduledTo={bench.rescheduledTo}
                 />
+                {/* status 'unknown' means the sessions read is pending or failed
+                    (#188). Rendering then would flash LINK before flipping to
+                    LINKED, and offer a picker over an empty candidate list. */}
+                {e.kind === 'benchmark' && bench.status !== 'unknown' && (
+                  <BenchmarkLinkControl
+                    benchmarkKey={e.key}
+                    benchmarkName={e.name}
+                    linkedSessionId={bench.matchedSessionId}
+                    sessions={benchmarkSessions ?? []}
+                    onLink={(sessionId) => {
+                      setLinkingKey(e.key);
+                      link.mutate({ benchmarkKey: e.key, sessionId });
+                    }}
+                    busy={link.isPending && linkingKey === e.key}
+                    error={linkingKey === e.key ? linkError : null}
+                  />
+                )}
               </div>
             </div>
           );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { THEME } from '../constants/theme.js';
 
-export default function LoadTooltip({ active, payload, label }) {
+export default function LoadTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   const tsbColor =

@@ -1399,7 +1399,10 @@ function mountStrengthLogger(root) {
             vid.onloadedmetadata = () => {
               try {
                 vid.currentTime = t;
-              } catch (e) {}
+              } catch {
+                // Seeking a not-yet-seekable video throws; the frame we land on
+                // is cosmetic, so play from wherever it is.
+              }
               vid.playbackRate = rate;
               vid.play();
             };
@@ -1621,7 +1624,11 @@ function mountStrengthLogger(root) {
                 .update({ status: 'pending', workout_id: null })
                 .eq('id', draft.assignment.id);
             }
-          } catch (_) {}
+          } catch {
+            // Best-effort release of the assignment. The draft is already gone
+            // locally, and a stuck 'in_progress' row is recoverable by hand —
+            // failing the discard here would strand the user instead.
+          }
           toast('Draft discarded');
         }
       );
@@ -1649,7 +1656,10 @@ export default function StrengthLogger() {
     return () => {
       try {
         cleanup && cleanup();
-      } catch (e) {}
+      } catch {
+        // Unmount teardown: nothing above us can act on a failure here, and
+        // throwing from a cleanup function masks the real unmount error.
+      }
     };
   }, []);
   return (

@@ -1,6 +1,8 @@
 import { PaceTrendChart, derivePaceZones, THEME } from 'splitiq';
 
-// Bands come from the live CP anchor in the app; 205W is the current value.
+// The app reads CP live from the `rowing_cp` anchor (useAnchors) and calls
+// derivePaceZones(cp). 205W is the current anchor — used here so the bands are
+// the real ones rather than an invented table.
 const PACE_ZONES = derivePaceZones(205);
 
 // Newest-first, as the app supplies it — the component reverses internally.
@@ -25,7 +27,7 @@ const Panel = ({ title, children }: { title: string; children: React.ReactNode }
         padding: '16px 14px 10px',
       }}
     >
-      <div style={{ fontSize: 9, letterSpacing: 2, color: THEME.textSubtle, padding: '0 4px 10px' }}>
+      <div style={{ fontSize: 9, letterSpacing: 2, color: THEME.muted, padding: '0 4px 10px' }}>
         {title}
       </div>
       {children}

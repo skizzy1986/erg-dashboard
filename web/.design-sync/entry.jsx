@@ -17,6 +17,7 @@ export { default as BottomTabBar } from '../src/components/mobile/BottomTabBar.j
 
 export { THEME } from '../src/constants/theme.js';
 export { C, ICON } from '../src/constants/ui.js';
-// Zones are derived from the live CP anchor, not a static table: a second set
-// of bands keyed off a seed constant would drift from the app's own.
+// derivePaceZones(cp), not a static zone table: trainingConfig.js deliberately
+// stopped exporting PACE_ZONES so a seed-derived table cannot diverge from the
+// live `rowing_cp` anchor. Callers pass the current CP in watts.
 export { derivePaceZones } from '../src/constants/trainingConfig.js';

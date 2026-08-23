@@ -5,6 +5,11 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 export default [
   js.configs.recommended,
   {
+    // Without a `files` glob here, ESLint 9 expands a directory argument
+    // (`eslint src/`) to **/*.js only, so every non-test .jsx was silently
+    // skipped and the lint gate reported green over ~14.5k unvisited lines.
+    // The test/e2e blocks below match .jsx, which is why *those* were linted.
+    files: ['**/*.{js,jsx}'],
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
@@ -17,6 +22,8 @@ export default [
         document: 'readonly',
         navigator: 'readonly',
         console: 'readonly',
+        confirm: 'readonly',
+        Image: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',
         setTimeout: 'readonly',
@@ -42,11 +49,27 @@ export default [
     rules: {
       ...reactPlugin.configs.recommended.rules,
       ...reactHooksPlugin.configs.recommended.rules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      // ignoreRestSiblings covers the deliberate omit-a-key idiom
+      // (`const { _queuedAt, ...rest } = session`), which is a rest-spread
+      // filter, not dead code. varsIgnorePattern extends the existing `_`
+      // convention from arguments to variables so the two agree.
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
       'no-console': 'off',
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
       'react-hooks/immutability': 'warn',
+      // Default forbids ' and " too, which fired 27 times purely on prose
+      // ("Scott's", quoted coach notes). React renders those literally and
+      // correctly; escaping them makes the copy unreadable for no safety gain.
+      // > and } stay forbidden — those are the genuinely ambiguous ones.
+      'react/no-unescaped-entities': ['error', { forbid: ['>', '}'] }],
     },
   },
   {

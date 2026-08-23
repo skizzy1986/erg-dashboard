@@ -60,6 +60,12 @@ AA on white `surface` (`accent` 5.60, `positive` 5.38, `caution` 5.06, `warning`
 different surface — if a new ground appears it needs its own token, not a
 shifted one.
 
+**`textFaint` and `textDim` are not readable text.** In the dark palette they
+failed AA on every ground (3.94 / 3.36 / 2.72 and 3.00 / 2.56 / 2.07) and were
+decorative-only — hairlines and disabled glyphs. `HANDOFF.md` keeps the `text*`
+ramp but does not give light values for these two, so **they are unspecified
+here.** Do not use either for text until they are set and measured.
+
 **Minimum font weight 500.** Archivo below 500 fails on light grounds at the
 sizes used here. There is no 400-weight text in this system.
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Component, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, Component } from 'react';
 import { useSessionLog } from './hooks/useSessionLog.js';
 import { useTSSHistory } from './hooks/useTSSHistory.js';
 import StrengthLogger from './StrengthLogger.jsx';
@@ -14,9 +14,7 @@ import ProgramView from './views/ProgramView.jsx';
 import CalendarView from './views/CalendarView.jsx';
 import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
-import ErgTooltip from './components/ErgTooltip.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
-import { C } from './constants/ui.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -155,8 +153,6 @@ const strengthTrend = {
 export default function App() {
   const [view, setView] = useState('overview');
   const [expanded, setExpanded] = useState(null);
-  const [ftp, setFtp] = useState(190);
-  const [progTab, setProgTab] = useState('phases'); // phases | week | year
   const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
   const [vw, setVw] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -173,7 +169,6 @@ export default function App() {
   }, []);
   // Responsive breakpoints: wider container on desktop, multi-column where it helps.
   const isWide = vw >= 900; // desktop — use the extra width
-  const isMid = vw >= 600; // tablet
   const containerMax = isWide ? 1100 : 680;
 
   const {
@@ -212,7 +207,9 @@ export default function App() {
   const ergSessions = loggedSessions.filter((e) => e._isErg);
   const strengthSessions = loggedSessions.filter((e) => e.exercises);
   const latestErg = ergSessions[0]; // dbSessions are newest-first
-  const totalErgDist = 55000; // metres, from logged sessions
+  // Was hardcoded at 55000. The logged erg sessions actually sum to ~216km, so
+  // the headline understated the work by about 4x.
+  const totalErgDist = ergSessions.reduce((m, e) => m + (e.distance_m ?? 0), 0);
   const latestSquat = strengthTrend['Back Squat'].slice(-1)[0];
   const totalSessions = loggedSessions.length;
 
@@ -395,7 +392,6 @@ export default function App() {
               latestSquat={latestSquat}
               totalErgDist={totalErgDist}
               totalSessions={totalSessions}
-              ftp={ftp}
               isWide={isWide}
               nowTick={nowTick}
             />

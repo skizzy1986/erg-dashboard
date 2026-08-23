@@ -1,7 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { EVENT_LADDER } from '../../constants/schedule.js';
 import {
-  BENCHMARK_GRACE_DAYS,
   addCalendarDays,
   benchmarkKeywords,
   diffCalendarDays,
@@ -181,9 +180,7 @@ describe('calendar arithmetic', () => {
   });
 
   it('adds and subtracts days across month boundaries', () => {
-    expect(addCalendarDays('2026-07-11', -BENCHMARK_GRACE_DAYS)).toBe(
-      '2026-06-27'
-    );
+    expect(addCalendarDays('2026-07-11', -14)).toBe('2026-06-27');
     expect(addCalendarDays('2026-02-28', 1)).toBe('2026-03-01');
     expect(addCalendarDays('2028-02-28', 1)).toBe('2028-02-29');
   });
