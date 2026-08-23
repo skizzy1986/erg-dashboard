@@ -171,8 +171,8 @@ legacy `sessions.date` text pattern); RLS single-owner policy like the modern ta
   **This anchor is self-maintaining — it is the one exception to "Scott authorises".**
   Two halves: `.github/workflows/doctrine-sha-guard.yml` *detects* drift on any push
   touching the doctrine docs and opens a tracking issue (CI has no DB access, so it
-  cannot fix it), and the **`Reconcile doctrine_sha anchor`** Routine *applies* the
-  supersede nightly at 21:00 UTC, then closes that issue. It no-ops when the anchor
+  cannot fix it), and the **`Supabase Doctrine_SHA anchor update`** Routine *applies* the
+  supersede nightly at 01:00 UTC, then closes that issue. It no-ops when the anchor
   already matches, only ever touches `doctrine_sha`, and stops rather than improvises
   on any ambiguity. Do not hand-supersede this key unless the Routine is disabled.
 - **Lanes:** Code owns the schema (tables, structural seed, migrations); Coach owns
