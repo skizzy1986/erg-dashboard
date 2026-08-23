@@ -1,4 +1,9 @@
-import { PaceTrendChart, PACE_ZONES, THEME } from 'splitiq';
+import { PaceTrendChart, derivePaceZones, THEME } from 'splitiq';
+
+// The app reads CP live from the `rowing_cp` anchor (useAnchors) and calls
+// derivePaceZones(cp). 205W is the current anchor — used here so the bands are
+// the real ones rather than an invented table.
+const PACE_ZONES = derivePaceZones(205);
 
 // Newest-first, as the app supplies it — the component reverses internally.
 const SESSIONS = [

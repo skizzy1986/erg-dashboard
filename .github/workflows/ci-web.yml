@@ -50,6 +50,11 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      # The design-sync barrel (web/.design-sync/entry.jsx) re-exports app
+      # components by name for the claude.ai/design bundle. Nothing else
+      # imports it, so a rename or deletion in web/src breaks it silently —
+      # see web/.design-sync/NOTES.md. Bundling it here is the control.
+      - run: npm run check:design-sync
       # Scoped to production dependencies: dev-only transitive advisories
       # (eslint/vitest/workbox tooling) must not block application PRs. An
       # unscoped gate deadlocked the repo for a month in 2026-08 — it failed
