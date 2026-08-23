@@ -9,24 +9,6 @@ import BottomTabBar from '../../components/mobile/BottomTabBar.jsx';
 import ErgLiveView from '../ErgLiveView.jsx';
 import CoachView from '../CoachView.jsx';
 
-function PlaceholderCard({ message }) {
-  return (
-    <div
-      style={{
-        margin: 16,
-        background: '#2a2a48',
-        borderRadius: 12,
-        padding: '40px 20px',
-        textAlign: 'center',
-        color: '#7e7e9a',
-        fontSize: 13,
-      }}
-    >
-      {message}
-    </div>
-  );
-}
-
 export default function MobileApp() {
   const [activeTab, setActiveTab] = useState('analytics');
 

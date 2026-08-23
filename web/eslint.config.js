@@ -49,7 +49,18 @@ export default [
     rules: {
       ...reactPlugin.configs.recommended.rules,
       ...reactHooksPlugin.configs.recommended.rules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      // ignoreRestSiblings covers the deliberate omit-a-key idiom
+      // (`const { _queuedAt, ...rest } = session`), which is a rest-spread
+      // filter, not dead code. varsIgnorePattern extends the existing `_`
+      // convention from arguments to variables so the two agree.
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
       'no-console': 'off',
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
