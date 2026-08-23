@@ -15,14 +15,14 @@ filled cyan disc when `hardPush` is set on that session. Hovering a point opens
 
 `data` is a list of enriched sessions ordered newest-first — the component
 reverses it internally and drops any entry without `pace_500m`. `paceZones` comes
-from `PACE_ZONES` in the app's training config; pass `showBands={false}` to plot
-the bare line. `height` defaults to 180 and the width always fills the parent, so
-give it a sized container.
+from `derivePaceZones(cp)` in the app's training config, called with the live CP
+anchor; pass `showBands={false}` to plot the bare line. `height` defaults to 180
+and the width always fills the parent, so give it a sized container.
 
 ```jsx
 <PaceTrendChart
   data={sessions}
-  paceZones={PACE_ZONES}
+  paceZones={derivePaceZones(205)}
   height={220}
 />
 ```

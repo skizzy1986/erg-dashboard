@@ -22,6 +22,7 @@ before re-running the sync.
 | `.design-sync/base.css` | Generated. The token layer (`--color-*`) plus the app ground. Wired as `cfg.cssEntry`. |
 | `.design-sync/docs/*.md` | Per-component docs. Their `category:` frontmatter is what sets the DS pane groups (session / metrics / charts / tooltips / feedback / mobile) — without them everything lands in `general`. |
 | `.design-sync/previews/*.tsx` | Authored preview stories, one file per component. |
+| `.design-sync/__tests__/entry.test.js` | Guards the barrel: fails if any re-export in `entry.jsx` resolves to `undefined`. Runs in the normal `npm test` suite. |
 
 ## Gotchas
 
@@ -49,8 +50,11 @@ before re-running the sync.
   scope. In an IIFE bundle `import.meta.env` is undefined, so the client throws
   at load and takes the whole bundle down. To include it later, shim the client
   (e.g. a `cfg.provider` or a stub module via `cfg.extraEntries`) first.
-- `PACE_ZONES` is exported from `entry.jsx` so `PaceTrendChart` previews use the
-  real zone table rather than an inlined copy that would rot.
+- **`derivePaceZones` is exported from `entry.jsx`, not a zone table.** #203
+  removed the static `PACE_ZONES` constant — bands are derived from the live CP
+  anchor. Previews call `derivePaceZones(205)` so they track the real derivation
+  rather than an inlined copy that would rot. Do not re-add a static export:
+  `trainingConfig.test.js` asserts the module has no `PACE_ZONES` property.
 
 ## Known render warns
 
@@ -82,6 +86,14 @@ Recorded so nobody re-litigates them:
   renamed or removed in a component leaves the uploaded contract silently wrong,
   and the design agent codes against that contract. Diff the components against
   the config when re-syncing.
+- **When the layout primitives land, `dtsPropsFor` must declare their `style`
+  prop.** DESIGN_BRIEF §8.1 approves a `style` passthrough on the §5.1 layout
+  primitives. Because props are hand-written here, a primitive that accepts
+  `style` in code but omits it from the contract reads to the design agent as
+  closed, and the seam goes unused. Declare it as
+  `style?: Record<string, string | number>` — **not** `React.CSSProperties`,
+  which will not resolve (see the `[DTS_REACT]` note above). The domain
+  components keep closed contracts; do not add `style` to those.
 - **`entry.jsx` is hand-maintained too.** A new component in
   `src/components/` will not sync until it is added there *and* to
   `cfg.componentSrcMap` *and* given a `.design-sync/docs/<Name>.md` (or it lands
@@ -93,8 +105,18 @@ Recorded so nobody re-litigates them:
   `fontFamily: "'DM Mono', monospace"`, but neither the app nor this bundle
   ships the face — `index.html` loads no webfont. Everything therefore renders
   in the Courier/monospace fallback, in the app and in designs alike. This is
-  faithful to production, not a bug, but if SplitIQ ever adds DM Mono, wire it
-  here via `cfg.extraFonts` so designs keep matching.
+  faithful to production, not a bug. **Do not fix it by adding DM Mono:**
+  DESIGN_BRIEF §8.1 settled the typeface on self-hosted IBM Plex Sans + IBM
+  Plex Mono, so these call sites should move to Plex Mono rather than acquire
+  the face they currently name.
+- **When Plex lands in the app, `cfg.extraFonts` must carry it too.**
+  `cfg.extraFonts` is **not in `config.json` today** — it has to be added. The
+  bundle serves its own fonts, so an app that self-hosts IBM Plex while this
+  config stays silent renders every figure in the Courier fallback inside
+  designs. That breaks the pairing the typeface decision was made for: Plex
+  Sans and Plex Mono share vertical metrics, and a fallback mono does not, so
+  `LiveMetric`'s label-over-figure stack misaligns in designs but not in the
+  app. Wire both faces when the app does.
 - **Toolchain assumptions:** the render check runs against **system Chrome**
   (`DS_CHROMIUM_PATH=/c/Program Files/Google/Chrome/Application/chrome.exe`)
   because no playwright browser is cached on this machine. `playwright` itself

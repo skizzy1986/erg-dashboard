@@ -1,7 +1,7 @@
 ---
 title: UI & Information Architecture Brief
 category: guidelines
-status: proposed
+status: partially-ratified
 date: 2026-08-22
 ---
 
@@ -566,8 +566,11 @@ BREAKPOINT = { compact: 767 }                   // one value; deletes isWide 900
 1. **`muted` on cards fails AA** (§1.6). Either lighten `muted` toward `#9494b4` (≈4.6:1 on
    `raised`), or use `textSubtle` (#aaaacc, 6.13:1) wherever muted sits on a card. Retire `textDim`
    and `border` as *text* colours entirely.
-2. `conventions.md`'s example section label uses `color: THEME.muted` — update it with whichever fix
-   is chosen.
+2. `conventions.md`'s example section label used `color: THEME.muted`. **Done ahead of #183:** the
+   doc and the `PaceTrendChart` preview now use `textSubtle`, which passes on every ground, so the
+   guidance a design agent reads is no longer AA-failing. That is a documentation fix only — the
+   app-side token decision (lighten `muted`, or sweep call sites to `textSubtle`) still belongs to
+   #183, and `src/constants/theme.js` is untouched.
 
 ### 6.7 One legitimate use of CSS variables
 
@@ -631,27 +634,44 @@ The `muted` contrast fix is therefore #183's, not S6's. S-1 and the TYPE scale t
 
 ---
 
-## 8. Open questions
+## 8. Questions
 
-1. **Typeface choice.** §6.1 argues the split; it does not pick the faces. Inter + DM Mono, or the
-   IBM Plex pair for a single designed family? This is a taste call and it should be Scott's.
-2. **The styling seam is a real divergence** (§5.1). `conventions.md` states components accept no
-   escape hatch, and that is currently true of all eleven. Adding `style` passthrough to the new
-   *layout* primitives breaks that rule deliberately. The alternative — keep every primitive closed —
-   means theming, light mode and density remain permanently impossible. Worth an explicit yes or no
-   rather than drifting into it.
-2. **Nutrition** — moved to Body. 215 lines suggests it matters; if intake is adjusted daily it
+### 8.1 Resolved
+
+1. **Typeface — IBM Plex Sans + IBM Plex Mono, self-hosted.** Sans for chrome, labels and prose;
+   mono for figures. The deciding argument was metric compatibility, not taste: Plex Sans and Plex
+   Mono share vertical metrics and x-height, so a sans label sitting above a mono figure aligns
+   without optical fudging — which is the whole `LiveMetric` construction, repeated across every
+   metric tile. Inter + DM Mono would pair two unrelated families and pay that mismatch at every
+   such seam. Self-hosted rather than Google Fonts: the app ships as an APK served from `file://`,
+   where an external font request is a request that does not arrive.
+2. **The styling seam — approved.** The ten layout primitives in §5.1 accept a `style` prop and
+   merge it last. Domain components (`LogEntry`, `WorkoutItem`, `LiveMetric`) keep closed contracts,
+   so the no-escape-hatch rule still holds everywhere it protected anything real. Density resolves
+   through the token module rather than a drilled prop, which avoids repeating the `isWide` mistake.
+   The asymmetry settled it: approving is reversible, declining is not. A seam that gets abused can
+   be tightened later; a primitive shipped closed can only be opened by another full sweep. See the
+   `dtsPropsFor` risk added to `NOTES.md` — the contract is hand-written, so the seam has to be
+   declared there or the design agent will never see it.
+3. **`rowing_cp` 205W vs displayed 190** (#176) — resolved, and not either way this brief predicted.
+   #203 removed the mirror itself rather than reconciling the two numbers: `CRITICAL_POWER.cpEstimate`
+   is gone, the static `PACE_ZONES` table is gone, and `deriveCalibrationStatus()` now resolves from
+   the `anchors.rowing_cp` row at render time — or reports the anchor as unavailable instead of
+   falling back to a stale constant. No second CP remains to disagree with the first, so **S2
+   inherits no work here.** Do not reintroduce a seed CP constant or a static zone table as a
+   convenience: `trainingConfig.test.js` fails if either returns.
+
+### 8.2 Still open
+
+4. **Nutrition** — moved to Body. 215 lines suggests it matters; if intake is adjusted daily it
    earns one line on Today, but only once it is live.
-3. **`rowing_cp` 205W vs displayed 190** (#176) — assumed a display bug to fix in S2. **If 190 is a
-   deliberate conservative floor, S2 must not "fix" it** — and it needs a comment saying so, because
-   it will keep being reported as a bug.
-4. **Radius 6→12 and ±2px spacing drift across ~200 call sites, with no visual-regression net.** The
+5. **Radius 6→12 and ±2px spacing drift across ~200 call sites, with no visual-regression net.** The
    price of a real scale. Mitigation is S6.0 baselines, but that is new CI surface.
-5. **Five destinations or six?** Program sits in the Playbook. If it is read and revised weekly it
+6. **Five destinations or six?** Program sits in the Playbook. If it is read and revised weekly it
    may deserve its own destination. Genuine coin-flip; one line in `constants/nav.js` either way.
-6. **Hash routing on Android.** Deep links and back are impossible today (`App.jsx:164` is
+7. **Hash routing on Android.** Deep links and back are impossible today (`App.jsx:164` is
    `useState`). Capacitor serves from `file://`, so hash routing not history — and `MobileApp.jsx`
    already wires the hardware back button, so the two interact and need testing on a real device.
-7. **Coverage ratchet.** Deleting `OverviewView.jsx` *raises* measured coverage. But S2 rewires
+8. **Coverage ratchet.** Deleting `OverviewView.jsx` *raises* measured coverage. But S2 rewires
    `App.jsx`, which is in the denominator. Decide in advance that a threshold bump is a PR-config
    change, not a reason to stall a slice.

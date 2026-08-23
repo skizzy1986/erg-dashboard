@@ -49,7 +49,9 @@ strength, `teal` is cycling, `grey`/`neutral` is rest.
   (`'Z2 Aerobic'`, `'Threshold'`, `'VO₂ Intervals'`, `'Sharpener'`, `'Rest'`,
   `'Upper Strength'`, `'Lower Strength'`, `'Combined'`, `'Cycling'`). Use these
   keys as `entry.type` so `LogEntry` colours itself correctly.
-- `PACE_ZONES` — the real training-zone table `PaceTrendChart` draws bands from.
+- `derivePaceZones(cp)` — builds the real training-zone table `PaceTrendChart`
+  draws bands from. The app calls it with the live CP anchor (205W today);
+  there is no static zone table to import.
 
 ### Where the truth is
 
@@ -90,7 +92,7 @@ const { LiveMetric, LogEntry, THEME } = window.SplitIQ;
     <LiveMetric label="HR" value={139} unit="BPM" accent={THEME.green} />
   </div>
 
-  <div style={{ fontSize: 9, letterSpacing: 2, color: THEME.muted }}>THIS WEEK</div>
+  <div style={{ fontSize: 9, letterSpacing: 2, color: THEME.textSubtle }}>THIS WEEK</div>
   <LogEntry
     entry={{
       type: 'Z2 Aerobic', _isErg: true, label: 'UT2 60min', date: '6/19',
@@ -101,5 +103,10 @@ const { LiveMetric, LogEntry, THEME } = window.SplitIQ;
 ```
 
 Note the house details: tiny uppercase tracked section labels (`fontSize: 9`,
-`letterSpacing: 2`, `color: muted`), 6–10px radii, 1px `border` hairlines on
+`letterSpacing: 2`, `color: textSubtle`), 6–10px radii, 1px `border` hairlines on
 `surface`/`raised` panels, and numbers in the monospace face.
+
+**Use `textSubtle` (#aaaacc), not `muted` (#7e7e9a), for text on a panel.**
+`muted` clears AA only on the page ground `bg` (5.08:1); on `surface` it is
+4.34:1 and on `raised` 3.50:1, both failing, while `textSubtle` passes
+everywhere (8.88 / 7.58 / 6.13:1).
