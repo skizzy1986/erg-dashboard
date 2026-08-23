@@ -13,12 +13,18 @@ import {
   resolveDay,
   dayStatus,
   daySessions,
+  logEntriesForDate,
 } from '../utils/schedule.js';
 import { compareBenchmarkSeverity } from '../utils/benchmarkStatus.js';
 import { MICROCYCLE, PHASE_CONTEXT } from '../constants/schedule.js';
+import { THEME } from '../constants/theme.js';
 
 // ── CALENDAR VIEW ──
-export default function CalendarView({ loggedSessions, isWide }) {
+export default function CalendarView({
+  loggedSessions,
+  cancelledSessions = [],
+  isWide,
+}) {
   // Resolved once for the FULL ladder. Each state carries its own entry, so the
   // panel below renders from the states themselves — a badge cannot drift onto
   // the wrong row once the rows are re-ordered by severity.
@@ -68,6 +74,10 @@ export default function CalendarView({ loggedSessions, isWide }) {
     if (i >= 0 && mode !== firstMode) sawSwitch = true;
     const sess = resolveDay(d); // override-aware
     const status = dayStatus(d, today0, loggedSessions); // done / today / upcoming / missed
+    // Same status-blind date matcher the completed count runs through, fed the
+    // pre-filtered cancelled list — so the two counts cannot drift apart on the
+    // unpadded M/D/YY key, and schedule.js never learns about status.
+    const cancelledCount = logEntriesForDate(d, cancelledSessions).length;
     days.push({
       date: d,
       dow,
@@ -77,6 +87,7 @@ export default function CalendarView({ loggedSessions, isWide }) {
       mode,
       isOverride: !!(sess && sess.override),
       status,
+      cancelledCount,
     });
   }
   const todayMode = firstMode;
@@ -151,7 +162,13 @@ export default function CalendarView({ loggedSessions, isWide }) {
                 flexDirection: 'column',
                 gap: 3,
                 opacity:
-                  st === 'missed' ? 0.5 : st === 'done' && d.isPast ? 0.85 : 1,
+                  st === 'missed'
+                    ? d.cancelledCount > 0
+                      ? 0.75
+                      : 0.5
+                    : st === 'done' && d.isPast
+                      ? 0.85
+                      : 1,
               }}
             >
               <div
@@ -173,6 +190,18 @@ export default function CalendarView({ loggedSessions, isWide }) {
                 >
                   {statusLabel}
                 </span>
+                {d.cancelledCount > 0 && (
+                  <span
+                    style={{
+                      fontSize: 7,
+                      color: THEME.textSubtle,
+                      letterSpacing: 2,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ⊘ {d.cancelledCount} CANCELLED
+                  </span>
+                )}
                 {d.isOverride && (
                   <span
                     style={{

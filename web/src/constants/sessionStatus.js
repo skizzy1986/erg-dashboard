@@ -9,3 +9,8 @@ export const COMPLETED_STATUSES = ['actual', 'completed', 'logged'];
 // happened. Deliberately NOT in COMPLETED_STATUSES: it must never clear a
 // benchmark, only reschedule one.
 export const PLANNED_STATUS = 'planned';
+
+// A session that was decided against — a deviation from the plan, not training
+// that happened. Scalar rather than an array: unlike COMPLETED_STATUSES it has
+// exactly one spelling in the CHECK allow-list.
+export const CANCELLED_STATUS = 'cancelled';
