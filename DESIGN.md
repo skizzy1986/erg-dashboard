@@ -12,7 +12,10 @@
 | [`web/.design-sync/HANDOFF.md`](web/.design-sync/HANDOFF.md) | **Normative** | The light redesign: palette, the `var(--color-*)` token seam, the role rename, Archivo weight 500, the component inventory, the order of work. Highest authority. |
 | [`web/.design-sync/DESIGN_BRIEF.md`](web/.design-sync/DESIGN_BRIEF.md) | **Prescriptive** | Diagnosis and the IA target — 13 tabs → 5 destinations, the type and spacing scales, slices S-1…S7. Where the handoff is silent, this decides. |
 | [`web/.design-sync/CLAUDE.md`](web/.design-sync/CLAUDE.md) | **Briefing** | What a Claude Design session needs to know about SplitIQ: the domain, the destinations, which numbers are real, the chart rules. The design-side mirror of the repo's `CLAUDE.md`. |
-| [`web/.design-sync/conventions.md`](web/.design-sync/conventions.md) | **Descriptive** | How the app looks *today*, so a design agent can reproduce it. Inlined into the design agent's prompt. Not a statement of intent. |
+| [`web/.design-sync/conventions.md`](web/.design-sync/conventions.md) | **Style guide** | Tokens, accent pairs, type, layering, chart rules, and the gotchas the design side has already paid for. Light-primary. Inlined into the design agent's prompt, so it is the one file guaranteed to be read. Mirror — the project holds the source. |
+| [`web/.design-sync/designs/`](web/.design-sync/designs/) | **The designs** | Five self-contained HTML artboards, one per destination. Open in a browser, no build step. Compiled snapshots — the editable `.dc.html` source lives in the design project. Do not edit; they are overwritten on sync. |
+| [`web/.design-sync/PROJECT-CONTEXT.md`](web/.design-sync/PROJECT-CONTEXT.md) | Mechanics | The design project's own briefing: which side owns what, and what neither side can see. Mirror — the project holds the source. |
+| [`web/.design-sync/ISSUES-load-states.md`](web/.design-sync/ISSUES-load-states.md) | Spec | The load pending and unavailable states, written as two ready-to-open issues. |
 | [`web/.design-sync/CODE-TO-DESIGN.md`](web/.design-sync/CODE-TO-DESIGN.md) | Handover | The reciprocal of `HANDOFF.md` — what the code side did, where the spec meets reality, and what each side still owes the other. Paste into a design session to re-sync. |
 | [`web/.design-sync/NOTES.md`](web/.design-sync/NOTES.md) | Runbook | Sync gotchas, the incident log, and the reconciliation of the handoff against the code. |
 | [`web/.design-sync/STATE_OF_PLAY.md`](web/.design-sync/STATE_OF_PLAY.md) | Status | A dated snapshot. Goes stale fast — trust it least. |
@@ -25,6 +28,12 @@ already; see the reconciliation note in `NOTES.md`.
 ## Where the state actually is
 
 The app is **dark today**. Light is the target, not the present tense.
+
+**Dark is retained as a second theme, not deleted.** `HANDOFF.md` §1 says dark is
+"dropped"; the design project's own `conventions.md`, revised 2026-08-22, overturns that
+in review — the erg room is dark at 5am and the live screen wants it. Light is primary and
+new work is designed on the light ground, but the dark values stay. Where the two
+disagree, `conventions.md` is newer.
 `web/src/constants/theme.js` holds 23 colour-named hex tokens; the light,
 role-named, `var(--color-*)` system described in the handoff has not shipped.
 **Do not assume light until the flip lands.**
@@ -43,6 +52,20 @@ can run in parallel without ever colliding:
 Check your own diff before opening a PR. Keep this a human judgement — a moved line
 legitimately shows both a colour and a padding, and a CI gate here would false-fail on
 ordinary refactors.
+
+## Which side owns what
+
+`PROJECT-CONTEXT.md` sets the direction and it matters more than it looks:
+
+| | Design project | This repo |
+|---|---|---|
+| The designs, `conventions.md`, `HANDOFF.md`, `ISSUES-load-states.md` | **source of truth** | mirror |
+| Component source, hooks, maths, tests | — | **source of truth** |
+
+**Do not hand-edit the mirrored files** — `conventions.md` above all. Edits are overwritten
+on the next sync. Anything that has to reach a design session gets added on the project
+side; anything that has to reach a code session gets committed here. Neither container can
+see the other.
 
 ## The machine contract
 

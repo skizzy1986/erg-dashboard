@@ -93,7 +93,8 @@ Authority order: `web/.design-sync/HANDOFF.md` (normative — the light redesign
 `DESIGN_BRIEF.md` (prescriptive — IA and scales) > `conventions.md` (descriptive — how it
 looks today, and what the design agent is prompted with).
 
-**The app is dark today. Light is the target.** `web/src/constants/theme.js` still holds 23
+**The app is dark today. Light is the target — and dark is kept as a second theme, not
+deleted** (the erg room is dark at 5am). `web/src/constants/theme.js` still holds 23
 colour-named hex tokens; the light, role-named `var(--color-*)` system is specified but has
 not shipped. Do not assume light until the flip lands.
 

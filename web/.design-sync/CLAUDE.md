@@ -1,9 +1,18 @@
 # SplitIQ — briefing for a design session
 
-> A Claude Code session opens with a 24KB `CLAUDE.md` describing this project. A design
-> session opened with a style guide and nothing else — so it knew the hex values but not
-> what a UT2 piece is, which numbers are real, or who is looking at the screen. This file
-> is the missing half. `conventions.md` is the style guide; this is the context.
+> Three documents brief a design session, and they do not overlap:
+>
+> - **`PROJECT-CONTEXT.md`** — the mechanics. Which side owns what, what neither container
+>   can see, the standing rules. Read it for *how we work*.
+> - **`conventions.md`** — the style guide. Tokens, type, layering, chart rules, and the
+>   traps already paid for. Read it for *how it should look*.
+> - **This file** — the subject matter. What a rower needs from the screen, what the words
+>   mean, which numbers are trustworthy. Read it for *what you are designing*.
+>
+> A design session used to open with the style guide alone, so it knew the hex values but
+> not what a UT2 piece is, which numbers are real, or who is looking at the screen. This
+> is the missing half — and it is the one of the three the code side owns, because the
+> domain lives in the code.
 
 ## What SplitIQ is
 
