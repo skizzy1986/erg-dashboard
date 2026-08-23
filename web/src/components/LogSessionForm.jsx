@@ -73,6 +73,12 @@ export default function LogSessionForm({ onSaved }) {
       const { error } = await supabase.from('sessions').insert({
         date,
         type: 'Strength',
+        // sessions.status is nullable with no default, and NULL is not in
+        // COMPLETED_STATUSES — an omitted status meant the row rendered in the
+        // log but counted for nothing: no TSS/CTL/ATL/TSB, and it could never
+        // clear a benchmark. 'completed' rather than 'logged': that one is the
+        // PM5 live-save path's marker.
+        status: 'completed',
         label: label.trim(),
         duration: duration.trim() || null,
         srpe,

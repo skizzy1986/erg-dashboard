@@ -3,17 +3,15 @@
 // Required secrets (set via Supabase Dashboard → Edge Functions → Secrets):
 //   ANTHROPIC_API_KEY  — Anthropic API key
 //
-// SUPABASE_URL and SUPABASE_ANON_KEY are injected automatically by Supabase.
-//
 // Deployed with JWT verification ON (default). The caller must send
 // Authorization: Bearer <supabase-session-token>.
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const MAX_CONTEXT_CHARS = 8000;
 
 const MODEL_MAP: Record<string, string> = {
   haiku: 'claude-haiku-4-5-20251001',
@@ -47,95 +45,6 @@ RESPONSE STYLE
 - If you're uncertain, say so — don't fabricate.
 - Stay within current phase. Don't prescribe intensity workouts until Build 1.`;
 
-async function buildContext(supabase: ReturnType<typeof createClient>): Promise<string> {
-  const today = new Date().toISOString().split('T')[0];
-
-  const [{ data: tssRows }, { data: sessionRows }, { data: vitalsRows }] = await Promise.all([
-    supabase
-      .from('sessions')
-      .select('date, duration, srpe')
-      .eq('status', 'logged')
-      .gt('srpe', 0)
-      .gt('duration', 0)
-      .order('date', { ascending: true }),
-    supabase
-      .from('sessions')
-      .select('date, type, label, duration, srpe, status')
-      .order('date', { ascending: false })
-      .limit(10),
-    supabase
-      .from('vitals')
-      .select('date, rhr, hrv, sleep')
-      .order('date', { ascending: false })
-      .limit(30),
-  ]);
-
-  const lines = [`CURRENT TRAINING DATA (as of ${today}):`];
-
-  // CTL / ATL / TSB via impulse-response model (mirrors trainingLoad.js)
-  if (tssRows && tssRows.length > 0) {
-    const CTL_K = Math.exp(-1 / 42);
-    const ATL_K = Math.exp(-1 / 7);
-    const tssMap: Record<string, number> = {};
-    for (const r of tssRows) {
-      tssMap[r.date] = Math.round((r.duration * r.srpe) / 60);
-    }
-    const startDate = new Date(tssRows[0].date);
-    const endDate = new Date(today);
-    let ctl = 0, atl = 0;
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const key = d.toISOString().split('T')[0];
-      const tss = tssMap[key] ?? 0;
-      ctl = ctl * CTL_K + tss * (1 - CTL_K);
-      atl = atl * ATL_K + tss * (1 - ATL_K);
-    }
-    const finalCtl = Math.round(ctl * 10) / 10;
-    const finalAtl = Math.round(atl * 10) / 10;
-    const tsb = Math.round((ctl - atl) * 10) / 10;
-    const tsbSignal = tsb > 5 ? 'GREEN' : tsb > -10 ? 'AMBER' : 'RED';
-    lines.push(`TSB: ${tsb} (${tsbSignal}) | CTL: ${finalCtl} | ATL: ${finalAtl}`);
-  }
-
-  // Readiness from vitals (mirrors computeReadiness in recoveryAnalytics.js)
-  if (vitalsRows && vitalsRows.length > 0) {
-    const latest = vitalsRows[0];
-    const rhrVals = vitalsRows.filter((r) => r.rhr != null).map((r) => Number(r.rhr));
-    const hrvVals = vitalsRows.filter((r) => r.hrv != null).map((r) => Number(r.hrv));
-    const rhrBaseline = rhrVals.length >= 14 ? rhrVals.reduce((s, v) => s + v, 0) / rhrVals.length : 57;
-    const hrvBaseline = hrvVals.length >= 14 ? hrvVals.reduce((s, v) => s + v, 0) / hrvVals.length : 30;
-    let score = 100;
-    if (latest.rhr != null) score -= Math.max(0, latest.rhr - rhrBaseline) * 4;
-    if (latest.hrv != null) score -= Math.max(0, hrvBaseline - latest.hrv) * 1.5;
-    if (latest.sleep != null) score -= latest.sleep < 7 ? (7 - latest.sleep) * 8 : 0;
-    const readinessScore = Math.round(Math.min(100, Math.max(0, score)));
-    const readinessLabel = readinessScore >= 80 ? 'READY' : readinessScore >= 60 ? 'CAUTION' : 'FATIGUED';
-    const rhr = latest.rhr ?? '—';
-    const hrv = latest.hrv ?? '—';
-    const sleep = latest.sleep ?? '—';
-    lines.push(`Readiness: ${readinessScore}/100 ${readinessLabel} | RHR: ${rhr} | HRV: ${hrv}ms | Sleep: ${sleep}h`);
-  }
-
-  // Today's planned session + recent logged sessions
-  if (sessionRows && sessionRows.length > 0) {
-    const todayPlanned = sessionRows.find((s) => s.status === 'planned' && s.date === today);
-    if (todayPlanned) {
-      const label = todayPlanned.label ? ` — ${todayPlanned.label}` : '';
-      lines.push(`Today's session: ${todayPlanned.type}${label}`);
-    }
-    const recentLogged = sessionRows.filter((s) => s.status === 'logged').slice(0, 5);
-    if (recentLogged.length > 0) {
-      lines.push('Recent sessions (newest first):');
-      for (const s of recentLogged) {
-        const dur = s.duration ? ` ${s.duration}min` : '';
-        const rpe = s.srpe ? ` sRPE ${s.srpe}` : '';
-        lines.push(`  ${s.date}: ${s.type}${dur}${rpe}`);
-      }
-    }
-  }
-
-  return lines.join('\n');
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
@@ -149,7 +58,11 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  let body: { messages: Array<{ role: string; content: string }>; model?: string };
+  let body: {
+    messages: Array<{ role: string; content: string }>;
+    model?: string;
+    context?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -159,7 +72,7 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const { messages, model = 'sonnet' } = body;
+  const { messages, model = 'sonnet', context } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response(JSON.stringify({ error: 'messages array required' }), {
       status: 400,
@@ -167,19 +80,29 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  // Build training context by querying the DB with the user's JWT (respects RLS)
-  const authHeader = req.headers.get('Authorization') ?? '';
-  const jwt = authHeader.replace('Bearer ', '');
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: `Bearer ${jwt}` } } }
-  );
-  const context = await buildContext(supabase);
+  // The training context is assembled client-side by buildTrainingContext in
+  // web/src/hooks/useCoach.js and posted here. It used to be rebuilt in this
+  // function, against column names that do not exist on vitals, a status
+  // filter matching none of the rows, and an ISO-vs-"M/D/YY" date comparison
+  // that could never be true — so it always collapsed to a bare header line
+  // and the Coach ran blind (#199). The client already derives all of it with
+  // tested code; this function no longer duplicates any of it.
+  //
+  // Capped rather than validated: this is the athlete's own authenticated
+  // browser posting his own data back, so there is nothing to escalate — but
+  // an unbounded string spliced into a system prompt still gets a bound.
+  const trainingContext =
+    typeof context === 'string'
+      ? context.trim().slice(0, MAX_CONTEXT_CHARS)
+      : '';
 
   const resolvedModel = MODEL_MAP[model] ?? MODEL_MAP.sonnet;
-  const systemPrompt = context
-    ? `${COACH_SYSTEM_PROMPT}\n\nCURRENT TRAINING DATA:\n${context}`
+  // An older cached bundle posts no context. It still gets a working coach,
+  // just an uninformed one.
+  // No "CURRENT TRAINING DATA:" wrapper — buildTrainingContext already opens
+  // with its own dated header, and prepending one duplicated it.
+  const systemPrompt = trainingContext
+    ? `${COACH_SYSTEM_PROMPT}\n\n${trainingContext}`
     : COACH_SYSTEM_PROMPT;
 
   const upstream = await fetch('https://api.anthropic.com/v1/messages', {

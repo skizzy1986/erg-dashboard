@@ -175,8 +175,13 @@ export default function App() {
   const isMid = vw >= 600; // tablet
   const containerMax = isWide ? 1100 : 680;
 
-  const { loggedSessions, plannedSessions, loggedKeys, fetchSessions } =
-    useSessionLog();
+  const {
+    loggedSessions,
+    logDisplaySessions,
+    plannedSessions,
+    loggedKeys,
+    fetchSessions,
+  } = useSessionLog();
 
   // Live CTL/ATL/TSB. Previously calcTrainingLoad(DAILY_TSS) — a static seed
   // that stopped on 2026-06-13, so every headline load number on desktop was
@@ -421,7 +426,7 @@ export default function App() {
           {/* ── LOG VIEW ── */}
           {view === 'log' && (
             <LogView
-              loggedSessions={loggedSessions}
+              logDisplaySessions={logDisplaySessions}
               isWide={isWide}
               onSaved={fetchSessions}
             />
