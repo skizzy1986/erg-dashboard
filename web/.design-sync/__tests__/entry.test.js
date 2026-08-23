@@ -11,6 +11,7 @@
 // Test globals are scoped to `src/**` in eslint.config.js, so import them.
 import { describe, it, expect } from 'vitest';
 import * as entry from '../entry.jsx';
+import config from '../config.json';
 
 // Derived, not hand-listed: NOTES.md already records two hand-maintained lists
 // as re-sync risks. PascalCase names are the components; SCREAMING_CASE ones
@@ -32,9 +33,17 @@ describe('design-sync entry barrel', () => {
 
   it('exports every component as a function', () => {
     const components = Object.keys(entry).filter(isComponentName);
-    expect(components.length).toBeGreaterThanOrEqual(10);
     for (const name of components) {
       expect(typeof entry[name], `${name} is not a component`).toBe('function');
     }
+  });
+
+  // Bidirectional: a floor would miss a component dropped from the barrel, and
+  // one added to src/components/ without being registered here never reaches
+  // window.SplitIQ at all. componentSrcMap is the other half of that contract.
+  it('exports exactly the components config.json maps', () => {
+    const exported = Object.keys(entry).filter(isComponentName).sort();
+    const mapped = Object.keys(config.componentSrcMap).sort();
+    expect(exported).toEqual(mapped);
   });
 });
