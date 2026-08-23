@@ -52,6 +52,21 @@ const rows = [
     avg_hr: null,
   },
   {
+    id: 'cancel-1',
+    date: '7/5/26',
+    type: 'erg',
+    label: 'CP RETEST — 1min + 4min max (rested, fed)',
+    duration: 1800,
+    srpe: null,
+    prs: null,
+    exercises: null,
+    coach_note: null,
+    status: 'cancelled',
+    distance_m: null,
+    avg_watts: null,
+    avg_hr: null,
+  },
+  {
     id: 'test-1',
     date: '7/1/26',
     type: 'Test',
@@ -107,12 +122,14 @@ vi.mock('../views/MobilityView.jsx', () => ({
 // Surfaces the load props so a test can assert what App derived and passed
 // down, rather than reaching into OverviewView's own rendering.
 vi.mock('../views/OverviewView.jsx', () => ({
-  default: ({ latest, loadUnavailable }) => (
+  default: ({ latest, loadUnavailable, loggedSessions, totalSessions }) => (
     <div>
       OverviewView-stub
       <span data-testid="ctl">{latest ? latest.ctl : 'none'}</span>
       <span data-testid="tsb">{latest ? latest.tsb : 'none'}</span>
       <span data-testid="unavailable">{String(loadUnavailable)}</span>
+      <span data-testid="overview-counted">{loggedSessions?.length}</span>
+      <span data-testid="overview-total">{totalSessions}</span>
     </div>
   ),
 }));
@@ -120,13 +137,23 @@ vi.mock('../views/ProgramView.jsx', () => ({
   default: () => <div>ProgramView-stub</div>,
 }));
 vi.mock('../views/CalendarView.jsx', () => ({
-  default: () => <div>CalendarView-stub</div>,
+  default: (props) => (
+    <div>
+      <div>CalendarView-stub</div>
+      <div data-testid="calendar-counted">{props.loggedSessions?.length}</div>
+    </div>
+  ),
 }));
 vi.mock('../views/PlanView.jsx', () => ({
   default: () => <div>PlanView-stub</div>,
 }));
 vi.mock('../views/LogView.jsx', () => ({
-  default: () => <div>LogView-stub</div>,
+  default: (props) => (
+    <div>
+      <div>LogView-stub</div>
+      <div data-testid="logview-shown">{props.logDisplaySessions?.length}</div>
+    </div>
+  ),
 }));
 
 // App reads CTL/ATL/TSB through useTSSHistory (react-query + supabase). Mock it
@@ -229,6 +256,24 @@ describe('App', () => {
 
     expect(screen.getByTestId('ctl').textContent).toBe('none');
     expect(screen.getByTestId('unavailable').textContent).toBe('false');
+  }, 30000);
+
+  it('R9 wires the shown list to LogView and the counted list to every counting consumer (#194)', async () => {
+    // The regression this guards is a prop swap, not a filter bug: the hook can
+    // be perfectly correct while App hands the wrong list to the wrong view.
+    // Fixture: erg-1 logged + str-1 completed = 2 counted; + cancel-1 = 3 shown;
+    // cyc-1 planned and test-1 (type 'Test') are excluded from both.
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+
+    expect(screen.getByTestId('overview-counted')).toHaveTextContent('2');
+    expect(screen.getByTestId('overview-total')).toHaveTextContent('2');
+
+    fireEvent.click(screen.getByRole('button', { name: 'CALENDAR' }));
+    expect(screen.getByTestId('calendar-counted')).toHaveTextContent('2');
+
+    fireEvent.click(screen.getByRole('button', { name: 'LOG' }));
+    expect(screen.getByTestId('logview-shown')).toHaveTextContent('3');
   }, 30000);
 
   it('updates the responsive layout on window resize', async () => {
