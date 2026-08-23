@@ -97,6 +97,23 @@ copies drift.
 
 ---
 
+## The design lane
+
+Design work rides the same rail as everything else — Issue → branch → PR → CI → `main`,
+labelled `design` (and `a11y` where relevant), on the Split IQ board. Two extra rules:
+
+- **A PR that changes what the app looks like carries visual evidence** — a screenshot or
+  a baseline diff, reviewed in the PR.
+- **Stay on one side of the property boundary.** Colour hexes belong to #183,
+  `padding`/`margin`/`gap`/`borderRadius` to S6, and the `font*`/`letterSpacing`/
+  `lineHeight` family to S-1. The three sets are disjoint so the workstreams can run in
+  parallel without colliding in the same line. Check your own diff; this is a judgement,
+  not a CI gate.
+
+The documents, and which one wins, are in **[`DESIGN.md`](DESIGN.md)**. Re-syncing the
+claude.ai/design project is an owner action — it needs an interactive `/design-login` and
+cannot be done from a remote agent session.
+
 ## The status board — "Split IQ" (GitHub Projects)
 
 The **Split IQ** board is the at-a-glance answer to "what's happening." All work is

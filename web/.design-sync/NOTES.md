@@ -150,3 +150,112 @@ node .ds-sync/package-build.mjs   --config .design-sync/config.json --node-modul
 DS_CHROMIUM_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe" \
   node .ds-sync/package-validate.mjs ./ds-bundle
 ```
+
+## Reconciliation against HANDOFF.md (2026-08-23)
+
+`HANDOFF.md` landed in the repo today, verbatim. Three things in it do not survive contact
+with the code, recorded here rather than edited into the handoff — it is a decision record,
+and silently correcting it would lose the fact that the decision was made on this basis.
+
+**1. The acceptance checkbox is wrong, and it asked to be checked.** §1 lists *"Existing
+component tests pass unchanged (they assert structure, not colour — confirm before starting)"*.
+Confirmed false. Seven files lock colour:
+
+- `src/constants/__tests__/theme.test.js` — asserts exactly 23 keys, locks all 23 hex values
+  individually, and requires `/^#[0-9a-f]{6}$/`. **That regex forbids `var(--color-*)`**, so
+  all three of its tests break at the seam.
+- `src/utils/__tests__/formatting.test.js` (23 hex lines, `workoutAccent()`),
+  `src/components/__tests__/BenchmarkBadge.test.jsx`,
+  `src/utils/__tests__/recoveryAnalytics.test.js` (3), `src/views/__tests__/OverviewView.test.jsx`
+  (2), `src/utils/__tests__/analysis.test.js` (1) — these assert *derived* colours, so they
+  survive a rename but break at the seam.
+- `e2e/smoke.spec.js:108` — `toHaveCSS('border-top-color', 'rgb(0, 212, 255)')`, inside a loop
+  over all 13 tabs.
+
+Consequence: do the **rename first, values unchanged** (nothing above breaks — they assert
+values, which do not move), then the seam. A rename PR whose screenshots are byte-identical is
+proof it was a pure rename; a combined PR would be unbisectable across seven files.
+
+**2. The seam inverts a dependency the handoff does not mention.** `src/utils/themeCss.js`
+`cssVars(THEME)` emits `--color-<key>: <value>` — injected at `main.jsx:22`, and the source
+`gen-css.mjs` uses to generate `base.css`. Once `THEME.accent` is `'var(--color-accent)'`,
+that emits `--color-accent: var(--color-accent)`: self-referential, resolves to nothing.
+Today THEME is the source and the CSS is generated; after the seam the CSS is the source and
+THEME is a pointer table. `theme.js` has to split into a values module and the pointer table,
+and `cssVars`, `gen-css.mjs`, `base.css` and `main.jsx` all flip together.
+
+**3. Nine tokens have no light value.** §1 supplies 11 and says the structural keys are kept,
+but gives no light value for `raised`, `field`, `surfaceAlt`, `neutral`, `divider`,
+`textSubtle`, `textFaint`, `textDim` or `accentAlt2`. `conventions.md` already flags
+`textFaint`/`textDim` as unspecified. Target key count is 20 (23 − 10 deleted + 7 roles).
+Also unresolved: §1's CSS block sets `--color-bg: #c3cade`, §3 prose says white cards on
+`#bcc5dd`. One is stale.
+
+**Two more, found in passing:**
+
+- **The 8-digit alpha convention collides with the seam.** `` `${THEME.token}NN` `` becomes
+  `var(--color-x)80`, which is invalid CSS — the background vanishes silently rather than
+  erroring. Four sites: `LogSessionForm.jsx:144`, `WorkoutItem.jsx:17`, `LogEntry.jsx:78,112`.
+  `color-mix()` is the replacement; #183's "keep 8-digit hex" convention retires with the seam.
+- **This directory contradicts itself.** #240 rewrote `conventions.md` to light/role tokens but
+  left its siblings alone — 15 colour-named `THEME.*` references remain across `docs/*.md`,
+  `previews/*.tsx` and `dtsPropsFor`. The design agent reads the header *and* the per-component
+  docs, so it currently receives both systems in one prompt, which is worse than either alone.
+  Fixable now, with nothing from the handoff. **Do not re-sync the project until it is fixed**,
+  or the contradiction is frozen into another bundle.
+
+Two documents the handoff cites are still missing from the repo: `ISSUES-load-states.md`, and
+the five `.dc.html` artboards it names as the source of truth for the designs.
+
+## The design drop, and two things it overturns (2026-08-23)
+
+The Claude Design project delivered its files: the five artboards as compiled HTML under
+`designs/`, plus `ISSUES-load-states.md`, `PROJECT-CONTEXT.md`, and its own
+`conventions.md`. `HANDOFF.md` in the drop is **byte-identical** to the copy already
+committed, so the paste it arrived by was accurate.
+
+**1. Dark is not dropped after all.** `HANDOFF.md` §1 states *"Dark: dropped. Light is the
+only theme"* and its acceptance list says *"Dark values deleted, not commented out"*. The
+project's `conventions.md`, revised 2026-08-22, overturns that explicitly: *"This document
+previously described SplitIQ as dark-only. That has been overturned in review. The dark
+theme is retained as a second theme — the erg room is dark at 5am and the live screen
+wants it — but light is primary."*
+
+Both are design-side documents and `conventions.md` is the later one. This changes the
+token seam materially: the `data-theme` attribute stops being the no-op `HANDOFF.md` §1
+describes and becomes load-bearing, a dark block does eventually ship, and the dark values
+are kept rather than deleted. Issue #251 has been corrected — it previously instructed
+deleting them.
+
+**2. `conventions.md` here is a mirror, not a source.** `PROJECT-CONTEXT.md` sets the
+direction explicitly: the project holds the source of truth for `conventions.md`,
+`HANDOFF.md`, `ISSUES-load-states.md` and the designs; the repo holds it for component
+source, hooks and maths. The repo copy has therefore been **replaced wholesale** with the
+project's, which is also substantially richer — it adds the accent-pair rule, the
+`sc-for` trailing-hole gotcha, "redefine the token, don't fight the rule", percentage
+padding as a vertical position, and the silent-NaN trap.
+
+Consequence: **do not hand-edit `web/.design-sync/conventions.md`.** The status banner
+added here earlier has been dropped for that reason — it would be overwritten on the next
+sync. Anything that needs to reach a design session has to be added on the project side.
+
+## The ground colour, settled by the artboards (2026-08-23)
+
+`HANDOFF.md` §1's CSS block sets `--color-bg: #c3cade`; its §3 prose and
+`PROJECT-CONTEXT.md` both say white cards on `#bcc5dd`. The artboards settle it, and not
+by preferring one document over the other:
+
+- `#c3cade` appears **only** as the `--color-bg` declaration in each screen's helmet — 10
+  occurrences, all of them the token definition.
+- `#bcc5dd` is what the screens actually **paint**: the 390x844 device frame, the 1080px
+  desktop frame, panel grounds.
+
+So the token is declared and then not consumed. The real ground is **`#bcc5dd`**, and
+`--color-bg: #c3cade` is dead in the designs. Worth fixing at source before the token seam
+wires it up for real — the moment `--color-bg` is actually consumed, every screen shifts
+to a colour no design was reviewed against.
+
+The artboards also carry the full **stale dark snapshot** in every helmet (all 23
+colour-named dark tokens), with only `--color-bg` overridden on top. That is the
+"redefine the token, don't fight the rule" workaround `conventions.md` documents, and it
+is a direct cost of the project not having been re-synced.

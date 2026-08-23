@@ -14,3 +14,6 @@ Closes #<!-- issue number — links the PR to its issue so merging closes it and
 - [ ] Tests cover the change, or I've noted why they don't
 - [ ] `npm run build` passes locally
 - [ ] No unexpected console errors in the browser
+- [ ] Visual change: none — or a screenshot/baseline diff is attached and reviewed here
+- [ ] Stays inside the property boundary: colour hexes = #183 · box metrics = S6 ·
+      type = S-1 (see DESIGN.md)

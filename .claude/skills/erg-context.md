@@ -24,7 +24,10 @@ Testing Library. Full briefing: `CLAUDE.md`.
 ## Code style (non-negotiable)
 
 - Plain JavaScript + JSX. **No TypeScript.**
-- Inline styles only (dark `#08080d` / cyan `#00d4ff` theme) — no CSS modules, no Tailwind.
+- Inline styles only — no CSS modules, no Tailwind.
+- **Read every colour from `THEME` (`web/src/constants/theme.js`) — never type a raw
+  hex.** The palette is mid-migration from dark to light and the values will move; a
+  literal is a defect even when it currently matches. See `DESIGN.md`.
 - No comments unless the WHY is non-obvious. No abstractions beyond the task.
 - PascalCase component files; camelCase utils/hooks. Tests co-located in
   `__tests__/` subdirectories or `*.test.js`.

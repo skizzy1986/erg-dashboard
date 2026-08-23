@@ -37,3 +37,9 @@
 - name: dependencies
   color: '0366d6'
   description: Dependency updates (Dependabot)
+- name: design
+  color: 'd4c5f9'
+  description: Design system, visual and IA work — see DESIGN.md
+- name: a11y
+  color: 'bfd4f2'
+  description: Accessibility — contrast, labels, focus, the Lighthouse floor

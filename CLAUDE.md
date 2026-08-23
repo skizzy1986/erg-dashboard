@@ -53,6 +53,10 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     App.jsx         Entry shell/router (~447 lines) — the former erg-dashboard.jsx monolith
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     main.jsx        Auth gate (Supabase email/password login)
+  .design-sync/   The design surface — HANDOFF.md (normative light redesign),
+                  DESIGN_BRIEF.md, CLAUDE.md (design-session briefing),
+                  conventions.md (agent prompt header), NOTES.md, and the
+                  machine contract read by config.json. See DESIGN.md.
 supabase/
   functions/        Edge Functions (vitals-import, vitals-import-api,
                     vitals-sync, coach-chat)
@@ -80,6 +84,27 @@ coach/
 - Component files: PascalCase (e.g., LogEntry.jsx)
 - Utility/hook files: camelCase (e.g., formatting.js, useSessions.js)
 - Tests: co-located in `__tests__/` subdirectories or `*.test.js`
+
+## Design System
+
+> Front door: **[`DESIGN.md`](DESIGN.md)**. Read it before changing anything visual.
+
+Authority order: `web/.design-sync/HANDOFF.md` (normative — the light redesign) >
+`DESIGN_BRIEF.md` (prescriptive — IA and scales) > `conventions.md` (descriptive — how it
+looks today, and what the design agent is prompted with).
+
+**The app is dark today. Light is the target — and dark is kept as a second theme, not
+deleted** (the erg room is dark at 5am). `web/src/constants/theme.js` still holds 23
+colour-named hex tokens; the light, role-named `var(--color-*)` system is specified but has
+not shipped. Do not assume light until the flip lands.
+
+**The property boundary** keeps three workstreams from colliding in the same lines:
+colour hexes belong to **#183**, `padding`/`margin`/`gap`/`borderRadius` to **S6**, and
+`fontFamily`/`fontSize`/`fontWeight`/`letterSpacing`/`lineHeight` to **S-1**. A PR stays on
+one side of it.
+
+`npm run check:design-sync` guards the machine contract in CI. Re-syncing the claude.ai/design
+project needs an interactive `/design-login` and cannot be done from a remote agent session.
 
 ## Architecture: Strangler Fig Refactor
 

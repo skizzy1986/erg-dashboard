@@ -191,6 +191,9 @@ with Gradle. The APK is uploaded as a build artifact (retained 14 days).
 - **Dependabot:** weekly grouped PRs for npm and GitHub Actions updates.
 - **Pre-commit (Husky + lint-staged):** ESLint + Prettier run automatically on
   staged `.js`/`.jsx` files before every local commit.
+- **Design system:** the visual direction, the light redesign spec and the
+  synced claude.ai/design component library live under `web/.design-sync/`.
+  Start at [`DESIGN.md`](DESIGN.md); `npm run check:design-sync` guards it in CI.
 
 ---
 

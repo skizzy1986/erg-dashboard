@@ -35,3 +35,15 @@ body:
       description: Affected files, training-science context (CTL/ATL, sessions/vitals), or links.
     validations:
       required: false
+  - type: dropdown
+    id: visual-impact
+    attributes:
+      label: Visual impact
+      description: Does this change what the app looks like? See DESIGN.md.
+      options:
+        - None — no rendered change
+        - Tokens only — colour or type token swap, no layout move
+        - Layout — spacing, radius, or structure moves
+        - New screen or component
+    validations:
+      required: true
