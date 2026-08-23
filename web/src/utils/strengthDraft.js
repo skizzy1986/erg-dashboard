@@ -4,7 +4,7 @@ export function saveDraft(active) {
   if (!active) return;
   try {
     localStorage.setItem(DRAFT_KEY, JSON.stringify(active));
-  } catch (e) {
+  } catch {
     // QuotaExceededError or SecurityError — best-effort, silently ignore
   }
 }
@@ -19,7 +19,7 @@ export function loadDraft() {
       return null;
     }
     return p;
-  } catch (e) {
+  } catch {
     localStorage.removeItem(DRAFT_KEY);
     return null;
   }
