@@ -81,11 +81,14 @@ export default function CalendarView({ loggedSessions, isWide }) {
   }
   const todayMode = firstMode;
   const todayCycle = MICROCYCLE[todayMode] || MICROCYCLE.home;
-  // Slice BEFORE sort: which five entries are visible stays a ladder decision,
-  // only their order is a severity one. .slice() copies, so the memoized hook
-  // result is never mutated.
+  // The whole ladder renders, ordered by severity (#228). It used to be capped
+  // at the first five by position, which hid the 2k Test, the 1000m tune-ups
+  // and the TARGET champs entirely — and meant a benchmark going overdue deep
+  // in the ladder could never surface, however loud (#215). Severity order is
+  // what keeps nine rows from being wallpaper: anything actionable floats.
+  // .slice() still copies, so .sort() never mutates the memoized hook result.
   const visibleEvents = benchmarkStatuses
-    .slice(0, 5)
+    .slice()
     .sort(compareBenchmarkSeverity);
   return (
     <>
@@ -256,7 +259,8 @@ export default function CalendarView({ loggedSessions, isWide }) {
                 gap: 10,
                 marginBottom: 6,
                 paddingBottom: 6,
-                borderBottom: i < 4 ? '1px solid #3e3e5a' : 'none',
+                borderBottom:
+                  i < visibleEvents.length - 1 ? '1px solid #3e3e5a' : 'none',
               }}
             >
               <div

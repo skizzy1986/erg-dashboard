@@ -142,9 +142,10 @@ describe('CalendarView', () => {
     );
   });
 
-  // AC5 — five permanent warnings in ladder order is the same wallpaper the
-  // feature exists to remove. What is actionable has to be at the top.
-  it('AC5 sorts the visible rows overdue → upcoming → the rest', () => {
+  // AC5 — nine permanent warnings in ladder order is the same wallpaper the
+  // feature exists to remove. What is actionable has to be at the top; severity
+  // order is what makes rendering the whole ladder (#228) survivable.
+  it('AC5 sorts every row overdue → upcoming → the rest', () => {
     const states = quietStates();
     states[4] = { ...states[4], status: 'overdue', daysOverdue: 12 };
     states[1] = { ...states[1], status: 'upcoming', daysUntilStart: 3 };
@@ -152,24 +153,27 @@ describe('CalendarView', () => {
     renderView();
 
     const rows = ladderRowTexts();
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(EVENT_LADDER.length);
     expect(rows[0]).toContain(EVENT_LADDER[4].name);
     expect(rows[0]).toContain('OVERDUE · 12d');
     expect(rows[1]).toContain(EVENT_LADDER[1].name);
     expect(rows[1]).toContain('DUE · 3d');
-    // The quiet remainder keeps ladder order behind them.
-    expect(rows.slice(2).map((t) => t.includes(EVENT_LADDER[0].name))).toEqual([
-      true,
-      false,
-      false,
-    ]);
+    // Everything still quiet keeps ladder order behind the loud rows — the tie
+    // break is the ladder index, so this is the full remainder, in sequence.
+    const quietOrder = EVENT_LADDER.map((e, i) => i).filter(
+      (i) => i !== 4 && i !== 1
+    );
+    expect(rows.slice(2)).toHaveLength(quietOrder.length);
+    quietOrder.forEach((ladderIndex, row) => {
+      expect(rows[row + 2]).toContain(EVENT_LADDER[ladderIndex].name);
+    });
   });
 
-  // Slicing happens BEFORE sorting, so severity reorders the visible five but
-  // never changes which five they are. Without that order a benchmark going
-  // overdue deep in the ladder — the 2k Test, when its Jan 2027 window elapses
-  // — would silently displace a nearer event from the panel.
-  it('AC5 sorts within the visible five without changing which five they are', () => {
+  // The inverse of what this test used to assert. The panel was capped at the
+  // first five by position, so a benchmark going overdue deep in the ladder —
+  // the 2k Test, once its Jan 2027 window elapses — could never surface however
+  // loud it got (#215). It now surfaces AND outranks the quiet rows.
+  it('AC5 surfaces a benchmark that goes overdue deep in the ladder (#215)', () => {
     const states = quietStates();
     const deep = states.length - 1;
     expect(deep).toBeGreaterThan(4);
@@ -178,11 +182,19 @@ describe('CalendarView', () => {
     renderView();
 
     const rows = ladderRowTexts();
-    expect(rows).toHaveLength(5);
-    expect(rows.join(' ')).not.toContain(EVENT_LADDER[deep].name);
-    expect(screen.queryByText(/OVERDUE · 400d/)).toBeNull();
-    // Untouched ladder order behind the cut.
-    expect(rows[0]).toContain(EVENT_LADDER[0].name);
+    expect(rows).toHaveLength(EVENT_LADDER.length);
+    expect(rows[0]).toContain(EVENT_LADDER[deep].name);
+    expect(rows[0]).toContain('OVERDUE · 400d');
+  });
+
+  // The TARGET entry is the season's whole point and index 7 — it was outside
+  // the old cut, so its distinct colour branch in this view was unreachable.
+  it('renders the TARGET champs entry that the cut used to hide (#228)', () => {
+    renderView();
+    const rows = ladderRowTexts();
+    const target = EVENT_LADDER.find((e) => e.kind === 'TARGET');
+    expect(target).toBeDefined();
+    expect(rows.join(' ')).toContain(target.name);
   });
 
   it('AC4/AC5 renders a rescheduled badge and sorts it below the loud rows', () => {
@@ -215,24 +227,31 @@ describe('CalendarView', () => {
   });
 });
 
-// The rendered slice is EVENT_LADDER.slice(0, 5) — indices 0-2 are benchmarks,
-// 3-4 are competitions. A competition has no `key`, so a control on one of
-// those rows could only ever write a null slug.
+// The whole ladder renders now (#228), so every kind='benchmark' entry gets a
+// control — five of the nine, not the three the old cut left visible. The other
+// four (two competitions, the TARGET, the optional sprint) carry no `key`, so a
+// control on those rows could only ever write a null slug.
 describe('CalendarView benchmark link control', () => {
-  it('renders the control on the three visible benchmark rows and on neither competition', () => {
+  it('renders a control on every benchmark row and on no other kind', () => {
     renderView();
     const controls = screen.getAllByRole('button', { name: /^Link a session/ });
-    expect(controls.map((b) => b.getAttribute('aria-label'))).toEqual([
-      'Link a session to CP Test #1 (4-min)',
-      'Link a session to CP Test #2 (2nd duration)',
-      'Link a session to 5k Time Trial',
-    ]);
-    expect(
-      screen.queryByRole('button', { name: /Erg Power Series/ })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /C2 Monthly/ })
-    ).not.toBeInTheDocument();
+    // Derived from the ladder, not hardcoded: adding a benchmark should extend
+    // this list rather than silently pass. All rows are quiet here, so severity
+    // ties break on ladder index and DOM order is ladder order.
+    expect(controls.map((b) => b.getAttribute('aria-label'))).toEqual(
+      EVENT_LADDER.filter((e) => e.kind === 'benchmark').map(
+        (e) => `Link a session to ${e.name}`
+      )
+    );
+    expect(controls).toHaveLength(5);
+    for (const name of [
+      /Erg Power Series/,
+      /C2 Monthly/,
+      /World Rowing Virtual Indoor Champs/,
+      /WR Virtual Indoor Sprints/,
+    ]) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
   });
 
   // Every state is 'unknown' while the sessions read is pending or failed.
