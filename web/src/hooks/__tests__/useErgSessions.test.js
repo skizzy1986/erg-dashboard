@@ -6,6 +6,8 @@ import React from 'react';
 const fromMock = vi.fn();
 const orderMock = vi.fn();
 const limitMock = vi.fn();
+const eqMock = vi.fn();
+const inMock = vi.fn();
 
 vi.mock('../../supabaseClient.js', () => ({
   supabase: {
@@ -15,6 +17,7 @@ vi.mock('../../supabaseClient.js', () => ({
 
 import { useErgSessions } from '../useErgSessions.js';
 import { wattsToPace500 } from '../../utils/pace.js';
+import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -52,7 +55,14 @@ function mockQuery(data, error = null, cp = 205) {
     }
     const chain = {
       select: () => chain,
-      eq: () => chain,
+      eq: (...args) => {
+        eqMock(...args);
+        return chain;
+      },
+      in: (...args) => {
+        inMock(...args);
+        return chain;
+      },
       order: (...args) => {
         orderMock(...args);
         return chain;
@@ -70,6 +80,48 @@ beforeEach(() => {
   fromMock.mockReset();
   orderMock.mockReset();
   limitMock.mockReset();
+  eqMock.mockReset();
+  inMock.mockReset();
+});
+
+describe('useErgSessions — the completed-status filter (#206)', () => {
+  // The live table holds 35 'actual' + 23 'completed' rows and ZERO 'logged'
+  // ones, so `.eq('status','logged')` matched nothing and ErgView rendered an
+  // empty list while 23 erg sessions sat in the database.
+  it('filters on every completed status, not just one', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(inMock).toHaveBeenCalledWith('status', COMPLETED_STATUSES);
+  });
+
+  it('never narrows the query to a single status', async () => {
+    mockQuery([]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(eqMock).not.toHaveBeenCalledWith('status', expect.anything());
+  });
+
+  it('returns bulk-imported history that carries actual/completed', async () => {
+    mockQuery([
+      { id: 1, date: '6/23/26', type: 'erg', label: 'a', status: 'actual' },
+      { id: 2, date: '6/24/26', type: 'erg', label: 'b', status: 'completed' },
+      { id: 3, date: '6/25/26', type: 'erg', label: 'c', status: 'logged' },
+    ]);
+    const { result } = renderHook(() => useErgSessions(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data.map((s) => s.status)).toEqual([
+      'logged',
+      'completed',
+      'actual',
+    ]);
+  });
 });
 
 describe('useErgSessions', () => {

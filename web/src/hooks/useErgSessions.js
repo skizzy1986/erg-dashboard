@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
 import { wattsToPace500, formatPace, classifyZone } from '../utils/pace.js';
 import { toISODate } from '../utils/dateFormat.js';
+import { COMPLETED_STATUSES } from '../constants/sessionStatus.js';
 import { useAnchors } from './useAnchors.js';
 
 export function enrich(s, cp) {
@@ -36,7 +37,13 @@ export function useErgSessions() {
           'id, date, type, label, duration, srpe, status, distance_m, avg_watts, avg_hr'
         )
         .eq('type', 'erg')
-        .eq('status', 'logged')
+        // Every other consumer of "did this session happen?" reads
+        // COMPLETED_STATUSES (useTSSHistory, useCoach, MobileAnalytics,
+        // benchmarkStatus). This hook was the one place that hardcoded a single
+        // status, and it picked the one the bulk-imported history does not use:
+        // the live table holds 'actual' and 'completed' rows and zero 'logged'
+        // ones, so the erg list rendered empty (#206).
+        .in('status', COMPLETED_STATUSES)
         // date_iso, not date: sessions.date is TEXT "M/D/YY" and sorts lexically, so
         // a LIMIT over it returns the wrong SET of rows (#187). nullsFirst is
         // mandatory — postgrest-js omits the clause entirely when it is undefined,
