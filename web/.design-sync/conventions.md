@@ -1,5 +1,19 @@
 ## How SplitIQ is built
 
+> **Read [`CLAUDE.md`](CLAUDE.md) first** — it carries the project context (what SplitIQ is,
+> the five destinations, the domain glossary, which numbers are real, the chart rules). This
+> file is the style guide only: tokens, weights, layering, the styling idiom.
+>
+> **Status — the token section below describes the TARGET, not the present.** The app on
+> `main` today is still **dark** and its `THEME` keys are still **colour-named** (`cyan`,
+> `gold`, `green`, …). The light, role-named, `var(--color-*)` system described here has not
+> shipped: `THEME.accent` currently resolves to `undefined`. The per-component docs in
+> `docs/` and the prop contracts in `config.json` still name the old keys, and they are
+> correct against the code. Design against the target; do not assume a component will
+> render light until the flip lands. Tracked in [`HANDOFF.md`](HANDOFF.md) §1 and
+> [`NOTES.md`](NOTES.md).
+
+
 SplitIQ is the training dashboard for a single rower — erg, strength and bike.
 It is a **light, data-dense** surface: pastel grounds, white cards, darker inks.
 Dark mode was dropped — light is the only theme, and designs that assume a dark

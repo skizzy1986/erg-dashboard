@@ -34,3 +34,14 @@ refactor:
       - any-glob-to-any-file:
           - 'web/src/App.jsx'
           - 'web/src/StrengthLogger.jsx'
+
+# Note: the `docs` rule above also fires on docs in these paths. That is fine —
+# a design doc is both, and both labels are useful on the board.
+design:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'DESIGN.md'
+          - 'web/.design-sync/**'
+          - 'web/src/constants/theme.js'
+          - 'web/src/constants/ui.js'
+          - 'web/src/utils/themeCss.js'
