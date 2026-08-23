@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EVENT_LADDER } from '../../constants/schedule.js';
 
 const statusesMock = vi.fn();
+const sessionsMock = vi.fn();
+const mutateMock = vi.fn();
+let mutationState;
 
 // Mocked at the module boundary so the view test stays free of Supabase and of
 // the wall clock; the resolver itself is covered in benchmarkStatus.test.js.
@@ -12,7 +16,32 @@ vi.mock('../../hooks/useBenchmarkStatuses.js', () => ({
   useBenchmarkDataUnavailable: () => false,
 }));
 
+vi.mock('../../hooks/useBenchmarkSessions.js', () => ({
+  useBenchmarkSessions: (...args) => sessionsMock(...args),
+}));
+
+vi.mock('../../hooks/useLinkBenchmarkSession.js', () => ({
+  useLinkBenchmarkSession: () => ({ mutate: mutateMock, ...mutationState }),
+}));
+
 import CalendarView from '../CalendarView.jsx';
+
+const CANDIDATES = [
+  {
+    id: 45,
+    date: '6/23/26',
+    label: 'CP Test - 4min MAX (GATED)',
+    status: 'completed',
+    benchmark_key: null,
+  },
+  {
+    id: 70,
+    date: '8/3/26',
+    label: 'PM — 5,000m',
+    status: 'completed',
+    benchmark_key: null,
+  },
+];
 
 function quietStates() {
   return EVENT_LADDER.map((entry, index) => ({
@@ -56,6 +85,10 @@ function ladderRowTexts() {
 beforeEach(() => {
   statusesMock.mockReset();
   statusesMock.mockReturnValue(quietStates());
+  sessionsMock.mockReset();
+  sessionsMock.mockReturnValue({ data: CANDIDATES });
+  mutateMock.mockReset();
+  mutationState = { isPending: false, isError: false, error: null };
 });
 
 describe('CalendarView', () => {
@@ -179,5 +212,143 @@ describe('CalendarView', () => {
     renderView();
     expect(statusesMock).toHaveBeenCalledTimes(1);
     expect(statusesMock).toHaveBeenCalledWith();
+  });
+});
+
+// The rendered slice is EVENT_LADDER.slice(0, 5) — indices 0-2 are benchmarks,
+// 3-4 are competitions. A competition has no `key`, so a control on one of
+// those rows could only ever write a null slug.
+describe('CalendarView benchmark link control', () => {
+  it('renders the control on the three visible benchmark rows and on neither competition', () => {
+    renderView();
+    const controls = screen.getAllByRole('button', { name: /^Link a session/ });
+    expect(controls.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Link a session to CP Test #1 (4-min)',
+      'Link a session to CP Test #2 (2nd duration)',
+      'Link a session to 5k Time Trial',
+    ]);
+    expect(
+      screen.queryByRole('button', { name: /Erg Power Series/ })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /C2 Monthly/ })
+    ).not.toBeInTheDocument();
+  });
+
+  // Every state is 'unknown' while the sessions read is pending or failed.
+  // Rendering the control then would flash LINK before flipping to LINKED, and
+  // hand over a picker with nothing in it.
+  it('renders no control at all while the benchmark statuses are unknown', () => {
+    statusesMock.mockReturnValue(
+      quietStates().map((s) => ({ ...s, status: 'unknown' }))
+    );
+    renderView();
+    expect(
+      screen.queryAllByRole('button', { name: /^Link a session/ })
+    ).toHaveLength(0);
+  });
+
+  it('reads LINKED ✓ on a benchmark the resolver matched to a session', () => {
+    const states = quietStates();
+    states[0] = { ...states[0], done: true, matchedSessionId: 45 };
+    statusesMock.mockReturnValue(states);
+    renderView();
+
+    const controls = screen.getAllByRole('button', { name: /^Link a session/ });
+    expect(controls[0]).toHaveTextContent('LINKED ✓');
+    expect(controls[1]).toHaveTextContent('LINK');
+    expect(controls[1]).not.toHaveTextContent('LINKED');
+  });
+
+  it('sends the ladder slug and the chosen session id to the mutation', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await user.click(
+      screen.getByRole('button', { name: 'Link a session to 5k Time Trial' })
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Session for 5k Time Trial' }),
+      '70'
+    );
+
+    expect(mutateMock).toHaveBeenCalledWith({
+      benchmarkKey: '5k-tt',
+      sessionId: 70,
+    });
+  });
+
+  // A 23505 means another session already holds this slug. Saying "failed"
+  // would hide the only fact that tells Scott what to do next.
+  it('names the unique violation instead of a generic failure, on that row only', async () => {
+    const user = userEvent.setup();
+    mutationState = {
+      isPending: false,
+      isError: true,
+      error: { code: '23505', message: 'duplicate key value violates …' },
+    };
+    renderView();
+
+    // Nothing shows until this row is the one that issued the write.
+    expect(screen.queryByText(/already claims/)).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Link a session to 5k Time Trial' })
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Session for 5k Time Trial' }),
+      '70'
+    );
+
+    expect(
+      screen.getByText('Another session already claims this benchmark')
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/already claims/)).toHaveLength(1);
+  });
+
+  it('falls back to the driver message for any other write failure', async () => {
+    const user = userEvent.setup();
+    mutationState = {
+      isPending: false,
+      isError: true,
+      error: { code: '42501', message: 'permission denied for table sessions' },
+    };
+    renderView();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Link a session to CP Test #1 (4-min)',
+      })
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', {
+        name: 'Session for CP Test #1 (4-min)',
+      }),
+      '45'
+    );
+
+    expect(
+      screen.getByText('permission denied for table sessions')
+    ).toBeInTheDocument();
+  });
+
+  it('disables the row that issued an in-flight write', async () => {
+    const user = userEvent.setup();
+    mutationState = { isPending: true, isError: false, error: null };
+    renderView();
+
+    const target = screen.getByRole('button', {
+      name: 'Link a session to 5k Time Trial',
+    });
+    await user.click(target);
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Session for 5k Time Trial' }),
+      '70'
+    );
+
+    expect(target).toBeDisabled();
+    expect(
+      screen.getByRole('button', {
+        name: 'Link a session to CP Test #1 (4-min)',
+      })
+    ).not.toBeDisabled();
   });
 });

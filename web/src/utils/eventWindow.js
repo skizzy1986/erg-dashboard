@@ -1,17 +1,18 @@
 // Interprets the human prose in EVENT_LADDER[].date ("~Mid Jul 26",
 // "12 Sep-9 Oct 26", "Wed 1 Jul 26") into a concrete calendar interval, plus
-// the keyword/token helpers that decide whether a logged session represents a
-// given benchmark. This is a PARSER, not a formatter — it never produces a
-// display string, so it introduces no second formatDate variant.
+// the keyword/token helpers used to spot a PLANNED session that names a
+// benchmark. This is a PARSER, not a formatter — it never produces a display
+// string, so it introduces no second formatDate variant.
+//
+// The keyword helpers no longer say anything about which session SATISFIES a
+// benchmark: being done is an explicit link (sessions.benchmark_key, #188) read
+// by benchmarkStatus.js, never an inference from label text. They survive for
+// the reschedule pass only (#192), where the worst case is a badge reading
+// "moved" instead of "late" — never a fabricated completion.
 //
 // Every date crosses a function boundary as an ISO 'YYYY-MM-DD' STRING, never a
 // Date object, so comparisons are zero-padded lexical compares and timezone
 // never enters them. todayISO() is the ONLY function here that reads the clock.
-
-// Days of slack allowed BEFORE a benchmark window opens when searching for the
-// session that satisfies it. Tests done early (or a slipped date logged against
-// the original plan) still clear the signal.
-export const BENCHMARK_GRACE_DAYS = 14;
 
 // Hand-seeded benchmark vocabulary. 'cp' is the sole benchmark identifier that
 // carries no digit, so the digit-bearing token rule below cannot derive it.
