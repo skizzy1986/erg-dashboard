@@ -22,6 +22,7 @@ before re-running the sync.
 | `.design-sync/base.css` | Generated. The token layer (`--color-*`) plus the app ground. Wired as `cfg.cssEntry`. |
 | `.design-sync/docs/*.md` | Per-component docs. Their `category:` frontmatter is what sets the DS pane groups (session / metrics / charts / tooltips / feedback / mobile) — without them everything lands in `general`. |
 | `.design-sync/previews/*.tsx` | Authored preview stories, one file per component. |
+| `scripts/check-design-sync-entry.mjs` | Guards the barrel: bundles `entry.jsx` with rolldown and checks every `componentSrcMap` path still exists. `npm run check:design-sync`, wired into CI (#225). |
 
 ## Gotchas
 
@@ -86,10 +87,18 @@ failed with `No matching export ... for import "PACE_ZONES"`, which blocks every
 re-sync. Nothing surfaced it; it was found by inspection a day later.
 
 The "hand-maintained, no drift detection" warning below was already written down and
-**did not prevent it**. A prose note is not a control. The durable fix is a CI step
-that bundles `entry.jsx` on any `web/src` change — it is a two-second esbuild run and
-it catches the whole class: any synced export that is renamed, moved or removed.
-Until that exists, treat the barrel as the first thing to check on every sync.
+**did not prevent it**. A prose note is not a control. That is what
+`npm run check:design-sync` is for (#225): it bundles `entry.jsx` with rolldown and
+verifies every `componentSrcMap` path on any `web/**` change, catching the whole
+class — any synced export renamed, moved or removed.
+
+Worth keeping in view: the structural break was the cheap half. The bundle that
+shipped to the design project was built *before* #203, so it contains a **live**
+`PACE_ZONES` frozen from the old `CRITICAL_POWER.cpEstimate` of 190 — the stale seed
+CP that #176 was filed about. A dead export fails loudly; a stale-but-live constant
+quietly hands out wrong pace bands. The guard catches the first kind and cannot catch
+the second. **Until the project is re-synced, that is still what the design agent
+loads.**
 
 ## Re-sync risks
 
@@ -97,15 +106,21 @@ Until that exists, treat the barrel as the first thing to check on every sync.
   renamed or removed in a component leaves the uploaded contract silently wrong,
   and the design agent codes against that contract. Diff the components against
   the config when re-syncing.
-- **When the layout primitives land, `dtsPropsFor` must document their `style`
-  prop.** The seam was approved (DESIGN_BRIEF §5.1): the ten layout primitives merge
-  `style` last, domain components stay closed. If the contracts keep saying no
-  component accepts a styling override, the design agent will code against that and
-  never use the seam it was given.
-- **When IBM Plex is self-hosted, wire it through `cfg.extraFonts`.** Fixing the app's
+- **The token seam changes what `THEME` values *are*, and this config must
+  follow.** `HANDOFF.md` §1 turns every `THEME` value into a `var(--color-*)`
+  string and renames the colour-named keys to roles (`cyan`→`accent`,
+  `gold`→`caution`, …). Component *source* keeps its shape — `color: THEME.accent`
+  still works — but two things here do not: the accent-token names quoted
+  throughout `conventions.md` and in every `accent` default in `dtsPropsFor`, and
+  `base.css`, which stops being the token layer and becomes a mirror of the app's
+  own stylesheet. Re-run `gen-css.mjs` and re-read the contracts in the same
+  change, or designs resolve tokens that no longer exist.
+- **When Archivo is self-hosted, wire it through `cfg.extraFonts`.** Fixing the app's
   font loading does *not* fix generated designs — the bundle ships its own font
   closure. Without `extraFonts`, every design keeps rendering in the fallback face
-  after the app itself is correct, and nothing warns you.
+  after the app itself is correct, and nothing warns you. `cfg.extraFonts` is **not
+  in `config.json` today**; it has to be added, with the 500+ weights — `HANDOFF.md`
+  rules out anything lighter on light grounds.
 - **`entry.jsx` is hand-maintained too.** A new component in
   `src/components/` will not sync until it is added there *and* to
   `cfg.componentSrcMap` *and* given a `.design-sync/docs/<Name>.md` (or it lands
@@ -117,8 +132,9 @@ Until that exists, treat the barrel as the first thing to check on every sync.
   `fontFamily: "'DM Mono', monospace"`, but neither the app nor this bundle
   ships the face — `index.html` loads no webfont. Everything therefore renders
   in the Courier/monospace fallback, in the app and in designs alike. This is
-  faithful to production, not a bug, but if SplitIQ ever adds DM Mono, wire it
-  here via `cfg.extraFonts` so designs keep matching.
+  faithful to production, not a bug. **Do not fix it by adding DM Mono:**
+  `HANDOFF.md` §1 sets the face to **Archivo**, minimum weight 500. These call
+  sites should move to Archivo rather than acquire the face they name.
 - **Toolchain assumptions:** the render check runs against **system Chrome**
   (`DS_CHROMIUM_PATH=/c/Program Files/Google/Chrome/Application/chrome.exe`)
   because no playwright browser is cached on this machine. `playwright` itself

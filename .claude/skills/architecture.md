@@ -17,8 +17,8 @@ src/
                         new constant files to match it:
     ui.js             C (session-type colors), ICON
     trainingConfig.js SRPE_GUIDE, SRPE_SCALE, CALIBRATION_STATUS, CRITICAL_POWER,
-                      POWER_DURATION, FTP_TEST, HR_ZONES, PACE_ZONES, HR130_POWER,
-                      EST_MHR, RHR_BASELINE, HRV_BASELINE
+                      POWER_DURATION, FTP_TEST, HR_ZONES, derivePaceZones, HR130_POWER,
+                      EST_MHR, deriveCalibrationStatus
     schedule.js       PHASES, PHASE_CONTEXT, MICROCYCLE, SEASON, SEASON_2,
                       EVENT_LADDER, VOLUME_PROGRESSION
     exercises.js      STRENGTH_TEMPLATES, REP_SCHEMES, LOWER_DIFFERENTIATION,
