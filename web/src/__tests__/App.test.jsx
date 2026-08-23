@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 // App.jsx fetches sessions directly via the supabase client:
-//   supabase.from('sessions').select('*').order('created_at', { ascending: false })
-// The chain's terminal `.order()` is awaited as a thenable, so mock it to
-// resolve with representative rows covering every render branch of the mapping.
+//   supabase.from('sessions').select('*')
+//     .order('date_iso', { ascending: false, nullsFirst: false })
+//     .order('id', { ascending: false })
+// Two chained .order() calls (#232-D), so `order` returns the chain and the
+// chain itself is the thenable — resolving with representative rows covering
+// every render branch of the mapping.
 const rows = [
   {
     id: 'erg-1',
@@ -83,13 +86,16 @@ const rows = [
   },
 ];
 
+const sessionsChain = {
+  select: () => sessionsChain,
+  order: () => sessionsChain,
+  then: (resolve, reject) =>
+    Promise.resolve({ data: rows, error: null }).then(resolve, reject),
+};
+
 vi.mock('../supabaseClient.js', () => ({
   supabase: {
-    from: () => ({
-      select: () => ({
-        order: () => Promise.resolve({ data: rows, error: null }),
-      }),
-    }),
+    from: () => sessionsChain,
   },
 }));
 
