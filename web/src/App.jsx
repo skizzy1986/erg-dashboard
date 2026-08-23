@@ -206,7 +206,7 @@ export default function App() {
 
   const ergSessions = loggedSessions.filter((e) => e._isErg);
   const strengthSessions = loggedSessions.filter((e) => e.exercises);
-  const latestErg = ergSessions[0]; // dbSessions are newest-first
+  const latestErg = ergSessions[0]; // dbSessions are training-date-desc
   // Was hardcoded at 55000. The logged erg sessions actually sum to ~216km, so
   // the headline understated the work by about 4x.
   const totalErgDist = ergSessions.reduce((m, e) => m + (e.distance_m ?? 0), 0);

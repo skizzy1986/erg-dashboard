@@ -11,16 +11,29 @@ vi.mock('../../supabaseClient.js', () => ({
 
 import { useSessionLog } from '../useSessionLog.js';
 
+// The hook chains .order('date_iso').order('id').then(...), so `order` has to
+// return the chain rather than a Promise, and the chain itself has to be
+// thenable. orderCalls records the arguments so a test can assert the ordering
+// contract directly instead of inferring it from row order.
+let orderCalls = [];
+
 function mockQuery(data, error = null) {
+  orderCalls = [];
   const chain = {
     select: () => chain,
-    order: () => Promise.resolve({ data, error }),
+    order: (column, opts) => {
+      orderCalls.push([column, opts]);
+      return chain;
+    },
+    then: (resolve, reject) =>
+      Promise.resolve({ data, error }).then(resolve, reject),
   };
   fromMock.mockReturnValue(chain);
 }
 
 beforeEach(() => {
   fromMock.mockReset();
+  orderCalls = [];
 });
 
 const ergRow = {
@@ -49,7 +62,7 @@ describe('useSessionLog', () => {
         date: '06/15/26',
         type: 'cycling',
         label: 'z2 spin',
-        status: null,
+        status: 'actual',
       },
     ]);
     const { result } = renderHook(() => useSessionLog());
@@ -67,7 +80,7 @@ describe('useSessionLog', () => {
     const bike = sessions[1];
     expect(bike._isErg).toBe(false);
     expect(bike._isCycling).toBe(true);
-    expect(bike.status).toBe(null);
+    expect(bike.status).toBe('actual');
   });
 
   it('sets dbStatus error and falls back to the seed on supabase error', async () => {
@@ -98,7 +111,7 @@ describe('useSessionLog', () => {
         date: '06/12/26',
         type: 'strength',
         label: 'Upper A',
-        status: null,
+        status: 'actual',
       },
     ]);
     const { result } = renderHook(() => useSessionLog());
@@ -124,6 +137,77 @@ describe('useSessionLog', () => {
     });
     await waitFor(() => expect(result.current.allSessions).toHaveLength(2));
     expect(result.current.allSessions[1]._id).toBe(4);
+  });
+});
+
+// ── #232-D: training-date order, not insertion order ──────────────
+// The hook used to .order('created_at', { ascending: false }). That is
+// INSERTION order: a session imported or edited late sorted as "most recent"
+// however long ago it was actually done. Measured against the live table, the
+// latest-erg tile named the 7/14/26 session while 8/6, 8/4, 8/2 and 7/30 all
+// existed — 23 days stale.
+describe('useSessionLog — orders by training date (#232-D)', () => {
+  it('D-AC1 requests date_iso desc with NULLS LAST, then id as a tiebreak', async () => {
+    mockQuery([ergRow]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    // nullsFirst is asserted explicitly: postgrest-js omits the clause entirely
+    // when it is undefined, and Postgres defaults descending to NULLS FIRST,
+    // which would float a date the generated column could not parse to the top
+    // as "most recent".
+    expect(orderCalls).toEqual([
+      ['date_iso', { ascending: false, nullsFirst: false }],
+      ['id', { ascending: false }],
+    ]);
+    expect(orderCalls.some(([column]) => column === 'created_at')).toBe(false);
+  });
+
+  it('D-AC2 does not float a late-created, early-dated row to the top', async () => {
+    // As the database returns them under date_iso desc. Row 99 was inserted
+    // last (highest id, latest created_at) but trained first, so under the old
+    // created_at ordering it arrived at position 0 and became `latestErg`.
+    mockQuery([
+      {
+        id: 2,
+        date: '8/6/26',
+        type: 'erg',
+        label: 'UT1 50min',
+        status: 'actual',
+      },
+      {
+        id: 3,
+        date: '8/4/26',
+        type: 'erg',
+        label: 'build 40min',
+        status: 'actual',
+      },
+      {
+        id: 99,
+        date: '7/14/26',
+        type: 'erg',
+        label: 'backfilled months later',
+        status: 'actual',
+      },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    const logged = result.current.loggedSessions;
+    expect(logged[0]._id).toBe(2);
+    expect(logged[0].date).toBe('8/6/26');
+    expect(logged.at(-1)._id).toBe(99);
+  });
+
+  it('D-AC3 excludes a null status now that the column is NOT NULL (010)', async () => {
+    // Migration 010 means the database cannot produce this row. If one ever
+    // reaches the predicate anyway, isCompletedStatus fails closed: the session
+    // goes visibly missing rather than counting as phantom training.
+    mockQuery([
+      { id: 1, date: '8/6/26', type: 'erg', label: 'real', status: 'actual' },
+      { id: 2, date: '8/5/26', type: 'erg', label: 'impossible', status: null },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.loggedSessions.map((e) => e._id)).toEqual([1]);
   });
 });
 
