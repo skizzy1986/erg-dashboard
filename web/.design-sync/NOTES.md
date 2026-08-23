@@ -49,8 +49,9 @@ before re-running the sync.
   scope. In an IIFE bundle `import.meta.env` is undefined, so the client throws
   at load and takes the whole bundle down. To include it later, shim the client
   (e.g. a `cfg.provider` or a stub module via `cfg.extraEntries`) first.
-- `PACE_ZONES` is exported from `entry.jsx` so `PaceTrendChart` previews use the
-  real zone table rather than an inlined copy that would rot.
+- `derivePaceZones` is exported from `entry.jsx` so `PaceTrendChart` previews build
+  the real zone bands rather than an inlined copy that would rot. It used to export a
+  static `PACE_ZONES`; see the incident below.
 
 ## Known render warns
 
@@ -76,12 +77,35 @@ Recorded so nobody re-litigates them:
 - `WorkoutTarget` is likewise collapsed; the duration / sRPE / notes body is
   behind the caret.
 
+## Incident: the barrel broke within a day (2026-08-22)
+
+`entry.jsx` re-exported `PACE_ZONES` from `trainingConfig.js`. PR #203 deliberately
+deleted that export — correctly, so a seed-derived zone table could not diverge from
+the live `rowing_cp` anchor — and the barrel was not updated. The design-sync build
+failed with `No matching export ... for import "PACE_ZONES"`, which blocks every
+re-sync. Nothing surfaced it; it was found by inspection a day later.
+
+The "hand-maintained, no drift detection" warning below was already written down and
+**did not prevent it**. A prose note is not a control. The durable fix is a CI step
+that bundles `entry.jsx` on any `web/src` change — it is a two-second esbuild run and
+it catches the whole class: any synced export that is renamed, moved or removed.
+Until that exists, treat the barrel as the first thing to check on every sync.
+
 ## Re-sync risks
 
 - **`dtsPropsFor` is hand-maintained and has no drift detection.** A prop
   renamed or removed in a component leaves the uploaded contract silently wrong,
   and the design agent codes against that contract. Diff the components against
   the config when re-syncing.
+- **When the layout primitives land, `dtsPropsFor` must document their `style`
+  prop.** The seam was approved (DESIGN_BRIEF §5.1): the ten layout primitives merge
+  `style` last, domain components stay closed. If the contracts keep saying no
+  component accepts a styling override, the design agent will code against that and
+  never use the seam it was given.
+- **When IBM Plex is self-hosted, wire it through `cfg.extraFonts`.** Fixing the app's
+  font loading does *not* fix generated designs — the bundle ships its own font
+  closure. Without `extraFonts`, every design keeps rendering in the fallback face
+  after the app itself is correct, and nothing warns you.
 - **`entry.jsx` is hand-maintained too.** A new component in
   `src/components/` will not sync until it is added there *and* to
   `cfg.componentSrcMap` *and* given a `.design-sync/docs/<Name>.md` (or it lands
