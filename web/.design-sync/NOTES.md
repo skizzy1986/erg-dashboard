@@ -80,6 +80,27 @@ Recorded so nobody re-litigates them:
 - `WorkoutTarget` is likewise collapsed; the duration / sRPE / notes body is
   behind the caret.
 
+## Incident: the barrel broke within a day (2026-08-22)
+
+`entry.jsx` re-exported `PACE_ZONES` from `trainingConfig.js`. PR #203 deleted
+that export — correctly, so a seed-derived zone table could not diverge from the
+live `rowing_cp` anchor — and the barrel was not updated. Any re-sync would have
+failed with `No matching export ... for import "PACE_ZONES"`. Nothing surfaced
+it; it was found by inspection a day later.
+
+**The "hand-maintained, no drift detection" warning below was already written
+down, and did not prevent it. A prose note is not a control.** That is why
+`npm run check:design-sync` exists: it bundles the barrel and verifies every
+`componentSrcMap` path on any `web/**` change, catching the whole class — any
+synced export renamed, moved or removed.
+
+Worth keeping in view: the structural break was the cheap half. The bundle that
+shipped to the design project was built *before* #203 and therefore contains a
+**live** `PACE_ZONES`, frozen from the old `CRITICAL_POWER.cpEstimate` of 190 —
+the stale seed CP that #176 was filed about. A dead export fails loudly; a
+stale-but-live constant quietly hands out wrong pace bands. The guard catches
+the first kind and cannot catch the second.
+
 ## Re-sync risks
 
 - **`dtsPropsFor` is hand-maintained and has no drift detection.** A prop
