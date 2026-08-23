@@ -1,32 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-// Auth gate: main.jsx renders the dashboard only when supabase.auth.getSession()
-// returns a session. supabase-js reads it from localStorage under
-// `sb-<project-ref>-auth-token` and, for an unexpired token, returns it without
-// any network call (verified in @supabase/auth-js __loadSession). The preview
-// build uses VITE_SUPABASE_URL=https://test-project.supabase.co (see
-// playwright.config.js), so the project ref is `test-project`.
-const STORAGE_KEY = 'sb-test-project-auth-token';
-
-function fakeSession() {
-  const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24; // +24h
-  return {
-    access_token: 'e2e-fake-access-token',
-    refresh_token: 'e2e-fake-refresh-token',
-    token_type: 'bearer',
-    expires_in: 86400,
-    expires_at: expiresAt,
-    user: {
-      id: '00000000-0000-0000-0000-000000000000',
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: 'e2e@example.com',
-      app_metadata: { provider: 'email' },
-      user_metadata: {},
-      created_at: '2026-01-01T00:00:00.000Z',
-    },
-  };
-}
+import { stubApp } from './fixtures.js';
 
 // Every dashboard tab (matches the NAV in App.jsx).
 const TABS = [
@@ -62,24 +35,7 @@ test.describe('dashboard smoke', () => {
     });
     page.on('pageerror', (err) => consoleErrors.push(String(err)));
 
-    // Stub all Supabase REST/auth traffic so no real backend is needed and the
-    // app's data fetches resolve cleanly with empty results.
-    await context.route(/test-project\.supabase\.co\/.*/, (route) => {
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: { 'access-control-allow-origin': '*' },
-        body: '[]',
-      });
-    });
-
-    // Seed the fake session before any app code runs so the auth gate passes.
-    await context.addInitScript(
-      ([key, session]) => {
-        window.localStorage.setItem(key, JSON.stringify(session));
-      },
-      [STORAGE_KEY, fakeSession()]
-    );
+    await stubApp(context);
   });
 
   test('app gets past the auth gate and shows the dashboard nav', async ({

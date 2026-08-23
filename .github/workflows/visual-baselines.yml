@@ -1,0 +1,112 @@
+name: Visual Baselines (manual)
+
+# The ONLY supported way to write web/e2e/__screenshots__.
+#
+# Baselines must be rasterised by the same container that later asserts against
+# them: this app serves no webfont, so every glyph falls back to the platform
+# monospace face and a locally generated PNG fails in CI forever. There is
+# deliberately no local --update-snapshots npm script, and the commit here is
+# authored by github-actions[bot] — `git log --format='%an' -- web/e2e/__screenshots__`
+# is the standing proof that no baseline ever came from a dev machine.
+#
+# Dispatch against your feature branch, never main: branch protection rejects
+# the push. Pushes made with GITHUB_TOKEN do not retrigger workflows (which is
+# what stops generation from looping), so afterwards re-run the "Playwright
+# Visual" job manually to confirm green.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type UPDATE to confirm rewriting committed baselines'
+        required: true
+        default: ''
+
+concurrency:
+  group: visual-baselines-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  pw:
+    name: Read Playwright version
+    runs-on: ubuntu-latest
+    if: inputs.confirm == 'UPDATE'
+    outputs:
+      version: ${{ steps.pw.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: pw
+        run: |
+          echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+
+  baselines:
+    name: Regenerate screenshot baselines
+    runs-on: ubuntu-latest
+    needs: pw
+    permissions:
+      contents: write
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.pw.outputs.version }}-noble
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+
+      # The container runs as a different uid than the checkout owner.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        working-directory: .
+
+      # --retries=0: a retried attempt could write a baseline from a run that
+      # already differed from the first attempt.
+      - name: Generate baselines
+        run: npx playwright test --project=visual-desktop --project=visual-mobile --update-snapshots=all --retries=0
+        env:
+          HOME: /root
+
+      - name: Commit baselines
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A e2e/__screenshots__
+          if git diff --cached --quiet; then
+            echo "no baseline changes"
+          else
+            git commit -m 'test(e2e): regenerate visual baselines in the CI container'
+          fi
+
+      # Acceptance criterion (a), proved at byte level in the environment that
+      # asserts: regenerating twice on an unchanged tree must leave the tree
+      # identical. This is stronger than re-running the assertion, which only
+      # proves "within tolerance" rather than "identical bytes".
+      - name: Regenerate a second time
+        run: npx playwright test --project=visual-desktop --project=visual-mobile --update-snapshots=all --retries=0
+        env:
+          HOME: /root
+      - name: Fail if any baseline is non-deterministic
+        run: |
+          if ! git diff --exit-code --stat -- e2e/__screenshots__; then
+            echo "::error::The shots listed above are not byte-stable across two identical runs. Do not commit them."
+            exit 1
+          fi
+
+      - name: Push baselines
+        run: git push origin HEAD:${{ github.ref_name }}
+        working-directory: .
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: visual-baselines
+          path: web/e2e/__screenshots__/
+          retention-days: 7

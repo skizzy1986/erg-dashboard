@@ -76,3 +76,43 @@ jobs:
           name: playwright-report
           path: web/playwright-report/
           retention-days: 7
+
+  # Screenshot baselines for the app shell (#249). Same container and same
+  # lockfile-pinned Playwright as the smoke job — that is the whole premise of
+  # committed baselines, since the PNGs are rasterised by this image.
+  #
+  # Deliberately NOT required, and deliberately without continue-on-error:
+  # "non-required" is a branch-protection setting, whereas continue-on-error
+  # would report a neutral conclusion and hide real failures. Let it go red;
+  # just do not let red block the merge.
+  visual:
+    name: Playwright Visual
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.pw }}-noble
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run test:visual
+        env:
+          # Actions overrides HOME to /github/home inside containers; Playwright
+          # expects the image's root home for its browser installs.
+          HOME: /root
+      # test-results/ holds the raw expected/actual/diff PNGs — the artifact the
+      # acceptance criteria ask for. The artifact name must differ from the
+      # smoke job's, or the two collide within a single run.
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-visual
+          path: |
+            web/playwright-report/
+            web/test-results/
+          retention-days: 7
