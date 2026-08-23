@@ -1,5 +1,15 @@
 # Load states — issues to open
 
+> **Opened 2026-08-23 as #260 (pending) and #261 (unavailable).** Kept here as the written
+> specification — the issues carry it verbatim. Every code reference in it was verified
+> against `main` before opening and all of them still hold, though it was written on
+> `fix/s2c-strength-prs-cp`.
+>
+> One deviation from the blocks below: they ask for labels `design`, `frontend`.
+> `frontend` is not in the canonical taxonomy (`.github/labels.yml`, which says to edit
+> there and not in the UI), so both were opened `design` + `P2` instead.
+
+
 Two states the training-load surfaces can be in that no screen currently draws.
 Both were introduced by the switch from the static `DAILY_TSS` seed to the live
 `useTSSHistory` hook (PR branch `fix/s2c-strength-prs-cp`). Paste each block
