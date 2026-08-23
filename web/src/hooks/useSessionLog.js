@@ -19,7 +19,18 @@ export function useSessionLog() {
     supabase
       .from('sessions')
       .select('*')
-      .order('created_at', { ascending: false })
+      // date_iso, not created_at: created_at is INSERTION order, which is only
+      // training order by coincidence. A bulk-imported or late-edited session
+      // sorted as "most recent" regardless of when it was actually done — the
+      // latest-erg tile named a 7/14 session while 8/6, 8/4, 8/2 and 7/30 all
+      // existed (#232-D). Matches useErgSessions.js:55-56, including why
+      // nullsFirst is mandatory: postgrest-js omits the clause entirely when it
+      // is undefined and Postgres defaults descending to NULLS FIRST, which
+      // would float an unparseable date to the top as "most recent".
+      // id breaks ties — the PM5 save path suffixes labels with hh:mm, so two
+      // sessions can share a date.
+      .order('date_iso', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: false })
       .then(({ data, error }) => {
         if (error) {
           setDbStatus('error');
@@ -38,9 +49,10 @@ export function useSessionLog() {
               prs: r.prs,
               exercises: r.exercises || undefined,
               coachNote: r.coach_note || undefined,
-              // status drives planned-vs-actual reconciliation. null legacy rows
-              // are treated as actual (completed history) everywhere downstream.
-              status: r.status || null,
+              // status drives planned-vs-actual reconciliation. Never null:
+              // sessions.status is NOT NULL with a CHECK allow-list as of
+              // migration 010, so there is nothing left to coalesce.
+              status: r.status,
               // flat erg metrics (the `splits` field was removed from the schema)
               distance_m: r.distance_m,
               avg_watts: r.avg_watts,
@@ -59,8 +71,8 @@ export function useSessionLog() {
   useEffect(() => {
     fetchSessions();
   }, []);
-  // The merged list every display + helper uses. DB sessions are newest,
-  // so they go first; the hardcoded seed follows.
+  // The merged list every display + helper uses. DB sessions come back in
+  // training-date order (newest first); the hardcoded seed follows.
   const allSessions = [...dbSessions, ...sessionLog];
 
   // ── THREE-WAY SPLIT: counted / shown / planned ────────────────
@@ -72,9 +84,9 @@ export function useSessionLog() {
   // forward-looking prescriptions and appear in neither.
   // loggedKeys derives from the COUNTED set: a cancelled session must never
   // reconcile a planned prescription as done.
-  // Both lists are built in one pass so the created_at-desc order established
-  // by the query above survives — the display object does not carry created_at,
-  // so a split-and-remerge could not reproduce it.
+  // Both lists are built in one pass so the date_iso-desc order established by
+  // the query above survives — the display object does not carry date_iso, so a
+  // split-and-remerge could not reproduce it.
   const loggedSessions = [];
   const logDisplaySessions = [];
   const plannedSessions = [];
