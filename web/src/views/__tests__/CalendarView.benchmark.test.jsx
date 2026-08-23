@@ -73,9 +73,22 @@ beforeEach(() => {
 });
 
 describe('CalendarView + useBenchmarkStatuses (integration, unmocked hook)', () => {
-  // Every ladder window below is in the past for any real "today" from
-  // 2026-08-20 on, so the outcome does not drift with the wall clock. The day
-  // count inside the badge does, hence the prefix match.
+  // The clock is pinned. These OVERDUE counts used to be wall-clock stable for
+  // a reason that no longer holds: the panel rendered only EVENT_LADDER[0..4],
+  // whose windows are all 2026 and all elapsed. Since #228 the whole ladder
+  // renders, so the 2k Test (~Mid Jan 27) and the tune-ups (Late Jan 27) join
+  // it — and every count below would silently go 1 -> 3 and 2 -> 4 once those
+  // windows elapse in early 2027. Verified by running this file at 2027-02-15:
+  // five tests fail. Pinned to the same date the reschedule block uses.
+  // The day count inside the badge still varies, hence the prefix match.
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 7, 22));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it('badges only the 5k Time Trial row once both CP tests are linked', async () => {
     mockSessions(PAYLOAD);
     renderView();
@@ -206,10 +219,10 @@ describe('CalendarView + a rescheduled benchmark (integration)', () => {
   const CP2_OVERDUE = [{ ...PAYLOAD[0], status: 'cancelled' }, PAYLOAD[1]];
   const RETEST_LABEL = 'CP RETEST — 1min + 4min max';
 
-  // The clock is pinned for these two only. Every other case in this file rests
-  // on windows that are past for any real "today", but a FUTURE planned date is
-  // future only relative to the real one — unpinned, this pair would silently
-  // invert on 12 Sep 2026 rather than keep testing what it was written to test.
+  // Pinned for the same reason as the block above, plus one of its own: a
+  // FUTURE planned date is future only relative to the real clock — unpinned,
+  // this pair would silently invert on 12 Sep 2026 rather than keep testing
+  // what it was written to test.
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date(2026, 7, 22));
