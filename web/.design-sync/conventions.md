@@ -43,13 +43,34 @@ the primary accent, `green` is done/healthy/UT1, `gold` is threshold or a target
 prompt, `orange` is elevated load, `red` is error or redline, `purple` is upper
 strength, `teal` is cycling, `grey`/`neutral` is rest.
 
+### Text colour: which pairings actually pass
+
+The palette contains greys that fail WCAG AA on the system's own panels. Measured
+against the real token values:
+
+| Foreground | on `bg` | on `surface` | on `raised` |
+|---|---|---|---|
+| `text` | 16.40 | 14.00 | 11.31 |
+| `textSubtle` | 8.88 | 7.58 | 6.13 |
+| `muted` | 5.08 | **4.34 fails** | **3.50 fails** |
+| `textFaint` | **3.94 fails** | **3.36 fails** | **2.72 fails** |
+| `textDim` | **3.00 fails** | **2.56 fails** | **2.07 fails** |
+
+**Use `textSubtle` for secondary text on `surface` or `raised` panels** — which is
+most secondary text, since those are the standard card backgrounds. `muted` is only
+safe directly on `bg`. `textFaint` and `textDim` pass nowhere and should be treated
+as decorative-only (hairlines, disabled glyphs), never as readable text.
+
 ### Two more exports you will want
 
 - `C` and `ICON` — session-type maps keyed by the same nine strings
   (`'Z2 Aerobic'`, `'Threshold'`, `'VO₂ Intervals'`, `'Sharpener'`, `'Rest'`,
   `'Upper Strength'`, `'Lower Strength'`, `'Combined'`, `'Cycling'`). Use these
   keys as `entry.type` so `LogEntry` colours itself correctly.
-- `PACE_ZONES` — the real training-zone table `PaceTrendChart` draws bands from.
+- `derivePaceZones(cp)` — builds the real training-zone table `PaceTrendChart`
+  draws its bands from. Pass the current critical power in watts; the app reads
+  that live from the `rowing_cp` anchor. There is deliberately no static zone
+  table to import.
 
 ### Where the truth is
 
@@ -90,7 +111,7 @@ const { LiveMetric, LogEntry, THEME } = window.SplitIQ;
     <LiveMetric label="HR" value={139} unit="BPM" accent={THEME.green} />
   </div>
 
-  <div style={{ fontSize: 9, letterSpacing: 2, color: THEME.muted }}>THIS WEEK</div>
+  <div style={{ fontSize: 9, letterSpacing: 2, color: THEME.textSubtle }}>THIS WEEK</div>
   <LogEntry
     entry={{
       type: 'Z2 Aerobic', _isErg: true, label: 'UT2 60min', date: '6/19',
@@ -101,5 +122,5 @@ const { LiveMetric, LogEntry, THEME } = window.SplitIQ;
 ```
 
 Note the house details: tiny uppercase tracked section labels (`fontSize: 9`,
-`letterSpacing: 2`, `color: muted`), 6–10px radii, 1px `border` hairlines on
+`letterSpacing: 2`, `color: textSubtle`), 6–10px radii, 1px `border` hairlines on
 `surface`/`raised` panels, and numbers in the monospace face.
