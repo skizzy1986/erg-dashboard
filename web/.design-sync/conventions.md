@@ -1,17 +1,17 @@
 ## How SplitIQ is built
 
-> **Read [`CLAUDE.md`](CLAUDE.md) first** — it carries the project context (what SplitIQ is,
-> the five destinations, the domain glossary, which numbers are real, the chart rules). This
-> file is the style guide only: tokens, weights, layering, the styling idiom.
+> **Before designing anything, read `CLAUDE.md` at the project root.** It carries the
+> context this file assumes and does not repeat: what SplitIQ is, the five destinations,
+> the domain glossary, which numbers are real versus decorative, and the chart rules.
+> This file is the style guide only — tokens, weights, layering, the styling idiom.
 >
-> **Status — the token section below describes the TARGET, not the present.** The app on
-> `main` today is still **dark** and its `THEME` keys are still **colour-named** (`cyan`,
-> `gold`, `green`, …). The light, role-named, `var(--color-*)` system described here has not
-> shipped: `THEME.accent` currently resolves to `undefined`. The per-component docs in
-> `docs/` and the prop contracts in `config.json` still name the old keys, and they are
-> correct against the code. Design against the target; do not assume a component will
-> render light until the flip lands. Tracked in [`HANDOFF.md`](HANDOFF.md) §1 and
-> [`NOTES.md`](NOTES.md).
+> **Status — the token section below describes the TARGET, not the present.** The app
+> today is still **dark** and its `THEME` keys are still **colour-named** (`cyan`, `gold`,
+> `green`, …). The light, role-named `var(--color-*)` system described here has not
+> shipped: `THEME.accent` currently resolves to `undefined`. The per-component
+> `.prompt.md` files and `.d.ts` contracts still name the old keys, and they are correct
+> against the code. Design against the target; do not assume a component will render
+> light until the flip lands.
 
 
 SplitIQ is the training dashboard for a single rower — erg, strength and bike.
@@ -129,6 +129,12 @@ Read the real files before styling — they beat this summary:
 - `components/<group>/<Name>/<Name>.prompt.md` — what each component is for,
   which props change its appearance, and a worked example.
 - `components/<group>/<Name>/<Name>.d.ts` — the exact prop contract.
+- `CLAUDE.md` (project root) — **read first, every session.** The domain and the chart
+  rules. Standing context; it does not go stale.
+- `CODE-TO-DESIGN.md` (project root) — read when this project has just been re-synced,
+  or when something here looks out of step with the app. It is the code side's dated
+  report: what shipped, which parts of the spec did not survive contact with the code,
+  and what Design still owes. A bulletin, not standing context.
 
 Groups: `session` (LogEntry, WorkoutItem, WorkoutTarget), `metrics`
 (LiveMetric), `charts` (PaceTrendChart), `tooltips` (ErgTooltip, LoadTooltip,
