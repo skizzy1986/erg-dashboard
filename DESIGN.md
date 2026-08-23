@@ -13,6 +13,7 @@
 | [`web/.design-sync/DESIGN_BRIEF.md`](web/.design-sync/DESIGN_BRIEF.md) | **Prescriptive** | Diagnosis and the IA target — 13 tabs → 5 destinations, the type and spacing scales, slices S-1…S7. Where the handoff is silent, this decides. |
 | [`web/.design-sync/CLAUDE.md`](web/.design-sync/CLAUDE.md) | **Briefing** | What a Claude Design session needs to know about SplitIQ: the domain, the destinations, which numbers are real, the chart rules. The design-side mirror of the repo's `CLAUDE.md`. |
 | [`web/.design-sync/conventions.md`](web/.design-sync/conventions.md) | **Descriptive** | How the app looks *today*, so a design agent can reproduce it. Inlined into the design agent's prompt. Not a statement of intent. |
+| [`web/.design-sync/CODE-TO-DESIGN.md`](web/.design-sync/CODE-TO-DESIGN.md) | Handover | The reciprocal of `HANDOFF.md` — what the code side did, where the spec meets reality, and what each side still owes the other. Paste into a design session to re-sync. |
 | [`web/.design-sync/NOTES.md`](web/.design-sync/NOTES.md) | Runbook | Sync gotchas, the incident log, and the reconciliation of the handoff against the code. |
 | [`web/.design-sync/STATE_OF_PLAY.md`](web/.design-sync/STATE_OF_PLAY.md) | Status | A dated snapshot. Goes stale fast — trust it least. |
 
