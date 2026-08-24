@@ -1,0 +1,4 @@
+# Mirrors of files authored in the claude.ai/design project (see
+# .design-sync/ownership.json). They are committed verbatim so the repo copy
+# matches the project copy; reformatting them silently breaks that.
+.design-sync/
