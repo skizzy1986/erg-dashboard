@@ -11,6 +11,7 @@
 import { useEffect, useRef } from 'react';
 import { supabase as sb } from './supabaseClient.js';
 import { THEME } from './constants/theme.js';
+import { LAYER } from './constants/tokens.js';
 import {
   saveDraft as _saveDraft,
   loadDraft,
@@ -79,9 +80,9 @@ const CSS = `
 .slog nav button{flex:1;background:var(--panel2);color:var(--mut);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;padding:10px;border-radius:10px;border:1px solid var(--line)}
 .slog nav button.active{color:var(--accent);border-color:var(--accent)}
 .slog nav svg{width:18px;height:18px}
-.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:110;max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
+.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:${LAYER.bar};max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
 .slog #restBar .t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
-.slog .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.slog .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:${LAYER.backdrop};display:flex;align-items:flex-end;justify-content:center}
 .slog .sheet{background:var(--panel);width:100%;max-width:680px;max-height:88vh;border-radius:18px 18px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;animation:slogup .22s ease}
 @keyframes slogup{from{transform:translateY(40px);opacity:.6}to{transform:translateY(0);opacity:1}}
 .slog .sheet-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
@@ -94,7 +95,7 @@ const CSS = `
 .slog .ex-item .nm{font-weight:600}
 .slog .ex-item .meta{font-size:12px;color:var(--mut);text-transform:capitalize}
 .slog .empty{text-align:center;color:var(--mut);padding:30px 10px;font-size:14px}
-.slog #toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:11px 18px;border-radius:11px;z-index:80;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;max-width:90%}
+.slog #toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:11px 18px;border-radius:11px;z-index:${LAYER.toast};font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;max-width:90%}
 .slog #toast.show{opacity:.95}
 .slog .spin{width:20px;height:20px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:slogr .7s linear infinite;display:inline-block}
 @keyframes slogr{to{transform:rotate(360deg)}}

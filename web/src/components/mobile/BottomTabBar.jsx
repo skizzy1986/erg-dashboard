@@ -1,5 +1,6 @@
 import React from 'react';
 import { THEME } from '../../constants/theme.js';
+import { LAYER } from '../../constants/tokens.js';
 
 const TABS = [
   { id: 'analytics', label: 'Analytics', icon: '📊' },
@@ -18,7 +19,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
         bottom: 0,
         left: 0,
         right: 0,
-        zIndex: 100,
+        zIndex: LAYER.nav,
         height: 56,
         paddingBottom: 'env(safe-area-inset-bottom)',
         display: 'flex',
