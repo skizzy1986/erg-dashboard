@@ -359,6 +359,7 @@ approval gates. It never advances without explicit go-ahead.
 /refactor <module>       →  strangler-fig extraction (Minimal Change Engineer)
 /research <topic>        →  research only (Trend Researcher)
 /daily                   →  today's 30-min task list (read-only, no pipeline)
+/audit [period]          →  rank Sentry issues, verify against code, file GitHub Issues
 ```
 
 ### The canonical chain (stage → Agency agent)

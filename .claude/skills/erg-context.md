@@ -51,6 +51,24 @@ Testing Library. Full briefing: `CLAUDE.md`.
 - Coverage thresholds in `web/vite.config.js` ratchet upward — new code ships
   with tests in the same PR. The numbers only go up.
 
+## Error reporting
+
+Errors go to Sentry. Org `splitiq-29`, **EU-region** — every Sentry MCP call needs
+`regionUrl: "https://de.sentry.io"`, and the ingest host is `*.ingest.de.sentry.io`.
+Projects: `erg-dashboard` (the app) and `erg-dashboard-functions` (edge functions).
+
+- Report handled errors through `captureError()` in `web/src/utils/sentry.js`, and
+  `captureFunctionError()` in `supabase/functions/_shared/sentry.ts`. Do not call the
+  Sentry SDK directly from a hook or a function handler.
+- Supabase failures raised through react-query are already captured by the
+  QueryCache/MutationCache handlers in `web/src/utils/queryErrorHandlers.js`. Code
+  that talks to supabase-js directly, outside react-query, must capture its own.
+- **Never swallow an operational error silently.** A bare `catch {}` is only correct
+  for genuinely expected non-events (a corrupt localStorage entry, a partial SSE
+  line) — and those must say why in a comment.
+- Adding a Sentry ingest host, or any new outbound host, means updating `connect-src`
+  in `web/vercel.json` or the browser blocks it.
+
 ## Domain glossary
 
 CTL = 42-day exponential average of training load (fitness). ATL = 7-day
