@@ -94,8 +94,11 @@ function Login() {
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <label style={lbl}>EMAIL</label>
+          <label style={lbl} htmlFor="login-email">
+            EMAIL
+          </label>
           <input
+            id="login-email"
             style={inp}
             type="email"
             autoComplete="username"
@@ -104,8 +107,11 @@ function Login() {
           />
         </div>
         <div style={{ marginBottom: 18 }}>
-          <label style={lbl}>PASSWORD</label>
+          <label style={lbl} htmlFor="login-password">
+            PASSWORD
+          </label>
           <input
+            id="login-password"
             style={inp}
             type="password"
             autoComplete="current-password"
@@ -138,7 +144,7 @@ function Login() {
             padding: '12px',
             fontSize: 13,
             fontWeight: 700,
-            color: THEME.bg,
+            color: THEME.surface,
             cursor: busy ? 'default' : 'pointer',
             fontFamily: 'inherit',
             letterSpacing: 1,
@@ -198,7 +204,7 @@ function InstallButton() {
         fontSize: 11,
         letterSpacing: 1,
         fontWeight: 700,
-        color: THEME.bg,
+        color: THEME.surface,
         cursor: 'pointer',
         fontFamily: 'inherit',
       }}

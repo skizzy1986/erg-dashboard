@@ -122,3 +122,25 @@ describe('dark palette — still AA where it already was', () => {
     }
   });
 });
+
+// A filled accent button paints its label with THEME.surface, not THEME.bg.
+// On dark that was near-black on a bright accent and passed; the flip made it
+// #bcc5dd on #10795a — 3.11:1, which Lighthouse caught on the login screen and
+// which held on seven more buttons it could not reach behind auth. `surface`
+// works in both themes because it inverts with the accents: near-black on dark,
+// white on light.
+describe('text on a filled accent', () => {
+  const FILLED = ['accent', 'positive', 'warning', 'critical', 'accentAlt'];
+
+  it.each(FILLED)('surface on %s passes AA in the light theme', (fill) => {
+    expect(ratio(LIGHT.surface, LIGHT[fill])).toBeGreaterThanOrEqual(AA);
+  });
+
+  it.each(FILLED)('surface on %s passes AA in the dark theme', (fill) => {
+    expect(ratio(DARK.surface, DARK[fill])).toBeGreaterThanOrEqual(AA);
+  });
+
+  it('bg on a filled accent would fail on light — the regression', () => {
+    expect(ratio(LIGHT.bg, LIGHT.positive)).toBeLessThan(AA);
+  });
+});

@@ -402,7 +402,7 @@ export default function LogSessionForm({ onSaved }) {
           padding: '12px',
           fontSize: 12,
           fontWeight: 700,
-          color: THEME.bg,
+          color: THEME.surface,
           cursor: saving ? 'default' : 'pointer',
           fontFamily: 'inherit',
           letterSpacing: 1,

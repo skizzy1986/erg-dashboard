@@ -310,7 +310,7 @@ export default function CoachView() {
           disabled={isStreaming || !input.trim()}
           style={{
             background: THEME.accent,
-            color: THEME.bg,
+            color: THEME.surface,
             border: 'none',
             borderRadius: 6,
             padding: '0 16px',

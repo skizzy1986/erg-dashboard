@@ -52,7 +52,7 @@ export default function ErrorFallback({ resetError }) {
           fontSize: 12,
           fontWeight: 700,
           letterSpacing: 1,
-          color: THEME.bg,
+          color: THEME.surface,
           cursor: 'pointer',
           fontFamily: 'inherit',
         }}
