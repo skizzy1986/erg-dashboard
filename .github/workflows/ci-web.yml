@@ -67,8 +67,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.web == 'true'
+    permissions:
+      contents: read
+      # OIDC for the Sentry Prevent upload below — avoids storing a token.
+      id-token: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Prevent needs full history to attribute results to commits.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -82,6 +89,22 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           json-summary-path: web/coverage/coverage-summary.json
           json-final-path: web/coverage/coverage-final.json
+      # Sentry Test Analytics: flaky-test detection and per-test failure
+      # history, which the coverage comment above cannot show. `if: always()`
+      # because a FAILING run is exactly the one worth uploading.
+      #
+      # fail_ci_if_error is false deliberately: this is a reporting sink, not
+      # a quality gate. An outage or an unprovisioned Prevent account must not
+      # block a PR whose tests actually passed. Only test results are uploaded
+      # — coverage already has a working reporter above.
+      - name: Upload test results to Sentry Test Analytics
+        if: always()
+        uses: getsentry/prevent-action@v0
+        with:
+          files: ./web/test-results/junit.xml
+          flags: unittests
+          name: vitest
+          fail_ci_if_error: false
 
   build:
     name: Build

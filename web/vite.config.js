@@ -99,6 +99,10 @@ export default defineConfig({
     setupFiles: ['./src/test-setup.js'],
     // Playwright E2E specs live in e2e/ and must not be collected by Vitest.
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    // JUnit XML is the only format Sentry Test Analytics ingests. `default`
+    // is kept first so local and CI console output is unchanged.
+    reporters: ['default', 'junit'],
+    outputFile: { junit: './test-results/junit.xml' },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'json'],
