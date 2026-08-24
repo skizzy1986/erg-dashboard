@@ -30,3 +30,8 @@ export const DARK = {
   neutralAccent: '#888888',
   textStrong: '#ffffff',
 };
+
+// The palette the document boots on. index.html's pre-mount ground, the PWA
+// manifest and the Android launch colours all mirror this, so the ground is
+// written down once. Flipping the app's default theme is a change to this line.
+export const DEFAULT_THEME = DARK;
