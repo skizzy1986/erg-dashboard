@@ -5,7 +5,7 @@
 // Every colour is interpolated from the passed theme — the palette is
 // mid-migration and a literal hex would silently survive the move.
 
-// Not exported: the two translucent cyans the design calls for have no THEME
+// Not exported: the two translucent accents the design calls for have no THEME
 // token, and inventing one for a one-file detail would be worse than deriving
 // them here.
 function alpha(hex, a) {
@@ -76,7 +76,7 @@ export function splashCss(theme) {
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle, ${alpha(theme.cyan, 0.16)} 0%, ${alpha(theme.cyan, 0)} 66%);
+  background: radial-gradient(circle, ${alpha(theme.accent, 0.16)} 0%, ${alpha(theme.accent, 0)} 66%);
   animation: siq-splash-glow 2600ms ease-in-out infinite;
 }
 .siq-splash__mark {
@@ -91,7 +91,7 @@ export function splashCss(theme) {
   position: absolute;
   inset: -6px;
   border-radius: 34px;
-  border: 1px solid ${theme.cyan};
+  border: 1px solid ${theme.accent};
   animation: siq-splash-halo 640ms cubic-bezier(.2, .7, .3, 1) 260ms both;
 }
 .siq-splash__tile {
@@ -112,11 +112,11 @@ export function splashCss(theme) {
 }
 .siq-splash__stroke {
   fill: none;
-  stroke: ${theme.cyan};
+  stroke: ${theme.accent};
   stroke-width: 4.5;
   stroke-linecap: round;
   stroke-dasharray: 260;
-  filter: drop-shadow(0 0 8px ${alpha(theme.cyan, 0.55)});
+  filter: drop-shadow(0 0 8px ${alpha(theme.accent, 0.55)});
   animation: siq-splash-draw 2600ms cubic-bezier(.35, .7, .2, 1) infinite both;
 }
 .siq-splash__head {
@@ -135,7 +135,7 @@ export function splashCss(theme) {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 700;
   letter-spacing: 0;
-  color: ${theme.cyan};
+  color: ${theme.accent};
 }
 .siq-splash__sub {
   font-size: 9px;
@@ -155,7 +155,7 @@ export function splashCss(theme) {
 .siq-splash__track {
   width: 36%;
   height: 100%;
-  background: linear-gradient(90deg, ${alpha(theme.cyan, 0)}, ${theme.cyan});
+  background: linear-gradient(90deg, ${alpha(theme.accent, 0)}, ${theme.accent});
   animation: siq-splash-track 1500ms cubic-bezier(.55, 0, .45, 1) infinite;
 }
 .siq-splash__caption {

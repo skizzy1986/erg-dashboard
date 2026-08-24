@@ -7,7 +7,7 @@ import { THEME } from '../../constants/theme.js';
 // watching the output follow.
 const SUBSTITUTED = [
   ['bg', '#010101'],
-  ['cyan', '#ff0000'],
+  ['accent', '#ff0000'],
   ['text', '#020202'],
   ['textSubtle', '#030303'],
   ['surfaceAlt', '#040404'],
@@ -25,8 +25,8 @@ describe('splashCss', () => {
     }
   );
 
-  it('derives the translucent cyans from the cyan token', () => {
-    const css = splashCss({ ...THEME, cyan: '#010203' });
+  it('derives the translucent accents from the accent token', () => {
+    const css = splashCss({ ...THEME, accent: '#010203' });
     expect(css).toContain('rgba(1, 2, 3');
     expect(css).not.toContain('rgba(0, 212, 255');
   });
