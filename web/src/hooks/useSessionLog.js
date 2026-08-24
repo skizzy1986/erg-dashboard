@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
 import { normType } from '../utils/formatting.js';
-import { isCompletedStatus } from '../utils/sessionStatus.js';
+import {
+  isCompletedStatus,
+  isCancelledStatus,
+} from '../utils/sessionStatus.js';
 
 // ── SESSION LOG (add entries here as block progresses) ──────────
 
@@ -75,20 +78,24 @@ export function useSessionLog() {
   // training-date order (newest first); the hardcoded seed follows.
   const allSessions = [...dbSessions, ...sessionLog];
 
-  // ── THREE-WAY SPLIT: counted / shown / planned ────────────────
+  // ── FOUR-WAY SPLIT: counted / shown / cancelled / planned ─────
   // One list, two questions. `loggedSessions` is the COUNTED set — training
   // that actually happened — and drives reconciliation, recent sessions and
   // analytics. `logDisplaySessions` is the SHOWN set — everything with a
   // record, cancelled included — because a cancelled session is a decision
   // worth seeing in the Log, just not one worth counting. Planned rows are
   // forward-looking prescriptions and appear in neither.
+  // `cancelledSessions` is a strict subset of `logDisplaySessions` and disjoint
+  // from `loggedSessions`, carried separately so a view can render a deviation
+  // without re-inspecting `status` itself.
   // loggedKeys derives from the COUNTED set: a cancelled session must never
   // reconcile a planned prescription as done.
-  // Both lists are built in one pass so the date_iso-desc order established by
+  // All lists are built in one pass so the date_iso-desc order established by
   // the query above survives — the display object does not carry date_iso, so a
   // split-and-remerge could not reproduce it.
   const loggedSessions = [];
   const logDisplaySessions = [];
+  const cancelledSessions = [];
   const plannedSessions = [];
   for (const e of allSessions) {
     if (e.status === 'planned') {
@@ -97,6 +104,7 @@ export function useSessionLog() {
     }
     logDisplaySessions.push(e);
     if (isCompletedStatus(e.status)) loggedSessions.push(e);
+    if (isCancelledStatus(e.status)) cancelledSessions.push(e);
   }
   // A planned row is reconciled ("done") once an actual exists for the same
   // date + type. v1 matches on normalized type + date (a planned_id link can
@@ -107,6 +115,7 @@ export function useSessionLog() {
     dbStatus,
     allSessions,
     loggedSessions,
+    cancelledSessions,
     logDisplaySessions,
     plannedSessions,
     loggedKeys,

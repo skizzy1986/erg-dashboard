@@ -156,6 +156,9 @@ vi.mock('../views/CalendarView.jsx', () => ({
     <div>
       <div>CalendarView-stub</div>
       <div data-testid="calendar-counted">{props.loggedSessions?.length}</div>
+      <div data-testid="calendar-cancelled">
+        {props.cancelledSessions?.length}
+      </div>
     </div>
   ),
 }));
@@ -301,6 +304,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'CALENDAR' }));
     expect(screen.getByTestId('calendar-counted')).toHaveTextContent('2');
+    expect(screen.getByTestId('calendar-cancelled')).toHaveTextContent('1');
 
     fireEvent.click(screen.getByRole('button', { name: 'LOG' }));
     expect(screen.getByTestId('logview-shown')).toHaveTextContent('3');

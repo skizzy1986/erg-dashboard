@@ -361,3 +361,77 @@ describe('useSessionLog — cancelled is shown but not counted (#194)', () => {
     expect(shownOnly.every((e) => e.status === 'cancelled')).toBe(true);
   });
 });
+
+// ── #242: cancelled carried as its own list for the day strip ─────
+// The calendar needs to mark a day where a session was cancelled without
+// re-inspecting `status` in the view. The list is a strict subset of the SHOWN
+// set and disjoint from the COUNTED set — that relationship is the contract.
+describe('useSessionLog — cancelled sessions are carried separately (#242)', () => {
+  it('AC1 puts cancelled session 61 in its own list, out of the counted one', async () => {
+    mockQuery([
+      session61,
+      {
+        id: 62,
+        date: '7/6/26',
+        type: 'erg',
+        label: 'UT2 60min',
+        status: 'completed',
+      },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.cancelledSessions.map((e) => e._id)).toEqual([61]);
+    expect(result.current.loggedSessions.some((e) => e._id === 61)).toBe(false);
+    expect(result.current.logDisplaySessions.some((e) => e._id === 61)).toBe(
+      true
+    );
+  });
+
+  it('AC2 adds a fourth accumulator without perturbing the other three', async () => {
+    mockQuery(distributionRows());
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    expect(result.current.cancelledSessions).toHaveLength(32);
+    expect(result.current.loggedSessions).toHaveLength(58);
+    expect(result.current.logDisplaySessions).toHaveLength(90);
+    expect(result.current.plannedSessions).toHaveLength(2);
+    const counted = new Set(result.current.loggedSessions.map((e) => e._id));
+    expect(
+      result.current.cancelledSessions.every((e) => !counted.has(e._id))
+    ).toBe(true);
+  });
+
+  it('AC3 preserves date_iso-desc order inside the cancelled list', async () => {
+    // Same ordering guarantee as the counted list: the rows arrive in
+    // date_iso-desc order and the single pass must not reshuffle them.
+    mockQuery([
+      {
+        id: 2,
+        date: '8/6/26',
+        type: 'erg',
+        label: 'UT1 50min',
+        status: 'cancelled',
+      },
+      {
+        id: 3,
+        date: '8/4/26',
+        type: 'erg',
+        label: 'build 40min',
+        status: 'actual',
+      },
+      {
+        id: 99,
+        date: '7/14/26',
+        type: 'erg',
+        label: 'backfilled months later',
+        status: 'cancelled',
+      },
+    ]);
+    const { result } = renderHook(() => useSessionLog());
+    await waitFor(() => expect(result.current.dbStatus).toBe('ok'));
+    const cancelled = result.current.cancelledSessions;
+    expect(cancelled.map((e) => e._id)).toEqual([2, 99]);
+    expect(cancelled[0].date).toBe('8/6/26');
+    expect(cancelled.at(-1).date).toBe('7/14/26');
+  });
+});

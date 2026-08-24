@@ -1,4 +1,7 @@
-import { COMPLETED_STATUSES } from '../constants/sessionStatus.js';
+import {
+  COMPLETED_STATUSES,
+  CANCELLED_STATUS,
+} from '../constants/sessionStatus.js';
 
 // Does this session's status mean "training that actually happened"?
 //
@@ -15,4 +18,12 @@ import { COMPLETED_STATUSES } from '../constants/sessionStatus.js';
 // statuses server-side via .in('status', COMPLETED_STATUSES).
 export function isCompletedStatus(status) {
   return COMPLETED_STATUSES.includes(status);
+}
+
+// Was this session decided against? A deviation worth showing on the calendar,
+// never one worth counting. Strict equality against the single allowed
+// spelling — same fail-closed posture as isCompletedStatus, so an unknown value
+// is not silently rendered as a cancellation.
+export function isCancelledStatus(status) {
+  return status === CANCELLED_STATUS;
 }

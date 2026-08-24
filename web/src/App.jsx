@@ -173,6 +173,7 @@ export default function App() {
 
   const {
     loggedSessions,
+    cancelledSessions,
     logDisplaySessions,
     plannedSessions,
     loggedKeys,
@@ -372,7 +373,11 @@ export default function App() {
 
           {/* ── CALENDAR VIEW ── */}
           {view === 'calendar' && (
-            <CalendarView loggedSessions={loggedSessions} isWide={isWide} />
+            <CalendarView
+              loggedSessions={loggedSessions}
+              cancelledSessions={cancelledSessions}
+              isWide={isWide}
+            />
           )}
 
           {/* ── PROGRAM VIEW ── */}
