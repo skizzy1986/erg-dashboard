@@ -298,44 +298,45 @@ function AuthGate() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  let body;
   if (session === undefined) {
-    return (
+    body = showSplash ? null : (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: C.bg,
+          color: C.muted,
+          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+          fontSize: 12,
+        }}
+      >
+        Loading…
+      </div>
+    );
+  } else if (!session) {
+    body = showSplash ? null : <Login />;
+  } else {
+    body = (
       <>
-        {showSplash ? (
-          <SplashScreen />
-        ) : (
-          <div
-            style={{
-              minHeight: '100vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: C.bg,
-              color: C.muted,
-              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-              fontSize: 12,
-            }}
-          >
-            Loading…
-          </div>
-        )}
-        <InstallButton />
+        <SignOutButton />
+        {isMobile ? <MobileApp /> : <App />}
       </>
     );
   }
-  if (!session)
-    return (
-      <>
-        {showSplash ? <SplashScreen /> : <Login />}
-        <InstallButton />
-      </>
-    );
+
+  // One flat shape across all three branches, so the splash keeps a stable
+  // child index. Returning a different fragment per branch remounted it the
+  // moment the session resolved — React reconciles fragment children by index,
+  // so the splash landed on a different slot and replayed its whole entrance
+  // mid-animation. It also overlays rather than replaces once signed in: the
+  // tabs' fetches only start when MobileApp mounts, so it has to be mounted
+  // and fetching underneath.
   return (
     <>
-      <SignOutButton />
-      {isMobile ? <MobileApp /> : <App />}
-      {/* Overlays rather than replaces: the tabs' fetches only start once
-          MobileApp mounts, so it has to be mounted and fetching underneath. */}
+      {body}
       {showSplash && <SplashScreen />}
       <InstallButton />
     </>

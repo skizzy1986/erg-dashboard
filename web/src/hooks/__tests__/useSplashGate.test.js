@@ -172,9 +172,10 @@ describe('useSplashGate', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  // StrictMode double-invokes the arming effect: run, clean up, run again. The
-  // armedRef latch is what stops the second run restarting the clock — without
-  // it the floor never fires and the splash sticks forever in dev.
+  // StrictMode double-invokes the arming effect: run, clean up, run again.
+  // This pins the observable contract — one floor, still 700ms — rather than
+  // the latch's internals; both passes land in the same commit, so the re-armed
+  // delay equals a fresh one and this would also pass without armedRef.
   it('keeps one clock across a StrictMode double-mount', () => {
     const { result } = renderHook((props) => useSplashGate(props), {
       wrapper: StrictMode,

@@ -22,9 +22,11 @@ export function useSplashGate({
 
   useEffect(() => {
     if (!active) return undefined;
-    // The latch fixes t=0 at first activation and never moves. Re-running this
-    // effect (a viewport crossing 767px, or StrictMode's double-invoked mount)
-    // re-arms with the REMAINING time rather than restarting the clock.
+    // Fixes t=0 at first activation so a re-run of this effect (StrictMode's
+    // double-invoked mount, or a viewport crossing 767px) re-arms with the
+    // REMAINING time rather than a fresh full floor. Belt-and-braces today:
+    // both re-run paths land at elapsed~=0, and the dismissed latch below means
+    // a disable/re-enable can never show the splash again anyway.
     if (armedRef.current === null) armedRef.current = Date.now();
     const elapsed = Date.now() - armedRef.current;
     const floor = setTimeout(
