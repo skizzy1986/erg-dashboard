@@ -22,7 +22,7 @@ lands, a light page must override the token itself — specificity cannot beat
 `!important`:
 
 ```css
-:root { --color-bg: #c3cade; }
+:root { --color-bg: #bcc5dd; }
 ```
 
 ### The styling idiom: inline styles + CSS variables
@@ -66,10 +66,56 @@ type:
 | purple · upper strength | `#f0eafd` | `#5f45b0` |
 | teal · cycling | `#e3f4f1` | `#10786c` |
 
+### The nine remaining tokens
+
+`HANDOFF.md` §1 supplied eleven values and kept the structural keys without
+giving them light ones. These are the rest. Measured, against the grounds each
+actually lands on.
+
+```
+raised        #ffffff   elevation on light is shadow, not a lighter fill —
+                        pair with 0 4px 14px #1c1e2a1f
+surfaceAlt    #eef4fb   the inset: one step back toward the ground, inside a card
+field         #f4f7fc   inputs and editable rows, with a #c8cee0 border
+divider       #e4e7ef   rule inside a card
+neutral       #98a1bb   rest marks, zero-height bars, gap stubs — non-text
+textSubtle    #43485a   secondary text. Passes on every ground including #bcc5dd
+textFaint     #767c92   large text and non-text UI only, and only on a card or
+                        inset — 4.14 on card, 3.74 on inset, 2.40 on the ground
+textDim       #98a1bb   decorative only: hairlines, disabled glyphs. Never text
+accentAlt2    #a3407a   prehab. Wash #f7e9f2
+```
+
+| Token | on card | on inset | on field | on ground |
+|---|---|---|---|---|
+| `text` #1c1e2a | 16.55 | 14.95 | 15.41 | 9.59 |
+| `textSubtle` #43485a | 9.07 | 8.20 | 8.45 | 5.26 |
+| `muted` #4a4f63 | 8.10 | 7.32 | 7.55 | 4.69 |
+| `textFaint` #767c92 | **4.14** | **3.74** | **3.85** | **2.40** |
+| `textDim` #98a1bb | **2.57** | **2.32** | **2.39** | **1.49** |
+
+`textDim` clears no threshold anywhere, including the 3:1 for meaningful non-text
+UI. It is for marks that carry no information on their own. `textFaint` clears
+3:1 on a card or inset but not 4.5 — large text and UI marks only, never body.
+
+**One published value moves.** §1 gives `--color-muted: #43485a`. That value is
+the label neutral and belongs to `textSubtle`, which needs to be the one that
+passes on every ground. `muted` takes #4a4f63 — still AA everywhere (8.10 on a
+card, 4.69 on the ground) and still a step back from `textSubtle`, preserving the
+dark system's ordering. Nothing else §1 published changes.
+
+**Count.** 23 existing keys, minus the ten colour-named ones, plus seven roles is
+20 — with one addition: `cycling` #10786c stays as its own token. §1 folds it
+into `positive` #10795a as a duplicate role, but they are different values doing
+different jobs (done/UT1/lower strength versus the discipline), and folding them
+loses cycling's accent. So **21 ink and structural tokens**, plus **8 wash
+tokens** — each accent needs a surface value as well as a type value on a light
+ground. 29 declared custom properties. Full list in `splitiq-light-tokens.css`.
+
 ### Ground, cards and text
 
 ```
-app ground   #bcc5dd   blue-grey — never white
+app ground   #bcc5dd   blue-grey — never white (the only ground; see below)
 card         #ffffff   1px #c8cee0 hairline + 0 1px 2px #1c1e2a1a
 inset        #eef4fb   one step back toward the ground, inside a card
 text         #1c1e2a
@@ -233,11 +279,11 @@ bars = tail.map(p => ({ style: 'height:' + pct + '%;background:' + colour }));
 ### Redefine the token, don't fight the rule
 
 `_ds_bundle.css` sets `:root{--color-bg:#08080d}` and `html, body{background:var(--color-bg)}`.
-A helmet rule like `html body{background:#c3cade}` loses to it, and the page
+A helmet rule like `html body{background:#bcc5dd}` loses to it, and the page
 renders dark-on-dark outside whatever mock is on it. Set the token instead:
 
 ```css
-:root{--s:Archivo,…;--m:'IBM Plex Mono',…;--color-bg:#c3cade}
+:root{--s:Archivo,…;--m:'IBM Plex Mono',…;--color-bg:#bcc5dd}
 ```
 
 Every new light screen needs this line. It is the first thing to check when a

@@ -20,8 +20,16 @@ alongside `conventions.md` and `ISSUES-load-states.md`.
 
 - **Shape:** `THEME` values become `var(--color-*)` strings; a `data-theme`
   attribute on the app root redefines the vars beneath it.
-- **Scope:** all 11 components in one PR, one review.
-- **Dark:** dropped. Light is the only theme.
+- **Scope:** ~~all 11 components in one PR, one review.~~ **Split into four
+  steps** on Code's finding: rename with values unchanged (nothing breaks —
+  the tests assert values and no value moves), then the `var()` seam, then the
+  light flip. A combined PR moves seven test files and ~1,278 colour literals at
+  once and is unbisectable on failure. A rename whose screenshots come back
+  byte-identical is proof it was a pure rename.
+- **Dark:** retained as a second theme, not deleted. *(Superseded — this line
+  originally read "dropped. Light is the only theme." That was overturned in
+  review: the erg room is dark at 5am and the live screen wants it.
+  `conventions.md`'s 2026-08-22 banner is the current position and arbitrates.)*
 
 ### The problem in the current code
 
@@ -64,6 +72,12 @@ already role-named.
 
 ### Target state
 
+`theme.js` splits in two: a **values module** holding the hexes, and `THEME` as a
+pointer table of `var()` strings. `utils/themeCss.js` `cssVars(THEME)` currently
+*generates* the variables from `THEME`, so once `THEME.accent` is
+`'var(--color-accent)'` it emits `--color-accent: var(--color-accent)` and
+resolves to nothing. Component source keeps the shape below either way.
+
 `web/src/constants/theme.js`:
 
 ```js
@@ -90,9 +104,21 @@ object.
 
 A stylesheet defines the values:
 
+The ground is **`#bcc5dd`**. §1 previously published `#c3cade` here while §3's
+prose said white cards on `#bcc5dd`; `#bcc5dd` is what all six screens paint and
+what every contrast ratio in `conventions.md` is measured against. `#c3cade` is
+withdrawn.
+
+Values for the nine tokens §1 left unspecified — `raised`, `field`,
+`surfaceAlt`, `neutral`, `divider`, `textSubtle`, `textFaint`, `textDim`,
+`accentAlt2` — are in `conventions.md`, "The nine remaining tokens", with the
+full declaration list in `splitiq-light-tokens.css`. Target is 21 ink and
+structural tokens plus 8 washes: each accent needs a surface value as well as a
+type value on a light ground, and `cycling` stays separate from `positive`.
+
 ```css
 :root, [data-theme='light'] {
-  --color-bg: #c3cade;
+  --color-bg: #bcc5dd;
   --color-surface: #ffffff;
   --color-border: #c8cee0;
   --color-text: #1c1e2a;
@@ -127,8 +153,12 @@ session in a dark erg room, say) can be scoped without reintroducing a second
 - [ ] Every component renders light with no source edit
 - [ ] `data-theme='light'` on the root is a no-op (light is also `:root`)
 - [ ] Dark values deleted, not commented out
-- [ ] Existing component tests pass unchanged (they assert structure, not colour
-      — confirm before starting)
+- [x] ~~Existing component tests pass unchanged (they assert structure, not
+      colour — confirm before starting)~~ **Confirmed false.** Seven files lock
+      colour. `theme.test.js` asserts exactly 23 keys, locks all 23 hex values
+      and requires `/^#[0-9a-f]{6}$/` — that regex forbids `var(--color-*)`.
+      Five more assert derived colours; `e2e/smoke.spec.js:108` asserts
+      `rgb(0, 212, 255)` across 13 tabs. See `CODE-TO-DESIGN.md`.
 
 ---
 

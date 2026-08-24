@@ -50,12 +50,36 @@ over explicitly — it does not propagate.
 
 ## Palette state
 
-The app still ships **dark**, with colour-named hex tokens. The rename to
-role-named tokens is in flight, not merged; light is the target and dark is kept
-as a second theme rather than deleted. `conventions.md` carries the banner
-saying which half is live — trust that banner over older prose, including
-`HANDOFF.md` §1's "dark: dropped", which describes the target state of that PR
-and not what ships today.
+Two separate things, previously collapsed into one sentence:
+
+| | Status |
+| --- | --- |
+| **Light as the design target** | **Correct and current.** Design new work on the light ground. |
+| **Role token names** (`accent`, `positive`, …) | **Not live.** The rename is an open PR. A design referencing those names today resolves to nothing. |
+
+The app still ships dark because the token migration hasn't merged. That is an
+implementation lag, not a design instruction. `conventions.md`'s 2026-08-22
+banner is the current position and arbitrates; `HANDOFF.md` §1's "dark: dropped,
+light is the only theme" is **stale on that specific point** — dark is retained
+as a second theme (the erg room is dark at 5am and the live screen wants it).
+§1 now carries that supersession inline.
+
+Practical consequence, already in `conventions.md`: the bundled `styles.css`
+paints the dark ground with `!important`, so a light artboard must redefine
+`--color-bg` in its own helmet.
+
+The ground is **`#bcc5dd`**. `#c3cade` is withdrawn — it appeared only as a
+`--color-bg` declaration nothing consumed, and every published contrast ratio is
+measured against `#bcc5dd`.
+
+## `CLAUDE.md` duplication
+
+Leave it as it is. The repo's version overwrites it wholesale on the next sync,
+so editing it now is discarded work, and until then it is what gets read into
+every session here — stripping it to a pointer would leave sessions with less
+than they have today. The mechanics content is preserved in this file, which the
+sync never touches. After the sync the two divide cleanly: domain briefing there,
+mechanics here.
 
 ## Design state
 
