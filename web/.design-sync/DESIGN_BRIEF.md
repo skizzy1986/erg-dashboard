@@ -465,7 +465,7 @@ Per `NOTES.md`, each new component needs three coordinated edits — `entry.jsx`
 
 ## 6. Tokens
 
-`src/constants/theme.js` is 24 **colour** tokens and nothing else. No spacing, type, radius, shadow,
+`src/constants/theme.js` is 23 **colour** tokens and nothing else. No spacing, type, radius, shadow,
 z-index or breakpoint scale exists.
 
 **Shipping mechanism: a new `src/constants/tokens.js` of plain JS objects, not CSS variables.**
@@ -477,7 +477,7 @@ The load-bearing decision: **`TYPE` entries are spreadable style fragments, not 
 inline-styles-only constraint this is the only shape that keeps application to one line:
 
 ```js
-style={{ ...TYPE.label, color: THEME.cyan, marginBottom: SPACE.sm }}
+style={{ ...TYPE.label, color: THEME.accent, marginBottom: SPACE.sm }}
 ```
 
 ### 6.1 Typography — the boldest recommendation in this brief
