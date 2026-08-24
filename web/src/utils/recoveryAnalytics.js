@@ -1,3 +1,4 @@
+import { THEME } from '../constants/theme.js';
 // Population fallbacks, used only until 14 days of personal data exist. Exported
 // because evaluateRules needs the same numbers and must not keep a second copy.
 export const RHR_DEFAULT = 57;
@@ -55,7 +56,12 @@ export function computeReadiness(latest, baselines = {}, tsb = null) {
   // either direction, and the 0 defeated CoachView's `!= null` guard so it
   // reached the Coach prompt as fact. Absent data is reported as absent.
   if (!latest || typeof latest.rhr !== 'number') {
-    return { score: null, status: 'NO DATA', color: '#7e7e9a', partial: true };
+    return {
+      score: null,
+      status: 'NO DATA',
+      color: THEME.muted,
+      partial: true,
+    };
   }
 
   let score = 100;
@@ -69,7 +75,8 @@ export function computeReadiness(latest, baselines = {}, tsb = null) {
 
   score = Math.round(Math.min(100, Math.max(0, score)));
   const status = score >= 80 ? 'READY' : score >= 60 ? 'CAUTION' : 'FATIGUED';
-  const color = score >= 80 ? '#34d399' : score >= 60 ? '#ffd700' : '#ff2d55';
+  const color =
+    score >= 80 ? THEME.positive : score >= 60 ? THEME.caution : THEME.critical;
   // Scored on what was present — surfaced so a view can say so.
   const partial = latest.hrv == null || latest.sleep == null;
   return { score, status, color, partial };

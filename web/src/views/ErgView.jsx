@@ -24,6 +24,7 @@ import { formatPace } from '../utils/pace.js';
 import { toISODate } from '../utils/dateFormat.js';
 import { useErgSessions } from '../hooks/useErgSessions.js';
 import { useAnchors } from '../hooks/useAnchors.js';
+import { THEME } from '../constants/theme.js';
 
 // ── ERG TREND DATA ─────────────────────────────────────────────
 // workingPace in seconds/500m (excludes warmup split)
@@ -186,22 +187,22 @@ const HR130_PROJECTION = {
 };
 
 const card = {
-  background: '#2a2a48',
-  border: '1px solid #4a4a68',
+  background: THEME.raised,
+  border: `1px solid ${THEME.border}`,
   borderRadius: 6,
   padding: '14px 16px',
   marginBottom: 12,
 };
 
 const statCard = {
-  background: '#08080d',
+  background: THEME.field,
   borderRadius: 4,
   padding: '8px 9px',
 };
 
 const statLabel = {
   fontSize: 8,
-  color: '#7e7e9a',
+  color: THEME.muted,
   letterSpacing: 2,
   marginBottom: 2,
 };
@@ -238,12 +239,12 @@ export default function ErgView({ tsbNow, ctlNow }) {
   // an amber "neutral" — it is the absence of a reading, not a mid-range one.
   const tsbColor =
     tsbNow == null
-      ? '#7e7e9a'
+      ? THEME.muted
       : tsbNow > 5
-        ? '#34d399'
+        ? THEME.positive
         : tsbNow >= -10
-          ? '#ffd700'
-          : '#ff2d55';
+          ? THEME.caution
+          : THEME.critical;
 
   // SECTION 2 — pace improvement summary
   const paced = sessions.filter((s) => s.pace_500m != null);
@@ -279,7 +280,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#00d4ff',
+            color: THEME.accent,
             marginBottom: 10,
           }}
         >
@@ -294,19 +295,23 @@ export default function ErgView({ tsbNow, ctlNow }) {
         >
           <div style={statCard}>
             <div style={statLabel}>FITNESS (CTL)</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#00d4ff' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: THEME.accent }}>
               {ctlNow != null ? Math.round(ctlNow) : '—'}
             </div>
           </div>
           <div style={statCard}>
             <div style={statLabel}>HR130 POWER</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#34d399' }}>
+            <div
+              style={{ fontSize: 15, fontWeight: 700, color: THEME.positive }}
+            >
               {hr130Now != null ? `${hr130Now}W` : '—'}
             </div>
           </div>
           <div style={statCard}>
             <div style={statLabel}>SESSIONS / WK</div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#a78bfa' }}>
+            <div
+              style={{ fontSize: 15, fontWeight: 700, color: THEME.accentAlt }}
+            >
               {sessionsThisWeek}
             </div>
           </div>
@@ -325,13 +330,13 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#00d4ff',
+            color: THEME.accent,
             marginBottom: 4,
           }}
         >
           PACE ANALYTICS · /500m
         </div>
-        <div style={{ fontSize: 9, color: '#6c6c88', marginBottom: 10 }}>
+        <div style={{ fontSize: 9, color: THEME.textFaint, marginBottom: 10 }}>
           Split per 500m from logged power. Lower = faster. Zone bands shaded.
         </div>
         <PaceTrendChart data={sessions} paceZones={paceZones} />
@@ -339,18 +344,20 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             marginTop: 8,
             fontSize: 10,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.6,
           }}
         >
           {paceSummary ? (
             <>
-              <span style={{ color: '#aaaacc' }}>First 3 → last 3: </span>
+              <span style={{ color: THEME.textSubtle }}>
+                First 3 → last 3:{' '}
+              </span>
               {formatPace(paceSummary.oldAvg)} →{' '}
               {formatPace(paceSummary.newAvg)}{' '}
               <span
                 style={{
-                  color: paceSummary.delta < 0 ? '#34d399' : '#ff6b35',
+                  color: paceSummary.delta < 0 ? THEME.positive : THEME.warning,
                   fontWeight: 700,
                 }}
               >
@@ -368,8 +375,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* ── SECTION 3 · POWER ANALYTICS ── */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -379,13 +386,13 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#00d4ff',
+            color: THEME.accent,
             marginBottom: 4,
           }}
         >
           WORKING POWER TREND · WATTS
         </div>
-        <div style={{ fontSize: 9, color: '#6c6c88', marginBottom: 10 }}>
+        <div style={{ fontSize: 9, color: THEME.textFaint, marginBottom: 10 }}>
           Drag-factor independent — true cross-session comparison. ● hard push ○
           Z2
         </div>
@@ -398,7 +405,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               dataKey="date"
               tick={{
                 fontSize: 9,
-                fill: '#7e7e9a',
+                fill: THEME.muted,
                 fontFamily: "'DM Mono',monospace",
               }}
               axisLine={false}
@@ -408,7 +415,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               domain={[110, 200]}
               tick={{
                 fontSize: 9,
-                fill: '#7e7e9a',
+                fill: THEME.muted,
                 fontFamily: "'DM Mono',monospace",
               }}
               tickFormatter={(v) => `${v}W`}
@@ -419,34 +426,34 @@ export default function ErgView({ tsbNow, ctlNow }) {
             <Tooltip content={<ErgTooltip />} />
             <ReferenceLine
               y={150}
-              stroke="#34d399"
+              stroke={THEME.positive}
               strokeDasharray="3 3"
               strokeOpacity={0.35}
               label={{
                 value: 'Z2 top',
                 position: 'insideTopRight',
                 fontSize: 8,
-                fill: '#34d399',
+                fill: THEME.positive,
                 fontFamily: "'DM Mono',monospace",
               }}
             />
             <ReferenceLine
               y={125}
-              stroke="#00d4ff"
+              stroke={THEME.accent}
               strokeDasharray="3 3"
               strokeOpacity={0.35}
               label={{
                 value: 'Z2 base',
                 position: 'insideBottomRight',
                 fontSize: 8,
-                fill: '#00d4ff',
+                fill: THEME.accent,
                 fontFamily: "'DM Mono',monospace",
               }}
             />
             <Line
               type="monotone"
               dataKey="watts"
-              stroke="#00d4ff"
+              stroke={THEME.accent}
               strokeWidth={2}
               dot={(props) => {
                 const { cx, cy, payload } = props;
@@ -456,8 +463,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     cx={cx}
                     cy={cy}
                     r={4}
-                    fill="#00d4ff"
-                    stroke="#08080d"
+                    fill={THEME.accent}
+                    stroke={THEME.field}
                     strokeWidth={1}
                   />
                 ) : (
@@ -466,13 +473,13 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     cx={cx}
                     cy={cy}
                     r={4}
-                    fill="#08080d"
-                    stroke="#00d4ff"
+                    fill={THEME.field}
+                    stroke={THEME.accent}
                     strokeWidth={2}
                   />
                 );
               }}
-              activeDot={{ r: 5, fill: '#00d4ff' }}
+              activeDot={{ r: 5, fill: THEME.accent }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -480,7 +487,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             marginTop: 8,
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
           }}
         >
@@ -494,9 +501,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* Power @ HR130 — key barometer + projection */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #34d39930',
-          borderLeft: '3px solid #34d399',
+          background: THEME.raised,
+          border: `1px solid ${THEME.positive}30`,
+          borderLeft: `3px solid ${THEME.positive}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -506,13 +513,13 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#34d399',
+            color: THEME.positive,
             marginBottom: 4,
           }}
         >
           ⭐ POWER @ HR130 · KEY BAROMETER
         </div>
-        <div style={{ fontSize: 9, color: '#6c6c88', marginBottom: 10 }}>
+        <div style={{ fontSize: 9, color: THEME.textFaint, marginBottom: 10 }}>
           The truest single fitness metric — watts at your HR130 anchor. Rising
           = engine growing. Actual vs end-of-base projection.
         </div>
@@ -531,25 +538,25 @@ export default function ErgView({ tsbNow, ctlNow }) {
               'NOW',
               `${HR130_PROJECTION.startWatts}W`,
               '6/12 baseline',
-              '#34d399',
+              THEME.positive,
             ],
             [
               'PROJECTED',
               `${HR130_PROJECTION.endLow}–${HR130_PROJECTION.endHigh}W`,
               HR130_PROJECTION.endDate,
-              '#00d4ff',
+              THEME.accent,
             ],
             [
               'GAIN',
               `+${HR130_PROJECTION.endLow - HR130_PROJECTION.startWatts}–${HR130_PROJECTION.endHigh - HR130_PROJECTION.startWatts}W`,
               'over base',
-              '#ffd700',
+              THEME.caution,
             ],
           ].map(([k, v, sub, c]) => (
             <div
               key={k}
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 4,
                 padding: '8px 9px',
               }}
@@ -557,7 +564,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               <div
                 style={{
                   fontSize: 8,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   letterSpacing: 2,
                   marginBottom: 2,
                 }}
@@ -565,7 +572,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 {k}
               </div>
               <div style={{ fontSize: 15, fontWeight: 700, color: c }}>{v}</div>
-              <div style={{ fontSize: 8, color: '#6c6c88', marginTop: 1 }}>
+              <div
+                style={{ fontSize: 8, color: THEME.textFaint, marginTop: 1 }}
+              >
                 {sub}
               </div>
             </div>
@@ -582,7 +591,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               dataKey="date"
               tick={{
                 fontSize: 9,
-                fill: '#7e7e9a',
+                fill: THEME.muted,
                 fontFamily: "'DM Mono',monospace",
               }}
               axisLine={false}
@@ -592,7 +601,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               domain={[120, 185]}
               tick={{
                 fontSize: 8,
-                fill: '#7e7e9a',
+                fill: THEME.muted,
                 fontFamily: "'DM Mono',monospace",
               }}
               tickFormatter={(v) => `${v}W`}
@@ -602,8 +611,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
             />
             <Tooltip
               contentStyle={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 fontSize: 11,
                 fontFamily: "'DM Mono',monospace",
@@ -611,39 +620,39 @@ export default function ErgView({ tsbNow, ctlNow }) {
             />
             <ReferenceLine
               y={165}
-              stroke="#00d4ff"
+              stroke={THEME.accent}
               strokeDasharray="3 3"
               strokeOpacity={0.3}
               label={{
                 value: 'proj. low',
                 position: 'insideTopRight',
                 fontSize: 8,
-                fill: '#00d4ff',
+                fill: THEME.accent,
                 fontFamily: "'DM Mono',monospace",
               }}
             />
             <ReferenceLine
               y={180}
-              stroke="#00d4ff"
+              stroke={THEME.accent}
               strokeDasharray="3 3"
               strokeOpacity={0.3}
               label={{
                 value: 'proj. high',
                 position: 'insideTopRight',
                 fontSize: 8,
-                fill: '#00d4ff',
+                fill: THEME.accent,
                 fontFamily: "'DM Mono',monospace",
               }}
             />
             <Line
               type="monotone"
               dataKey="watts"
-              stroke="#34d399"
+              stroke={THEME.positive}
               strokeWidth={2}
               dot={{
                 r: 4,
-                fill: '#34d399',
-                stroke: '#08080d',
+                fill: THEME.positive,
+                stroke: THEME.field,
                 strokeWidth: 1,
               }}
             />
@@ -652,7 +661,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginTop: 8,
           }}
@@ -665,8 +674,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
           <div
             style={{
               marginTop: 12,
-              background: '#08080d',
-              border: '1px solid #4a4a68',
+              background: THEME.field,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 5,
               padding: '11px 13px',
             }}
@@ -675,7 +684,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               style={{
                 fontSize: 8,
                 letterSpacing: 2,
-                color: '#a78bfa',
+                color: THEME.accentAlt,
                 marginBottom: 8,
               }}
             >
@@ -709,7 +718,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 <div
                   key={k}
                   style={{
-                    background: '#2a2a48',
+                    background: THEME.raised,
                     borderRadius: 4,
                     padding: '7px 8px',
                   }}
@@ -717,7 +726,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                   <div
                     style={{
                       fontSize: 7,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       letterSpacing: 1,
                       marginBottom: 2,
                     }}
@@ -728,7 +737,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      color: '#a78bfa',
+                      color: THEME.accentAlt,
                     }}
                   >
                     {v}
@@ -736,7 +745,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                   <div
                     style={{
                       fontSize: 7,
-                      color: '#6c6c88',
+                      color: THEME.textFaint,
                       marginTop: 1,
                     }}
                   >
@@ -748,19 +757,21 @@ export default function ErgView({ tsbNow, ctlNow }) {
             <div
               style={{
                 fontSize: 10,
-                color: '#aaaacc',
+                color: THEME.textSubtle,
                 lineHeight: 1.6,
-                borderTop: '1px solid #3e3e5a',
+                borderTop: `1px solid ${THEME.divider}`,
                 paddingTop: 8,
               }}
             >
-              <span style={{ color: '#a78bfa', fontWeight: 700 }}>READ: </span>
+              <span style={{ color: THEME.accentAlt, fontWeight: 700 }}>
+                READ:{' '}
+              </span>
               {HR130_ANALYSIS.verdict}
             </div>
             <div
               style={{
                 fontSize: 8,
-                color: '#6c6c88',
+                color: THEME.textFaint,
                 lineHeight: 1.5,
                 marginTop: 6,
               }}
@@ -785,7 +796,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
             marginBottom: 10,
           }}
         >
-          <div style={{ fontSize: 9, letterSpacing: 3, color: '#00d4ff' }}>
+          <div style={{ fontSize: 9, letterSpacing: 3, color: THEME.accent }}>
             ZONE DISTRIBUTION · TID
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -797,9 +808,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 key={lbl}
                 onClick={() => setTidScope(val)}
                 style={{
-                  background: tidScope === val ? '#00d4ff' : '#08080d',
-                  color: tidScope === val ? '#08080d' : '#7e7e9a',
-                  border: '1px solid #4a4a68',
+                  background: tidScope === val ? THEME.accent : THEME.field,
+                  color: tidScope === val ? THEME.field : THEME.muted,
+                  border: `1px solid ${THEME.border}`,
                   borderRadius: 4,
                   padding: '4px 9px',
                   fontSize: 9,
@@ -814,7 +825,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
           </div>
         </div>
         {total === 0 ? (
-          <div style={{ fontSize: 10, color: '#7e7e9a', fontStyle: 'italic' }}>
+          <div
+            style={{ fontSize: 10, color: THEME.muted, fontStyle: 'italic' }}
+          >
             No zoned sessions yet.
           </div>
         ) : (
@@ -853,7 +866,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     alignItems: 'center',
                     gap: 5,
                     fontSize: 10,
-                    color: '#aaaacc',
+                    color: THEME.textSubtle,
                   }}
                 >
                   <span
@@ -876,8 +889,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* CP Test plan */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#00d4ff15,#1e1e30)',
-          border: '1px solid #00d4ff50',
+          background: `linear-gradient(135deg,${THEME.accent}15,#1e1e30)`,
+          border: `1px solid ${THEME.accent}50`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -887,7 +900,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#00d4ff',
+            color: THEME.accent,
             marginBottom: 6,
           }}
         >
@@ -896,34 +909,34 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 11,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.6,
             marginBottom: 8,
           }}
         >
-          <span style={{ color: '#00d4ff' }}>When: </span>
+          <span style={{ color: THEME.accent }}>When: </span>
           {FTP_TEST.when}
         </div>
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.6,
             marginBottom: 6,
           }}
         >
-          <span style={{ color: '#00d4ff' }}>Protocol: </span>
+          <span style={{ color: THEME.accent }}>Protocol: </span>
           {FTP_TEST.protocol}
         </div>
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.6,
             marginBottom: 6,
           }}
         >
-          <span style={{ color: '#00d4ff' }}>Prereq: </span>
+          <span style={{ color: THEME.accent }}>Prereq: </span>
           {FTP_TEST.prereq}
         </div>
         <div
@@ -931,7 +944,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
             fontSize: 10,
             color: '#888860',
             lineHeight: 1.6,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 8,
           }}
         >
@@ -942,9 +955,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* Rowing metrics — power-duration curve */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #a78bfa30',
-          borderLeft: '3px solid #a78bfa',
+          background: THEME.raised,
+          border: `1px solid ${THEME.accentAlt}30`,
+          borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -954,7 +967,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#a78bfa',
+            color: THEME.accentAlt,
             marginBottom: 4,
           }}
         >
@@ -963,7 +976,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 9,
-            color: '#6c6c88',
+            color: THEME.textFaint,
             marginBottom: 10,
             lineHeight: 1.5,
           }}
@@ -987,20 +1000,20 @@ export default function ErgView({ tsbNow, ctlNow }) {
               'CRITICAL POWER',
               cpAvailable ? cp + 'W' : 'CP unavailable',
               cpAvailable ? cpStatus : 'anchor unreachable',
-              '#00d4ff',
+              THEME.accent,
             ],
             [
               "W' (anaerobic)",
               CRITICAL_POWER.wPrime ? CRITICAL_POWER.wPrime + 'J' : '—',
               'needs 1-min max',
-              '#ff6b35',
+              THEME.warning,
             ],
-            ['NORTH STAR', '2k pace', 'the race benchmark', '#ffd700'],
+            ['NORTH STAR', '2k pace', 'the race benchmark', THEME.caution],
           ].map(([k, v, sub, c]) => (
             <div
               key={k}
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 4,
                 padding: '8px 9px',
               }}
@@ -1008,7 +1021,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               <div
                 style={{
                   fontSize: 8,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   letterSpacing: 1,
                   marginBottom: 2,
                 }}
@@ -1016,7 +1029,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 {k}
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: c }}>{v}</div>
-              <div style={{ fontSize: 8, color: '#6c6c88', marginTop: 1 }}>
+              <div
+                style={{ fontSize: 8, color: THEME.textFaint, marginTop: 1 }}
+              >
                 {sub}
               </div>
             </div>
@@ -1028,7 +1043,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 8,
             letterSpacing: 2,
-            color: '#7e7e9a',
+            color: THEME.muted,
             marginBottom: 6,
           }}
         >
@@ -1040,11 +1055,11 @@ export default function ErgView({ tsbNow, ctlNow }) {
             <div
               key={p.format}
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 3,
                 padding: '8px 10px',
                 marginBottom: 4,
-                borderLeft: `2px solid ${isTarget ? '#a78bfa' : '#5a5a74'}`,
+                borderLeft: `2px solid ${isTarget ? THEME.accentAlt : THEME.textDim}`,
               }}
             >
               <div
@@ -1058,21 +1073,23 @@ export default function ErgView({ tsbNow, ctlNow }) {
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    color: isTarget ? '#a78bfa' : '#aaaacc',
+                    color: isTarget ? THEME.accentAlt : THEME.textSubtle,
                   }}
                 >
                   {isTarget && '🎯 '}
                   {p.format}{' '}
-                  <span style={{ fontSize: 9, color: '#7e7e9a' }}>{p.dur}</span>
+                  <span style={{ fontSize: 9, color: THEME.muted }}>
+                    {p.dur}
+                  </span>
                 </span>
-                <span style={{ fontSize: 11, color: '#e8e8f0' }}>
+                <span style={{ fontSize: 11, color: THEME.text }}>
                   {p.actualW || p.predW}
-                  <span style={{ fontSize: 8, color: '#7e7e9a' }}>
+                  <span style={{ fontSize: 8, color: THEME.muted }}>
                     W {p.actualW ? 'tested' : 'est.'}
                   </span>
                 </span>
               </div>
-              <div style={{ fontSize: 9, color: '#7e7e9a', marginTop: 2 }}>
+              <div style={{ fontSize: 9, color: THEME.muted, marginTop: 2 }}>
                 {p.system} · feeds {p.feeds}
               </div>
             </div>
@@ -1081,7 +1098,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.6,
             marginTop: 8,
             fontStyle: 'italic',
@@ -1098,8 +1115,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* Model calibration status */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -1118,7 +1135,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 9,
-            color: '#6c6c88',
+            color: THEME.textFaint,
             marginBottom: 12,
             lineHeight: 1.5,
           }}
@@ -1133,7 +1150,11 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 fontSize: 8,
                 letterSpacing: 2,
                 color:
-                  tier === 1 ? '#34d399' : tier === 2 ? '#ffd700' : '#ff6b35',
+                  tier === 1
+                    ? THEME.positive
+                    : tier === 2
+                      ? THEME.caution
+                      : THEME.warning,
                 marginBottom: 5,
               }}
             >
@@ -1150,7 +1171,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 <div
                   key={c.metric}
                   style={{
-                    background: '#08080d',
+                    background: THEME.field,
                     borderLeft: `2px solid ${c.color}`,
                     borderRadius: 3,
                     padding: '7px 10px',
@@ -1168,7 +1189,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: '#e8e8f0',
+                        color: THEME.text,
                       }}
                     >
                       {c.metric}
@@ -1180,7 +1201,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                   <div
                     style={{
                       fontSize: 9,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       lineHeight: 1.4,
                       marginTop: 2,
                     }}
@@ -1191,7 +1212,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     <div
                       style={{
                         fontSize: 9,
-                        color: '#00d4ff99',
+                        color: `${THEME.accent}99`,
                         lineHeight: 1.4,
                         marginTop: 2,
                       }}
@@ -1206,9 +1227,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.6,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 10,
             fontStyle: 'italic',
           }}
@@ -1224,7 +1245,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#7e7e9a',
+          color: THEME.muted,
           marginBottom: 8,
         }}
       >
@@ -1238,7 +1259,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 1,
-                  color: '#00d4ff',
+                  color: THEME.accent,
                   marginBottom: 2,
                 }}
               >

@@ -10,20 +10,21 @@ import {
 import StrengthTooltip from '../components/StrengthTooltip.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import { STRENGTH_TEMPLATES, PREHAB_NOTE } from '../constants/exercises.js';
+import { THEME } from '../constants/theme.js';
 
 const LIFT_COLOR = {
-  'Back Squat': '#34d399',
-  'Romanian Deadlift': '#34d399',
-  'Bench Press': '#a78bfa',
-  'Incline Bench': '#a78bfa',
-  'Barbell Row': '#00d4ff',
-  'Lat Pulldown': '#00d4ff',
-  'Shoulder Press': '#f472b6',
+  'Back Squat': THEME.positive,
+  'Romanian Deadlift': THEME.positive,
+  'Bench Press': THEME.accentAlt,
+  'Incline Bench': THEME.accentAlt,
+  'Barbell Row': THEME.accent,
+  'Lat Pulldown': THEME.accent,
+  'Shoulder Press': THEME.accentAlt2,
 };
 
 export default function StrengthView({ strengthTrend, strengthSessions }) {
   const [activeLift, setActiveLift] = useState('Back Squat');
-  const liftColor = LIFT_COLOR[activeLift] || '#00d4ff';
+  const liftColor = LIFT_COLOR[activeLift] || THEME.accent;
 
   return (
     <>
@@ -46,8 +47,8 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
               border:
                 activeLift === lift
                   ? `1px solid ${LIFT_COLOR[lift]}`
-                  : '1px solid #4a4a68',
-              color: activeLift === lift ? LIFT_COLOR[lift] : '#7e7e9a',
+                  : `1px solid ${THEME.border}`,
+              color: activeLift === lift ? LIFT_COLOR[lift] : THEME.muted,
               borderRadius: 4,
               padding: '5px 10px',
               fontSize: 9,
@@ -64,8 +65,8 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
       {/* e1RM chart */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -91,7 +92,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
                 dataKey="date"
                 tick={{
                   fontSize: 9,
-                  fill: '#7e7e9a',
+                  fill: THEME.muted,
                   fontFamily: "'DM Mono',monospace",
                 }}
                 axisLine={false}
@@ -101,7 +102,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
                 domain={['auto', 'auto']}
                 tick={{
                   fontSize: 9,
-                  fill: '#7e7e9a',
+                  fill: THEME.muted,
                   fontFamily: "'DM Mono',monospace",
                 }}
                 tickFormatter={(v) => `${v}kg`}
@@ -118,7 +119,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
                 dot={{
                   r: 4,
                   fill: liftColor,
-                  stroke: '#08080d',
+                  stroke: THEME.field,
                   strokeWidth: 1,
                 }}
                 activeDot={{ r: 5 }}
@@ -130,7 +131,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
             style={{
               padding: '20px 0',
               textAlign: 'center',
-              color: '#5a5a74',
+              color: THEME.textDim,
               fontSize: 11,
             }}
           >
@@ -149,7 +150,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
           <span style={{ fontSize: 22, fontWeight: 700, color: liftColor }}>
             {strengthTrend[activeLift].slice(-1)[0].e1rm}kg
           </span>
-          <span style={{ fontSize: 10, color: '#7e7e9a' }}>
+          <span style={{ fontSize: 10, color: THEME.muted }}>
             current e1RM · {strengthTrend[activeLift].slice(-1)[0].date}
           </span>
           {strengthTrend[activeLift].length > 1 &&
@@ -158,7 +159,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
               const last = strengthTrend[activeLift].slice(-1)[0].e1rm;
               const diff = (last - first).toFixed(1);
               return (
-                <span style={{ fontSize: 10, color: '#34d399' }}>
+                <span style={{ fontSize: 10, color: THEME.positive }}>
                   +{diff}kg
                 </span>
               );
@@ -170,8 +171,8 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
       {/* Saved Templates */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -181,7 +182,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#a78bfa',
+            color: THEME.accentAlt,
             marginBottom: 4,
           }}
         >
@@ -190,7 +191,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
         <div
           style={{
             fontSize: 9,
-            color: '#6c6c88',
+            color: THEME.textFaint,
             marginBottom: 12,
             lineHeight: 1.5,
           }}
@@ -204,7 +205,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
             style={{
               marginBottom: 12,
               paddingBottom: 12,
-              borderBottom: '1px solid #3e3e5a',
+              borderBottom: `1px solid ${THEME.divider}`,
             }}
           >
             <div
@@ -224,14 +225,14 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
               >
                 {t.name}
               </span>
-              <span style={{ fontSize: 9, color: '#7e7e9a' }}>{t.focus}</span>
+              <span style={{ fontSize: 9, color: THEME.muted }}>{t.focus}</span>
             </div>
             {t.exercises.map((ex, i) => (
               <div
                 key={i}
                 style={{
                   fontSize: 11,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.7,
                   paddingLeft: 4,
                 }}
@@ -244,7 +245,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
         <div
           style={{
             fontSize: 9,
-            color: '#6c6c88',
+            color: THEME.textFaint,
             lineHeight: 1.5,
             fontStyle: 'italic',
           }}
@@ -256,10 +257,10 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
         <div
           style={{
             fontSize: 9,
-            color: '#f472b6',
+            color: THEME.accentAlt2,
             lineHeight: 1.6,
             marginTop: 8,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 8,
           }}
         >
@@ -271,7 +272,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#7e7e9a',
+          color: THEME.muted,
           marginBottom: 8,
         }}
       >

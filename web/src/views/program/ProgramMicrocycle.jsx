@@ -2,24 +2,25 @@ import WorkoutItem from '../../components/WorkoutItem.jsx';
 import { MICROCYCLE } from '../../constants/schedule.js';
 import { TECHNOGYM_CONVERSION } from '../../constants/program.js';
 import { daySessions } from '../../utils/schedule.js';
+import { THEME } from '../../constants/theme.js';
 
 export default function ProgramMicrocycle() {
   return (
     <>
       <div
         style={{
-          background: '#1e1e30',
-          border: '1px solid #4a4a68',
-          borderLeft: '3px solid #f472b6',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.border}`,
+          borderLeft: `3px solid ${THEME.accentAlt2}`,
           borderRadius: 6,
           padding: '12px 14px',
           marginBottom: 14,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: '#f472b6', fontWeight: 700 }}>
+        <span style={{ color: THEME.accentAlt2, fontWeight: 700 }}>
           ROSTER = PERIODIZATION:{' '}
         </span>
         Your 1-on/1-off FIFO roster is the load/recovery wave. Home week loads,
@@ -30,7 +31,7 @@ export default function ProgramMicrocycle() {
         <div key={wk.label} style={{ marginBottom: 16 }}>
           <div
             style={{
-              background: '#2a2a48',
+              background: THEME.raised,
               border: `1px solid ${wk.color}30`,
               borderLeft: `3px solid ${wk.color}`,
               borderRadius: 6,
@@ -50,7 +51,7 @@ export default function ProgramMicrocycle() {
             <div
               style={{
                 fontSize: 10,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginTop: 2,
               }}
             >
@@ -60,10 +61,10 @@ export default function ProgramMicrocycle() {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#a78bfa',
+                  color: THEME.accentAlt,
                   marginTop: 6,
                   lineHeight: 1.5,
-                  borderTop: '1px solid #3e3e5a',
+                  borderTop: `1px solid ${THEME.divider}`,
                   paddingTop: 6,
                 }}
               >
@@ -114,9 +115,9 @@ export default function ProgramMicrocycle() {
       ))}
       <div
         style={{
-          background: '#1e1e30',
-          border: '1px solid #ffd70030',
-          borderLeft: '3px solid #ffd700',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.caution}30`,
+          borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '11px 14px',
           fontSize: 11,
@@ -131,42 +132,44 @@ export default function ProgramMicrocycle() {
       </div>
       <div
         style={{
-          background: '#1e1e30',
-          border: '1px solid #a78bfa30',
-          borderLeft: '3px solid #a78bfa',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.accentAlt}30`,
+          borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '11px 14px',
           marginTop: 8,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
         🔬{' '}
-        <span style={{ color: '#a78bfa', fontWeight: 700 }}>
+        <span style={{ color: THEME.accentAlt, fontWeight: 700 }}>
           Technogym ↔ Concept2 conversion (auto-building from Strava):{' '}
         </span>
         {TECHNOGYM_CONVERSION.status}{' '}
         <span style={{ color: '#888860' }}>{TECHNOGYM_CONVERSION.method}</span>{' '}
         Once enough paired HR130 points land, this yields real watt targets for
         the camp machine.{' '}
-        <span style={{ color: '#7e7e9a' }}>{TECHNOGYM_CONVERSION.caveats}</span>
+        <span style={{ color: THEME.muted }}>
+          {TECHNOGYM_CONVERSION.caveats}
+        </span>
       </div>
       <div
         style={{
-          background: '#1e1e30',
-          border: '1px solid #00d4ff30',
-          borderLeft: '3px solid #00d4ff',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.accent}30`,
+          borderLeft: `3px solid ${THEME.accent}`,
           borderRadius: 6,
           padding: '11px 14px',
           marginTop: 8,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
         📅{' '}
-        <span style={{ color: '#00d4ff', fontWeight: 700 }}>
+        <span style={{ color: THEME.accent, fontWeight: 700 }}>
           Next two cycles — PUSH then RECOVER:{' '}
         </span>
         This home week is a genuine loading week — push volume while fresh (the

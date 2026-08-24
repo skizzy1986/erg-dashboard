@@ -6,6 +6,7 @@ import {
   macroColor,
   bpCategory,
 } from '../formatting.js';
+import { THEME } from '../../constants/theme.js';
 
 describe('normType', () => {
   it('passes through canonical types unchanged', () => {
@@ -62,41 +63,41 @@ describe('normType', () => {
 
 describe('workoutAccent', () => {
   it('returns the grey default for empty input', () => {
-    expect(workoutAccent('')).toBe('#3a3a4a');
-    expect(workoutAccent(undefined)).toBe('#3a3a4a');
+    expect(workoutAccent('')).toBe(THEME.neutral);
+    expect(workoutAccent(undefined)).toBe(THEME.neutral);
   });
 
   it('colours lower-body sessions green', () => {
-    expect(workoutAccent('Lower Strength')).toBe('#34d399');
+    expect(workoutAccent('Lower Strength')).toBe(THEME.positive);
   });
 
   it('colours upper-body sessions purple', () => {
-    expect(workoutAccent('Upper Strength')).toBe('#a78bfa');
+    expect(workoutAccent('Upper Strength')).toBe(THEME.accentAlt);
   });
 
   it('colours rate ladder / threshold sessions yellow', () => {
-    expect(workoutAccent('Rate Ladder')).toBe('#ffd700');
-    expect(workoutAccent('Threshold pieces')).toBe('#ffd700');
+    expect(workoutAccent('Rate Ladder')).toBe(THEME.caution);
+    expect(workoutAccent('Threshold pieces')).toBe(THEME.caution);
   });
 
   it('colours interval / VO2 sessions orange', () => {
-    expect(workoutAccent('VO2 max intervals')).toBe('#ff6b35');
-    expect(workoutAccent('Interval session')).toBe('#ff6b35');
+    expect(workoutAccent('VO2 max intervals')).toBe(THEME.warning);
+    expect(workoutAccent('Interval session')).toBe(THEME.warning);
   });
 
   it('colours yoga / foam / rest sessions grey', () => {
-    expect(workoutAccent('Yoga flow')).toBe('#3a3a4a');
-    expect(workoutAccent('Foam rolling')).toBe('#3a3a4a');
-    expect(workoutAccent('Rest day')).toBe('#3a3a4a');
+    expect(workoutAccent('Yoga flow')).toBe(THEME.neutral);
+    expect(workoutAccent('Foam rolling')).toBe(THEME.neutral);
+    expect(workoutAccent('Rest day')).toBe(THEME.neutral);
   });
 
   it('falls back to erg aerobic blue for anything else', () => {
-    expect(workoutAccent('Z2 Aerobic')).toBe('#00d4ff');
-    expect(workoutAccent('Steady state')).toBe('#00d4ff');
+    expect(workoutAccent('Z2 Aerobic')).toBe(THEME.accent);
+    expect(workoutAccent('Steady state')).toBe(THEME.accent);
   });
 
   it('is case-insensitive', () => {
-    expect(workoutAccent('LOWER')).toBe('#34d399');
+    expect(workoutAccent('LOWER')).toBe(THEME.positive);
   });
 });
 
@@ -139,16 +140,16 @@ describe('assessMacro', () => {
 
 describe('macroColor', () => {
   it('returns green for a tick', () => {
-    expect(macroColor('✅')).toBe('#34d399');
+    expect(macroColor('✅')).toBe(THEME.positive);
   });
 
   it('returns yellow for a warning', () => {
-    expect(macroColor('⚠️')).toBe('#ffd700');
+    expect(macroColor('⚠️')).toBe(THEME.caution);
   });
 
   it('returns red for a fail (or any other status)', () => {
-    expect(macroColor('❌')).toBe('#ff2d55');
-    expect(macroColor('—')).toBe('#ff2d55');
+    expect(macroColor('❌')).toBe(THEME.critical);
+    expect(macroColor('—')).toBe(THEME.critical);
   });
 });
 
@@ -182,32 +183,32 @@ describe('bpCategory', () => {
   it('classifies optimal readings', () => {
     expect(bpCategory(115, 75)).toEqual({
       label: 'Optimal',
-      color: '#34d399',
+      color: THEME.positive,
     });
   });
 
   it('classifies normal readings (120-129 systolic, < 80 diastolic)', () => {
     expect(bpCategory(125, 78)).toEqual({
       label: 'Normal',
-      color: '#34d399',
+      color: THEME.positive,
     });
   });
 
   it('classifies high-normal readings', () => {
     expect(bpCategory(135, 85)).toEqual({
       label: 'High-normal',
-      color: '#ffd700',
+      color: THEME.caution,
     });
     expect(bpCategory(125, 85)).toEqual({
       label: 'High-normal',
-      color: '#ffd700',
+      color: THEME.caution,
     });
   });
 
   it('classifies elevated readings to note for the GP', () => {
     expect(bpCategory(150, 95)).toEqual({
       label: 'Elevated — note for GP',
-      color: '#ff6b35',
+      color: THEME.warning,
     });
   });
 });

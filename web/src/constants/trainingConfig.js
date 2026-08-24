@@ -2,6 +2,7 @@
 // (CP/FTP) come from the `anchors` table via useAnchors(); never mirror one here.
 
 import { wattsToPace500 } from '../utils/pace.js';
+import { THEME } from './theme.js';
 
 export const SRPE_GUIDE = [
   {
@@ -9,14 +10,14 @@ export const SRPE_GUIDE = [
     label: 'Very easy',
     anchor: 'Could do all day. Full conversation, nose-breathing.',
     zone: 'Recovery',
-    color: '#3a3a4a',
+    color: THEME.neutral,
   },
   {
     range: '3-4',
     label: 'Easy (UT2)',
     anchor: 'Full conversation = 3. Comfortable, sustainable for hours.',
     zone: 'UT2',
-    color: '#00d4ff',
+    color: THEME.accent,
   },
   {
     range: '5-6',
@@ -24,21 +25,21 @@ export const SRPE_GUIDE = [
     anchor:
       'Talking in sentences but aware of breathing. Working but controlled.',
     zone: 'UT1',
-    color: '#34d399',
+    color: THEME.positive,
   },
   {
     range: '7-8',
     label: 'Hard (threshold)',
     anchor: 'Short phrases only. Genuinely taxing. Threshold/AT.',
     zone: 'AT/TR',
-    color: '#ffd700',
+    color: THEME.caution,
   },
   {
     range: '9-10',
     label: 'Max',
     anchor: 'Words impossible. All-out. Race/test efforts only.',
     zone: 'Sprint',
-    color: '#ff2d55',
+    color: THEME.critical,
   },
 ];
 
@@ -50,7 +51,7 @@ export const CALIBRATION_STATUS = [
     metric: 'Power @ HR130',
     tier: 1,
     conf: 'Solid',
-    color: '#34d399',
+    color: THEME.positive,
     basis: 'Chest strap, fixed DF, drag-independent',
     upgrade:
       'Log conditions (caffeine/cannabis/heat) for like-for-like — shift HR-power 3–8W',
@@ -59,7 +60,7 @@ export const CALIBRATION_STATUS = [
     metric: 'RHR baseline (58)',
     tier: 1,
     conf: 'Solid',
-    color: '#34d399',
+    color: THEME.positive,
     basis: '3 consecutive overnight readings',
     upgrade: '—',
   },
@@ -67,7 +68,7 @@ export const CALIBRATION_STATUS = [
     metric: 'Session data (W/pace/rate)',
     tier: 1,
     conf: 'Solid',
-    color: '#34d399',
+    color: THEME.positive,
     basis: 'PM5 + strap + standardised DF125 + separate warmup',
     upgrade: '—',
   },
@@ -75,7 +76,7 @@ export const CALIBRATION_STATUS = [
     metric: 'Strava cross-check',
     tier: 1,
     conf: 'Independent 2nd source',
-    color: '#34d399',
+    color: THEME.positive,
     basis:
       'Auto-syncs every erg session. Independent HR/watts + Relative Effort metric',
     upgrade:
@@ -85,7 +86,7 @@ export const CALIBRATION_STATUS = [
     metric: 'TDEE (~3,140)',
     tier: 2,
     conf: 'Estimated',
-    color: '#ffd700',
+    color: THEME.caution,
     basis: 'Two methods agree, both estimates',
     upgrade: 'Intake-vs-weight regression at end of calibration (~Jun 24)',
   },
@@ -94,7 +95,7 @@ export const CALIBRATION_STATUS = [
     metric: 'TSS / CTL / ATL / TSB',
     tier: 2,
     conf: 'Estimated',
-    color: '#ffd700',
+    color: THEME.caution,
     basis: 'strength TSS ±30%, CTL needs 42d',
     upgrade: 'A rested CP retest → real anchor recalibrates everything',
   },
@@ -102,7 +103,7 @@ export const CALIBRATION_STATUS = [
     metric: 'Daily net calories',
     tier: 2,
     conf: '±300 resolution',
-    color: '#ffd700',
+    color: THEME.caution,
     basis: "Fitbit burn ±10–20% — don't judge ±100 swings",
     upgrade: 'Weekly avg vs weight trend, not daily',
   },
@@ -110,7 +111,7 @@ export const CALIBRATION_STATUS = [
     metric: 'HR zones (MHR 170)',
     tier: 2,
     conf: 'Conservative',
-    color: '#ffd700',
+    color: THEME.caution,
     basis: 'Chosen 170 vs observed max 177–187 — deliberate for base',
     upgrade: 'Revisit before Build 1 — race-pace needs true-max anchoring',
   },
@@ -118,7 +119,7 @@ export const CALIBRATION_STATUS = [
     metric: 'HRV baseline (30)',
     tier: 3,
     conf: 'Fragile',
-    color: '#ff6b35',
+    color: THEME.warning,
     basis: '2 readings, both in a fatigue trough — skewed LOW',
     upgrade: 'Rebuild over 10+ days incl. recovered days',
   },
@@ -126,7 +127,7 @@ export const CALIBRATION_STATUS = [
     metric: 'Readiness score',
     tier: 3,
     conf: 'Heuristic',
-    color: '#ff6b35',
+    color: THEME.warning,
     basis: 'My weightings, not validated coefficients',
     upgrade: 'Cross-check with sRPE — no binary calls off the number',
   },
@@ -134,7 +135,7 @@ export const CALIBRATION_STATUS = [
     metric: '165–180W projection',
     tier: 3,
     conf: 'Hypothesis',
-    color: '#ff6b35',
+    color: THEME.warning,
     basis: '3 points / 1 week, some gain is setup-settling',
     upgrade: 'End-of-base 5k benchmark replaces it',
   },
@@ -142,7 +143,7 @@ export const CALIBRATION_STATUS = [
     metric: '2k estimate (7:30–45)',
     tier: 3,
     conf: 'Unknown',
-    color: '#ff6b35',
+    color: THEME.warning,
     basis: 'Zero threshold/anaerobic data yet',
     upgrade: 'First real test — ±20sec either way',
   },
@@ -234,7 +235,7 @@ export const HR_ZONES = [
     pct: '< 70%',
     bpm: '< 119',
     lactate: '< 2 mmol/L',
-    color: '#00d4ff',
+    color: THEME.accent,
     desc: 'Long Z2 rows. Conversational. Fat metabolism. Primary base building zone.',
   },
   {
@@ -243,7 +244,7 @@ export const HR_ZONES = [
     pct: '70–80%',
     bpm: '119–136',
     lactate: '2–3 mmol/L',
-    color: '#34d399',
+    color: THEME.positive,
     desc: 'Upper aerobic. Sustainable for 45–60min. Z2 working target. Keep splits flat within this band.',
   },
   {
@@ -252,7 +253,7 @@ export const HR_ZONES = [
     pct: '80–87%',
     bpm: '136–148',
     lactate: '3–5 mmol/L',
-    color: '#ffd700',
+    color: THEME.caution,
     desc: 'Lactate threshold. Grey zone for base phase — avoid. Threshold reps added in Phase 2.',
   },
   {
@@ -261,7 +262,7 @@ export const HR_ZONES = [
     pct: '87–92%',
     bpm: '148–156',
     lactate: '5–8 mmol/L',
-    color: '#ff6b35',
+    color: THEME.warning,
     desc: 'VO₂max zone. Short intervals (500m pieces). Phase 3 only.',
   },
   {
@@ -270,7 +271,7 @@ export const HR_ZONES = [
     pct: '> 92%',
     bpm: '> 156',
     lactate: '> 8 mmol/L',
-    color: '#ff2d55',
+    color: THEME.critical,
     desc: 'Race pace. 2k test finish. Not trained directly — emerges from race effort.',
   },
 ];

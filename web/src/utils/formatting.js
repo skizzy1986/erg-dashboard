@@ -1,4 +1,5 @@
 import { C } from '../constants/ui.js';
+import { THEME } from '../constants/theme.js';
 
 // Normalize incoming session `type` to the canonical taxonomy the colour/icon
 // maps use. Coach CSV uses "erg"/"strength"; the log form writes "Strength";
@@ -19,15 +20,16 @@ export const normType = (t, label = '') => {
 };
 
 export function workoutAccent(txt) {
-  if (!txt) return '#3a3a4a';
+  if (!txt) return THEME.neutral;
   const t = txt.toLowerCase();
-  if (t.includes('lower')) return '#34d399';
-  if (t.includes('upper')) return '#a78bfa';
-  if (t.includes('rate ladder') || t.includes('threshold')) return '#ffd700';
-  if (t.includes('interval') || t.includes('vo')) return '#ff6b35';
+  if (t.includes('lower')) return THEME.positive;
+  if (t.includes('upper')) return THEME.accentAlt;
+  if (t.includes('rate ladder') || t.includes('threshold'))
+    return THEME.caution;
+  if (t.includes('interval') || t.includes('vo')) return THEME.warning;
   if (t.includes('yoga') || t.includes('foam') || t.includes('rest'))
-    return '#3a3a4a';
-  return '#00d4ff'; // erg aerobic default
+    return THEME.neutral;
+  return THEME.accent; // erg aerobic default
 }
 
 export function assessMacro(val, range) {
@@ -39,7 +41,11 @@ export function assessMacro(val, range) {
 }
 
 export function macroColor(status) {
-  return status === '✅' ? '#34d399' : status === '⚠️' ? '#ffd700' : '#ff2d55';
+  return status === '✅'
+    ? THEME.positive
+    : status === '⚠️'
+      ? THEME.caution
+      : THEME.critical;
 }
 
 // AU/most guidelines: treated target generally < 130–135 systolic, < 80 diastolic.
@@ -57,8 +63,9 @@ export function bpCategory(sys, dia) {
   ) {
     return { label: 'Check reading', color: '#888' };
   }
-  if (sys < 120 && dia < 80) return { label: 'Optimal', color: '#34d399' };
-  if (sys < 130 && dia < 80) return { label: 'Normal', color: '#34d399' };
-  if (sys < 140 || dia < 90) return { label: 'High-normal', color: '#ffd700' };
-  return { label: 'Elevated — note for GP', color: '#ff6b35' };
+  if (sys < 120 && dia < 80) return { label: 'Optimal', color: THEME.positive };
+  if (sys < 130 && dia < 80) return { label: 'Normal', color: THEME.positive };
+  if (sys < 140 || dia < 90)
+    return { label: 'High-normal', color: THEME.caution };
+  return { label: 'Elevated — note for GP', color: THEME.warning };
 }

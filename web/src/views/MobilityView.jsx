@@ -4,6 +4,7 @@ import {
   MOBILITY_ROUTINES,
   MOBILITY_STREAK_NOTE,
 } from '../constants/mobility.js';
+import { THEME } from '../constants/theme.js';
 
 export default function MobilityView() {
   const [mobOpen, setMobOpen] = useState(null);
@@ -12,9 +13,9 @@ export default function MobilityView() {
     <>
       <div
         style={{
-          background: 'linear-gradient(135deg,#a78bfa15,#1e1e30)',
-          border: '1px solid #a78bfa40',
-          borderLeft: '3px solid #a78bfa',
+          background: `linear-gradient(135deg,${THEME.accentAlt}15,#1e1e30)`,
+          border: `1px solid ${THEME.accentAlt}40`,
+          borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '13px 16px',
           marginBottom: 14,
@@ -24,13 +25,13 @@ export default function MobilityView() {
           style={{
             fontSize: 13,
             fontWeight: 700,
-            color: '#a78bfa',
+            color: THEME.accentAlt,
             marginBottom: 5,
           }}
         >
           🧘 MOBILITY — a training pillar
         </div>
-        <div style={{ fontSize: 11, color: '#aaaacc', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 11, color: THEME.textSubtle, lineHeight: 1.6 }}>
           Not accessory work. With the left hamstring/glute rehab, mobility is
           load-bearing for staying healthy enough to train. The pre-session
           prime especially — it's rehab activation disguised as a warm-up.
@@ -42,7 +43,7 @@ export default function MobilityView() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#a78bfa',
+          color: THEME.accentAlt,
           marginBottom: 8,
         }}
       >
@@ -62,8 +63,8 @@ export default function MobilityView() {
             <div
               key={r.id}
               style={{
-                background: isOpen ? `${r.color}10` : '#2a2a48',
-                border: `1px solid ${isOpen ? r.color + '50' : '#4a4a68'}`,
+                background: isOpen ? `${r.color}10` : THEME.raised,
+                border: `1px solid ${isOpen ? r.color + '50' : THEME.border}`,
                 borderLeft: `3px solid ${r.color}`,
                 borderRadius: 6,
                 overflow: 'hidden',
@@ -100,7 +101,7 @@ export default function MobilityView() {
                     <div
                       style={{
                         fontSize: 9,
-                        color: '#7e7e9a',
+                        color: THEME.muted,
                         marginTop: 1,
                       }}
                     >
@@ -108,7 +109,7 @@ export default function MobilityView() {
                     </div>
                   </div>
                 </div>
-                <span style={{ fontSize: 10, color: '#7e7e9a' }}>
+                <span style={{ fontSize: 10, color: THEME.muted }}>
                   {isOpen ? '▲' : '▼'}
                 </span>
               </div>
@@ -137,11 +138,11 @@ export default function MobilityView() {
                       <div
                         key={j}
                         style={{
-                          background: '#08080d',
+                          background: THEME.field,
                           borderRadius: 5,
                           padding: '9px 11px',
                           borderLeft: b.rehab
-                            ? '2px solid #34d399'
+                            ? `2px solid ${THEME.positive}`
                             : '2px solid transparent',
                         }}
                       >
@@ -166,7 +167,7 @@ export default function MobilityView() {
                           <span
                             style={{
                               fontSize: 11,
-                              color: '#e8e8f0',
+                              color: THEME.text,
                               fontWeight: 600,
                             }}
                           >
@@ -174,7 +175,7 @@ export default function MobilityView() {
                             {b.rehab && (
                               <span
                                 style={{
-                                  color: '#34d399',
+                                  color: THEME.positive,
                                   fontSize: 9,
                                   fontWeight: 700,
                                 }}
@@ -200,12 +201,12 @@ export default function MobilityView() {
                   </div>
                   <div
                     style={{
-                      background: '#08080d',
+                      background: THEME.field,
                       borderLeft: `2px solid ${r.color}`,
                       borderRadius: 4,
                       padding: '9px 11px',
                       fontSize: 10,
-                      color: '#aaaacc',
+                      color: THEME.textSubtle,
                       lineHeight: 1.6,
                     }}
                   >
@@ -223,7 +224,7 @@ export default function MobilityView() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#a78bfa',
+          color: THEME.accentAlt,
           marginBottom: 8,
         }}
       >
@@ -231,9 +232,9 @@ export default function MobilityView() {
       </div>
       <div
         style={{
-          background: '#1e1e30',
-          border: '1px solid #a78bfa30',
-          borderLeft: '3px solid #a78bfa',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.accentAlt}30`,
+          borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '10px 13px',
           marginBottom: 10,
@@ -252,8 +253,8 @@ export default function MobilityView() {
             <div
               key={i}
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderLeft: `3px solid ${col}`,
                 borderRadius: 6,
                 padding: '11px 14px',
@@ -285,14 +286,14 @@ export default function MobilityView() {
                     {m.label}
                   </div>
                 </div>
-                <div style={{ fontSize: 10, color: '#7e7e9a' }}>
+                <div style={{ fontSize: 10, color: THEME.muted }}>
                   {m.date} · {m.duration}
                 </div>
               </div>
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                   paddingLeft: 23,
                 }}
@@ -306,12 +307,12 @@ export default function MobilityView() {
       <div
         style={{
           marginTop: 12,
-          background: '#1e1e30',
-          border: '1px solid #4a4a68',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '11px 14px',
           fontSize: 10,
-          color: '#7e7e9a',
+          color: THEME.muted,
           textAlign: 'center',
           lineHeight: 1.6,
         }}

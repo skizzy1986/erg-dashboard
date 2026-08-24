@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import BenchmarkBadge from '../BenchmarkBadge.jsx';
+import { THEME } from '../../constants/theme.js';
 
 describe('BenchmarkBadge', () => {
   it('renders nothing for quiet and unknown', () => {
@@ -49,9 +50,9 @@ describe('BenchmarkBadge', () => {
     const { container, rerender } = render(
       <BenchmarkBadge status="overdue" daysOverdue={3} />
     );
-    expect(container.firstChild).toHaveStyle({ color: '#ff2d55' });
+    expect(container.firstChild).toHaveStyle({ color: THEME.critical });
     rerender(<BenchmarkBadge status="upcoming" daysUntilStart={3} />);
-    expect(container.firstChild).toHaveStyle({ color: '#ffd700' });
+    expect(container.firstChild).toHaveStyle({ color: THEME.caution });
   });
 
   // AC4 — the rescheduled state has to be legible as its own thing: it is not
@@ -73,9 +74,9 @@ describe('BenchmarkBadge', () => {
     const { container } = render(
       <BenchmarkBadge status="scheduled" rescheduledTo="2026-09-12" />
     );
-    expect(container.firstChild).toHaveStyle({ color: '#a78bfa' });
-    expect(container.firstChild).not.toHaveStyle({ color: '#ff2d55' });
-    expect(container.firstChild).not.toHaveStyle({ color: '#ffd700' });
+    expect(container.firstChild).toHaveStyle({ color: THEME.accentAlt });
+    expect(container.firstChild).not.toHaveStyle({ color: THEME.critical });
+    expect(container.firstChild).not.toHaveStyle({ color: THEME.caution });
   });
 
   // THE regression. Adding 'scheduled' to COLOURS without splitting the trailing

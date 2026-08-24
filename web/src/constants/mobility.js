@@ -1,3 +1,4 @@
+import { THEME } from './theme.js';
 // Mobility / yoga — an integral training pillar (not accessory afterthought).
 // Given the left hamstring/glute rehab, mobility is load-bearing for staying
 // healthy enough to train. Three strands: soft-tissue (foam roll), pre-session
@@ -10,7 +11,7 @@ export const MOBILITY_ROUTINES = [
     id: 'foam',
     name: 'Foam Roll / Soft Tissue',
     icon: '🧻',
-    color: '#00d4ff',
+    color: THEME.accent,
     when: 'Post-session or evening. Anytime tissue feels tight.',
     why: 'Manages tissue quality + tightness around the rowing posture (thoracic, lats, hips) and the rehab area. Down-regulates after hard sessions.',
     blocks: [
@@ -53,7 +54,7 @@ export const MOBILITY_ROUTINES = [
     id: 'prep',
     name: 'Pre-Session Mobility / Prime',
     icon: '🔑',
-    color: '#34d399',
+    color: THEME.positive,
     when: "Before EVERY erg + every lift (the 'mobility first' in session notes).",
     why: 'Primes the body to move well before loading it. Cheap insurance — opens hips/t-spine/shoulders so the catch and the squat have range. Protects the rehab area by warming it before load.',
     blocks: [
@@ -101,7 +102,7 @@ export const MOBILITY_ROUTINES = [
     id: 'yoga',
     name: 'Yoga Flow',
     icon: '🧘',
-    color: '#a78bfa',
+    color: THEME.accentAlt,
     when: 'Recovery slots (Thu AM), rest days, evenings. The longer reset.',
     why: 'Longer holds for genuine range + a parasympathetic down-shift (recovery, sleep, HRV). Counters the flexion-dominant rowing posture with extension + rotation.',
     blocks: [

@@ -1,10 +1,11 @@
 import { toLogDate } from '../utils/dateFormat.js';
+import { THEME } from '../constants/theme.js';
 
 // Presentational only — props in, no hooks, no data access.
 const COLOURS = {
-  overdue: '#ff2d55',
-  upcoming: '#ffd700',
-  scheduled: '#a78bfa',
+  overdue: THEME.critical,
+  upcoming: THEME.caution,
+  scheduled: THEME.accentAlt,
 };
 
 export default function BenchmarkBadge({

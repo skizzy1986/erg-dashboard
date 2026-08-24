@@ -21,6 +21,7 @@ vi.mock('../../hooks/useAnchors.js', () => ({
 }));
 
 import OverviewView from '../OverviewView.jsx';
+import { THEME } from '../../constants/theme.js';
 
 const vitalsRow = {
   date: '2026-08-21',
@@ -83,7 +84,7 @@ const loggedSessions = [
 
 const baseProps = {
   latest: { tsb: -5, ctl: 62, atl: 67 },
-  tsbColor: '#ffd700',
+  tsbColor: THEME.caution,
   loadData,
   loggedSessions,
   latestErg: loggedSessions[0],
@@ -170,7 +171,7 @@ describe('OverviewView', () => {
       <OverviewView
         {...baseProps}
         latest={{ tsb: 8, ctl: 62, atl: 54 }}
-        tsbColor="#34d399"
+        tsbColor={THEME.positive}
       />
     );
     expect(container.textContent.length).toBeGreaterThan(200);

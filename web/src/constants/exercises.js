@@ -1,9 +1,10 @@
+import { THEME } from './theme.js';
 export const REP_SCHEMES = [
   {
     tier: 'Heavy Compounds',
     reps: '4–6',
     rest: '3 min',
-    color: '#34d399',
+    color: THEME.positive,
     lifts: 'Squat · Deadlift · RDL',
     why: 'Maximal strength & rate of force development. Best transfer to drive/pedal, least aerobic interference. Drive concentric explosively.',
   },
@@ -11,7 +12,7 @@ export const REP_SCHEMES = [
     tier: 'Strength / Size',
     reps: '5–8',
     rest: '2–3 min',
-    color: '#00d4ff',
+    color: THEME.accent,
     lifts: 'Barbell Row · Bench · Incline · Pulldown',
     why: 'Balance of strength and hypertrophy. Pulling builds the rowing engine + back thickness; pressing is aesthetic.',
   },
@@ -19,7 +20,7 @@ export const REP_SCHEMES = [
     tier: 'Hypertrophy',
     reps: '8–12',
     rest: '60–90 sec',
-    color: '#a78bfa',
+    color: THEME.accentAlt,
     lifts: 'Curls · Lateral raises · Leg curl · Flyes · Calves',
     why: "Aesthetic work on small muscles. Low systemic fatigue cost — won't compromise erg recovery.",
   },
@@ -44,7 +45,7 @@ export const STRENGTH_TEMPLATES = [
   {
     name: 'Upper Day 1',
     focus: 'Push priority + 1 pull',
-    color: '#a78bfa',
+    color: THEME.accentAlt,
     exercises: [
       'Barbell Bench Press · 3×6–8 (focus)',
       'Barbell Shoulder Press · 3–4×6–8 (strength)',
@@ -56,7 +57,7 @@ export const STRENGTH_TEMPLATES = [
   {
     name: 'Upper Day 2',
     focus: 'Pull priority',
-    color: '#a78bfa',
+    color: THEME.accentAlt,
     exercises: [
       'Lat Pulldown · 3×6 (focus — warm up pattern)',
       'Assisted Pull Up · 3×8–10 (neutral grip) — SECOND while back fresh',
@@ -70,7 +71,7 @@ export const STRENGTH_TEMPLATES = [
   {
     name: 'Lower Day 1',
     focus: 'Heavy squat priority',
-    color: '#34d399',
+    color: THEME.positive,
     exercises: [
       'Back Squat · 4–5×5–6 (focus, explosive concentric)',
       'Romanian Deadlift · 3×6–8',
@@ -81,7 +82,7 @@ export const STRENGTH_TEMPLATES = [
   {
     name: 'Lower Day 2',
     focus: 'Posterior chain + unilateral / power',
-    color: '#34d399',
+    color: THEME.positive,
     exercises: [
       'Romanian Deadlift · 4×6 (focus)',
       'Bulgarian Split Squat · 3×8/leg',
@@ -93,7 +94,7 @@ export const STRENGTH_TEMPLATES = [
   {
     name: 'Prehab + Shoulder',
     focus: 'Flexible 5th · shoulder health + L/R asymmetry · LIGHT',
-    color: '#f472b6',
+    color: THEME.accentAlt2,
     exercises: [
       'Band Pull-Apart · 2×20 (warm-up)',
       'PVC Around the World · 2×10 (shoulder mobility — controlled, no pinch on R)',

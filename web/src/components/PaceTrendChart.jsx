@@ -55,8 +55,8 @@ export function CustomDot(props) {
       cx={cx}
       cy={cy}
       r={4}
-      fill="#00d4ff"
-      stroke="#08080d"
+      fill={THEME.accent}
+      stroke={THEME.field}
       strokeWidth={1}
     />
   ) : (
@@ -65,8 +65,8 @@ export function CustomDot(props) {
       cx={cx}
       cy={cy}
       r={4}
-      fill="#08080d"
-      stroke="#00d4ff"
+      fill={THEME.field}
+      stroke={THEME.accent}
       strokeWidth={2}
     />
   );
@@ -99,7 +99,7 @@ export default function PaceTrendChart({
           dataKey="date_display"
           tick={{
             fontSize: 9,
-            fill: '#7e7e9a',
+            fill: THEME.muted,
             fontFamily: "'DM Mono',monospace",
           }}
           axisLine={false}
@@ -109,7 +109,7 @@ export default function PaceTrendChart({
           domain={[paceCeiling, paceFloor]}
           tick={{
             fontSize: 9,
-            fill: '#7e7e9a',
+            fill: THEME.muted,
             fontFamily: "'DM Mono',monospace",
           }}
           tickFormatter={(v) => formatPace(v)}
@@ -133,10 +133,10 @@ export default function PaceTrendChart({
         <Line
           type="monotone"
           dataKey="pace_500m"
-          stroke="#00d4ff"
+          stroke={THEME.accent}
           strokeWidth={2}
           dot={<CustomDot />}
-          activeDot={{ r: 5, fill: '#00d4ff' }}
+          activeDot={{ r: 5, fill: THEME.accent }}
         />
       </ComposedChart>
     </ResponsiveContainer>

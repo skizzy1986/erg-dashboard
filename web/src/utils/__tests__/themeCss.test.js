@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cssVars } from '../themeCss.js';
+import { cssVars, cssVarName } from '../themeCss.js';
 import { THEME } from '../../constants/theme.js';
 import { DARK } from '../../constants/themeValues.js';
 
@@ -7,7 +7,7 @@ describe('cssVars', () => {
   it('emits a --color-<key>: <value>; declaration for every palette key', () => {
     const out = cssVars(DARK);
     for (const [key, value] of Object.entries(DARK)) {
-      expect(out).toContain(`--color-${key}: ${value};`);
+      expect(out).toContain(`${cssVarName(key)}: ${value};`);
     }
   });
 

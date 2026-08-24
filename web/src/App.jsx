@@ -16,6 +16,7 @@ import CalendarView from './views/CalendarView.jsx';
 import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
+import { THEME } from './constants/theme.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -59,7 +60,7 @@ class ErrorBoundary extends Component {
           style={{
             padding: '24px',
             background: '#1a0d0d',
-            border: '1px solid #ff2d5550',
+            border: `1px solid ${THEME.critical}50`,
             borderRadius: 6,
             color: '#ffaaaa',
             fontFamily: "'DM Mono',monospace",
@@ -202,14 +203,14 @@ export default function App() {
   const loadAvailable = latest != null;
   const loadUnavailable = !loadAvailable && !loadPending;
   const tsbColor = !loadAvailable
-    ? '#7e7e9a'
+    ? THEME.muted
     : latest.tsb > 10
-      ? '#34d399'
+      ? THEME.positive
       : latest.tsb > -10
-        ? '#ffd700'
+        ? THEME.caution
         : latest.tsb > -30
-          ? '#ff6b35'
-          : '#ff2d55';
+          ? THEME.warning
+          : THEME.critical;
 
   const ergSessions = loggedSessions.filter((e) => e._isErg);
   const strengthSessions = loggedSessions.filter((e) => e.exercises);
@@ -224,8 +225,8 @@ export default function App() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#08080d',
-        color: '#e8e8f0',
+        background: THEME.field,
+        color: THEME.text,
         fontFamily: "'DM Mono','Courier New',monospace",
         paddingBottom: 60,
         overflowX: 'hidden',
@@ -236,8 +237,8 @@ export default function App() {
       {/* HEADER */}
       <div
         style={{
-          background: 'linear-gradient(180deg,#1e1e30 0%,#08080d 100%)',
-          borderBottom: '1px solid #4a4a68',
+          background: `linear-gradient(180deg,${THEME.surfaceAlt} 0%,#08080d 100%)`,
+          borderBottom: `1px solid ${THEME.border}`,
           padding: '24px 14px 18px',
           boxSizing: 'border-box',
           width: '100%',
@@ -263,7 +264,7 @@ export default function App() {
               style={{
                 fontSize: 9,
                 letterSpacing: 3,
-                color: '#00d4ff',
+                color: THEME.accent,
                 marginBottom: 4,
                 minWidth: 0,
               }}
@@ -274,7 +275,7 @@ export default function App() {
               style={{
                 fontSize: 8,
                 letterSpacing: 1,
-                color: '#6c6c88',
+                color: THEME.textFaint,
                 flexShrink: 0,
               }}
             >
@@ -336,9 +337,12 @@ export default function App() {
               style={{
                 flex: '1 1 auto',
                 minWidth: 0,
-                background: view === v ? '#4a4a68' : 'transparent',
-                border: view === v ? '1px solid #00d4ff' : '1px solid #4a4a68',
-                color: view === v ? '#00d4ff' : '#7e7e9a',
+                background: view === v ? THEME.border : 'transparent',
+                border:
+                  view === v
+                    ? `1px solid ${THEME.accent}`
+                    : `1px solid ${THEME.border}`,
+                color: view === v ? THEME.accent : THEME.muted,
                 borderRadius: 6,
                 padding: '8px 6px',
                 fontSize: 9,
@@ -449,11 +453,11 @@ export default function App() {
           style={{
             marginTop: 16,
             padding: '12px 16px',
-            background: '#1e1e30',
-            border: '1px solid #4a4a68',
+            background: THEME.surfaceAlt,
+            border: `1px solid ${THEME.border}`,
             borderRadius: 6,
             fontSize: 10,
-            color: '#5a5a74',
+            color: THEME.textDim,
             textAlign: 'center',
             lineHeight: 1.7,
           }}

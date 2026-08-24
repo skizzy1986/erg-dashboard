@@ -25,6 +25,7 @@ import {
 } from '../constants/program.js';
 import ProgramMicrocycle from './program/ProgramMicrocycle.jsx';
 import ProgramYear from './program/ProgramYear.jsx';
+import { THEME } from '../constants/theme.js';
 
 export default function ProgramView({ expanded, setExpanded }) {
   const [progTab, setProgTab] = useState('phases');
@@ -43,9 +44,12 @@ export default function ProgramView({ expanded, setExpanded }) {
             onClick={() => setProgTab(v)}
             style={{
               flex: 1,
-              background: progTab === v ? '#4a4a68' : 'transparent',
-              border: progTab === v ? '1px solid #00d4ff' : '1px solid #4a4a68',
-              color: progTab === v ? '#00d4ff' : '#7e7e9a',
+              background: progTab === v ? THEME.border : 'transparent',
+              border:
+                progTab === v
+                  ? `1px solid ${THEME.accent}`
+                  : `1px solid ${THEME.border}`,
+              color: progTab === v ? THEME.accent : THEME.muted,
               borderRadius: 6,
               padding: '8px 4px',
               fontSize: 9,
@@ -76,17 +80,17 @@ export default function ProgramView({ expanded, setExpanded }) {
                 onClick={() => setExpanded(p.id)}
                 style={{
                   flex: 1,
-                  background: expanded === p.id ? '#4a4a68' : 'transparent',
+                  background: expanded === p.id ? THEME.border : 'transparent',
                   border:
                     expanded === p.id
-                      ? `1px solid ${p.current ? '#00d4ff' : '#5a5a74'}`
-                      : '1px solid #4a4a68',
+                      ? `1px solid ${p.current ? THEME.accent : THEME.textDim}`
+                      : `1px solid ${THEME.border}`,
                   color:
                     expanded === p.id
                       ? p.current
-                        ? '#00d4ff'
-                        : '#aaaacc'
-                      : '#6c6c88',
+                        ? THEME.accent
+                        : THEME.textSubtle
+                      : THEME.textFaint,
                   borderRadius: 6,
                   padding: '9px 6px',
                   cursor: 'pointer',
@@ -99,7 +103,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     fontSize: 8,
                     letterSpacing: 2,
                     marginBottom: 2,
-                    color: p.current ? '#00d4ff' : '#6c6c88',
+                    color: p.current ? THEME.accent : THEME.textFaint,
                   }}
                 >
                   {p.status}
@@ -117,9 +121,9 @@ export default function ProgramView({ expanded, setExpanded }) {
                   {/* Phase header */}
                   <div
                     style={{
-                      background: '#2a2a48',
-                      border: `1px solid ${phase.current ? '#00d4ff30' : '#4a4a68'}`,
-                      borderLeft: `3px solid ${phase.current ? '#00d4ff' : '#5a5a74'}`,
+                      background: THEME.raised,
+                      border: `1px solid ${phase.current ? `${THEME.accent}30` : THEME.border}`,
+                      borderLeft: `3px solid ${phase.current ? THEME.accent : THEME.textDim}`,
                       borderRadius: 6,
                       padding: '13px 16px',
                       marginBottom: 10,
@@ -145,7 +149,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                       <div
                         style={{
                           fontSize: 9,
-                          color: '#7e7e9a',
+                          color: THEME.muted,
                           letterSpacing: 2,
                         }}
                       >
@@ -155,7 +159,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <div
                       style={{
                         fontSize: 11,
-                        color: '#aaaacc',
+                        color: THEME.textSubtle,
                         lineHeight: 1.7,
                         marginBottom: 8,
                       }}
@@ -167,7 +171,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                         fontSize: 10,
                         color: '#555568',
                         lineHeight: 1.6,
-                        borderTop: '1px solid #4a4a68',
+                        borderTop: `1px solid ${THEME.border}`,
                         paddingTop: 8,
                       }}
                     >
@@ -177,9 +181,10 @@ export default function ProgramView({ expanded, setExpanded }) {
                       <div
                         style={{
                           fontSize: 10,
-                          color: phase.id === 'peak' ? '#ff2d55' : '#00d4ff',
+                          color:
+                            phase.id === 'peak' ? THEME.critical : THEME.accent,
                           lineHeight: 1.6,
-                          borderTop: '1px solid #4a4a68',
+                          borderTop: `1px solid ${THEME.border}`,
                           paddingTop: 8,
                           marginTop: 8,
                         }}
@@ -195,7 +200,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     style={{
                       fontSize: 9,
                       letterSpacing: 3,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       marginBottom: 8,
                     }}
                   >
@@ -226,8 +231,8 @@ export default function ProgramView({ expanded, setExpanded }) {
                             background:
                               expanded === `${phase.id}-${i}`
                                 ? `${color}12`
-                                : '#2a2a48',
-                            border: `1px solid ${expanded === `${phase.id}-${i}` ? color + '50' : '#4a4a68'}`,
+                                : THEME.raised,
+                            border: `1px solid ${expanded === `${phase.id}-${i}` ? color + '50' : THEME.border}`,
                             borderLeft: `3px solid ${color}`,
                             borderRadius: 6,
                             padding: '11px 14px',
@@ -276,7 +281,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                                 <div
                                   style={{
                                     fontSize: 10,
-                                    color: '#7e7e9a',
+                                    color: THEME.muted,
                                   }}
                                 >
                                   {s.detail}
@@ -302,7 +307,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                                 <div
                                   style={{
                                     fontSize: 9,
-                                    color: '#6c6c88',
+                                    color: THEME.textFaint,
                                   }}
                                 >
                                   {s.zone}
@@ -314,11 +319,11 @@ export default function ProgramView({ expanded, setExpanded }) {
                             <div
                               style={{
                                 marginTop: 10,
-                                background: '#08080d',
+                                background: THEME.field,
                                 borderRadius: 4,
                                 padding: '9px 11px',
                                 fontSize: 11,
-                                color: '#aaaacc',
+                                color: THEME.textSubtle,
                                 lineHeight: 1.7,
                               }}
                             >
@@ -339,7 +344,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 textAlign: 'center',
                 padding: '30px 0',
-                color: '#5a5a74',
+                color: THEME.textDim,
                 fontSize: 12,
               }}
             >
@@ -350,9 +355,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* ErgZone-compliant Build-1 sessions (queued) */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #00d4ff30',
-              borderLeft: '3px solid #00d4ff',
+              background: THEME.raised,
+              border: `1px solid ${THEME.accent}30`,
+              borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -370,17 +375,17 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: '#00d4ff',
+                  color: THEME.accent,
                 }}
               >
                 ERGZONE SESSIONS · QUEUED FOR BUILD 1
               </div>
-              <div style={{ fontSize: 8, color: '#6c6c88' }}>Sept+</div>
+              <div style={{ fontSize: 8, color: THEME.textFaint }}>Sept+</div>
             </div>
             <div
               style={{
                 fontSize: 10,
-                color: '#aaaacc',
+                color: THEME.textSubtle,
                 lineHeight: 1.5,
                 marginBottom: 4,
               }}
@@ -401,7 +406,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 key={i}
                 style={{
-                  background: '#08080d',
+                  background: THEME.field,
                   borderLeft: `2px solid ${s.color}`,
                   borderRadius: 4,
                   padding: '10px 12px',
@@ -420,7 +425,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      color: '#e8e8f0',
+                      color: THEME.text,
                     }}
                   >
                     {s.name}
@@ -453,27 +458,27 @@ export default function ProgramView({ expanded, setExpanded }) {
                     fontSize: 9,
                   }}
                 >
-                  <span style={{ color: '#7e7e9a' }}>Type</span>
-                  <span style={{ color: '#aaaacc' }}>{s.type}</span>
-                  <span style={{ color: '#7e7e9a' }}>Work</span>
-                  <span style={{ color: '#e8e8f0', fontWeight: 600 }}>
+                  <span style={{ color: THEME.muted }}>Type</span>
+                  <span style={{ color: THEME.textSubtle }}>{s.type}</span>
+                  <span style={{ color: THEME.muted }}>Work</span>
+                  <span style={{ color: THEME.text, fontWeight: 600 }}>
                     {s.work}
                   </span>
-                  <span style={{ color: '#7e7e9a' }}>Rest</span>
-                  <span style={{ color: '#aaaacc' }}>{s.rest}</span>
-                  <span style={{ color: '#7e7e9a' }}>Target</span>
+                  <span style={{ color: THEME.muted }}>Rest</span>
+                  <span style={{ color: THEME.textSubtle }}>{s.rest}</span>
+                  <span style={{ color: THEME.muted }}>Target</span>
                   <span style={{ color: s.color }}>{s.target}</span>
-                  <span style={{ color: '#7e7e9a' }}>Rate</span>
-                  <span style={{ color: '#aaaacc' }}>{s.rate}</span>
-                  <span style={{ color: '#7e7e9a' }}>Warmup</span>
-                  <span style={{ color: '#aaaacc' }}>{s.warmup}</span>
+                  <span style={{ color: THEME.muted }}>Rate</span>
+                  <span style={{ color: THEME.textSubtle }}>{s.rate}</span>
+                  <span style={{ color: THEME.muted }}>Warmup</span>
+                  <span style={{ color: THEME.textSubtle }}>{s.warmup}</span>
                 </div>
               </div>
             ))}
             <div
               style={{
                 fontSize: 8,
-                color: '#6c6c88',
+                color: THEME.textFaint,
                 lineHeight: 1.5,
                 marginTop: 4,
                 fontStyle: 'italic',
@@ -486,9 +491,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Intensity model evolution — Rojabo */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #ff6b3530',
-              borderLeft: '3px solid #ff6b35',
+              background: THEME.raised,
+              border: `1px solid ${THEME.warning}30`,
+              borderLeft: `3px solid ${THEME.warning}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -498,7 +503,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 3,
-                color: '#ff6b35',
+                color: THEME.warning,
                 marginBottom: 8,
               }}
             >
@@ -506,7 +511,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             </div>
             <div
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 4,
                 padding: '9px 11px',
                 marginBottom: 6,
@@ -516,7 +521,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   fontWeight: 700,
-                  color: '#00d4ff',
+                  color: THEME.accent,
                   marginBottom: 2,
                 }}
               >
@@ -525,7 +530,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -534,7 +539,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             </div>
             <div
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 4,
                 padding: '9px 11px',
                 marginBottom: 6,
@@ -544,7 +549,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   fontWeight: 700,
-                  color: '#ff6b35',
+                  color: THEME.warning,
                   marginBottom: 2,
                 }}
               >
@@ -553,7 +558,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -562,7 +567,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             </div>
             <div
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 4,
                 padding: '9px 11px',
                 marginBottom: 6,
@@ -572,7 +577,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   fontWeight: 700,
-                  color: '#ffd700',
+                  color: THEME.caution,
                   marginBottom: 2,
                 }}
               >
@@ -581,7 +586,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -591,7 +596,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 8,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 lineHeight: 1.5,
                 fontStyle: 'italic',
               }}
@@ -603,9 +608,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Optional volume extras */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #34d39930',
-              borderLeft: '3px solid #34d399',
+              background: THEME.raised,
+              border: `1px solid ${THEME.positive}30`,
+              borderLeft: `3px solid ${THEME.positive}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -615,7 +620,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 3,
-                color: '#34d399',
+                color: THEME.positive,
                 marginBottom: 6,
               }}
             >
@@ -635,7 +640,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 key={i}
                 style={{
-                  background: '#08080d',
+                  background: THEME.field,
                   borderLeft: `2px solid ${t.color}`,
                   borderRadius: 4,
                   padding: '10px 12px',
@@ -662,7 +667,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   <span
                     style={{
                       fontSize: 8,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       letterSpacing: 1,
                     }}
                   >
@@ -678,23 +683,23 @@ export default function ProgramView({ expanded, setExpanded }) {
                     marginBottom: 5,
                   }}
                 >
-                  <span style={{ color: '#7e7e9a' }}>Build</span>
-                  <span style={{ color: '#aaaacc' }}>
+                  <span style={{ color: THEME.muted }}>Build</span>
+                  <span style={{ color: THEME.textSubtle }}>
                     {t.type} · {t.work}
                   </span>
-                  <span style={{ color: '#7e7e9a' }}>Target</span>
+                  <span style={{ color: THEME.muted }}>Target</span>
                   <span style={{ color: t.color }}>{t.target}</span>
-                  <span style={{ color: '#7e7e9a' }}>Rate</span>
-                  <span style={{ color: '#aaaacc' }}>{t.rate}</span>
-                  <span style={{ color: '#7e7e9a' }}>Warmup</span>
-                  <span style={{ color: '#aaaacc' }}>{t.warmup}</span>
+                  <span style={{ color: THEME.muted }}>Rate</span>
+                  <span style={{ color: THEME.textSubtle }}>{t.rate}</span>
+                  <span style={{ color: THEME.muted }}>Warmup</span>
+                  <span style={{ color: THEME.textSubtle }}>{t.warmup}</span>
                 </div>
                 <div
                   style={{
                     fontSize: 9,
                     color: '#888',
                     lineHeight: 1.5,
-                    borderTop: '1px solid #3e3e5a',
+                    borderTop: `1px solid ${THEME.divider}`,
                     paddingTop: 5,
                   }}
                 >
@@ -707,8 +712,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* HR Zones */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -726,12 +731,12 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: '#ff6b35',
+                  color: THEME.warning,
                 }}
               >
                 HEART RATE ZONES
               </div>
-              <div style={{ fontSize: 9, color: '#6c6c88' }}>
+              <div style={{ fontSize: 9, color: THEME.textFaint }}>
                 Est. MHR {EST_MHR} bpm · confirm when tested
               </div>
             </div>
@@ -776,14 +781,14 @@ export default function ProgramView({ expanded, setExpanded }) {
                     >
                       {z.bpm} bpm
                     </span>
-                    <span style={{ fontSize: 9, color: '#6c6c88' }}>
+                    <span style={{ fontSize: 9, color: THEME.textFaint }}>
                       {z.pct} MHR · {z.lactate}
                     </span>
                   </div>
                   <div
                     style={{
                       fontSize: 10,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       lineHeight: 1.5,
                     }}
                   >
@@ -797,9 +802,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Grey zone warning */}
           <div
             style={{
-              background: '#1e1e30',
-              border: '1px solid #ffd70030',
-              borderLeft: '3px solid #ffd700',
+              background: THEME.surfaceAlt,
+              border: `1px solid ${THEME.caution}30`,
+              borderLeft: `3px solid ${THEME.caution}`,
               borderRadius: 6,
               padding: '11px 14px',
               fontSize: 11,
@@ -819,7 +824,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             style={{
               fontSize: 9,
               letterSpacing: 3,
-              color: '#34d399',
+              color: THEME.positive,
               margin: '20px 0 8px',
             }}
           >
@@ -829,8 +834,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Rep schemes */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -840,7 +845,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 12,
               }}
             >
@@ -852,7 +857,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   marginBottom: 14,
                   paddingBottom: 14,
-                  borderBottom: '1px solid #3e3e5a',
+                  borderBottom: `1px solid ${THEME.divider}`,
                 }}
               >
                 <div
@@ -880,7 +885,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     }}
                   >
                     {r.reps} reps{' '}
-                    <span style={{ color: '#7e7e9a', fontWeight: 400 }}>
+                    <span style={{ color: THEME.muted, fontWeight: 400 }}>
                       · {r.rest}
                     </span>
                   </span>
@@ -888,7 +893,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#aaaacc',
+                    color: THEME.textSubtle,
                     marginBottom: 4,
                   }}
                 >
@@ -897,7 +902,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     lineHeight: 1.5,
                   }}
                 >
@@ -908,7 +913,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 9,
-                color: '#6c6c88',
+                color: THEME.textFaint,
                 lineHeight: 1.5,
                 fontStyle: 'italic',
               }}
@@ -922,9 +927,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Lower day differentiation */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #34d39930',
-              borderLeft: '3px solid #34d399',
+              background: THEME.raised,
+              border: `1px solid ${THEME.positive}30`,
+              borderLeft: `3px solid ${THEME.positive}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -934,7 +939,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#34d399',
+                color: THEME.positive,
                 marginBottom: 4,
               }}
             >
@@ -943,7 +948,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 10,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 12,
                 lineHeight: 1.5,
               }}
@@ -970,14 +975,14 @@ export default function ProgramView({ expanded, setExpanded }) {
                   >
                     {d.day}
                   </span>
-                  <span style={{ fontSize: 10, color: '#34d399' }}>
+                  <span style={{ fontSize: 10, color: THEME.positive }}>
                     {d.focus}
                   </span>
                 </div>
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#aaaacc',
+                    color: THEME.textSubtle,
                     lineHeight: 1.6,
                   }}
                 >
@@ -990,8 +995,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Strength principles */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1001,7 +1006,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 10,
               }}
             >
@@ -1015,7 +1020,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   gap: 10,
                   marginBottom: 9,
                   fontSize: 11,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -1028,17 +1033,17 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Goal hierarchy note */}
           <div
             style={{
-              background: '#1e1e30',
-              border: '1px solid #f472b630',
-              borderLeft: '3px solid #f472b6',
+              background: THEME.surfaceAlt,
+              border: `1px solid ${THEME.accentAlt2}30`,
+              borderLeft: `3px solid ${THEME.accentAlt2}`,
               borderRadius: 6,
               padding: '11px 14px',
               fontSize: 11,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.6,
             }}
           >
-            <span style={{ color: '#f472b6', fontWeight: 700 }}>
+            <span style={{ color: THEME.accentAlt2, fontWeight: 700 }}>
               GOAL HIERARCHY:{' '}
             </span>
             Lower body + pulling serve performance AND aesthetics — prioritise.
@@ -1054,7 +1059,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             style={{
               fontSize: 9,
               letterSpacing: 3,
-              color: '#00d4ff',
+              color: THEME.accent,
               margin: '20px 0 8px',
             }}
           >
@@ -1062,14 +1067,14 @@ export default function ProgramView({ expanded, setExpanded }) {
           </div>
           <div
             style={{
-              background: '#1e1e30',
-              border: '1px solid #00d4ff30',
-              borderLeft: '3px solid #00d4ff',
+              background: THEME.surfaceAlt,
+              border: `1px solid ${THEME.accent}30`,
+              borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 6,
               padding: '11px 14px',
               marginBottom: 10,
               fontSize: 11,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.6,
             }}
           >
@@ -1089,8 +1094,8 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 key={t.name}
                 style={{
-                  background: '#2a2a48',
-                  border: '1px solid #4a4a68',
+                  background: THEME.raised,
+                  border: `1px solid ${THEME.border}`,
                   borderLeft: `3px solid ${t.color}`,
                   borderRadius: 6,
                   padding: '12px 14px',
@@ -1113,14 +1118,14 @@ export default function ProgramView({ expanded, setExpanded }) {
                   >
                     {t.name}
                   </span>
-                  <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+                  <span style={{ fontSize: 9, color: THEME.muted }}>
                     {t.freq}
                   </span>
                 </div>
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#aaaacc',
+                    color: THEME.textSubtle,
                     lineHeight: 1.6,
                     marginBottom: 5,
                   }}
@@ -1130,7 +1135,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     fontStyle: 'italic',
                   }}
                 >
@@ -1142,9 +1147,9 @@ export default function ProgramView({ expanded, setExpanded }) {
             {/* Yoga & Foam Rolling */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
-                borderLeft: '3px solid #f472b6',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
+                borderLeft: `3px solid ${THEME.accentAlt2}`,
                 borderRadius: 6,
                 padding: '12px 14px',
               }}
@@ -1161,19 +1166,19 @@ export default function ProgramView({ expanded, setExpanded }) {
                   style={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#f472b6',
+                    color: THEME.accentAlt2,
                   }}
                 >
                   Foam Roll + Yoga
                 </span>
-                <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+                <span style={{ fontSize: 9, color: THEME.muted }}>
                   Rest days · 15+20 min
                 </span>
               </div>
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.6,
                   marginBottom: 5,
                 }}
@@ -1186,25 +1191,27 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                   marginBottom: 8,
                 }}
               >
-                <span style={{ color: '#f472b6' }}>Resource: </span>Yoga with
-                Kara — yoga4rowers.com (Masters Toolkit). Free trial. Also on
-                YouTube (search "Yoga with Kara athletes recovery"). Optional:
-                British Rowing's 3-stretch before-bed sequence on two-a-day
-                nights.
+                <span style={{ color: THEME.accentAlt2 }}>Resource: </span>Yoga
+                with Kara — yoga4rowers.com (Masters Toolkit). Free trial. Also
+                on YouTube (search "Yoga with Kara athletes recovery").
+                Optional: British Rowing's 3-stretch before-bed sequence on
+                two-a-day nights.
               </div>
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
-                <span style={{ color: '#f472b6' }}>Pay attention to: </span>
+                <span style={{ color: THEME.accentAlt2 }}>
+                  Pay attention to:{' '}
+                </span>
                 hip flexors (lunge poses), hamstring length (forward folds),
                 t-spine rotation, child's pose hip depth. Note L/R differences —
                 asymmetries show up first in yoga and show up later as injury.
@@ -1215,9 +1222,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* ── sRPE ── */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #ffd70030',
-              borderLeft: '3px solid #ffd700',
+              background: THEME.raised,
+              border: `1px solid ${THEME.caution}30`,
+              borderLeft: `3px solid ${THEME.caution}`,
               borderRadius: 6,
               padding: '13px 16px',
               marginBottom: 10,
@@ -1227,7 +1234,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 3,
-                color: '#ffd700',
+                color: THEME.caution,
                 marginBottom: 8,
               }}
             >
@@ -1236,7 +1243,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 11,
-                color: '#aaaacc',
+                color: THEME.textSubtle,
                 lineHeight: 1.7,
               }}
             >
@@ -1245,7 +1252,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 9,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginTop: 8,
                 fontStyle: 'italic',
               }}
@@ -1259,8 +1266,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* ── MOVEMENT SCREEN ── */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1270,7 +1277,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 3,
-                color: '#34d399',
+                color: THEME.positive,
                 marginBottom: 4,
               }}
             >
@@ -1279,7 +1286,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 9,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 12,
                 lineHeight: 1.5,
               }}
@@ -1293,14 +1300,14 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   marginBottom: 10,
                   paddingBottom: 10,
-                  borderBottom: '1px solid #3e3e5a',
+                  borderBottom: `1px solid ${THEME.divider}`,
                 }}
               >
                 <div
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#e8e8f0',
+                    color: THEME.text,
                     marginBottom: 3,
                   }}
                 >
@@ -1309,7 +1316,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#aaaacc',
+                    color: THEME.textSubtle,
                     lineHeight: 1.5,
                   }}
                 >
@@ -1318,7 +1325,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#ff6b35',
+                    color: THEME.warning,
                     marginTop: 3,
                   }}
                 >
@@ -1330,7 +1337,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 margin: '10px 0 8px',
               }}
             >
@@ -1341,7 +1348,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 key={m}
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.7,
                   paddingLeft: 4,
                 }}
@@ -1356,7 +1363,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             style={{
               fontSize: 9,
               letterSpacing: 3,
-              color: '#ff2d55',
+              color: THEME.critical,
               margin: '20px 0 8px',
             }}
           >
@@ -1366,18 +1373,18 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Recomp framing */}
           <div
             style={{
-              background: '#1e1e30',
-              border: '1px solid #ff2d5530',
-              borderLeft: '3px solid #ff2d55',
+              background: THEME.surfaceAlt,
+              border: `1px solid ${THEME.critical}30`,
+              borderLeft: `3px solid ${THEME.critical}`,
               borderRadius: 6,
               padding: '11px 14px',
               marginBottom: 10,
               fontSize: 11,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.6,
             }}
           >
-            <span style={{ color: '#ff2d55', fontWeight: 700 }}>
+            <span style={{ color: THEME.critical, fontWeight: 700 }}>
               THE WINDOW:{' '}
             </span>
             Simultaneous fat loss + muscle gain is hardest for lean, trained
@@ -1385,7 +1392,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             phase, exactly when recomp works best. Ride it while it lasts.
             Logged in MacroFactor — its adaptive expenditure suits variable
             training load.{' '}
-            <span style={{ color: '#7e7e9a' }}>
+            <span style={{ color: THEME.muted }}>
               Not dietitian advice — general framework.
             </span>
           </div>
@@ -1393,8 +1400,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Macro targets */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1404,7 +1411,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 12,
               }}
             >
@@ -1416,7 +1423,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   marginBottom: 12,
                   paddingBottom: 12,
-                  borderBottom: '1px solid #3e3e5a',
+                  borderBottom: `1px solid ${THEME.divider}`,
                 }}
               >
                 <div
@@ -1444,7 +1451,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     }}
                   >
                     {m.target}{' '}
-                    <span style={{ color: '#7e7e9a', fontWeight: 400 }}>
+                    <span style={{ color: THEME.muted, fontWeight: 400 }}>
                       · {m.rule}
                     </span>
                   </span>
@@ -1452,7 +1459,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     lineHeight: 1.5,
                   }}
                 >
@@ -1463,7 +1470,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 9,
-                color: '#6c6c88',
+                color: THEME.textFaint,
                 lineHeight: 1.5,
                 fontStyle: 'italic',
               }}
@@ -1476,9 +1483,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Live MacroFactor periodized program */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #34d39930',
-              borderLeft: '3px solid #34d399',
+              background: THEME.raised,
+              border: `1px solid ${THEME.positive}30`,
+              borderLeft: `3px solid ${THEME.positive}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1496,12 +1503,12 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: '#34d399',
+                  color: THEME.positive,
                 }}
               >
                 LIVE PROGRAM · PERIODIZED (MacroFactor)
               </div>
-              <div style={{ fontSize: 8, color: '#6c6c88' }}>
+              <div style={{ fontSize: 8, color: THEME.textFaint }}>
                 avg ~3,030 · maintenance
               </div>
             </div>
@@ -1513,13 +1520,13 @@ export default function ProgramView({ expanded, setExpanded }) {
               }}
             >
               <thead>
-                <tr style={{ borderBottom: '1px solid #4a4a68' }}>
+                <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
                   {['Day', 'Training', 'Cal', 'P', 'C', 'F'].map((h) => (
                     <td
                       key={h}
                       style={{
                         padding: '4px 5px',
-                        color: '#7e7e9a',
+                        color: THEME.muted,
                         fontSize: 8,
                         letterSpacing: 1,
                         textAlign:
@@ -1535,11 +1542,14 @@ export default function ProgramView({ expanded, setExpanded }) {
                 {MF_PROGRAM.map((d, i) => {
                   const hot = d.cal >= 3200;
                   return (
-                    <tr key={i} style={{ borderBottom: '1px solid #1e1e30' }}>
+                    <tr
+                      key={i}
+                      style={{ borderBottom: `1px solid ${THEME.surfaceAlt}` }}
+                    >
                       <td
                         style={{
                           padding: '5px 5px',
-                          color: '#e8e8f0',
+                          color: THEME.text,
                           fontWeight: 700,
                         }}
                       >
@@ -1551,7 +1561,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                       <td
                         style={{
                           padding: '5px 5px',
-                          color: hot ? '#34d399' : '#aaaacc',
+                          color: hot ? THEME.positive : THEME.textSubtle,
                           fontWeight: hot ? 700 : 400,
                           textAlign: 'right',
                         }}
@@ -1561,7 +1571,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                       <td
                         style={{
                           padding: '5px 5px',
-                          color: '#ff2d55',
+                          color: THEME.critical,
                           textAlign: 'right',
                         }}
                       >
@@ -1570,7 +1580,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                       <td
                         style={{
                           padding: '5px 5px',
-                          color: '#00d4ff',
+                          color: THEME.accent,
                           textAlign: 'right',
                         }}
                       >
@@ -1579,7 +1589,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                       <td
                         style={{
                           padding: '5px 5px',
-                          color: '#ffd700',
+                          color: THEME.caution,
                           textAlign: 'right',
                         }}
                       >
@@ -1593,7 +1603,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 8,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 lineHeight: 1.5,
                 marginTop: 8,
                 fontStyle: 'italic',
@@ -1609,9 +1619,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Queued deficit program */}
           <div
             style={{
-              background: 'linear-gradient(135deg,#ff6b3512,#1e1e30)',
-              border: '1px solid #ff6b3540',
-              borderLeft: '3px solid #ff6b35',
+              background: `linear-gradient(135deg,${THEME.warning}12,#1e1e30)`,
+              border: `1px solid ${THEME.warning}40`,
+              borderLeft: `3px solid ${THEME.warning}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1629,17 +1639,19 @@ export default function ProgramView({ expanded, setExpanded }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: '#ff6b35',
+                  color: THEME.warning,
                 }}
               >
                 QUEUED · DEFICIT PROGRAM (LEAN PHASE)
               </div>
-              <div style={{ fontSize: 8, color: '#6c6c88' }}>~0.25kg/wk</div>
+              <div style={{ fontSize: 8, color: THEME.textFaint }}>
+                ~0.25kg/wk
+              </div>
             </div>
             <div
               style={{
                 fontSize: 9,
-                color: '#ffd700',
+                color: THEME.caution,
                 lineHeight: 1.5,
                 marginBottom: 8,
               }}
@@ -1654,13 +1666,13 @@ export default function ProgramView({ expanded, setExpanded }) {
               }}
             >
               <thead>
-                <tr style={{ borderBottom: '1px solid #4a4a68' }}>
+                <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
                   {['Day', 'Cal', 'P', 'C', 'F', 'vs maint'].map((h) => (
                     <td
                       key={h}
                       style={{
                         padding: '4px 5px',
-                        color: '#7e7e9a',
+                        color: THEME.muted,
                         fontSize: 8,
                         letterSpacing: 1,
                         textAlign:
@@ -1678,11 +1690,14 @@ export default function ProgramView({ expanded, setExpanded }) {
               </thead>
               <tbody>
                 {DEFICIT_PROGRAM.days.map((d, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #1e1e30' }}>
+                  <tr
+                    key={i}
+                    style={{ borderBottom: `1px solid ${THEME.surfaceAlt}` }}
+                  >
                     <td
                       style={{
                         padding: '5px',
-                        color: '#e8e8f0',
+                        color: THEME.text,
                         fontWeight: 700,
                       }}
                     >
@@ -1691,7 +1706,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <td
                       style={{
                         padding: '5px',
-                        color: '#aaaacc',
+                        color: THEME.textSubtle,
                         textAlign: 'right',
                       }}
                     >
@@ -1700,7 +1715,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <td
                       style={{
                         padding: '5px',
-                        color: '#ff2d55',
+                        color: THEME.critical,
                         textAlign: 'right',
                       }}
                     >
@@ -1709,7 +1724,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <td
                       style={{
                         padding: '5px',
-                        color: '#00d4ff',
+                        color: THEME.accent,
                         textAlign: 'right',
                       }}
                     >
@@ -1718,7 +1733,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <td
                       style={{
                         padding: '5px',
-                        color: '#ffd700',
+                        color: THEME.caution,
                         textAlign: 'right',
                       }}
                     >
@@ -1742,7 +1757,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#ff6b35',
+                color: THEME.warning,
                 marginTop: 10,
                 marginBottom: 6,
               }}
@@ -1757,11 +1772,11 @@ export default function ProgramView({ expanded, setExpanded }) {
                   gap: 8,
                   marginBottom: 5,
                   fontSize: 9,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
-                <span style={{ color: '#ff6b35', flexShrink: 0 }}>·</span>
+                <span style={{ color: THEME.warning, flexShrink: 0 }}>·</span>
                 <span>{g}</span>
               </div>
             ))}
@@ -1778,7 +1793,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             <div
               style={{
                 fontSize: 9,
-                color: '#34d399',
+                color: THEME.positive,
                 lineHeight: 1.5,
                 marginTop: 6,
                 fontStyle: 'italic',
@@ -1791,8 +1806,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Nutrition principles */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1802,7 +1817,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 10,
               }}
             >
@@ -1816,7 +1831,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   gap: 10,
                   marginBottom: 9,
                   fontSize: 11,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -1829,9 +1844,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Fuelling by session type */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #f472b630',
-              borderLeft: '3px solid #f472b6',
+              background: THEME.raised,
+              border: `1px solid ${THEME.accentAlt2}30`,
+              borderLeft: `3px solid ${THEME.accentAlt2}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1841,7 +1856,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#f472b6',
+                color: THEME.accentAlt2,
                 marginBottom: 10,
               }}
             >
@@ -1851,7 +1866,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               <div
                 key={i}
                 style={{
-                  background: '#08080d',
+                  background: THEME.field,
                   borderLeft: `2px solid ${f.color}`,
                   borderRadius: 4,
                   padding: '9px 11px',
@@ -1871,7 +1886,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#aaaacc',
+                    color: THEME.textSubtle,
                     lineHeight: 1.5,
                   }}
                 >
@@ -1894,9 +1909,9 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Hydration */}
           <div
             style={{
-              background: '#2a2a48',
-              border: '1px solid #00d4ff30',
-              borderLeft: '3px solid #00d4ff',
+              background: THEME.raised,
+              border: `1px solid ${THEME.accent}30`,
+              borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 10,
@@ -1906,7 +1921,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#00d4ff',
+                color: THEME.accent,
                 marginBottom: 10,
               }}
             >
@@ -1920,11 +1935,11 @@ export default function ProgramView({ expanded, setExpanded }) {
                   gap: 10,
                   marginBottom: 7,
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
-                <span style={{ color: '#00d4ff', flexShrink: 0 }}>·</span>
+                <span style={{ color: THEME.accent, flexShrink: 0 }}>·</span>
                 <span>{h}</span>
               </div>
             ))}

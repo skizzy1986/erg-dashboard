@@ -16,6 +16,7 @@ import {
 } from '../constants/logs.js';
 import { bpCategory } from '../utils/formatting.js';
 import { useVitals } from '../hooks/useVitals.js';
+import { THEME } from '../constants/theme.js';
 
 // ── RECOVERY VIEW — HRV/RHR/sleep readiness + trends ──────────
 // Daily readiness composite, vitals trend charts, blood-pressure log,
@@ -48,7 +49,7 @@ export default function RecoveryView({ isWide }) {
               style={{
                 padding: '40px 0',
                 textAlign: 'center',
-                color: '#7e7e9a',
+                color: THEME.muted,
                 fontSize: 13,
               }}
             >
@@ -60,7 +61,7 @@ export default function RecoveryView({ isWide }) {
             {/* Readiness composite */}
             <div
               style={{
-                background: '#2a2a48',
+                background: THEME.raised,
                 border: `1px solid ${readiness.color}40`,
                 borderLeft: `3px solid ${readiness.color}`,
                 borderRadius: 6,
@@ -80,7 +81,7 @@ export default function RecoveryView({ isWide }) {
                     style={{
                       fontSize: 9,
                       letterSpacing: 3,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       marginBottom: 4,
                     }}
                   >
@@ -95,7 +96,9 @@ export default function RecoveryView({ isWide }) {
                     }}
                   >
                     {readiness.score == null ? '—' : readiness.score}
-                    <span style={{ fontSize: 14, color: '#7e7e9a' }}>/100</span>
+                    <span style={{ fontSize: 14, color: THEME.muted }}>
+                      /100
+                    </span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -112,7 +115,7 @@ export default function RecoveryView({ isWide }) {
                   <div
                     style={{
                       fontSize: 10,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       marginTop: 4,
                       maxWidth: 140,
                       lineHeight: 1.4,
@@ -132,9 +135,9 @@ export default function RecoveryView({ isWide }) {
                 style={{
                   marginTop: 12,
                   paddingTop: 12,
-                  borderTop: '1px solid #4a4a68',
+                  borderTop: `1px solid ${THEME.border}`,
                   fontSize: 10,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   lineHeight: 1.5,
                 }}
               >
@@ -166,10 +169,10 @@ export default function RecoveryView({ isWide }) {
                   `${today.rhr} bpm`,
                   `${rhrNote} ${rhrBaseline}`,
                   today.rhr <= rhrBaseline + 2
-                    ? '#34d399'
+                    ? THEME.positive
                     : today.rhr <= rhrBaseline + 5
-                      ? '#ffd700'
-                      : '#ff2d55',
+                      ? THEME.caution
+                      : THEME.critical,
                 ],
                 [
                   'HRV',
@@ -178,43 +181,43 @@ export default function RecoveryView({ isWide }) {
                     ? `${hrvNote} ${hrvBaseline}`
                     : 'needs overnight wear',
                   today.hrv == null
-                    ? '#6c6c88'
+                    ? THEME.textFaint
                     : today.hrv >= hrvBaseline - 3
-                      ? '#34d399'
+                      ? THEME.positive
                       : today.hrv >= hrvBaseline - 8
-                        ? '#ffd700'
-                        : '#ff2d55',
+                        ? THEME.caution
+                        : THEME.critical,
                 ],
                 [
                   'SLEEP',
                   today.sleep != null ? `${today.sleep}h` : '—',
                   today.sleep != null ? `target 7h+` : 'needs overnight wear',
                   today.sleep == null
-                    ? '#6c6c88'
+                    ? THEME.textFaint
                     : today.sleep >= 7
-                      ? '#34d399'
+                      ? THEME.positive
                       : today.sleep >= 6.5
-                        ? '#ffd700'
-                        : '#ff2d55',
+                        ? THEME.caution
+                        : THEME.critical,
                 ],
                 [
                   'SLEEP SCORE',
                   today.sleepScore != null ? `${today.sleepScore}` : '—',
                   `Fitbit`,
                   today.sleepScore == null
-                    ? '#6c6c88'
+                    ? THEME.textFaint
                     : today.sleepScore >= 80
-                      ? '#34d399'
+                      ? THEME.positive
                       : today.sleepScore >= 70
-                        ? '#ffd700'
-                        : '#ff2d55',
+                        ? THEME.caution
+                        : THEME.critical,
                 ],
               ].map(([k, v, sub, c]) => (
                 <div
                   key={k}
                   style={{
-                    background: '#2a2a48',
-                    border: '1px solid #4a4a68',
+                    background: THEME.raised,
+                    border: `1px solid ${THEME.border}`,
                     borderRadius: 6,
                     padding: '11px 13px',
                   }}
@@ -222,7 +225,7 @@ export default function RecoveryView({ isWide }) {
                   <div
                     style={{
                       fontSize: 8,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       letterSpacing: 2,
                       marginBottom: 4,
                     }}
@@ -235,7 +238,7 @@ export default function RecoveryView({ isWide }) {
                   <div
                     style={{
                       fontSize: 9,
-                      color: '#6c6c88',
+                      color: THEME.textFaint,
                       marginTop: 2,
                     }}
                   >
@@ -248,8 +251,8 @@ export default function RecoveryView({ isWide }) {
             {/* RHR trend */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 padding: '14px 16px',
                 marginBottom: 12,
@@ -259,7 +262,7 @@ export default function RecoveryView({ isWide }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: '#ff6b35',
+                  color: THEME.warning,
                   marginBottom: 12,
                 }}
               >
@@ -274,7 +277,7 @@ export default function RecoveryView({ isWide }) {
                     dataKey="date"
                     tick={{
                       fontSize: 9,
-                      fill: '#7e7e9a',
+                      fill: THEME.muted,
                       fontFamily: "'DM Mono',monospace",
                     }}
                     axisLine={false}
@@ -284,7 +287,7 @@ export default function RecoveryView({ isWide }) {
                     domain={[rhrBaseline - 6, rhrBaseline + 8]}
                     tick={{
                       fontSize: 8,
-                      fill: '#7e7e9a',
+                      fill: THEME.muted,
                       fontFamily: "'DM Mono',monospace",
                     }}
                     axisLine={false}
@@ -293,8 +296,8 @@ export default function RecoveryView({ isWide }) {
                   />
                   <Tooltip
                     contentStyle={{
-                      background: '#2a2a48',
-                      border: '1px solid #4a4a68',
+                      background: THEME.raised,
+                      border: `1px solid ${THEME.border}`,
                       borderRadius: 6,
                       fontSize: 11,
                       fontFamily: "'DM Mono',monospace",
@@ -302,28 +305,28 @@ export default function RecoveryView({ isWide }) {
                   />
                   <ReferenceLine
                     y={rhrBaseline}
-                    stroke="#ff6b35"
+                    stroke={THEME.warning}
                     strokeDasharray="3 3"
                     strokeOpacity={0.4}
                     label={{
                       value: 'baseline',
                       position: 'insideTopRight',
                       fontSize: 8,
-                      fill: '#ff6b35',
+                      fill: THEME.warning,
                       fontFamily: "'DM Mono',monospace",
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="rhr"
-                    stroke="#ff6b35"
+                    stroke={THEME.warning}
                     strokeWidth={2}
-                    dot={{ r: 3, fill: '#ff6b35' }}
+                    dot={{ r: 3, fill: THEME.warning }}
                     name="RHR"
                   />
                 </LineChart>
               </ResponsiveContainer>
-              <div style={{ marginTop: 8, fontSize: 9, color: '#7e7e9a' }}>
+              <div style={{ marginTop: 8, fontSize: 9, color: THEME.muted }}>
                 Lower is better. A rising trend over several days = accumulating
                 fatigue. HRV trend builds as more nights are logged.
               </div>
@@ -332,9 +335,9 @@ export default function RecoveryView({ isWide }) {
             {/* Sleep callout */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #ff2d5530',
-                borderLeft: '3px solid #ff2d55',
+                background: THEME.raised,
+                border: `1px solid ${THEME.critical}30`,
+                borderLeft: `3px solid ${THEME.critical}`,
                 borderRadius: 6,
                 padding: '13px 16px',
                 marginBottom: 12,
@@ -344,7 +347,7 @@ export default function RecoveryView({ isWide }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: '#ff2d55',
+                  color: THEME.critical,
                   marginBottom: 6,
                 }}
               >
@@ -353,12 +356,14 @@ export default function RecoveryView({ isWide }) {
               <div
                 style={{
                   fontSize: 11,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.6,
                 }}
               >
                 Last night:{' '}
-                <span style={{ color: '#ffd700', fontWeight: 700 }}>6h19m</span>{' '}
+                <span style={{ color: THEME.caution, fontWeight: 700 }}>
+                  6h19m
+                </span>{' '}
                 (221 light / 57 deep / 96 REM). Bed 22:15 (good), but woke 05:05
                 — short total. REM strong. Single short night, not a concern
                 with HRV rebounding (25→33) — but sleep is the lever to protect
@@ -370,9 +375,9 @@ export default function RecoveryView({ isWide }) {
             {/* Data status note */}
             <div
               style={{
-                background: '#1e1e30',
-                border: '1px solid #34d39930',
-                borderLeft: '3px solid #34d399',
+                background: THEME.surfaceAlt,
+                border: `1px solid ${THEME.positive}30`,
+                borderLeft: `3px solid ${THEME.positive}`,
                 borderRadius: 6,
                 padding: '11px 14px',
                 fontSize: 11,
@@ -390,8 +395,8 @@ export default function RecoveryView({ isWide }) {
             {/* Blood Pressure */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 padding: '14px 16px',
                 marginTop: 12,
@@ -409,19 +414,19 @@ export default function RecoveryView({ isWide }) {
                   style={{
                     fontSize: 9,
                     letterSpacing: 3,
-                    color: '#ff2d55',
+                    color: THEME.critical,
                   }}
                 >
                   BLOOD PRESSURE
                 </div>
-                <div style={{ fontSize: 9, color: '#6c6c88' }}>
+                <div style={{ fontSize: 9, color: THEME.textFaint }}>
                   on 75mg irbesartan
                 </div>
               </div>
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginBottom: 12,
                   lineHeight: 1.5,
                 }}
@@ -440,9 +445,9 @@ export default function RecoveryView({ isWide }) {
                       style={{
                         marginBottom: 8,
                         padding: '10px 12px',
-                        background: '#08080d',
+                        background: THEME.field,
                         borderRadius: 4,
-                        border: `1px solid ${b.clean ? '#4a4a68' : '#5a5a7420'}`,
+                        border: `1px solid ${b.clean ? THEME.border : `${THEME.textDim}20`}`,
                       }}
                     >
                       <div
@@ -465,7 +470,7 @@ export default function RecoveryView({ isWide }) {
                           <span
                             style={{
                               fontSize: 11,
-                              color: '#7e7e9a',
+                              color: THEME.muted,
                               marginLeft: 8,
                             }}
                           >
@@ -482,7 +487,7 @@ export default function RecoveryView({ isWide }) {
                           >
                             {cat.label}
                           </div>
-                          <div style={{ fontSize: 9, color: '#6c6c88' }}>
+                          <div style={{ fontSize: 9, color: THEME.textFaint }}>
                             {b.date} · {b.context}
                           </div>
                         </div>
@@ -491,7 +496,7 @@ export default function RecoveryView({ isWide }) {
                         <div
                           style={{
                             fontSize: 9,
-                            color: '#7e7e9a',
+                            color: THEME.muted,
                             marginTop: 6,
                             fontStyle: 'italic',
                           }}
@@ -508,7 +513,7 @@ export default function RecoveryView({ isWide }) {
                   fontSize: 10,
                   color: '#888860',
                   lineHeight: 1.6,
-                  borderTop: '1px solid #3e3e5a',
+                  borderTop: `1px solid ${THEME.divider}`,
                   paddingTop: 10,
                   marginTop: 4,
                 }}
@@ -523,8 +528,8 @@ export default function RecoveryView({ isWide }) {
             {/* Bloods / Cholesterol */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 padding: '14px 16px',
                 marginTop: 12,
@@ -542,19 +547,19 @@ export default function RecoveryView({ isWide }) {
                   style={{
                     fontSize: 9,
                     letterSpacing: 3,
-                    color: '#00d4ff',
+                    color: THEME.accent,
                   }}
                 >
                   BLOODS · LIPID PANEL
                 </div>
-                <div style={{ fontSize: 9, color: '#6c6c88' }}>
+                <div style={{ fontSize: 9, color: THEME.textFaint }}>
                   GP test pending
                 </div>
               </div>
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginBottom: 12,
                   lineHeight: 1.5,
                 }}
@@ -573,22 +578,22 @@ export default function RecoveryView({ isWide }) {
                         justifyContent: 'space-between',
                         alignItems: 'baseline',
                         padding: '7px 0',
-                        borderBottom: '1px solid #3e3e5a',
+                        borderBottom: `1px solid ${THEME.divider}`,
                       }}
                     >
                       <span style={{ fontSize: 11, color: m.color }}>
                         {m.marker}
                       </span>
-                      <span style={{ fontSize: 10, color: '#7e7e9a' }}>
+                      <span style={{ fontSize: 10, color: THEME.muted }}>
                         target {m.target} {m.unit} ·{' '}
-                        <span style={{ color: '#6c6c88' }}>pending</span>
+                        <span style={{ color: THEME.textFaint }}>pending</span>
                       </span>
                     </div>
                   ))}
                   <div
                     style={{
                       fontSize: 10,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       lineHeight: 1.6,
                       marginTop: 10,
                       fontStyle: 'italic',
@@ -607,8 +612,8 @@ export default function RecoveryView({ isWide }) {
             {/* Hormone panel */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 padding: '14px 16px',
                 marginTop: 12,
@@ -626,19 +631,19 @@ export default function RecoveryView({ isWide }) {
                   style={{
                     fontSize: 9,
                     letterSpacing: 3,
-                    color: '#a78bfa',
+                    color: THEME.accentAlt,
                   }}
                 >
                   HORMONE PANEL
                 </div>
-                <div style={{ fontSize: 9, color: '#6c6c88' }}>
+                <div style={{ fontSize: 9, color: THEME.textFaint }}>
                   via GP → endocrinologist
                 </div>
               </div>
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginBottom: 12,
                   lineHeight: 1.5,
                 }}
@@ -651,7 +656,7 @@ export default function RecoveryView({ isWide }) {
                   key={h.marker}
                   style={{
                     padding: '7px 0',
-                    borderBottom: '1px solid #3e3e5a',
+                    borderBottom: `1px solid ${THEME.divider}`,
                   }}
                 >
                   <div
@@ -661,17 +666,17 @@ export default function RecoveryView({ isWide }) {
                       alignItems: 'baseline',
                     }}
                   >
-                    <span style={{ fontSize: 11, color: '#a78bfa' }}>
+                    <span style={{ fontSize: 11, color: THEME.accentAlt }}>
                       {h.marker}
                     </span>
-                    <span style={{ fontSize: 9, color: '#6c6c88' }}>
+                    <span style={{ fontSize: 9, color: THEME.textFaint }}>
                       pending
                     </span>
                   </div>
                   <div
                     style={{
                       fontSize: 9,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       lineHeight: 1.4,
                       marginTop: 2,
                     }}
@@ -685,13 +690,13 @@ export default function RecoveryView({ isWide }) {
                   fontSize: 10,
                   color: '#888860',
                   lineHeight: 1.6,
-                  borderTop: '1px solid #3e3e5a',
+                  borderTop: `1px solid ${THEME.divider}`,
                   paddingTop: 10,
                   marginTop: 6,
                 }}
               >
                 ⚠️{' '}
-                <span style={{ color: '#a78bfa' }}>
+                <span style={{ color: THEME.accentAlt }}>
                   Ask GP for an endocrinologist referral
                 </span>{' '}
                 — prior testicular cancer + orchiectomy is a specific,
@@ -706,8 +711,8 @@ export default function RecoveryView({ isWide }) {
             {/* Niggles / Injury Watch */}
             <div
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 padding: '14px 16px',
                 marginTop: 12,
@@ -717,7 +722,7 @@ export default function RecoveryView({ isWide }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: '#ff6b35',
+                  color: THEME.warning,
                   marginBottom: 4,
                 }}
               >
@@ -726,7 +731,7 @@ export default function RecoveryView({ isWide }) {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginBottom: 12,
                   lineHeight: 1.5,
                 }}
@@ -740,7 +745,7 @@ export default function RecoveryView({ isWide }) {
                   style={{
                     marginBottom: 12,
                     paddingBottom: 12,
-                    borderBottom: '1px solid #3e3e5a',
+                    borderBottom: `1px solid ${THEME.divider}`,
                   }}
                 >
                   <div
@@ -755,7 +760,7 @@ export default function RecoveryView({ isWide }) {
                       style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: '#e8e8f0',
+                        color: THEME.text,
                       }}
                     >
                       {n.area}
@@ -773,7 +778,7 @@ export default function RecoveryView({ isWide }) {
                   <div
                     style={{
                       fontSize: 10,
-                      color: '#aaaacc',
+                      color: THEME.textSubtle,
                       lineHeight: 1.6,
                       marginBottom: 5,
                     }}

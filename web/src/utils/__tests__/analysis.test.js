@@ -4,6 +4,7 @@ import {
   HRV_DEFAULT as HRV_BASELINE,
 } from '../recoveryAnalytics.js';
 import { evaluateRules, checkConsistency, autoregulate } from '../analysis.js';
+import { THEME } from '../../constants/theme.js';
 
 const ids = (flags) => flags.map((f) => f.id);
 
@@ -124,7 +125,7 @@ describe('autoregulate', () => {
   it('is GREEN when form and recovery both support training', () => {
     const g = autoregulate(5, { score: 90 }, []);
     expect(g.signal).toBe('GREEN');
-    expect(g.color).toBe('#34d399');
+    expect(g.color).toBe(THEME.positive);
   });
 
   it('tolerates null tsb and null readiness (defaults to GREEN)', () => {

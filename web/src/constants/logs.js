@@ -1,3 +1,4 @@
+import { THEME } from './theme.js';
 // ── BLOODS / CHOLESTEROL LOG ──────────────────────────────────
 // Lipid panel for GP cardiovascular review. Populate when results return.
 // Weight loss (130→94kg) typically improves the whole profile.
@@ -413,15 +414,25 @@ export const LIPID_REF = [
     marker: 'Total Cholesterol',
     unit: 'mmol/L',
     target: '< 5.5',
-    color: '#00d4ff',
+    color: THEME.accent,
   },
-  { marker: "LDL ('bad')", unit: 'mmol/L', target: '< 2.0', color: '#ff6b35' },
-  { marker: "HDL ('good')", unit: 'mmol/L', target: '> 1.0', color: '#34d399' },
+  {
+    marker: "LDL ('bad')",
+    unit: 'mmol/L',
+    target: '< 2.0',
+    color: THEME.warning,
+  },
+  {
+    marker: "HDL ('good')",
+    unit: 'mmol/L',
+    target: '> 1.0',
+    color: THEME.positive,
+  },
   {
     marker: 'Triglycerides',
     unit: 'mmol/L',
     target: '< 1.7',
-    color: '#ffd700',
+    color: THEME.caution,
   },
 ];
 
@@ -456,7 +467,7 @@ export const NIGGLES = [
   {
     area: 'Left hamstring / glute',
     status: 'Rehab — physio-led',
-    color: '#ffd700',
+    color: THEME.caution,
     detail:
       'Year-old injury (running/soccer). Felt in hamstring + referring to glute. PHYSIO ASSESSED — prescribed stretches + RDLs as rehab. RDLs are therapeutic here, not a risk.',
     watch:
@@ -465,7 +476,7 @@ export const NIGGLES = [
   {
     area: 'Right shoulder',
     status: 'Improving — form fix working',
-    color: '#34d399',
+    color: THEME.positive,
     detail:
       "Twinge during plank/side bridge (6/10), likely positioning + fast core-volume ramp. 6/12: pain-free at 1:50 plank WITH 'press forearms down' cue (engages serratus, offloads cuff). Form was the issue more than volume.",
     watch:

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { THEME } from '../theme.js';
 import { DARK } from '../themeValues.js';
+import { cssVarName } from '../../utils/themeCss.js';
 
 const EXPECTED_KEYS = [
   'bg',
@@ -38,7 +39,7 @@ describe('THEME', () => {
 
   it('is a pointer table — every value is a var(--color-*) reference', () => {
     for (const [key, value] of Object.entries(THEME)) {
-      expect(value).toBe(`var(--color-${key})`);
+      expect(value).toBe(`var(${cssVarName(key)})`);
     }
   });
 
