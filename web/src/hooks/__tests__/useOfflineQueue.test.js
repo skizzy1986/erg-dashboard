@@ -14,6 +14,9 @@ vi.mock('../../supabaseClient', () => ({
   },
 }));
 
+vi.mock('../../utils/sentry.js', () => ({ captureError: vi.fn() }));
+
+import { captureError } from '../../utils/sentry.js';
 import {
   enqueueSession,
   useOfflineQueue,
@@ -41,6 +44,7 @@ beforeEach(async () => {
   localStorage.clear();
   insertMock.mockReset();
   getUserMock.mockReset();
+  captureError.mockClear();
   insertMock.mockResolvedValue({ error: null });
   // navigator.onLine defaults to true under jsdom; ensure drain runs.
   Object.defineProperty(navigator, 'onLine', {
@@ -97,9 +101,8 @@ describe('useOfflineQueue drainQueue user_id backfill', () => {
 
   it('retains rows that fail to insert so they can be retried', async () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'user-123' } } });
-    insertMock.mockResolvedValue({
-      error: { code: '08006', message: 'network' },
-    });
+    const failure = { code: '08006', message: 'network' };
+    insertMock.mockResolvedValue({ error: failure });
     enqueueSession({ date: '2026-06-25', type: 'erg' });
 
     renderHook(() => useOfflineQueue(), {
@@ -109,6 +112,11 @@ describe('useOfflineQueue drainQueue user_id backfill', () => {
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     const remaining = JSON.parse(localStorage.getItem(QUEUE_KEY));
     expect(remaining).toHaveLength(1);
+    await waitFor(() => expect(captureError).toHaveBeenCalledTimes(1));
+    expect(captureError).toHaveBeenCalledWith(failure, {
+      source: 'useOfflineQueue',
+      op: 'drainQueue',
+    });
   });
 });
 
@@ -237,6 +245,9 @@ describe('useOfflineQueue legacy-row migration', () => {
     await waitFor(() => expect(insertMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(result.current.pending).toBe(0));
     expect(localStorage.getItem(QUEUE_KEY)).toBe('[]');
+    // A duplicate-key conflict means the row already landed — reporting it
+    // would turn every successful offline retry into Sentry noise.
+    expect(captureError).not.toHaveBeenCalled();
   });
 
   it('inserts each row at most once when two drains race', async () => {

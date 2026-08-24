@@ -5,6 +5,7 @@ import { Network } from '@capacitor/network';
 import { supabase } from '../supabaseClient';
 import { toLogDate } from '../utils/dateFormat.js';
 import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
+import { captureError } from '../utils/sentry.js';
 
 const QUEUE_KEY = 'erg_pending_sessions';
 
@@ -73,7 +74,10 @@ async function drainQueue() {
       const { _queuedAt, ...rest } = session;
       const row = { ...rest, user_id: rest.user_id ?? user?.id };
       const { error } = await supabase.from('sessions').insert(row);
-      if (error && !isDuplicate(error)) failed.push(session);
+      if (error && !isDuplicate(error)) {
+        captureError(error, { source: 'useOfflineQueue', op: 'drainQueue' });
+        failed.push(session);
+      }
     }
     writeQueue(failed);
     return q.length - failed.length;
