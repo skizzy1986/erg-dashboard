@@ -28,7 +28,11 @@ export function initSentry() {
 
   Sentry.init({
     dsn,
-    environment: import.meta.env.MODE,
+    // VITE_SENTRY_ENVIRONMENT is injected from Vercel's VERCEL_ENV at build
+    // time (see vite.config.js) so preview and production are distinguishable.
+    // MODE is the fallback, which keeps local dev and CI reporting as they did.
+    environment:
+      import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
     release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
     // browserTracing is NOT one of the browser SDK's default integrations, so
     // without this line tracesSampleRate below has nothing to sample and no

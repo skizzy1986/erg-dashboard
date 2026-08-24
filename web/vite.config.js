@@ -19,9 +19,32 @@ const sentryRelease =
     ? `splitiq@${process.env.VERCEL_GIT_COMMIT_SHA}`
     : undefined);
 
+// `vite build` sets MODE=production for every build, Vercel target included, so
+// MODE alone cannot tell a preview deploy from a production one and preview
+// errors would file under `production`. VERCEL_ENV is the only signal that
+// distinguishes them. Same injection route as the release: read here, passed
+// through `define`, because Vite only exposes VITE_*-prefixed vars to the client.
+const sentryEnvironment =
+  process.env.VITE_SENTRY_ENVIRONMENT || process.env.VERCEL_ENV || undefined;
+
 // The org is EU-region. @sentry/vite-plugin defaults to sentry.io and will not
 // find splitiq-29 without this.
 const sentryUrl = process.env.SENTRY_URL || 'https://de.sentry.io';
+
+// Each key is present only when its value exists. `define` is a literal text
+// substitution that also applies under Vitest, where a defined key would defeat
+// the vi.stubEnv() the sentry tests rely on.
+const sentryDefine = {
+  ...(sentryRelease
+    ? { 'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(sentryRelease) }
+    : {}),
+  ...(sentryEnvironment
+    ? {
+        'import.meta.env.VITE_SENTRY_ENVIRONMENT':
+          JSON.stringify(sentryEnvironment),
+      }
+    : {}),
+};
 
 export default defineConfig({
   plugins: [
@@ -78,18 +101,10 @@ export default defineConfig({
       : []),
   ],
   base: './',
-  // Makes the computed release visible to utils/sentry.js as
-  // import.meta.env.VITE_SENTRY_RELEASE, matching what the plugin uploaded.
-  // Only defined when a release actually exists: `define` is a literal text
-  // substitution that also applies under Vitest, where it would defeat the
-  // vi.stubEnv() the sentry tests rely on.
-  ...(sentryRelease
-    ? {
-        define: {
-          'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(sentryRelease),
-        },
-      }
-    : {}),
+  // Makes the computed release and environment visible to utils/sentry.js. The
+  // release must match what the plugin uploaded under, or Sentry serves
+  // minified frames without erroring.
+  ...(Object.keys(sentryDefine).length ? { define: sentryDefine } : {}),
   // 'hidden' emits source maps for Sentry upload without referencing them from
   // the shipped bundles, so production source stays out of the browser.
   build: { sourcemap: uploadSourceMaps ? 'hidden' : false },

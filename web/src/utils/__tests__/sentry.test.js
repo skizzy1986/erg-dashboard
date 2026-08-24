@@ -47,6 +47,26 @@ describe('initSentry', () => {
     expect(cfg.tracesSampleRate).toBe(0.1);
   });
 
+  // vite build sets MODE=production for every build, Vercel target included, so
+  // without the injected override a preview deploy files under `production`.
+  it('prefers the injected environment over MODE', () => {
+    vi.stubEnv('VITE_SENTRY_DSN', 'https://k@o1.ingest.de.sentry.io/1');
+    vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'preview');
+
+    initSentry();
+
+    expect(Sentry.init.mock.calls[0][0].environment).toBe('preview');
+  });
+
+  it('falls back to MODE when no environment is injected', () => {
+    vi.stubEnv('VITE_SENTRY_DSN', 'https://k@o1.ingest.de.sentry.io/1');
+    vi.stubEnv('VITE_SENTRY_ENVIRONMENT', '');
+
+    initSentry();
+
+    expect(Sentry.init.mock.calls[0][0].environment).toBe(import.meta.env.MODE);
+  });
+
   it('propagates trace headers to Supabase and same-origin only', () => {
     vi.stubEnv('VITE_SENTRY_DSN', 'https://k@o1.ingest.de.sentry.io/1');
     vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co');
