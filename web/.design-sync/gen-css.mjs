@@ -1,9 +1,9 @@
-// Regenerates .design-sync/base.css from the app's own THEME. Re-run whenever
-// src/constants/theme.js changes:  node .design-sync/gen-css.mjs
+// Regenerates .design-sync/base.css from the app's own palette. Re-run whenever
+// src/constants/themeValues.js changes:  node .design-sync/gen-css.mjs
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { THEME } from '../src/constants/theme.js';
+import { DARK } from '../src/constants/themeValues.js';
 import { cssVars } from '../src/utils/themeCss.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -12,7 +12,7 @@ const css = `/* Generated from src/constants/theme.js by .design-sync/gen-css.mj
    index.html paints the ground before React mounts. This file is the design
    system's token layer plus that ground, so every design built with SplitIQ
    starts on the same dark surface the app uses. */
-${cssVars(THEME)}
+${cssVars(DARK)}
 
 html,
 body {
@@ -27,4 +27,4 @@ body {
 }
 `;
 writeFileSync(join(here, 'base.css'), css);
-console.error(`  base.css: ${Object.keys(THEME).length} tokens from src/constants/theme.js`);
+console.error(`  base.css: ${Object.keys(DARK).length} tokens from src/constants/themeValues.js`);

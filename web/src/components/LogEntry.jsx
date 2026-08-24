@@ -75,7 +75,8 @@ export default function LogEntry({ entry, done = false }) {
                     letterSpacing: 1.5,
                     fontWeight: 700,
                     color: THEME.positive,
-                    border: `1px solid ${THEME.positive}66`,
+                    border:
+                      '1px solid color-mix(in srgb, var(--color-positive) 40%, transparent)',
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -109,7 +110,8 @@ export default function LogEntry({ entry, done = false }) {
                     letterSpacing: 1.5,
                     fontWeight: 700,
                     color: THEME.textSubtle,
-                    border: `1px solid ${THEME.textSubtle}99`,
+                    border:
+                      '1px solid color-mix(in srgb, var(--color-textSubtle) 60%, transparent)',
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',

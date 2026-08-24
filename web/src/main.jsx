@@ -18,13 +18,15 @@ import {
 } from './utils/queryErrorHandlers.js';
 import ErrorFallback from './components/ErrorFallback.jsx';
 import { THEME } from './constants/theme.js';
+import { DARK } from './constants/themeValues.js';
 import { cssVars } from './utils/themeCss.js';
 
 initSentry();
 
 const themeStyle = document.createElement('style');
 themeStyle.id = 'theme-vars';
-themeStyle.textContent = cssVars(THEME);
+// values, never THEME — THEME holds var() pointers and would self-reference
+themeStyle.textContent = cssVars(DARK);
 document.head.appendChild(themeStyle);
 
 if (Capacitor.isNativePlatform()) {

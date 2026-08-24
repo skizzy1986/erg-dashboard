@@ -633,7 +633,8 @@ export default function MobileRecovery() {
                   <Line
                     type="monotone"
                     dataKey="sma7"
-                    stroke={`${THEME.caution}88`}
+                    stroke={THEME.caution}
+                    strokeOpacity={0.53}
                     strokeDasharray="4 4"
                     dot={false}
                     strokeWidth={1}

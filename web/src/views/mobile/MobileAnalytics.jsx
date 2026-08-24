@@ -321,7 +321,8 @@ export default function MobileAnalytics() {
               display: 'flex',
               justifyContent: 'space-between',
               padding: '10px 0',
-              borderBottom: `1px solid ${THEME.border}33`,
+              borderBottom:
+                '1px solid color-mix(in srgb, var(--color-border) 20%, transparent)',
             }}
           >
             <span style={{ fontSize: 12, color: THEME.text }}>{s.note}</span>
@@ -368,7 +369,8 @@ export default function MobileAnalytics() {
                     alignItems: 'center',
                     gap: 8,
                     padding: '10px 0',
-                    borderBottom: `1px solid ${THEME.border}33`,
+                    borderBottom:
+                      '1px solid color-mix(in srgb, var(--color-border) 20%, transparent)',
                   }}
                 >
                   <span

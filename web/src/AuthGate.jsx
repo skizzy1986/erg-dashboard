@@ -160,7 +160,7 @@ function SignOutButton() {
         top: 'calc(8px + env(safe-area-inset-top, 0px))',
         right: 8,
         zIndex: 1000,
-        background: `${THEME.bg}cc`,
+        background: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
         border: `1px solid ${THEME.border}`,
         borderRadius: 5,
         padding: '5px 10px',

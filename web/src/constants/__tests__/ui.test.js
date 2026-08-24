@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { C, ICON } from '../ui.js';
 import { THEME } from '../theme.js';
+import { DARK } from '../themeValues.js';
 
 // C used to carry raw hex literals (#279), so a light flip would have left the
 // session-type accents behind on the dark palette. It now points at THEME. This
@@ -24,8 +25,8 @@ describe('C — session type accents', () => {
   });
 
   it('resolves to the values the raw literals carried', () => {
-    for (const [type, [hex]] of Object.entries(EXPECTED)) {
-      expect(C[type]).toBe(hex);
+    for (const [, [hex, token]] of Object.entries(EXPECTED)) {
+      expect(DARK[token]).toBe(hex);
     }
   });
 

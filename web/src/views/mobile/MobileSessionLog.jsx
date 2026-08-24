@@ -155,7 +155,8 @@ export default function MobileSessionLog() {
               justifyContent: 'space-between',
               alignItems: 'flex-start',
               padding: '12px 0',
-              borderBottom: `1px solid ${THEME.border}33`,
+              borderBottom:
+                '1px solid color-mix(in srgb, var(--color-border) 20%, transparent)',
             }}
           >
             <div>
@@ -223,7 +224,8 @@ export default function MobileSessionLog() {
               ) : isStrength ? (
                 <span
                   style={{
-                    background: `${THEME.accentAlt}22`,
+                    background:
+                      'color-mix(in srgb, var(--color-accentAlt) 13.33%, transparent)',
                     color: THEME.accentAlt,
                     borderRadius: 4,
                     padding: '2px 6px',

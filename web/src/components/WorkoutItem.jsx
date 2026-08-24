@@ -14,7 +14,10 @@ export default function WorkoutItem({
   return (
     <div
       style={{
-        background: open || highlight ? `${THEME.accent}10` : THEME.raised,
+        background:
+          open || highlight
+            ? 'color-mix(in srgb, var(--color-accent) 6.27%, transparent)'
+            : THEME.raised,
         border: `1px solid ${open || highlight ? color + '50' : THEME.border}`,
         borderRadius: 6,
         overflow: 'hidden',
