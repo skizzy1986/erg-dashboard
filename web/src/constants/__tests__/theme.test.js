@@ -18,6 +18,7 @@ const EXPECTED_KEYS = [
   'accentAlt2',
   'positiveAlt',
   'surfaceAlt',
+  'surfaceDeep',
   'neutral',
   'textSubtle',
   'textFaint',
@@ -28,9 +29,9 @@ const EXPECTED_KEYS = [
 ];
 
 describe('THEME', () => {
-  it('has exactly the 23 expected keys (no more, no fewer)', () => {
+  it('has exactly the 24 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(THEME);
-    expect(keys).toHaveLength(23);
+    expect(keys).toHaveLength(24);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -57,6 +58,7 @@ describe('THEME', () => {
     expect(THEME.accentAlt2).toBe('#f472b6');
     expect(THEME.positiveAlt).toBe('#2dd4bf');
     expect(THEME.surfaceAlt).toBe('#1e1e30');
+    expect(THEME.surfaceDeep).toBe('#12121f');
     expect(THEME.neutral).toBe('#3a3a4a');
     expect(THEME.textSubtle).toBe('#aaaacc');
     expect(THEME.textFaint).toBe('#6c6c88');

@@ -258,6 +258,27 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/hooks/useSplashGate.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useInitialDataReady.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/usePrefersReducedMotion.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/utils/splashCss.js': { lines: 80, functions: 80, branches: 70 },
+        'src/components/mobile/SplashScreen.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
       },
     },
   },

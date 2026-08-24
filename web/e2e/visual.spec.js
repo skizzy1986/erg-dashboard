@@ -53,6 +53,11 @@ async function openAuthed(page, context) {
   await installAppFixtures(context, { now: FIXED_TIME });
   await page.clock.setFixedTime(FIXED_TIME);
   await page.goto('/');
+  // The mobile splash overlays the tab tree, and toBeVisible() ignores
+  // occlusion, so every mobile baseline would capture the splash instead.
+  // The timeout must beat the default 5000ms — that is exactly the splash
+  // ceiling, so a default wait races it.
+  await expect(page.locator('.siq-splash')).toHaveCount(0, { timeout: 10_000 });
 }
 
 // Tab switching is state-only (App.jsx and MobileApp.jsx both hold `view` in

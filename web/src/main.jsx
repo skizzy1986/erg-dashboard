@@ -13,9 +13,12 @@ import App from './App.jsx';
 import { supabase } from './supabaseClient.js';
 import { usePWAInstall } from './hooks/usePWAInstall.js';
 import { useIsMobile } from './hooks/useIsMobile.js';
+import { useSplashGate } from './hooks/useSplashGate.js';
+import { useInitialDataReady } from './hooks/useInitialDataReady.js';
+import SplashScreen from './components/mobile/SplashScreen.jsx';
 import MobileApp from './views/mobile/MobileApp.jsx';
 import { createNotificationChannels } from './utils/notifications.js';
-import { initSentry } from './utils/sentry.js';
+import { initSentry, captureError } from './utils/sentry.js';
 import {
   handleQueryError,
   handleMutationError,
@@ -267,10 +270,28 @@ function InstallButton() {
 // undefined = still checking, null = logged out, object = signed in.
 function AuthGate() {
   const [session, setSession] = useState(undefined);
+  const [authFailed, setAuthFailed] = useState(false);
   const isMobile = useIsMobile();
+  const dataReady = useInitialDataReady();
+  const showSplash = useSplashGate({
+    enabled: isMobile,
+    authResolved: session !== undefined,
+    authFailed,
+    dataReady,
+    dataExpected: !!session,
+  });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch((error) => {
+        // Outside react-query, so nothing else captures this. Falling through
+        // to Login is the right recovery, but silently would hide a real outage.
+        captureError(error, { where: 'AuthGate.getSession' });
+        setAuthFailed(true);
+        setSession(null);
+      });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) =>
       setSession(s)
     );
@@ -280,20 +301,24 @@ function AuthGate() {
   if (session === undefined) {
     return (
       <>
-        <div
-          style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: C.bg,
-            color: C.muted,
-            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-            fontSize: 12,
-          }}
-        >
-          Loading…
-        </div>
+        {showSplash ? (
+          <SplashScreen />
+        ) : (
+          <div
+            style={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: C.bg,
+              color: C.muted,
+              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+              fontSize: 12,
+            }}
+          >
+            Loading…
+          </div>
+        )}
         <InstallButton />
       </>
     );
@@ -301,7 +326,7 @@ function AuthGate() {
   if (!session)
     return (
       <>
-        <Login />
+        {showSplash ? <SplashScreen /> : <Login />}
         <InstallButton />
       </>
     );
@@ -309,6 +334,9 @@ function AuthGate() {
     <>
       <SignOutButton />
       {isMobile ? <MobileApp /> : <App />}
+      {/* Overlays rather than replaces: the tabs' fetches only start once
+          MobileApp mounts, so it has to be mounted and fetching underneath. */}
+      {showSplash && <SplashScreen />}
       <InstallButton />
     </>
   );
