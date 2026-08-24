@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { usePrefersReducedMotion } from '../usePrefersReducedMotion.js';
 
 function stubMatchMedia(matches) {
@@ -51,5 +51,20 @@ describe('usePrefersReducedMotion', () => {
       'change',
       expect.any(Function)
     );
+  });
+
+  // The handler body never ran in any other test, so a wrong event shape
+  // (e.target.matches, an inverted boolean) would have shipped silently.
+  it('follows the preference when it changes while mounted', () => {
+    const listeners = stubMatchMedia(false);
+    const { result } = renderHook(() => usePrefersReducedMotion());
+    expect(result.current).toBe(false);
+
+    const [, handler] = listeners.add.mock.calls[0];
+    act(() => handler({ matches: true }));
+    expect(result.current).toBe(true);
+
+    act(() => handler({ matches: false }));
+    expect(result.current).toBe(false);
   });
 });

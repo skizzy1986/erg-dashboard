@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { StrictMode } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import {
   useSplashGate,
@@ -145,7 +146,7 @@ describe('useSplashGate', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('does not restart the clock when enabled toggles mid-splash', () => {
+  it('clears both timers when the gate is disabled mid-splash', () => {
     const { result, rerender } = renderHook((props) => useSplashGate(props), {
       initialProps: {
         enabled: true,
@@ -169,5 +170,25 @@ describe('useSplashGate', () => {
     const { result } = renderHook(() => useSplashGate());
     expect(result.current).toBe(false);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  // StrictMode double-invokes the arming effect: run, clean up, run again. The
+  // armedRef latch is what stops the second run restarting the clock — without
+  // it the floor never fires and the splash sticks forever in dev.
+  it('keeps one clock across a StrictMode double-mount', () => {
+    const { result } = renderHook((props) => useSplashGate(props), {
+      wrapper: StrictMode,
+      initialProps: {
+        enabled: true,
+        authResolved: true,
+        dataReady: true,
+        dataExpected: true,
+      },
+    });
+    expect(result.current).toBe(true);
+    advance(SPLASH_MIN_MS - 1);
+    expect(result.current).toBe(true);
+    advance(1);
+    expect(result.current).toBe(false);
   });
 });

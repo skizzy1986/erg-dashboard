@@ -76,4 +76,47 @@ describe('splashCss', () => {
       expect(selector.startsWith('.siq-splash')).toBe(true);
     }
   });
+
+  // AC4: the loop set must keep running for as long as the splash is mounted.
+  // Dropping `infinite` would leave a frozen frame over an unknown wait.
+  it('loops the four continuous animations for as long as it is mounted', () => {
+    const css = splashCss(THEME);
+    for (const name of ['glow', 'draw', 'head', 'track']) {
+      const rule = css
+        .split('\n')
+        .find((line) => line.includes(`animation: siq-splash-${name} `));
+      expect(rule, `no rule drives siq-splash-${name}`).toBeTruthy();
+      expect(rule).toContain('infinite');
+    }
+  });
+
+  it('runs the entrances once so they settle instead of replaying', () => {
+    const css = splashCss(THEME);
+    for (const name of ['tile', 'halo', 'base', 'word', 'sub']) {
+      const rule = css
+        .split('\n')
+        .find((line) => line.includes(`animation: siq-splash-${name} `));
+      expect(rule, `no rule drives siq-splash-${name}`).toBeTruthy();
+      expect(rule).not.toContain('infinite');
+      expect(rule).toContain('both');
+    }
+  });
+
+  // A new animated element that nobody adds to stillRules() would keep moving
+  // under prefers-reduced-motion, which is the whole failure this guards.
+  it('stills every element it animates', () => {
+    const css = splashCss(THEME);
+    const animated = new Set(
+      [...css.matchAll(/\.(siq-splash__[a-z-]+)\s*\{[^}]*animation:/g)].map(
+        (m) => m[1]
+      )
+    );
+    expect(animated.size).toBeGreaterThan(0);
+    const still = css.slice(css.indexOf('.siq-splash--still'));
+    for (const cls of animated) {
+      expect(still, `${cls} is animated but never stilled`).toContain(
+        `.siq-splash--still .${cls}`
+      );
+    }
+  });
 });
