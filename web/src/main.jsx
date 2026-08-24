@@ -43,7 +43,15 @@ const queryClient = new QueryClient({
   queryCache: new QueryCache({ onError: handleQueryError }),
   mutationCache: new MutationCache({ onError: handleMutationError }),
   defaultOptions: {
-    queries: { staleTime: 60_000, retry: 2, refetchOnWindowFocus: false },
+    queries: {
+      staleTime: 60_000,
+      // Reads DO report to Sentry through the QueryCache sink — the
+      // read-vs-write asymmetry once observed was this retry's backoff delaying
+      // onError, not a swallowed error. Investigated and closed in #276; the
+      // mutation path simply has no retry override, so it lands near-instantly.
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
   },
 });
 

@@ -8,7 +8,18 @@ import React from 'react';
 // function, and vi.mock is file-scoped and hoisted, so a test that needs the
 // real hook machinery cannot live alongside it.
 
-const insertMock = vi.fn(() => Promise.resolve({ error: null }));
+const insertMock = vi.fn((row) =>
+  Promise.resolve({ error: insertErrorFor(row) })
+);
+const deleteEqMock = vi.fn(() => Promise.resolve({ error: deleteError }));
+const getUserMock = vi.fn(() => getUserResult());
+
+// Same mutable-module-state idiom as sessionRows/vitalsState below: the mock
+// factory is hoisted, so per-test overrides have to reach it through bindings.
+// insertErrorFor takes the row so a test can fail one role's insert only.
+let insertErrorFor = () => null;
+let deleteError = null;
+let getUserResult = () => Promise.resolve({ data: { user: { id: 'u1' } } });
 
 vi.mock('../../supabaseClient.js', () => ({
   supabase: {
@@ -19,15 +30,19 @@ vi.mock('../../supabaseClient.js', () => ({
           limit: () => Promise.resolve({ data: [], error: null }),
         }),
       }),
-      delete: () => ({ eq: () => Promise.resolve({ error: null }) }),
+      delete: () => ({ eq: (...args) => deleteEqMock(...args) }),
     }),
     auth: {
       getSession: () =>
         Promise.resolve({ data: { session: { access_token: 'test-token' } } }),
-      getUser: () => Promise.resolve({ data: { user: { id: 'u1' } } }),
+      getUser: (...args) => getUserMock(...args),
     },
   },
 }));
+
+vi.mock('../../utils/sentry.js', () => ({ captureError: vi.fn() }));
+
+import { captureError } from '../../utils/sentry.js';
 
 let sessionRows = [];
 let vitalsState = {
@@ -101,7 +116,13 @@ beforeEach(() => {
   sessionRows = [];
   tssRows = [];
   vitalsState = { latest: null, readinessScore: 0, readinessLabel: 'FATIGUED' };
+  insertErrorFor = () => null;
+  deleteError = null;
+  getUserResult = () => Promise.resolve({ data: { user: { id: 'u1' } } });
   insertMock.mockClear();
+  deleteEqMock.mockClear();
+  getUserMock.mockClear();
+  captureError.mockClear();
   localStorage.clear();
 });
 
@@ -295,5 +316,195 @@ describe('useCoach sends the training context', () => {
     expect(body.context).not.toContain('Recent sessions');
     expect(body.context).not.toContain('undefined');
     expect(body.context).not.toContain('NaN');
+  });
+});
+
+// postgrest-js resolves with `{ error }` rather than rejecting, so before #276
+// every one of these failures was invisible — not merely uncaught.
+// The initial coach_messages query resolves a tick after mount and replaces
+// whatever setQueryData put there, so an optimistic user message written before
+// it settles is silently dropped. Let it land first.
+async function settleInitialQuery() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
+describe('useCoach reports its own failures', () => {
+  function renderCoach() {
+    return renderHook(() => useCoach(), { wrapper: makeWrapper() });
+  }
+
+  it('reports a failed user-message insert without breaking the turn', async () => {
+    const failure = { code: '42501', message: 'permission denied' };
+    insertErrorFor = (row) => (row.role === 'user' ? failure : null);
+    const fetchMock = stubFetch();
+
+    const { result } = renderCoach();
+    await settleInitialQuery();
+    await act(async () => {
+      await result.current.sendMessage('how is my load?');
+    });
+
+    expect(captureError).toHaveBeenCalledWith(failure, {
+      source: 'useCoach',
+      op: 'insertUserMessage',
+    });
+    // The turn still ran: the request went out and the reply landed.
+    expect(fetchMock).toHaveBeenCalled();
+    await waitFor(() => expect(result.current.messages).toHaveLength(2));
+    expect(result.current.error).toBeNull();
+  });
+
+  it('reports a failed assistant-message insert on the message_stop path', async () => {
+    const failure = { code: '42501', message: 'permission denied' };
+    insertErrorFor = (row) => (row.role === 'assistant' ? failure : null);
+    stubFetch();
+
+    const { result } = renderCoach();
+    await act(async () => {
+      await result.current.sendMessage('how is my load?');
+    });
+
+    expect(captureError).toHaveBeenCalledWith(failure, {
+      source: 'useCoach',
+      op: 'insertAssistantMessage',
+      finalised: true,
+    });
+  });
+
+  it('distinguishes the stream-ended-without-stop fallback insert', async () => {
+    const failure = { code: '42501', message: 'permission denied' };
+    insertErrorFor = (row) => (row.role === 'assistant' ? failure : null);
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        body: {
+          getReader() {
+            const frames = [
+              'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"cut short"}}\n',
+            ];
+            let i = 0;
+            return {
+              read() {
+                if (i >= frames.length) return Promise.resolve({ done: true });
+                return Promise.resolve({
+                  done: false,
+                  value: new globalThis.TextEncoder().encode(frames[i++]),
+                });
+              },
+            };
+          },
+        },
+      })
+    );
+
+    const { result } = renderCoach();
+    await act(async () => {
+      await result.current.sendMessage('how is my load?');
+    });
+
+    expect(captureError).toHaveBeenCalledWith(failure, {
+      source: 'useCoach',
+      op: 'insertAssistantMessage',
+      finalised: false,
+    });
+  });
+
+  it('reports a non-ok coach-chat response and still surfaces the UI error', async () => {
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('upstream exploded'),
+      })
+    );
+
+    const { result } = renderCoach();
+    await act(async () => {
+      await result.current.sendMessage('how is my load?');
+    });
+
+    const call = captureError.mock.calls.find(
+      ([, ctx]) => ctx?.op === 'sendMessage'
+    );
+    expect(call).toBeDefined();
+    expect(call[0]).toBeInstanceOf(Error);
+    expect(call[1]).toEqual({
+      source: 'useCoach',
+      op: 'sendMessage',
+      model: 'sonnet',
+    });
+    // Regression guard: reporting is additive, the existing UI state stands.
+    await waitFor(() => expect(result.current.error).toContain('Coach error'));
+    expect(result.current.isStreaming).toBe(false);
+    expect(result.current.streamingContent).toBe('');
+  });
+});
+
+describe('useCoach clearHistory', () => {
+  async function seedTwoMessages(result) {
+    stubFetch();
+    await settleInitialQuery();
+    await act(async () => {
+      await result.current.sendMessage('how is my load?');
+    });
+    await waitFor(() => expect(result.current.messages).toHaveLength(2));
+  }
+
+  it('clears the list when the delete succeeds', async () => {
+    const { result } = renderHook(() => useCoach(), { wrapper: makeWrapper() });
+    await seedTwoMessages(result);
+
+    await act(async () => {
+      await result.current.clearHistory();
+    });
+
+    expect(deleteEqMock).toHaveBeenCalledWith('user_id', 'u1');
+    await waitFor(() => expect(result.current.messages).toHaveLength(0));
+    expect(captureError).not.toHaveBeenCalled();
+  });
+
+  // Clearing the UI on a failed delete only hides rows the server still has.
+  it('reports a failed delete and leaves the list intact', async () => {
+    const { result } = renderHook(() => useCoach(), { wrapper: makeWrapper() });
+    await seedTwoMessages(result);
+    captureError.mockClear();
+    deleteError = { code: '42501', message: 'permission denied' };
+
+    await act(async () => {
+      await result.current.clearHistory();
+    });
+
+    expect(captureError).toHaveBeenCalledWith(deleteError, {
+      source: 'useCoach',
+      op: 'clearHistory',
+    });
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.error).toBe(
+      'Could not clear history — please try again'
+    );
+  });
+
+  it('catches a rejecting getUser instead of leaking an unhandled rejection', async () => {
+    const { result } = renderHook(() => useCoach(), { wrapper: makeWrapper() });
+    await seedTwoMessages(result);
+    captureError.mockClear();
+    const authFailure = new Error('auth session missing');
+    getUserResult = () => Promise.reject(authFailure);
+
+    await act(async () => {
+      await expect(result.current.clearHistory()).resolves.toBeUndefined();
+    });
+
+    expect(captureError).toHaveBeenCalledWith(authFailure, {
+      source: 'useCoach',
+      op: 'clearHistory',
+    });
+    expect(deleteEqMock).not.toHaveBeenCalled();
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.error).toBe(
+      'Could not clear history — please try again'
+    );
   });
 });

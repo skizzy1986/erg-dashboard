@@ -48,10 +48,67 @@ export function initSentry() {
   return true;
 }
 
+// postgrest-js rejects with a plain `{ code, details, hint, message }` object,
+// not an Error. Sentry titles a non-Error capture by stringifying it, so every
+// Supabase failure in the app arrived as one issue called "[object Object]".
+// Wrapping restores a real message and stack without changing anything for the
+// call sites that already pass an Error.
+function toError(value) {
+  if (value instanceof Error) return value;
+
+  let msg;
+  if (typeof value?.message === 'string' && value.message) {
+    msg = value.message;
+  } else if (value !== null && typeof value === 'object') {
+    try {
+      msg = JSON.stringify(value);
+    } catch {
+      // Circular reference — the keys still say more than "[object Object]".
+      msg = `Non-serialisable error object (${Object.keys(value).join(', ')})`;
+    }
+    if (!msg || msg === '{}') msg = 'Empty error object';
+  } else {
+    msg = String(value);
+  }
+
+  const wrapped = new Error(msg);
+  if (typeof value?.name === 'string' && value.name) wrapped.name = value.name;
+  return wrapped;
+}
+
+// The fields a postgrest error actually carries. Copied shallowly and only when
+// scalar: sendDefaultPii is false above, and a deep copy of an arbitrary
+// rejection would drag row payloads into Sentry.
+function originalFields(value) {
+  if (value === null || typeof value !== 'object')
+    return { value: String(value) };
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (v === null || ['string', 'number', 'boolean'].includes(typeof v)) {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 // Single call site for everything that wants to report a handled error. Hooks
 // and caches pass their own identifying context so an issue in Sentry says
 // which query or mutation produced it, not just that "something threw".
 export function captureError(error, context) {
   if (!error) return;
-  Sentry.captureException(error, context ? { extra: context } : undefined);
+
+  if (error instanceof Error) {
+    Sentry.captureException(error, context ? { extra: context } : undefined);
+    return;
+  }
+
+  const wrapped = toError(error);
+  // Every wrapped error is thrown from the same few call sites, so Sentry's
+  // stacktrace-led default grouping merges unrelated DB failures into one
+  // issue. Appending the postgrest code (or the message) splits them again.
+  const discriminator = error?.code || wrapped.message;
+  Sentry.captureException(wrapped, {
+    extra: { ...context, originalError: originalFields(error) },
+    fingerprint: ['{{ default }}', String(discriminator)],
+  });
 }

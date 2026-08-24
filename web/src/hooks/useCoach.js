@@ -11,6 +11,7 @@ import {
 } from '../constants/sessionStatus.js';
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
 import { parseDurationMinutes } from '../utils/duration.js';
+import { captureError } from '../utils/sentry.js';
 
 // One microcycle, with room for the two-a-day Wednesday — a training week runs
 // to more than seven rows. The questions this context serves ("how's my
@@ -170,9 +171,18 @@ export function useCoach() {
     setError(null);
 
     try {
-      await supabase
+      // postgrest-js resolves with `{ error }` instead of rejecting, so an
+      // insert whose result is discarded fails invisibly. Report and carry on:
+      // the message is already in the query cache and the turn still runs.
+      const { error: userInsertErr } = await supabase
         .from('coach_messages')
         .insert({ role: 'user', content: userText, model });
+      if (userInsertErr) {
+        captureError(userInsertErr, {
+          source: 'useCoach',
+          op: 'insertUserMessage',
+        });
+      }
 
       const currentMessages =
         queryClient.getQueryData(['coach_messages']) ?? [];
@@ -246,9 +256,16 @@ export function useCoach() {
                 model,
                 created_at: new Date().toISOString(),
               };
-              await supabase
+              const { error: stopInsertErr } = await supabase
                 .from('coach_messages')
                 .insert({ role: 'assistant', content: finalContent, model });
+              if (stopInsertErr) {
+                captureError(stopInsertErr, {
+                  source: 'useCoach',
+                  op: 'insertAssistantMessage',
+                  finalised: true,
+                });
+              }
               queryClient.setQueryData(['coach_messages'], (old) => [
                 ...(old ?? []),
                 assistantMsg,
@@ -271,9 +288,16 @@ export function useCoach() {
           model,
           created_at: new Date().toISOString(),
         };
-        await supabase
+        const { error: fallbackInsertErr } = await supabase
           .from('coach_messages')
           .insert({ role: 'assistant', content: finalContent, model });
+        if (fallbackInsertErr) {
+          captureError(fallbackInsertErr, {
+            source: 'useCoach',
+            op: 'insertAssistantMessage',
+            finalised: false,
+          });
+        }
         queryClient.setQueryData(['coach_messages'], (old) => [
           ...(old ?? []),
           assistantMsg,
@@ -283,6 +307,7 @@ export function useCoach() {
         setIsStreaming(false);
       }
     } catch (err) {
+      captureError(err, { source: 'useCoach', op: 'sendMessage', model });
       setError(err.message || 'Failed to get a response');
       setIsStreaming(false);
       setStreamingContent('');
@@ -291,12 +316,27 @@ export function useCoach() {
   };
 
   const clearHistory = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('coach_messages').delete().eq('user_id', user.id);
-    queryClient.setQueryData(['coach_messages'], []);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error: delErr } = await supabase
+        .from('coach_messages')
+        .delete()
+        .eq('user_id', user.id);
+      // A failed delete leaves the rows on the server, so clearing the list
+      // here would only hide them until the next refetch brought them back.
+      if (delErr) {
+        captureError(delErr, { source: 'useCoach', op: 'clearHistory' });
+        setError('Could not clear history — please try again');
+        return;
+      }
+      queryClient.setQueryData(['coach_messages'], []);
+    } catch (err) {
+      captureError(err, { source: 'useCoach', op: 'clearHistory' });
+      setError('Could not clear history — please try again');
+    }
   };
 
   return {
