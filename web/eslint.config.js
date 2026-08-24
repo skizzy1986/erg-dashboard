@@ -3,6 +3,13 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
 export default [
+  {
+    // Mirrors of files authored in the claude.ai/design project (see
+    // .design-sync/ownership.json). Committed verbatim so the repo copy matches
+    // the project copy — linting or formatting them breaks the mirror, which is
+    // exactly what the pre-commit hook did to splitiq-load.js (87 -> 232 lines).
+    ignores: ['.design-sync/**'],
+  },
   js.configs.recommended,
   {
     // Without a `files` glob here, ESLint 9 expands a directory argument

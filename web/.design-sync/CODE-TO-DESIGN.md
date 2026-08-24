@@ -1,159 +1,121 @@
-# Code → Design Handover (2026-08-23)
+# Code → Design Handover (2026-08-24)
 
-*Reciprocal of [`HANDOFF.md`](HANDOFF.md). Paste into a Claude Design session when the two
-sides need re-syncing. This is about **how Code and Design stay on the same page** — the
+*Reciprocal of [`HANDOFF.md`](HANDOFF.md). Read from the repo when the two sides need
+re-syncing. This is about **how Code and Design stay on the same page** — the
 state of the spec against the code, and what each side still owes the other. Visual
 direction lives in the handoff and the brief, not here.*
 
+*This is a **dated bulletin**. Read it on re-sync, or when the spec looks out of step with
+the app. [`CLAUDE.md`](CLAUDE.md) is the standing context — read that every session.*
+
+> **Read this from git, don't upload it.** Design has read access to the repo, so every
+> repo-owned document is **linked, not copied**. A copy is a snapshot and snapshots go
+> stale — which is the failure this whole workstream keeps paying for. A link cannot.
+>
+> **The link resolves to `main`.** Work sitting in an unmerged branch is invisible to a
+> design session exactly as it is to a fresh code session, so "I read it and it said X"
+> means `main` said X. If a document looks behind what you have been told, check whether
+> the change has merged before assuming it was not made.
+>
+> Access is read-only in that direction. Design-owned files still travel by hand-off and
+> land in the repo by a code commit.
+
 ---
 
-## Status: the handoff is in git
+## Headline: the re-sync is unblocked
 
-`HANDOFF.md` is committed verbatim at `web/.design-sync/HANDOFF.md` — the path it names for
-itself. Its opening constraint is satisfied: *"A code session cannot read this project. Its
-container is cloned from git, so this file only reaches it once committed."* It has.
+The previous edition said **"do not re-sync yet"**, gated on the role rename landing. It
+has landed — `#248` is closed, merged as `#277`. Both prerequisites that edition named are
+now satisfied:
 
-Commit `ef83a4e`, branch `claude/design-integration-splitiq-8ixs0q`.
+1. ~~The four-way reconciliation must land first~~ — done. `docs/*.md`, `previews/*.tsx`
+   and `config.json`'s `dtsPropsFor` moved in lockstep with the code, so a design session
+   no longer receives two token systems in one prompt.
+2. ~~Re-sync again immediately after the rename~~ — that is now.
 
-## What Code just did
+Re-run `node .design-sync/gen-css.mjs` first; it is step one of every sync. Tracked as
+`#258`, which also still needs the project *opened* — a separate, human-only step.
 
-The design workstream was invisible from the repo — it lived in `web/.design-sync/`, a
-hidden dotfolder named after a build tool, referenced from no top-level document.
+**One caveat that outlives the rename.** The bundle currently in the project was built
+before any of this. Until it is replaced it holds the old dark `conventions.md` and a live,
+stale `PACE_ZONES` frozen at a CP of 190, so a design session loads **wrong pace bands**
+today. `NOTES.md` is blunt about which half is worse: *"A dead export fails loudly; a
+stale-but-live constant quietly hands out wrong pace bands."*
 
-- **`DESIGN.md`** at the repo root is the front door, with the documents in authority
-  order: `HANDOFF.md` (normative) > `DESIGN_BRIEF.md` (prescriptive) > `conventions.md`
-  (descriptive). Referenced from `CLAUDE.md`, `README.md`, `WORKFLOW.md` and `AGENTS.md`.
-- **[`CLAUDE.md`](CLAUDE.md) in this directory is new** — a project briefing for design
-  sessions, mirroring the one code sessions get. Domain glossary (CTL/ATL/TSB, sRPE, CP,
-  UT1/UT2), the five destinations, which numbers are real versus decorative, and the chart
-  rules from §3. `conventions.md` is the style guide alone now and points at it.
-- **`conventions.md` states its own status.** It opens by saying its token section
-  describes the *target*, and that the app on `main` is still dark with colour-named keys.
-- **The code-agent preamble was teaching the wrong palette.**
-  `.claude/skills/erg-context.md` is prepended to every code-agent spawn and hardcoded
-  `dark #08080d / cyan #00d4ff` as non-negotiable style. It now says to read every colour
-  from `THEME` and never type a hex.
-- Design is a tracked lane: `design`/`a11y` labels, a visual-impact field on the feature
-  issue template, a visual-evidence item on the PR template, and eleven issues (#248–#258).
+## What Code did since the last edition
 
-## Why conventions.md had drifted
+**The palette rename shipped** (`#277`). `THEME` keys are role-named:
+`accent` `positive` `caution` `warning` `critical` `accentAlt` `accentAlt2` `positiveAlt`
+`neutralAccent` `textStrong`. **No value moved** — every hex appears on both a `+` and a
+`-` line, which is what let seven colour-locking test files through unmodified.
 
-Worth recording, because it is a structural problem rather than a mistake. `conventions.md`
-was the **only** channel to a design session, so every kind of context got pushed into a
-style guide — and it ended up describing an unbuilt system as fact while its own siblings
-(`docs/*.md`, `previews/*.tsx`, `dtsPropsFor`) still named the old keys. A design session
-was receiving both systems in one prompt with no signal which was live, which is worse than
-either alone.
+**Everything Design asked for arrived, and everything Code asked for was answered.** The
+previous edition's "what Code needs from Design" table is closed out in full: the nine
+missing token values, the ground colour, the artboards, and `ISSUES-load-states.md`.
 
-Splitting the briefing out into `CLAUDE.md` gives each document one job. Keep it that way:
-**project context goes in `CLAUDE.md`, style rules in `conventions.md`.**
+**File ownership is now explicit and enforced.** `ownership.json` gives every file in
+`.design-sync/` one owner and one direction — `design` (authored in the project, mirrored
+down here read-only), `repo` (written here, pushed up), `local` (neither). CI fails if
+anything the sync uploads is design-owned. This closed a real two-way flow: `conventions.md`
+was being pushed *up* from the repo while the project held it as source of truth, and a
+repo commit had already overwritten a set of measured contrast ratios once.
 
-## Three corrections to the handoff
+**`readmeHeader` now points at `CLAUDE.md`**, not `conventions.md`. The repo owns the
+domain briefing; the project owns the style guide. A side effect is that the design system
+stops shipping a second, stale copy of `conventions.md` — the "known tension" that
+`PROJECT-CONTEXT.md` used to record.
 
-Recorded in [`NOTES.md`](NOTES.md) rather than edited into `HANDOFF.md` — it is a decision
-record, and silently correcting it would lose the basis the decisions were made on.
+**Four things are now checked mechanically rather than remembered.** `check:design-sync`
+verifies the barrel bundles, every published contrast ratio in `conventions.md` recomputes
+from the real palette, every `--color-*` named there actually exists, and the ownership
+manifest is complete. `check:zones` recomputes every rowing zone band published in any
+tracked markdown file against `derivePaceZones`. Each was written against a failure that
+had already shipped — the same wrong AT ceiling had reached three separate documents.
 
-### 1. §1's acceptance checkbox is false, and it asked to be checked
+## One correction to carry forward
 
-It reads *"Existing component tests pass unchanged (they assert structure, not colour —
-confirm before starting)"*. Confirmed false. Seven files lock colour:
+**`teal` was not folded into `positive`, and the two sides named it differently.**
 
-- `theme.test.js` — asserts exactly 23 keys, locks all 23 hex values individually, and
-  requires `/^#[0-9a-f]{6}$/`. **That regex forbids `var(--color-*)`.** All three of its
-  tests break at the seam.
-- Five assert *derived* colours, so they survive a rename but break at the seam:
-  `formatting.test.js` (23 hex lines, `workoutAccent()`), `BenchmarkBadge.test.jsx`,
-  `recoveryAnalytics.test.js`, `OverviewView.test.jsx`, `analysis.test.js`.
-- `e2e/smoke.spec.js:108` — asserts `rgb(0, 212, 255)` across all 13 tabs.
+`#248`'s table said to fold it. `splitiq-light-tokens.css` argues against, correctly: they
+do different jobs — `positive` is done/healthy/UT1/lower-strength, cycling is the
+discipline, and folding loses cycling's accent. `#277` reached the same conclusion
+independently and kept it.
 
-**Consequence: §1's "all 11 components in one PR, one review" is being split into four
-steps.** Rename first with values unchanged — nothing above breaks, because they assert
-values and no value moves — then the seam, then the light flip. A rename whose screenshots
-come back byte-identical is proof it was a pure rename. A combined PR would move seven test
-files and ~1,278 colour literals at once and would be unbisectable on failure.
+But it named the key **`positiveAlt`**, while the light palette names it **`cycling`**.
+`positiveAlt` reintroduces by name the conflation both sides rejected on substance. Worth
+converging before the seam wires the token up — the light palette's name is the better one.
 
-### 2. The seam inverts a dependency §1 does not mention
+## What is still owed, and by whom
 
-`web/src/utils/themeCss.js` `cssVars(THEME)` currently *generates* the CSS variables from
-`THEME`, and also produces `base.css` for the design bundle. Once `THEME.accent` is
-`'var(--color-accent)'` it emits:
-
-```css
---color-accent: var(--color-accent);   /* self-referential — resolves to nothing */
-```
-
-So `theme.js` splits into a **values module** (the hexes) and **`THEME`** (a pointer table
-of `var()` strings). Component source keeps exactly the shape §1 intends — `color:
-THEME.accent` still works, resolving through the cascade — and the alias maps survive
-untouched, as designed.
-
-**What this changes for Design:** `base.css` stops being generated from `THEME` and becomes
-a copy of the app's real stylesheet. It is what designs resolve tokens against, so it stays
-the file to trust.
-
-### 3. Nine tokens have no light value
-
-§1 supplies eleven and says the structural keys are kept, but gives no light value for
-`raised`, `field`, `surfaceAlt`, `neutral`, `divider`, `textSubtle`, `textFaint`,
-`textDim`, or `accentAlt2`. `conventions.md` already flags `textFaint`/`textDim` as
-unspecified and says not to use either for text until they are set and measured.
-
-Target key count is **20** — 23 existing, minus 10 deleted, plus 7 roles.
-
-## What Code needs from Design
-
-| Need | Blocks | Issue |
+| | Owed by | Blocks |
 |---|---|---|
-| **The nine missing token values** | the light flip — nothing substitutes for this | #251 |
-| **The ground colour, settled** — §1's CSS block says `--color-bg: #c3cade`, §3's prose says white cards on `#bcc5dd`. One is stale | the light flip | #251 |
-| **The five `.dc.html` artboards**, committed to `web/.design-sync/designs/` | every component slice | #257 |
-| **`ISSUES-load-states.md`** — cited twice (§4 Body, §5 step 2), not in the repo | the load pending/unavailable states | #257 |
+| Open the design project, then re-sync | Human — needs interactive `/design-login` | `#258` |
+| `PROJECT-CONTEXT.md` and `conventions.md` revisions travel by hand-off, not by sync | Design | — |
+| The `var(--color-*)` seam | Code | `#250` |
+| The light flip | Code | `#251` |
 
-On the artboards: `HANDOFF.md` names them as *"source of truth for the designs"*, but they
-exist only in the Claude Design project. Until they land, §2's fifteen-component inventory
-and §4's per-screen build notes describe screens **no code session can see**, which makes
-them unbuildable as specified. They are plain HTML and render standalone in a browser, so
-committing them costs only the paste — and it is the strongest available form of making the
-design work visible to everyone.
+The seam and the flip are the remaining palette steps. `HANDOFF.md` §1's four-step split —
+rename, seam, light flip, with the ground and contrast work alongside — is the order.
 
-## Do not re-sync the project yet
+Three issues came out of the rename and should land before the seam:
+**`#278`** local `C` alias maps whose keys are still colour words (`C.accent` currently
+holds green, `C.cyan` holds the accent — a landmine for mechanical substitution),
+**`#279`** raw hex literals in `constants/ui.js` that will not follow the light flip, and
+**`#280`** prose colour-words in `docs/*.md` that now name keys which no longer exist.
 
-The uploaded bundle was built at `6dae5c1` and **the project has never been opened** —
-`_ds_needs_recompile` is still present and still ours, `_ds_manifest.json` is absent. It
-currently holds the old dark `conventions.md` plus a live, stale `PACE_ZONES` frozen at the
-old seed CP of 190, so a design session loads **wrong pace bands** today. `NOTES.md` is
-blunt about which half is worse: *"A dead export fails loudly; a stale-but-live constant
-quietly hands out wrong pace bands."*
+## Two things that will bite silently
 
-But re-syncing before the colour-named references in `docs/` and `dtsPropsFor` move would
-freeze the contradiction into another bundle. **Re-sync after the role rename lands**
-(#248), which is when those references move in lockstep with the code. Re-run
-`node .design-sync/gen-css.mjs` first — step one of every sync. Tracked as #258.
-
-**Done — `readmeHeader` now points at `CLAUDE.md`.** This section asked for it, and it
-was the right call for a second reason: `readmeHeader` previously pushed `conventions.md`
-*up*, over the copy the design project owns. That was a two-way flow with nothing
-arbitrating it. `ownership.json` now declares the direction per file and
-`npm run check:design-sync` fails if `config.json` ever names a design-owned path again.
-
-The behavioural test still stands: ask for a chart and see whether it produces a labelled
-axis and a computed caption unprompted.
-
-## Build order — when the designs become buildable
-
-1. Screenshot baselines (#249) — there is no visual-regression net today
-2. `tokens.js` scales (#255) and Archivo self-host (#254) — parallel, independent
-3. Single-source the `#08080d` ground (#253) and the contrast test (#252)
-4. Role rename (#248) → `var()` seam (#250) → light flip (#251)
-5. Then §5's component slices, in the handoff's order
-
-## One thing to carry into future designs
-
-**`cfg.extraFonts` is not in `config.json`.** Fixing the app's font loading does *not* fix
-generated designs — the design bundle ships its own font closure. Without it, every
+**`cfg.extraFonts` is still not in `config.json`.** Fixing the app's font loading does not
+fix generated designs — the design bundle ships its own font closure. Without it, every
 generated design keeps rendering in the fallback face after the app itself is correct, and
-nothing warns you. It has to carry the Archivo woff2 files at 500+ weights; `HANDOFF.md`
-rules out anything lighter on light grounds.
+nothing warns you. Note the typeface changed: `STATE_OF_PLAY.md` §4.1 re-decided it as
+**IBM Plex Sans + IBM Plex Mono** on metric-compatibility grounds, superseding Archivo. It
+is the Plex woff2 files that need wiring, at 500+ weights.
+
+**`dtsPropsFor` is hand-maintained with no drift detection.** A prop renamed in a component
+leaves the uploaded contract silently wrong, and a design session codes against that
+contract. `#256` proposes closing this along with `base.css` freshness and docs/preview
+coverage.
 
 ---
 

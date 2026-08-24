@@ -1,0 +1,86 @@
+/* SplitIQ light palette — role-named tokens.
+   Values from conventions.md; ratios in the comments are measured against the
+   real hex pairs, not estimated. Shape follows HANDOFF.md §1 "Target state".
+
+   Two additions to §1's list, both required by every light screen drawn so far:
+   each accent is a PAIR (a wash for surfaces, an ink for type), and the inset
+   and divider neutrals are their own tokens rather than nudged borders.
+
+   One correction to §1: it folds `teal` into `positive` as a duplicate role.
+   They are different values doing different jobs — positive #10795a is
+   done/healthy/UT1/lower strength, cycling #10786c is the discipline. Folding
+   them loses cycling's accent. Keep both. */
+
+:root,
+[data-theme='light'] {
+  /* ground and surfaces */
+  --color-bg: #bcc5dd;          /* app ground — never white */
+  --color-surface: #ffffff;     /* card */
+  --color-inset: #eef4fb;       /* one step back toward the ground, inside a card */
+  --color-border: #c8cee0;      /* card hairline */
+  --color-divider: #e4e7ef;     /* rule inside a card */
+  --color-surface-alt: #eef4fb; /* alias of inset, for the existing key name */
+  --color-raised: #ffffff;      /* elevation on light is shadow, not a lighter fill */
+  --color-field: #f4f7fc;       /* inputs and editable rows, with a border */
+  --shadow-card: 0 1px 2px #1c1e2a1a;
+  --shadow-raised: 0 4px 14px #1c1e2a1f;
+
+  /* type neutrals — pick against the ground the text actually sits on */
+  --color-text: #1c1e2a;        /* 16.55 on surface · 14.95 on inset · 9.59 on bg */
+  --color-body: #4a4f63;        /*  8.10 on surface ·  7.32 on inset · 4.69 on bg */
+  --color-text-subtle: #43485a; /*  9.07 on surface ·  8.20 on inset · 5.26 on bg */
+  --color-muted: #4a4f63;       /*  8.10 on surface ·  7.32 on inset · 4.69 on bg */
+
+  /* Non-body neutrals. textFaint clears 3:1 on a card or inset only — large text
+     and UI marks, never body copy. textDim clears nothing anywhere: decorative
+     marks that carry no information on their own. */
+  --color-text-faint: #767c92;  /*  4.14 on surface ·  3.74 on inset · 2.40 on bg */
+  --color-text-dim: #98a1bb;    /*  2.57 on surface ·  2.32 on inset · 1.49 on bg */
+
+  /* accents — wash carries surfaces, ink carries type, borders and dots.
+     Every ink passes AA on its own wash and on the card. NONE passes AA on
+     --color-bg (best is critical at 4.28) — accent text belongs on a card or a
+     wash, never directly on the app ground. */
+  --color-accent-wash: #eef6fb;      /* erg / aerobic — the primary accent */
+  --color-accent: #0a7093;           /* 5.12 on wash · 5.59 on surface */
+
+  --color-positive-wash: #eef8f3;    /* done / UT1 / lower strength */
+  --color-positive: #10795a;         /* 4.95 on wash · 5.37 on surface */
+
+  --color-caution-wash: #fdf6e0;     /* threshold / target prompt */
+  --color-caution: #8a6a10;          /* 4.68 on wash · 5.06 on surface */
+
+  --color-warning-wash: #fce9de;     /* elevated load / end session */
+  --color-warning: #a34c1c;          /* 4.94 on wash · 5.82 on surface */
+
+  --color-critical-wash: #fbdde3;    /* redline / deep fatigue */
+  --color-critical: #a32040;         /* 5.83 on wash · 7.39 on surface */
+
+  --color-accent-alt-wash: #f0eafd;  /* upper strength / mobility */
+  --color-accent-alt: #5f45b0;       /* 6.03 on wash · 7.08 on surface */
+
+  --color-accent-alt2-wash: #f7e9f2; /* prehab */
+  --color-accent-alt2: #a3407a;      /* 5.00 on wash · 5.87 on surface */
+
+  --color-cycling-wash: #e3f4f1;     /* cycling */
+  --color-cycling: #10786c;          /* 4.70 on wash · 5.35 on surface */
+
+  /* rest / neutral marks */
+  --color-neutral: #98a1bb;          /* rest marks — non-text */
+  --color-neutral-mark: #c8cee0;     /* zero-height bars, gap stubs */
+
+  /* type */
+  --font-sans: Archivo, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --weight-body: 500;               /* floor — nothing lighter on a light ground */
+  --weight-secondary: 600;
+  --weight-label: 700;              /* labels and all figures */
+
+  /* radii */
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+}
+
+/* Form bands are the app's own tsbColor thresholds: +10 / −10 / −30.
+   Do not inline these numbers in a view — call tsbBand(tsb). */
