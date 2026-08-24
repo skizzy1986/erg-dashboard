@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, Component } from 'react';
+import { captureError } from './utils/sentry.js';
 import { useSessionLog } from './hooks/useSessionLog.js';
 import { useTSSHistory } from './hooks/useTSSHistory.js';
 import StrengthLogger from './StrengthLogger.jsx';
@@ -45,6 +46,11 @@ class ErrorBoundary extends Component {
   }
   static getDerivedStateFromError(error) {
     return { hasError: true, msg: error?.message || 'Render error' };
+  }
+  // Isolating the failure must not mean hiding it. Without this the boundary
+  // caught every render error in every tab and nothing ever reached Sentry.
+  componentDidCatch(error, info) {
+    captureError(error, { componentStack: info?.componentStack });
   }
   render() {
     if (this.state.hasError) {

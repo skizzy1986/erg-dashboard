@@ -255,6 +255,65 @@ Planned external data sources (to be built after refactor foundation is solid):
 3. **Concept2 Logbook** — erg session auto-import
 4. **TrainingPeaks / Ergzone** — replaced by native plan engine
 
+## Observability (Sentry)
+
+Sentry is the runtime-error and auditing rail. The org is **`splitiq-29` and it is
+EU-region** (`https://de.sentry.io`) — this matters everywhere: the ingest host is
+`*.ingest.de.sentry.io`, `@sentry/vite-plugin` needs `url: 'https://de.sentry.io'`
+(it defaults to `sentry.io` and would not find the org), and every Sentry MCP call
+needs `regionUrl: 'https://de.sentry.io'`. Frontend project: **`erg-dashboard`**.
+
+| Piece | Where |
+|---|---|
+| `Sentry.init` + `captureError()` | `web/src/utils/sentry.js` (gated on `VITE_SENTRY_DSN` — no DSN, no-op) |
+| Root boundary | `web/src/main.jsx` (`Sentry.ErrorBoundary`) |
+| Per-tab boundary | `web/src/App.jsx` — isolates a broken tab **and** reports via `componentDidCatch` |
+| Supabase failure sink | `web/src/utils/queryErrorHandlers.js`, wired into the `QueryCache`/`MutationCache` in `main.jsx` |
+| Release + source maps | `web/vite.config.js`, on Vercel production builds only |
+| CSP allowlist | `web/vercel.json` — `connect-src` **must** include the ingest host |
+
+Two failure modes are silent and have bitten this repo before, so check them first
+when Sentry looks dark:
+
+1. **CSP.** If `connect-src` in `web/vercel.json` lacks `https://*.ingest.de.sentry.io`,
+   every envelope is blocked in the browser and nothing reaches Sentry, DSN or not.
+2. **Release mismatch.** The SDK's `release` and the string the plugin uploads
+   artifacts under must be identical, or Sentry serves minified frames without
+   erroring. Both derive from `sentryRelease` in `web/vite.config.js` — keep it that way.
+
+`browserTracingIntegration()` is **not** a default integration in the browser SDK;
+`tracesSampleRate` does nothing without it. There is a test asserting this.
+
+Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip against
+~40 KB of headroom under the 400 KB budget in `web/scripts/check-bundle-size.mjs`.
+
+Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
+build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
+the Vercel dashboard, not in the repo.
+
+### Edge functions — project `erg-dashboard-functions`
+
+Separate project so the Deno issue stream stays legible next to the frontend's. All
+four functions report through `supabase/functions/_shared/sentry.ts`. Set `SENTRY_DSN`
+as an Edge Function secret (Dashboard → Edge Functions → Secrets); without it every
+export in that module is a no-op, so local `supabase functions serve` stays silent.
+
+Two rules in that module are load-bearing, not preferences:
+
+- **`defaultIntegrations: false`.** The Deno SDK does not instrument `Deno.serve`, so
+  there is no per-request scope, and the edge runtime reuses an isolate across
+  requests. Global breadcrumbs and context would leak into the *next* caller's event.
+  Everything request-specific goes through `withScope` instead.
+- **`await Sentry.flush()` before returning.** The isolate can be frozen the moment
+  the Response resolves, discarding anything still queued in the transport.
+
+**Cron + uptime.** The free plan allows one cron monitor and one uptime monitor.
+The cron monitor is on `vitals-import` (check-ins emitted from inside the function,
+since the scheduler lives outside the repo; the schedule is upserted from
+`MONITOR_SCHEDULE` in code). The uptime monitor points at
+`https://erg-dashboard-eight.vercel.app/`. Adding monitors for the other jobs needs a
+plan upgrade.
+
 ## CI & Quality Gates
 
 Every PR is gated by three GitHub Actions jobs that must pass before merge:
@@ -300,6 +359,7 @@ approval gates. It never advances without explicit go-ahead.
 /refactor <module>       →  strangler-fig extraction (Minimal Change Engineer)
 /research <topic>        →  research only (Trend Researcher)
 /daily                   →  today's 30-min task list (read-only, no pipeline)
+/audit [period]          →  rank Sentry issues, verify against code, file GitHub Issues
 ```
 
 ### The canonical chain (stage → Agency agent)

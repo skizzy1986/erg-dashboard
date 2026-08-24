@@ -82,11 +82,33 @@ Three required checks on every PR (`.github/workflows/ci-web.yml`):
 | **Test & Coverage** | Vitest passes; coverage meets the ratcheting thresholds in `web/vite.config.js` |
 | **Build** | `npm run build` exits 0 (runs after Test) |
 
+Plus a fourth check that runs only when edge functions change
+(`.github/workflows/ci-functions.yml`):
+
+| Gate | Checks |
+|---|---|
+| **Deno Tests** | `supabase/functions/*/test.ts` pass (parser, mapper, cron guard) |
+
 `main` is protected: no direct pushes, branch must be up to date, all checks
 green. A coverage comment posts automatically. The coverage numbers live in
 **one place only** — `web/vite.config.js` (`test.coverage.thresholds`). Do not
 mirror them into docs; they ratchet upward with every extraction and mirrored
 copies drift.
+
+### Sentry in CI (reporting, not gating)
+
+Two Sentry surfaces observe PRs without blocking them:
+
+- **Test Analytics** — the Test job uploads Vitest's JUnit XML via
+  `getsentry/prevent-action`, giving flaky-test detection and per-test failure
+  history. `fail_ci_if_error: false` on purpose: it is a reporting sink, and a
+  Prevent outage must never fail a PR whose tests actually passed.
+- **Seer Code Review** — enabled in the Sentry UI (not in this repo), it
+  reviews PR diffs for defects likely to reach production and posts a status
+  check. Comment `@sentry review` on a PR to request one on demand.
+
+Neither replaces the four gates above. A red Sentry signal is information;
+the gates are the contract.
 
 ## 5. Merge and clean up
 

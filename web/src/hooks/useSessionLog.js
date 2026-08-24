@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
+import { captureError } from '../utils/sentry.js';
 import { normType } from '../utils/formatting.js';
 import {
   isCompletedStatus,
@@ -36,6 +37,9 @@ export function useSessionLog() {
       .order('id', { ascending: false })
       .then(({ data, error }) => {
         if (error) {
+          // This hook talks to supabase-js directly rather than through
+          // react-query, so the QueryCache sink in main.jsx never sees it.
+          captureError(error, { source: 'useSessionLog', op: 'fetchSessions' });
           setDbStatus('error');
           return;
         }

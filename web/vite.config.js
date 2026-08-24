@@ -4,8 +4,47 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 // Upload source maps to Sentry only on release builds that carry an auth token
-// (CI). Without the token the plugin is omitted and local builds are untouched.
+// (Vercel production). Without the token the plugin is omitted and local and CI
+// builds are untouched.
 const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
+
+// The release name must be IDENTICAL on both sides — the string the SDK reports
+// at runtime and the string the artifacts are uploaded under. If they diverge,
+// Sentry silently serves minified frames instead of failing loudly. Vite only
+// exposes VITE_*-prefixed vars to client code, so Vercel's commit SHA is read
+// here and injected via `define` below.
+const sentryRelease =
+  process.env.VITE_SENTRY_RELEASE ||
+  (process.env.VERCEL_GIT_COMMIT_SHA
+    ? `splitiq@${process.env.VERCEL_GIT_COMMIT_SHA}`
+    : undefined);
+
+// `vite build` sets MODE=production for every build, Vercel target included, so
+// MODE alone cannot tell a preview deploy from a production one and preview
+// errors would file under `production`. VERCEL_ENV is the only signal that
+// distinguishes them. Same injection route as the release: read here, passed
+// through `define`, because Vite only exposes VITE_*-prefixed vars to the client.
+const sentryEnvironment =
+  process.env.VITE_SENTRY_ENVIRONMENT || process.env.VERCEL_ENV || undefined;
+
+// The org is EU-region. @sentry/vite-plugin defaults to sentry.io and will not
+// find splitiq-29 without this.
+const sentryUrl = process.env.SENTRY_URL || 'https://de.sentry.io';
+
+// Each key is present only when its value exists. `define` is a literal text
+// substitution that also applies under Vitest, where a defined key would defeat
+// the vi.stubEnv() the sentry tests rely on.
+const sentryDefine = {
+  ...(sentryRelease
+    ? { 'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(sentryRelease) }
+    : {}),
+  ...(sentryEnvironment
+    ? {
+        'import.meta.env.VITE_SENTRY_ENVIRONMENT':
+          JSON.stringify(sentryEnvironment),
+      }
+    : {}),
+};
 
 export default defineConfig({
   plugins: [
@@ -55,11 +94,17 @@ export default defineConfig({
             org: process.env.SENTRY_ORG,
             project: process.env.SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
+            url: sentryUrl,
+            ...(sentryRelease ? { release: { name: sentryRelease } } : {}),
           }),
         ]
       : []),
   ],
   base: './',
+  // Makes the computed release and environment visible to utils/sentry.js. The
+  // release must match what the plugin uploaded under, or Sentry serves
+  // minified frames without erroring.
+  ...(Object.keys(sentryDefine).length ? { define: sentryDefine } : {}),
   // 'hidden' emits source maps for Sentry upload without referencing them from
   // the shipped bundles, so production source stays out of the browser.
   build: { sourcemap: uploadSourceMaps ? 'hidden' : false },
@@ -69,6 +114,10 @@ export default defineConfig({
     setupFiles: ['./src/test-setup.js'],
     // Playwright E2E specs live in e2e/ and must not be collected by Vitest.
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    // JUnit XML is the only format Sentry Test Analytics ingests. `default`
+    // is kept first so local and CI console output is unchanged.
+    reporters: ['default', 'junit'],
+    outputFile: { junit: './test-results/junit.xml' },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'json'],
@@ -110,6 +159,11 @@ export default defineConfig({
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.
         'src/utils/sentry.js': { lines: 80, functions: 80, branches: 70 },
+        'src/utils/queryErrorHandlers.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/utils/eventWindow.js': { lines: 80, functions: 80, branches: 70 },
         'src/utils/benchmarkStatus.js': {
           lines: 80,

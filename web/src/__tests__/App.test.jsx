@@ -113,8 +113,18 @@ vi.mock('../views/CoachView.jsx', () => ({
 vi.mock('../views/ErgView.jsx', () => ({
   default: () => <div>ErgView-stub</div>,
 }));
+// Flipped by the error-boundary test so one tab's render throws on demand.
+let journalThrows = false;
 vi.mock('../views/JournalView.jsx', () => ({
-  default: () => <div>JournalView-stub</div>,
+  default: () => {
+    if (journalThrows) throw new Error('journal blew up');
+    return <div>JournalView-stub</div>;
+  },
+}));
+
+const captureErrorMock = vi.fn();
+vi.mock('../utils/sentry.js', () => ({
+  captureError: (...args) => captureErrorMock(...args),
 }));
 vi.mock('../views/RecoveryView.jsx', () => ({
   default: () => <div>RecoveryView-stub</div>,
@@ -191,6 +201,8 @@ const LIVE_TSS = [
 ];
 
 beforeEach(() => {
+  journalThrows = false;
+  captureErrorMock.mockReset();
   tssHistoryMock.mockReset();
   tssHistoryMock.mockReturnValue({
     data: LIVE_TSS,
@@ -308,6 +320,27 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'LOG' }));
     expect(screen.getByTestId('logview-shown')).toHaveTextContent('3');
+  }, 30000);
+
+  // The boundary isolates a broken tab, which is right — but it used to do so
+  // silently, so no render error in any tab ever reached Sentry.
+  it('reports a tab render error to Sentry while isolating it', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    render(<App />);
+    await screen.findByText('OverviewView-stub');
+
+    journalThrows = true;
+    fireEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
+
+    expect(screen.getByText(/isolated to protect/i)).toBeInTheDocument();
+    expect(captureErrorMock).toHaveBeenCalledTimes(1);
+    const [error, context] = captureErrorMock.mock.calls[0];
+    expect(error.message).toBe('journal blew up');
+    expect(context.componentStack).toEqual(expect.any(String));
+
+    consoleError.mockRestore();
   }, 30000);
 
   it('updates the responsive layout on window resize', async () => {
