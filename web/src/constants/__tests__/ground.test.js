@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DEFAULT_THEME } from '../themeValues.js';
+import { DEFAULT_THEME, LIGHT } from '../themeValues.js';
 
 // The ground used to be written down in five places, each carrying a "keep in
 // sync with THEME.bg" comment and no way to enforce it (#253). index.html and
@@ -19,14 +19,30 @@ describe('the ground is written down once', () => {
     expect(html).not.toMatch(/#[0-9a-fA-F]{6}/);
   });
 
-  it('the Android launch colours match DEFAULT_THEME.bg', () => {
+  it('the Android launch colours match DEFAULT_THEME', () => {
     const xml = read('android/app/src/main/res/values/colors.xml');
-    for (const name of ['colorPrimary', 'colorPrimaryDark']) {
+    const colour = (name) => {
       const found = xml.match(
         new RegExp(`<color name="${name}">(#[0-9a-fA-F]{6})</color>`)
       );
       expect(found, `${name} missing from colors.xml`).toBeTruthy();
-      expect(found[1].toLowerCase()).toBe(DEFAULT_THEME.bg);
+      return found[1].toLowerCase();
+    };
+    expect(colour('colorPrimary')).toBe(DEFAULT_THEME.bg);
+    expect(colour('colorPrimaryDark')).toBe(DEFAULT_THEME.bg);
+    expect(colour('colorAccent')).toBe(DEFAULT_THEME.accent);
+  });
+
+  it('a light ground opts the status bar into dark icons', () => {
+    // colorPrimaryDark paints the status bar. On a light ground its icons
+    // default to white and vanish, so the theme has to ask for dark ones.
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    const asks = /<item name="android:windowLightStatusBar">true<\/item>/g;
+    const count = (styles.match(asks) ?? []).length;
+    if (DEFAULT_THEME === LIGHT) {
+      expect(count, 'both AppTheme.NoActionBar* need it').toBe(2);
+    } else {
+      expect(count).toBe(0);
     }
   });
 

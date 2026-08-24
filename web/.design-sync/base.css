@@ -2,8 +2,36 @@
    SplitIQ ships no stylesheet of its own: components carry inline styles and
    index.html paints the ground before React mounts. This file is the design
    system's token layer plus that ground, so every design built with SplitIQ
-   starts on the same dark surface the app uses. */
+   starts on the same surface the app uses. Light is primary and sits at :root;
+   dark is retained under [data-theme='dark']. */
 :root {
+  --color-bg: #bcc5dd;
+  --color-surface: #ffffff;
+  --color-raised: #ffffff;
+  --color-field: #f4f7fc;
+  --color-border: #c8cee0;
+  --color-text: #1c1e2a;
+  --color-muted: #4a4f63;
+  --color-accent: #0a7093;
+  --color-positive: #10795a;
+  --color-caution: #8a6a10;
+  --color-warning: #a34c1c;
+  --color-critical: #a32040;
+  --color-accent-alt: #5f45b0;
+  --color-accent-alt2: #a3407a;
+  --color-cycling: #10786c;
+  --color-surface-alt: #eef4fb;
+  --color-surface-deep: #d5dded;
+  --color-neutral: #98a1bb;
+  --color-text-subtle: #43485a;
+  --color-text-faint: #767c92;
+  --color-text-dim: #98a1bb;
+  --color-divider: #e4e7ef;
+  --color-neutral-accent: #4a4f63;
+  --color-text-strong: #1c1e2a;
+}
+
+[data-theme='dark'] {
   --color-bg: #08080d;
   --color-surface: #1a1a2e;
   --color-raised: #2a2a48;
@@ -34,9 +62,10 @@ html,
 body {
   margin: 0;
   padding: 0;
-  /* !important: SplitIQ is a dark-only surface — index.html paints this ground
-     before React mounts, and preview-card templates default their body to
-     white, which would render every component on the wrong ground. */
+  /* !important: index.html paints this ground before React mounts, and
+     preview-card templates default their body to white, which would render
+     every component on the wrong ground — the app ground is #bcc5dd, never
+     white. */
   background: var(--color-bg) !important;
   color: var(--color-text) !important;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;

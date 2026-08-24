@@ -5,9 +5,13 @@
 export const cssVarName = (key) =>
   `--color-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
 
-export function cssVars(theme) {
+// `selector` scopes a palette. Light is emitted at :root so nothing depends on
+// a data-theme attribute being present; dark is emitted under
+// [data-theme='dark'] so a surface that wants it — the live erg screen at 5am —
+// can opt in without a second THEME object.
+export function cssVars(theme, selector = ':root') {
   const decls = Object.keys(theme)
     .map((k) => `  ${cssVarName(k)}: ${theme[k]};`)
     .join('\n');
-  return `:root {\n${decls}\n}`;
+  return `${selector} {\n${decls}\n}`;
 }

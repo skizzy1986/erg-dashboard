@@ -72,7 +72,9 @@ export const LIGHT = {
   textStrong: '#1c1e2a',
 };
 
+// The palette the document boots on. Light is primary (#251); dark is retained
+// as a second theme, not deleted — the erg room is dark at 5am.
 // The palette the document boots on. index.html's pre-mount ground, the PWA
 // manifest and the Android launch colours all mirror this, so the ground is
 // written down once. Flipping the app's default theme is a change to this line.
-export const DEFAULT_THEME = DARK;
+export const DEFAULT_THEME = LIGHT;

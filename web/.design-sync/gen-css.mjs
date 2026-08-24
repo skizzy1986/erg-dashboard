@@ -3,7 +3,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { DARK } from '../src/constants/themeValues.js';
+import { DARK, DEFAULT_THEME } from '../src/constants/themeValues.js';
 import { cssVars } from '../src/utils/themeCss.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -11,20 +11,24 @@ const css = `/* Generated from src/constants/theme.js by .design-sync/gen-css.mj
    SplitIQ ships no stylesheet of its own: components carry inline styles and
    index.html paints the ground before React mounts. This file is the design
    system's token layer plus that ground, so every design built with SplitIQ
-   starts on the same dark surface the app uses. */
-${cssVars(DARK)}
+   starts on the same surface the app uses. Light is primary and sits at :root;
+   dark is retained under [data-theme='dark']. */
+${cssVars(DEFAULT_THEME)}
+
+${cssVars(DARK, "[data-theme='dark']")}
 
 html,
 body {
   margin: 0;
   padding: 0;
-  /* !important: SplitIQ is a dark-only surface — index.html paints this ground
-     before React mounts, and preview-card templates default their body to
-     white, which would render every component on the wrong ground. */
+  /* !important: index.html paints this ground before React mounts, and
+     preview-card templates default their body to white, which would render
+     every component on the wrong ground — the app ground is #bcc5dd, never
+     white. */
   background: var(--color-bg) !important;
   color: var(--color-text) !important;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 `;
 writeFileSync(join(here, 'base.css'), css);
-console.error(`  base.css: ${Object.keys(DARK).length} tokens from src/constants/themeValues.js`);
+console.error(`  base.css: ${Object.keys(DEFAULT_THEME).length} tokens x2 themes from src/constants/themeValues.js`);
