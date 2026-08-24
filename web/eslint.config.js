@@ -93,4 +93,16 @@ export default [
       },
     },
   },
+  {
+    // Node build/CI scripts. They are in the lint scope because the design-sync
+    // guard lives here and is CI-enforced — a gate that is itself ungated is how
+    // the barrel broke in the first place.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+  },
 ];

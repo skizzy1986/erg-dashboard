@@ -234,7 +234,7 @@ legacy `sessions.date` text pattern); RLS single-owner policy like the modern ta
 - **sRPE** — How hard a session felt on a 1–10 scale (subjective).
 - **CP** (Critical Power) — The highest power you can sustain indefinitely.
   **~205W provisional (rowing)**; revalidate via rested 1-min + 4-min tests.
-  Rowing zones off this anchor: **UT2 113–144 / UT1 144–164 / AT 164–205 W**.
+  Rowing zones off this anchor: **UT2 113–144 / UT1 144–164 / AT 164–185 W**.
 - **Current model — pure base + strength** (reverted from polarised on 2026-06-29):
   rowing is aerobic volume only (UT1/UT2 — no programmed threshold/VO₂); the bike
   is a complementary Z1/Z2 aerobic carrier, never a programmed intensity source;

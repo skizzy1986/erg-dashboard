@@ -7,8 +7,11 @@ neither — it is a status check, and it goes stale quickly._
 Rendered version: https://claude.ai/code/artifact/e16750c2-4d67-4bc2-99a3-7fae8ca450dc
 
 > **Verdict.** The Claude Design project has never been opened. Separately, `main`
-> moved underneath the synced design system and the design-sync build is now
+> moved underneath the synced design system and the design-sync build was
 > **broken on `main`** — verified by reproduction, not inferred from a diff.
+>
+> **Update 2026-08-24:** both live defects in §2 are fixed and neither blocks a
+> re-sync. The project still has not been opened.
 
 ---
 
@@ -44,7 +47,14 @@ invisible to every check above — not missing, just out of view.
 
 ## 2. Live defects
 
-### 2.1 The design-sync build is broken on `main` — blocks any re-sync
+### 2.1 ~~The design-sync build is broken on `main`~~ — **fixed**
+
+> **Resolved.** `85eab51` (#224) repaired the barrel and #225 added the CI guard this
+> section asks for at the end. Re-verified at `ad2a8bd`: `entry.jsx` exports
+> `derivePaceZones`, `previews/PaceTrendChart.tsx` derives locally from it, the bundle
+> builds (esbuild, 963 kb), and `npm run check:design-sync` passes. **A re-sync is no
+> longer blocked by this.** Kept below for the record.
+
 
 `d15d334` (#203) removed the static `PACE_ZONES` export from `trainingConfig.js`,
 deliberately, so a seed-derived second set of zone bands cannot diverge from the live
@@ -67,7 +77,14 @@ was not sufficient; the barrel wants a CI guard that builds `entry.jsx` on any
 `web/src` change, because the same failure recurs whenever a synced export is renamed
 or removed.
 
-### 2.2 `conventions.md` ships a contrast failure into every generated design
+### 2.2 ~~`conventions.md` ships a contrast failure into every generated design~~ — **fixed**
+
+> **Resolved by #262's rewrite**, which drops the `THEME.muted` recommendation
+> entirely: section labels are now `#43485a`, which measures 5.26 on the light ground
+> `#bcc5dd` and 9.08 on a white card — both pass AA. Note this was also fixed once in
+> `85eab51` (#224) and then reverted by `e61092c` (#240), so it has now been closed
+> twice; `npm run check:design-sync` verifies the published ratios from here on.
+
 
 The synced conventions file recommends `THEME.muted` at `fontSize: 9` on
 `surface`/`raised` panels. Both pairings fail WCAG AA (this is §1.6 of the brief,
@@ -137,7 +154,8 @@ Better than either option on the table — and the same commit is what broke the
 
 | Priority | Work |
 |---|---|
-| **Do first** | Repair the barrel (`PACE_ZONES` -> `derivePaceZones`) and fix the `muted` -> `textSubtle` contrast in `conventions.md`; rebuild and re-sync. One small PR, both defects. |
+| ~~Do first~~ | ~~Repair the barrel and fix the `muted` contrast in `conventions.md`~~ — **both closed** (§2.1, §2.2). The barrel landed in `85eab51` (#224) with a guard in #225; the contrast landed there too, was reverted by `e61092c` (#240), and is closed again by #262's rewrite. |
+| **Do first** | Open the project. Every remaining item in §1 needs an interactive `/design-login`, which no agent session can do. |
 | Record | Two couplings into `NOTES.md`: `dtsPropsFor` must document `style` once the primitives ship, or the design agent codes against a contract that denies the seam exists; `cfg.extraFonts` must carry the Plex woff2 files once self-hosted, or generated designs keep rendering in fallback after the app is fixed. |
 | Coordinate | Close §8.1 and §8.2 in `DESIGN_BRIEF.md` — both decided but still written as open. Fix the numbering while there: §8 currently reads 1, 2, 2, 3, 4, 5, 6, 7. |
 | Consider | A CI guard that builds `entry.jsx`, per §2.1. |
