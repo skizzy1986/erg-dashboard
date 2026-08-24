@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { formatPace } from '../utils/pace.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 export function PaceTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -21,7 +22,7 @@ export function PaceTooltip({ active, payload }) {
         borderRadius: 6,
         padding: '10px 12px',
         fontSize: 11,
-        fontFamily: "'DM Mono',monospace",
+        fontFamily: FONT.mono,
       }}
     >
       <div
@@ -100,7 +101,7 @@ export default function PaceTrendChart({
           tick={{
             fontSize: 9,
             fill: THEME.muted,
-            fontFamily: "'DM Mono',monospace",
+            fontFamily: FONT.mono,
           }}
           axisLine={false}
           tickLine={false}
@@ -110,7 +111,7 @@ export default function PaceTrendChart({
           tick={{
             fontSize: 9,
             fill: THEME.muted,
-            fontFamily: "'DM Mono',monospace",
+            fontFamily: FONT.mono,
           }}
           tickFormatter={(v) => formatPace(v)}
           axisLine={false}

@@ -1,6 +1,7 @@
 // Fallback UI rendered by the Sentry error boundary when a render crashes.
 // Kept dependency-free and self-contained so it can never itself throw.
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 export default function ErrorFallback({ resetError }) {
   return (
@@ -15,7 +16,7 @@ export default function ErrorFallback({ resetError }) {
         gap: 14,
         background: THEME.bg,
         color: THEME.text,
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+        fontFamily: FONT.sans,
         padding: 24,
         textAlign: 'center',
       }}

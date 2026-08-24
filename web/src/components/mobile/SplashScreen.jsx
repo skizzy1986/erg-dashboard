@@ -1,6 +1,7 @@
 import { THEME } from '../../constants/theme.js';
 import { splashCss } from '../../utils/splashCss.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import { FONT } from '../../constants/type.js';
 
 const CSS = splashCss(THEME);
 
@@ -21,7 +22,7 @@ export default function SplashScreen() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 36,
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+        fontFamily: FONT.sans,
       }}
     >
       <style>{CSS}</style>

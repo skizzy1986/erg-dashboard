@@ -17,6 +17,7 @@ import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
+import { FONT } from './constants/type.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -64,7 +65,7 @@ class ErrorBoundary extends Component {
             border: `1px solid ${THEME.critical}50`,
             borderRadius: 6,
             color: THEME.critical,
-            fontFamily: "'DM Mono',monospace",
+            fontFamily: FONT.mono,
             fontSize: 12,
             lineHeight: 1.6,
           }}
@@ -228,7 +229,7 @@ export default function App() {
         minHeight: '100vh',
         background: THEME.field,
         color: THEME.text,
-        fontFamily: "'DM Mono','Courier New',monospace",
+        fontFamily: FONT.sans,
         paddingBottom: 60,
         overflowX: 'hidden',
         maxWidth: '100vw',
@@ -350,7 +351,7 @@ export default function App() {
                 letterSpacing: 0.5,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             >
               {label.toUpperCase()}

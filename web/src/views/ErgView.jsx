@@ -25,6 +25,7 @@ import { toISODate } from '../utils/dateFormat.js';
 import { useErgSessions } from '../hooks/useErgSessions.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 // ── ERG TREND DATA ─────────────────────────────────────────────
 // workingPace in seconds/500m (excludes warmup split)
@@ -406,7 +407,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               tick={{
                 fontSize: 9,
                 fill: THEME.muted,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
               axisLine={false}
               tickLine={false}
@@ -416,7 +417,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               tick={{
                 fontSize: 9,
                 fill: THEME.muted,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
               tickFormatter={(v) => `${v}W`}
               axisLine={false}
@@ -434,7 +435,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 position: 'insideTopRight',
                 fontSize: 8,
                 fill: THEME.positive,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             />
             <ReferenceLine
@@ -447,7 +448,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 position: 'insideBottomRight',
                 fontSize: 8,
                 fill: THEME.accent,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             />
             <Line
@@ -592,7 +593,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               tick={{
                 fontSize: 9,
                 fill: THEME.muted,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
               axisLine={false}
               tickLine={false}
@@ -602,7 +603,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
               tick={{
                 fontSize: 8,
                 fill: THEME.muted,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
               tickFormatter={(v) => `${v}W`}
               axisLine={false}
@@ -615,7 +616,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 border: `1px solid ${THEME.border}`,
                 borderRadius: 6,
                 fontSize: 11,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             />
             <ReferenceLine
@@ -628,7 +629,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 position: 'insideTopRight',
                 fontSize: 8,
                 fill: THEME.accent,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             />
             <ReferenceLine
@@ -641,7 +642,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 position: 'insideTopRight',
                 fontSize: 8,
                 fill: THEME.accent,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             />
             <Line

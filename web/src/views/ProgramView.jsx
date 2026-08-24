@@ -26,6 +26,7 @@ import {
 import ProgramMicrocycle from './program/ProgramMicrocycle.jsx';
 import ProgramYear from './program/ProgramYear.jsx';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 export default function ProgramView({ expanded, setExpanded }) {
   const [progTab, setProgTab] = useState('phases');
@@ -55,7 +56,7 @@ export default function ProgramView({ expanded, setExpanded }) {
               fontSize: 9,
               letterSpacing: 1,
               cursor: 'pointer',
-              fontFamily: "'DM Mono',monospace",
+              fontFamily: FONT.mono,
             }}
           >
             {label.toUpperCase()}
@@ -95,7 +96,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   padding: '9px 6px',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  fontFamily: "'DM Mono',monospace",
+                  fontFamily: FONT.mono,
                 }}
               >
                 <div
@@ -885,7 +886,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     }}
                   >
                     {r.reps} reps{' '}
-                    <span style={{ color: THEME.muted, fontWeight: 400 }}>
+                    <span style={{ color: THEME.muted, fontWeight: 500 }}>
                       · {r.rest}
                     </span>
                   </span>
@@ -1451,7 +1452,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     }}
                   >
                     {m.target}{' '}
-                    <span style={{ color: THEME.muted, fontWeight: 400 }}>
+                    <span style={{ color: THEME.muted, fontWeight: 500 }}>
                       · {m.rule}
                     </span>
                   </span>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 const SIZES = {
   large: { value: 52, label: 9, unit: 11, gap: 2 },
@@ -40,7 +41,7 @@ export default function LiveMetric({
       <div
         style={{
           fontSize: s.value,
-          fontFamily: "'DM Mono', 'Courier New', monospace",
+          fontFamily: FONT.mono,
           fontWeight: 700,
           color: accent,
           lineHeight: 1,

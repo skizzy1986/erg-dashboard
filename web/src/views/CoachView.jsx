@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCoach } from '../hooks/useCoach.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 const STARTER_PROMPTS = [
   "How's my training load looking?",
@@ -108,7 +109,7 @@ export default function CoachView() {
               fontSize: 9,
               letterSpacing: 3,
               color: THEME.accent,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: FONT.mono,
             }}
           >
             COACH
@@ -130,7 +131,7 @@ export default function CoachView() {
                   fontSize: 9,
                   letterSpacing: 0.5,
                   cursor: 'pointer',
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: FONT.mono,
                 }}
               >
                 {label}
@@ -151,7 +152,7 @@ export default function CoachView() {
             fontSize: 9,
             letterSpacing: 0.5,
             cursor: 'pointer',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           CLEAR
@@ -165,7 +166,7 @@ export default function CoachView() {
             fontSize: 10,
             color: THEME.muted,
             marginBottom: 10,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           {[tsbLabel, readinessLabel].filter(Boolean).join(' · ')}
@@ -197,7 +198,7 @@ export default function CoachView() {
                 fontSize: 11,
                 color: THEME.muted,
                 marginBottom: 8,
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: FONT.mono,
                 letterSpacing: 1,
               }}
             >
@@ -216,7 +217,7 @@ export default function CoachView() {
                   fontSize: 13,
                   textAlign: 'left',
                   cursor: 'pointer',
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: FONT.mono,
                   lineHeight: 1.4,
                 }}
               >
@@ -261,7 +262,7 @@ export default function CoachView() {
             color: THEME.critical,
             fontSize: 11,
             padding: '6px 0',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           {error}
@@ -294,7 +295,7 @@ export default function CoachView() {
             padding: '10px 12px',
             color: THEME.text,
             fontSize: 13,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
             resize: 'none',
             minHeight: 44,
             maxHeight: 120,
@@ -319,7 +320,7 @@ export default function CoachView() {
             letterSpacing: 1,
             cursor: isStreaming || !input.trim() ? 'not-allowed' : 'pointer',
             opacity: isStreaming || !input.trim() ? 0.4 : 1,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
             flexShrink: 0,
           }}
         >

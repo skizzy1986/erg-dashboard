@@ -17,6 +17,7 @@ import {
 import { bpCategory } from '../utils/formatting.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 // ── RECOVERY VIEW — HRV/RHR/sleep readiness + trends ──────────
 // Daily readiness composite, vitals trend charts, blood-pressure log,
@@ -278,7 +279,7 @@ export default function RecoveryView({ isWide }) {
                     tick={{
                       fontSize: 9,
                       fill: THEME.muted,
-                      fontFamily: "'DM Mono',monospace",
+                      fontFamily: FONT.mono,
                     }}
                     axisLine={false}
                     tickLine={false}
@@ -288,7 +289,7 @@ export default function RecoveryView({ isWide }) {
                     tick={{
                       fontSize: 8,
                       fill: THEME.muted,
-                      fontFamily: "'DM Mono',monospace",
+                      fontFamily: FONT.mono,
                     }}
                     axisLine={false}
                     tickLine={false}
@@ -300,7 +301,7 @@ export default function RecoveryView({ isWide }) {
                       border: `1px solid ${THEME.border}`,
                       borderRadius: 6,
                       fontSize: 11,
-                      fontFamily: "'DM Mono',monospace",
+                      fontFamily: FONT.mono,
                     }}
                   />
                   <ReferenceLine
@@ -313,7 +314,7 @@ export default function RecoveryView({ isWide }) {
                       position: 'insideTopRight',
                       fontSize: 8,
                       fill: THEME.warning,
-                      fontFamily: "'DM Mono',monospace",
+                      fontFamily: FONT.mono,
                     }}
                   />
                   <Line

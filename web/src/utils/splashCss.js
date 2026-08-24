@@ -132,7 +132,7 @@ export function splashCss(theme) {
   animation: siq-splash-word 420ms cubic-bezier(.2, .8, .2, 1) 380ms both;
 }
 .siq-splash__word-iq {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-weight: 700;
   letter-spacing: 0;
   color: ${theme.accent};

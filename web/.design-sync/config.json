@@ -55,5 +55,11 @@
       "cardMode": "column"
     }
   },
-  "readmeHeader": ".design-sync/CLAUDE.md"
+  "readmeHeader": ".design-sync/CLAUDE.md",
+  "extraFonts": [
+    ".design-sync/../src/fonts/archivo-var.woff2",
+    ".design-sync/../src/fonts/ibm-plex-mono-500.woff2",
+    ".design-sync/../src/fonts/ibm-plex-mono-600.woff2",
+    ".design-sync/../src/fonts/ibm-plex-mono-700.woff2"
+  ]
 }

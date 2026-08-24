@@ -13,6 +13,7 @@ import { useVitalsSync } from '../../hooks/useVitalsSync.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { THEME } from '../../constants/theme.js';
+import { FONT } from '../../constants/type.js';
 
 const tickStyle = { fontSize: 9, fill: THEME.muted };
 
@@ -178,9 +179,9 @@ export default function MobileRecovery() {
             <div
               style={{
                 fontSize: 52,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: readinessColor,
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: FONT.mono,
                 lineHeight: 1,
               }}
             >

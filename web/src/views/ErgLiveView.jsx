@@ -9,6 +9,7 @@ import { parsePace, formatElapsed } from '../services/pm5Bluetooth';
 import { THEME } from '../constants/theme.js';
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
 import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
+import { FONT } from '../constants/type.js';
 
 const SRPE_GUIDE = [
   { v: 1, label: '1 — Very easy' },
@@ -59,7 +60,7 @@ function ConnectScreen({
             fontSize: 36,
             fontWeight: 700,
             color: THEME.positive,
-            fontFamily: 'monospace',
+            fontFamily: FONT.mono,
           }}
         >
           C2 CONNECT

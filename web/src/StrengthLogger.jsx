@@ -23,7 +23,7 @@ const CSS = `
   --accent:var(--color-accent); --accent2:#00a8cc;
   --good:var(--color-positive); --warn:var(--color-caution); --bad:var(--color-critical);
   --coach:var(--color-accent-alt); --radius:12px;
-  color:var(--txt); font-family:'DM Mono','Courier New',monospace; display:block; }
+  color:var(--txt); font-family:var(--font-mono); display:block; }
 .slog *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .slog h1,.slog h2,.slog h3{margin:0;font-weight:700}
 .slog button{font-family:inherit;cursor:pointer;border:none;font-size:15px}

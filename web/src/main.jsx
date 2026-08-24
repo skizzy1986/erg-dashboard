@@ -20,6 +20,8 @@ import ErrorFallback from './components/ErrorFallback.jsx';
 import { THEME } from './constants/theme.js';
 import { DARK, DEFAULT_THEME } from './constants/themeValues.js';
 import { cssVars } from './utils/themeCss.js';
+import './fonts.css';
+import { FONT } from './constants/type.js';
 
 initSentry();
 

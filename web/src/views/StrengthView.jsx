@@ -11,6 +11,7 @@ import StrengthTooltip from '../components/StrengthTooltip.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import { STRENGTH_TEMPLATES, PREHAB_NOTE } from '../constants/exercises.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 const LIFT_COLOR = {
   'Back Squat': THEME.positive,
@@ -54,7 +55,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
               fontSize: 9,
               letterSpacing: 0.5,
               cursor: 'pointer',
-              fontFamily: "'DM Mono',monospace",
+              fontFamily: FONT.mono,
             }}
           >
             {lift}
@@ -93,7 +94,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
                 tick={{
                   fontSize: 9,
                   fill: THEME.muted,
-                  fontFamily: "'DM Mono',monospace",
+                  fontFamily: FONT.mono,
                 }}
                 axisLine={false}
                 tickLine={false}
@@ -103,7 +104,7 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
                 tick={{
                   fontSize: 9,
                   fill: THEME.muted,
-                  fontFamily: "'DM Mono',monospace",
+                  fontFamily: FONT.mono,
                 }}
                 tickFormatter={(v) => `${v}kg`}
                 axisLine={false}

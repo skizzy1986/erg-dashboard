@@ -9,6 +9,7 @@ import SplashScreen from './components/mobile/SplashScreen.jsx';
 import MobileApp from './views/mobile/MobileApp.jsx';
 import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
+import { FONT } from './constants/type.js';
 
 // ── THEME TOKENS (match the dashboard) ───────────────────────────
 // ── LOGIN SCREEN ─────────────────────────────────────────────────
@@ -62,7 +63,7 @@ function Login() {
         alignItems: 'center',
         justifyContent: 'center',
         background: THEME.bg,
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+        fontFamily: FONT.sans,
         padding: 20,
       }}
     >
@@ -250,7 +251,7 @@ export default function AuthGate() {
           justifyContent: 'center',
           background: THEME.bg,
           color: THEME.muted,
-          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+          fontFamily: FONT.sans,
           fontSize: 12,
         }}
       >

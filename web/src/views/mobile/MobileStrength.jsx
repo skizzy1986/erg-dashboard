@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStrengthPRs } from '../../hooks/useStrengthPRs.js';
 import StrengthLogger from '../../StrengthLogger.jsx';
 import { THEME } from '../../constants/theme.js';
+import { FONT } from '../../constants/type.js';
 
 export default function MobileStrength() {
   const [showLogger, setShowLogger] = useState(false);
@@ -104,7 +105,7 @@ export default function MobileStrength() {
                   fontSize: 28,
                   fontWeight: 700,
                   color: THEME.accentAlt,
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: FONT.mono,
                 }}
               >
                 {pr.best_e1rm_kg != null

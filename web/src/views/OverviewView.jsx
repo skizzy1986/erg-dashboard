@@ -32,6 +32,7 @@ import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 export default function OverviewView({
   latest,
@@ -1038,7 +1039,7 @@ export default function OverviewView({
               tick={{
                 fontSize: 8,
                 fill: THEME.muted,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
               axisLine={false}
               tickLine={false}
@@ -1048,7 +1049,7 @@ export default function OverviewView({
               tick={{
                 fontSize: 8,
                 fill: THEME.muted,
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
               axisLine={false}
               tickLine={false}

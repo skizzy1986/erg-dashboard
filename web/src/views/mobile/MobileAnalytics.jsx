@@ -7,6 +7,7 @@ import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { useAnchors } from '../../hooks/useAnchors.js';
 import { toISODate } from '../../utils/dateFormat.js';
 import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
+import { FONT } from '../../constants/type.js';
 
 function tsbColor(tsb) {
   if (tsb > 10) return THEME.positive;
@@ -133,10 +134,10 @@ export default function MobileAnalytics() {
         <div
           style={{
             fontSize: 52,
-            fontWeight: 800,
+            fontWeight: 700,
             color,
             lineHeight: 1,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           {latest ? latest.tsb.toFixed(1) : '—'}
@@ -177,7 +178,7 @@ export default function MobileAnalytics() {
               fontSize: 32,
               fontWeight: 700,
               color: THEME.accent,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: FONT.mono,
             }}
           >
             {latest ? latest.ctl.toFixed(1) : '—'}
@@ -206,7 +207,7 @@ export default function MobileAnalytics() {
               fontSize: 32,
               fontWeight: 700,
               color: THEME.warning,
-              fontFamily: "'DM Mono', monospace",
+              fontFamily: FONT.mono,
             }}
           >
             {latest ? latest.atl.toFixed(1) : '—'}

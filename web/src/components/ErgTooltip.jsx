@@ -1,5 +1,6 @@
 import React from 'react';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 function fmtPace(secs) {
   const m = Math.floor(secs / 60);
@@ -18,7 +19,7 @@ export default function ErgTooltip({ active, payload }) {
         borderRadius: 6,
         padding: '10px 12px',
         fontSize: 11,
-        fontFamily: "'DM Mono',monospace",
+        fontFamily: FONT.mono,
       }}
     >
       <div
