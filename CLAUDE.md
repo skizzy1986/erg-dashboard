@@ -255,6 +255,42 @@ Planned external data sources (to be built after refactor foundation is solid):
 3. **Concept2 Logbook** — erg session auto-import
 4. **TrainingPeaks / Ergzone** — replaced by native plan engine
 
+## Observability (Sentry)
+
+Sentry is the runtime-error and auditing rail. The org is **`splitiq-29` and it is
+EU-region** (`https://de.sentry.io`) — this matters everywhere: the ingest host is
+`*.ingest.de.sentry.io`, `@sentry/vite-plugin` needs `url: 'https://de.sentry.io'`
+(it defaults to `sentry.io` and would not find the org), and every Sentry MCP call
+needs `regionUrl: 'https://de.sentry.io'`. Frontend project: **`erg-dashboard`**.
+
+| Piece | Where |
+|---|---|
+| `Sentry.init` + `captureError()` | `web/src/utils/sentry.js` (gated on `VITE_SENTRY_DSN` — no DSN, no-op) |
+| Root boundary | `web/src/main.jsx` (`Sentry.ErrorBoundary`) |
+| Per-tab boundary | `web/src/App.jsx` — isolates a broken tab **and** reports via `componentDidCatch` |
+| Supabase failure sink | `web/src/utils/queryErrorHandlers.js`, wired into the `QueryCache`/`MutationCache` in `main.jsx` |
+| Release + source maps | `web/vite.config.js`, on Vercel production builds only |
+| CSP allowlist | `web/vercel.json` — `connect-src` **must** include the ingest host |
+
+Two failure modes are silent and have bitten this repo before, so check them first
+when Sentry looks dark:
+
+1. **CSP.** If `connect-src` in `web/vercel.json` lacks `https://*.ingest.de.sentry.io`,
+   every envelope is blocked in the browser and nothing reaches Sentry, DSN or not.
+2. **Release mismatch.** The SDK's `release` and the string the plugin uploads
+   artifacts under must be identical, or Sentry serves minified frames without
+   erroring. Both derive from `sentryRelease` in `web/vite.config.js` — keep it that way.
+
+`browserTracingIntegration()` is **not** a default integration in the browser SDK;
+`tracesSampleRate` does nothing without it. There is a test asserting this.
+
+Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip against
+~40 KB of headroom under the 400 KB budget in `web/scripts/check-bundle-size.mjs`.
+
+Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
+build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
+the Vercel dashboard, not in the repo.
+
 ## CI & Quality Gates
 
 Every PR is gated by three GitHub Actions jobs that must pass before merge:

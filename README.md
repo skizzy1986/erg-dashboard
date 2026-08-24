@@ -113,8 +113,23 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+See `web/.env.example` for the full list, including the optional Sentry vars.
+
 For the `coach-chat` edge function, set `ANTHROPIC_API_KEY` in the Supabase
 Dashboard under Edge Functions → Secrets.
+
+### Error monitoring
+
+Runtime errors go to Sentry (org `splitiq-29`, **EU region**, project
+`erg-dashboard`). Locally it is off by default: `initSentry()` no-ops unless
+`VITE_SENTRY_DSN` is set, so dev and CI stay silent.
+
+Production configuration lives in the Vercel dashboard, not the repo:
+`VITE_SENTRY_DSN` at runtime, plus `SENTRY_ORG` / `SENTRY_PROJECT` /
+`SENTRY_URL=https://de.sentry.io` / `SENTRY_AUTH_TOKEN` at build time to upload
+source maps. Because the org is EU-region, the ingest host
+(`*.ingest.de.sentry.io`) must stay in the `connect-src` CSP directive in
+`web/vercel.json` — without it the browser blocks every event.
 
 ### Local dev
 

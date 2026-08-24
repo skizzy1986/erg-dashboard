@@ -4,8 +4,24 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 // Upload source maps to Sentry only on release builds that carry an auth token
-// (CI). Without the token the plugin is omitted and local builds are untouched.
+// (Vercel production). Without the token the plugin is omitted and local and CI
+// builds are untouched.
 const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
+
+// The release name must be IDENTICAL on both sides — the string the SDK reports
+// at runtime and the string the artifacts are uploaded under. If they diverge,
+// Sentry silently serves minified frames instead of failing loudly. Vite only
+// exposes VITE_*-prefixed vars to client code, so Vercel's commit SHA is read
+// here and injected via `define` below.
+const sentryRelease =
+  process.env.VITE_SENTRY_RELEASE ||
+  (process.env.VERCEL_GIT_COMMIT_SHA
+    ? `splitiq@${process.env.VERCEL_GIT_COMMIT_SHA}`
+    : undefined);
+
+// The org is EU-region. @sentry/vite-plugin defaults to sentry.io and will not
+// find splitiq-29 without this.
+const sentryUrl = process.env.SENTRY_URL || 'https://de.sentry.io';
 
 export default defineConfig({
   plugins: [
@@ -55,11 +71,25 @@ export default defineConfig({
             org: process.env.SENTRY_ORG,
             project: process.env.SENTRY_PROJECT,
             authToken: process.env.SENTRY_AUTH_TOKEN,
+            url: sentryUrl,
+            ...(sentryRelease ? { release: { name: sentryRelease } } : {}),
           }),
         ]
       : []),
   ],
   base: './',
+  // Makes the computed release visible to utils/sentry.js as
+  // import.meta.env.VITE_SENTRY_RELEASE, matching what the plugin uploaded.
+  // Only defined when a release actually exists: `define` is a literal text
+  // substitution that also applies under Vitest, where it would defeat the
+  // vi.stubEnv() the sentry tests rely on.
+  ...(sentryRelease
+    ? {
+        define: {
+          'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(sentryRelease),
+        },
+      }
+    : {}),
   // 'hidden' emits source maps for Sentry upload without referencing them from
   // the shipped bundles, so production source stays out of the browser.
   build: { sourcemap: uploadSourceMaps ? 'hidden' : false },
@@ -110,6 +140,11 @@ export default defineConfig({
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.
         'src/utils/sentry.js': { lines: 80, functions: 80, branches: 70 },
+        'src/utils/queryErrorHandlers.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/utils/eventWindow.js': { lines: 80, functions: 80, branches: 70 },
         'src/utils/benchmarkStatus.js': {
           lines: 80,

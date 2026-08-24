@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryCache,
+  MutationCache,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
 import App from './App.jsx';
@@ -11,6 +16,10 @@ import { useIsMobile } from './hooks/useIsMobile.js';
 import MobileApp from './views/mobile/MobileApp.jsx';
 import { createNotificationChannels } from './utils/notifications.js';
 import { initSentry } from './utils/sentry.js';
+import {
+  handleQueryError,
+  handleMutationError,
+} from './utils/queryErrorHandlers.js';
 import ErrorFallback from './components/ErrorFallback.jsx';
 import { THEME } from './constants/theme.js';
 import { cssVars } from './utils/themeCss.js';
@@ -27,7 +36,12 @@ if (Capacitor.isNativePlatform()) {
   createNotificationChannels();
 }
 
+// The caches are where Supabase failures surface. Without these handlers every
+// hook that throws into react-query died there unreported — see
+// utils/queryErrorHandlers.js.
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: handleQueryError }),
+  mutationCache: new MutationCache({ onError: handleMutationError }),
   defaultOptions: {
     queries: { staleTime: 60_000, retry: 2, refetchOnWindowFocus: false },
   },
