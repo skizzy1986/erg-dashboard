@@ -6,6 +6,10 @@
 // Deployed with JWT verification ON (default). The caller must send
 // Authorization: Bearer <supabase-session-token>.
 
+import { captureFunctionError } from '../_shared/sentry.ts';
+
+const FN = 'coach-chat';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -52,6 +56,7 @@ Deno.serve(async (req: Request) => {
 
   const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
+    await captureFunctionError(FN, new Error('ANTHROPIC_API_KEY not configured'));
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }), {
       status: 500,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
@@ -105,24 +110,46 @@ Deno.serve(async (req: Request) => {
     ? `${COACH_SYSTEM_PROMPT}\n\n${trainingContext}`
     : COACH_SYSTEM_PROMPT;
 
-  const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
+  // This fetch was previously unguarded: a network failure reaching Anthropic
+  // threw out of the handler and surfaced as an opaque platform 500 with no
+  // telemetry attached.
+  let upstream: Response;
+  try {
+    upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: resolvedModel,
+        max_tokens: 1024,
+        stream: true,
+        system: systemPrompt,
+        messages: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+      }),
+    });
+  } catch (e) {
+    await captureFunctionError(FN, e, {
+      stage: 'anthropic-fetch',
       model: resolvedModel,
-      max_tokens: 1024,
-      stream: true,
-      system: systemPrompt,
-      messages: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
-    }),
-  });
+    });
+    return new Response(JSON.stringify({ error: 'upstream unreachable' }), {
+      status: 502,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+  }
 
   if (!upstream.ok) {
     const errorText = await upstream.text();
+    // The response body is Anthropic's error envelope, not user content, so it
+    // is safe to attach and is the only way to tell a bad key from a rate limit.
+    await captureFunctionError(
+      FN,
+      new Error(`anthropic ${upstream.status}: ${errorText.slice(0, 300)}`),
+      { stage: 'anthropic-response', status: upstream.status, model: resolvedModel },
+    );
     return new Response(errorText, {
       status: upstream.status,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },

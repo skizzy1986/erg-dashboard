@@ -13,6 +13,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { exchangeToken, listDataPoints } from "./client.ts";
 import { mapResponses } from "./mapper.ts";
 import { checkCronSecret } from "./cronGuard.ts";
+import { captureFunctionError } from "../_shared/sentry.ts";
+
+const FN = "vitals-import-api";
 
 function ymd(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
@@ -53,7 +56,14 @@ Deno.serve(async (req: Request) => {
     ["SUPABASE_URL", supaUrl],
     ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
   ].filter(([, v]) => !v).map(([k]) => k);
-  if (missing.length) return json({ error: "missing env", missing }, 500);
+  if (missing.length) {
+    await captureFunctionError(
+      FN,
+      new Error(`missing env: ${missing.join(", ")}`),
+      { missing },
+    );
+    return json({ error: "missing env", missing }, 500);
+  }
 
   // 3. exchange refresh token for a short-lived access token
   let accessToken: string;
@@ -61,6 +71,7 @@ Deno.serve(async (req: Request) => {
     accessToken = await exchangeToken(clientId!, clientSecret!, refreshToken!);
   } catch (e) {
     await slack(`WO-005 FAIL · token exchange: ${String(e)}`);
+    await captureFunctionError(FN, e, { stage: "token-exchange" });
     return json({ error: "token exchange failed" }, 502);
   }
 
@@ -92,6 +103,12 @@ Deno.serve(async (req: Request) => {
     } else {
       byKey[specs[i].key] = null;
       await slack(`WO-005 FAIL · ${specs[i].dt}: ${String(s.reason)}`);
+      // One metric failing is survivable — the record just carries a null —
+      // but it is still a real Google Health failure worth seeing.
+      await captureFunctionError(FN, s.reason, {
+        stage: "dataPoints.list",
+        dataType: specs[i].dt,
+      });
     }
   }
 
@@ -111,6 +128,10 @@ Deno.serve(async (req: Request) => {
   });
   if (error) {
     await slack(`WO-005 FAIL · upsert: ${error.message}`);
+    await captureFunctionError(FN, new Error(error.message), {
+      stage: "upsert_vital",
+      date,
+    });
     return json({ error: "upsert failed", detail: error.message }, 502);
   }
 

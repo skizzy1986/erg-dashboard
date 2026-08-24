@@ -291,6 +291,29 @@ Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
 the Vercel dashboard, not in the repo.
 
+### Edge functions — project `erg-dashboard-functions`
+
+Separate project so the Deno issue stream stays legible next to the frontend's. All
+four functions report through `supabase/functions/_shared/sentry.ts`. Set `SENTRY_DSN`
+as an Edge Function secret (Dashboard → Edge Functions → Secrets); without it every
+export in that module is a no-op, so local `supabase functions serve` stays silent.
+
+Two rules in that module are load-bearing, not preferences:
+
+- **`defaultIntegrations: false`.** The Deno SDK does not instrument `Deno.serve`, so
+  there is no per-request scope, and the edge runtime reuses an isolate across
+  requests. Global breadcrumbs and context would leak into the *next* caller's event.
+  Everything request-specific goes through `withScope` instead.
+- **`await Sentry.flush()` before returning.** The isolate can be frozen the moment
+  the Response resolves, discarding anything still queued in the transport.
+
+**Cron + uptime.** The free plan allows one cron monitor and one uptime monitor.
+The cron monitor is on `vitals-import` (check-ins emitted from inside the function,
+since the scheduler lives outside the repo; the schedule is upserted from
+`MONITOR_SCHEDULE` in code). The uptime monitor points at
+`https://erg-dashboard-eight.vercel.app/`. Adding monitors for the other jobs needs a
+plan upgrade.
+
 ## CI & Quality Gates
 
 Every PR is gated by three GitHub Actions jobs that must pass before merge:

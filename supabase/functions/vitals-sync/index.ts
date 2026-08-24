@@ -9,6 +9,9 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { exchangeToken, listDataPoints } from "../vitals-import-api/client.ts";
 import { mapResponses } from "../vitals-import-api/mapper.ts";
+import { captureFunctionError } from "../_shared/sentry.ts";
+
+const FN = "vitals-sync";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +46,14 @@ Deno.serve(async (req: Request) => {
     ["SUPABASE_URL", supaUrl],
     ["SUPABASE_SERVICE_ROLE_KEY", serviceKey],
   ].filter(([, v]) => !v).map(([k]) => k);
-  if (missing.length) return json({ error: "missing env", missing }, 500);
+  if (missing.length) {
+    await captureFunctionError(
+      FN,
+      new Error(`missing env: ${missing.join(", ")}`),
+      { missing },
+    );
+    return json({ error: "missing env", missing }, 500);
+  }
 
   const supa = createClient(supaUrl!, serviceKey!, { auth: { persistSession: false } });
 
@@ -80,6 +90,7 @@ Deno.serve(async (req: Request) => {
   try {
     accessToken = await exchangeToken(clientId!, clientSecret!, refreshToken!);
   } catch (e) {
+    await captureFunctionError(FN, e, { stage: "token-exchange" });
     return json({ error: "token exchange failed", detail: String(e) }, 502);
   }
 
@@ -109,7 +120,13 @@ Deno.serve(async (req: Request) => {
     p_bodyweight: rec.bodyweight_kg,
     p_source: "google_health_api",
   });
-  if (error) return json({ error: "upsert failed", detail: error.message }, 502);
+  if (error) {
+    await captureFunctionError(FN, new Error(error.message), {
+      stage: "upsert_vital",
+      date,
+    });
+    return json({ error: "upsert failed", detail: error.message }, 502);
+  }
 
   const nullFields = (
     [
