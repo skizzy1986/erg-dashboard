@@ -13,7 +13,7 @@ export const THEME = {
   critical: '#ff2d55',
   accentAlt: '#a78bfa',
   accentAlt2: '#f472b6',
-  positiveAlt: '#2dd4bf',
+  cycling: '#2dd4bf',
   surfaceAlt: '#1e1e30',
   surfaceDeep: '#12121f',
   neutral: '#3a3a4a',

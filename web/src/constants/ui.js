@@ -9,7 +9,7 @@ export const C = {
   'Upper Strength': THEME.accentAlt,
   'Lower Strength': THEME.positive,
   Combined: THEME.accentAlt2,
-  Cycling: THEME.positiveAlt,
+  Cycling: THEME.cycling,
 };
 export const ICON = {
   'Z2 Aerobic': '🚣',

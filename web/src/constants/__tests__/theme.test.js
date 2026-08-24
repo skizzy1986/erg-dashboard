@@ -16,7 +16,7 @@ const EXPECTED_KEYS = [
   'critical',
   'accentAlt',
   'accentAlt2',
-  'positiveAlt',
+  'cycling',
   'surfaceAlt',
   'surfaceDeep',
   'neutral',
@@ -56,7 +56,7 @@ describe('THEME', () => {
     expect(THEME.critical).toBe('#ff2d55');
     expect(THEME.accentAlt).toBe('#a78bfa');
     expect(THEME.accentAlt2).toBe('#f472b6');
-    expect(THEME.positiveAlt).toBe('#2dd4bf');
+    expect(THEME.cycling).toBe('#2dd4bf');
     expect(THEME.surfaceAlt).toBe('#1e1e30');
     expect(THEME.surfaceDeep).toBe('#12121f');
     expect(THEME.neutral).toBe('#3a3a4a');

@@ -15,7 +15,7 @@ const EXPECTED = {
   'Upper Strength': ['#a78bfa', 'accentAlt'],
   'Lower Strength': ['#34d399', 'positive'],
   Combined: ['#f472b6', 'accentAlt2'],
-  Cycling: ['#2dd4bf', 'positiveAlt'],
+  Cycling: ['#2dd4bf', 'cycling'],
 };
 
 describe('C — session type accents', () => {
