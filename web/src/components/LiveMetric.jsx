@@ -11,7 +11,7 @@ export default function LiveMetric({
   label,
   value,
   unit,
-  accent = THEME.cyan,
+  accent = THEME.accent,
   size = 'normal',
   dimmed = false,
 }) {

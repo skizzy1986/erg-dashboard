@@ -31,10 +31,10 @@ export default function ErgTooltip({ active, payload }) {
       >
         {d.date} · {d.dist}
       </div>
-      <div style={{ color: THEME.cyan, fontWeight: 700, fontSize: 14 }}>
+      <div style={{ color: THEME.accent, fontWeight: 700, fontSize: 14 }}>
         {d.watts}W<span style={{ fontSize: 10, color: THEME.muted }}> avg</span>
       </div>
-      <div style={{ color: THEME.grey, fontSize: 10, marginTop: 2 }}>
+      <div style={{ color: THEME.neutralAccent, fontSize: 10, marginTop: 2 }}>
         {fmtPace(d.pace)}/500m{d.hardPush ? ' · hard push' : ' · Z2'}
       </div>
     </div>

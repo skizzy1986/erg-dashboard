@@ -5,10 +5,10 @@ import { THEME } from '../../constants/theme.js';
 const C = {
   bg: THEME.bg,
   panel: THEME.raised,
-  accent: THEME.green,
+  accent: THEME.positive,
   text: THEME.text,
   muted: THEME.muted,
-  err: THEME.red,
+  err: THEME.critical,
 };
 
 function typeColor(type) {

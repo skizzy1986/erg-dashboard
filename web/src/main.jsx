@@ -53,10 +53,10 @@ const C = {
   panel: THEME.raised,
   field: THEME.field,
   border: THEME.border,
-  accent: THEME.green,
+  accent: THEME.positive,
   text: THEME.text,
   muted: THEME.muted,
-  err: THEME.red,
+  err: THEME.critical,
 };
 
 // ── LOGIN SCREEN ─────────────────────────────────────────────────

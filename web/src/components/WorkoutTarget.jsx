@@ -4,7 +4,7 @@ import { THEME } from '../constants/theme.js';
 const C = {
   panel: THEME.surface,
   border: THEME.border,
-  accent: THEME.gold,
+  accent: THEME.caution,
   text: THEME.text,
   muted: THEME.muted,
 };

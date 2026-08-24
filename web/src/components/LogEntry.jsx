@@ -4,7 +4,7 @@ import { THEME } from '../constants/theme.js';
 
 export default function LogEntry({ entry, done = false }) {
   const [open, setOpen] = useState(false);
-  const color = C[entry.type] || THEME.grey;
+  const color = C[entry.type] || THEME.neutralAccent;
   const isErg = !!entry._isErg;
   const planned = entry.status === 'planned';
   const cancelled = entry.status === 'cancelled';
@@ -61,7 +61,7 @@ export default function LogEntry({ entry, done = false }) {
               style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: THEME.white,
+                color: THEME.textStrong,
                 lineHeight: 1.3,
                 textDecoration: cancelled ? 'line-through' : undefined,
               }}
@@ -74,8 +74,8 @@ export default function LogEntry({ entry, done = false }) {
                     fontSize: 8,
                     letterSpacing: 1.5,
                     fontWeight: 700,
-                    color: THEME.green,
-                    border: `1px solid ${THEME.green}66`,
+                    color: THEME.positive,
+                    border: `1px solid ${THEME.positive}66`,
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -123,7 +123,10 @@ export default function LogEntry({ entry, done = false }) {
               {entry.date}
               {entry.duration ? ` · ${entry.duration}` : ''}
               {entry.srpe != null && (
-                <span style={{ color: THEME.gold }}> · sRPE {entry.srpe}</span>
+                <span style={{ color: THEME.caution }}>
+                  {' '}
+                  · sRPE {entry.srpe}
+                </span>
               )}
             </div>
           </div>
@@ -262,7 +265,7 @@ export default function LogEntry({ entry, done = false }) {
                     <td
                       style={{
                         padding: '6px 4px',
-                        color: ex.pr ? THEME.gold : THEME.textSubtle,
+                        color: ex.pr ? THEME.caution : THEME.textSubtle,
                         wordBreak: 'break-word',
                         lineHeight: 1.3,
                       }}

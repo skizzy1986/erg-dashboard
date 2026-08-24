@@ -16,11 +16,11 @@ export const Sizes = () => (
 
 export const StatusAccents = () => (
   <Row>
-    <LiveMetric label="UT2" value={128} unit="W" accent={THEME.cyan} />
-    <LiveMetric label="UT1" value={154} unit="W" accent={THEME.green} />
-    <LiveMetric label="AT" value={186} unit="W" accent={THEME.gold} />
-    <LiveMetric label="OVER CP" value={231} unit="W" accent={THEME.orange} />
-    <LiveMetric label="REDLINE" value={268} unit="W" accent={THEME.red} />
+    <LiveMetric label="UT2" value={128} unit="W" accent={THEME.accent} />
+    <LiveMetric label="UT1" value={154} unit="W" accent={THEME.positive} />
+    <LiveMetric label="AT" value={186} unit="W" accent={THEME.caution} />
+    <LiveMetric label="OVER CP" value={231} unit="W" accent={THEME.warning} />
+    <LiveMetric label="REDLINE" value={268} unit="W" accent={THEME.critical} />
   </Row>
 );
 
@@ -40,7 +40,7 @@ export const LiveErgReadout = () => (
     >
       <LiveMetric label="SPLIT" value="2:04.1" unit="/500M" size="large" />
       <LiveMetric label="WATTS" value={151} unit="W" />
-      <LiveMetric label="HR" value={139} unit="BPM" accent={THEME.green} />
+      <LiveMetric label="HR" value={139} unit="BPM" accent={THEME.positive} />
       <LiveMetric label="RATE" value={20} unit="SPM" size="small" />
       <LiveMetric label="DIST" value="8,240" unit="M" size="small" />
     </div>
