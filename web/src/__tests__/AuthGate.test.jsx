@@ -88,10 +88,14 @@ describe('AuthGate boot behaviour', () => {
     mocks.getSession = d.promise;
 
     render(<AuthGate />);
+    const node = screen.getByTestId('splash-stub');
     await act(async () => {
       d.resolve({ data: { session: null } });
     });
     expect(splashes()).toBe(1);
+    // The logged-out branch has to hold the splash at the same child index as
+    // the unresolved one. B6 pins the signed-in branch; this pins the third.
+    expect(screen.getByTestId('splash-stub')).toBe(node);
 
     advance(SPLASH_MIN_MS - 1);
     expect(splashes()).toBe(1);
