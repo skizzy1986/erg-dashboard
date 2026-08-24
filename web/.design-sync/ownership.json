@@ -38,7 +38,9 @@
         "ISSUES-load-states.md",
         "PROJECT-CONTEXT.md",
         "designs/*.html",
-        "designs/README.md"
+        "designs/README.md",
+        "splitiq-light-tokens.css",
+        "splitiq-load.js"
       ]
     },
     "local": {

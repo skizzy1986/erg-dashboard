@@ -1,51 +1,66 @@
-# SplitIQ design project — read this first
+# SplitIQ design project — mechanics
 
-This project holds the light redesign of SplitIQ, the training dashboard for a
-single rower. Designs are Design Components (`.dc.html`) at the project root.
+How the two halves of this project work. The style guide is `conventions.md`;
+the subject matter is the design system's README. This file is only the plumbing.
 
-## Where things live, and who can see them
+Owner: **design** (this project). The repo holds a read-only mirror and never
+pushes it back.
 
-| | This project | The repo |
+## Ownership — one owner, one direction per file
+
+The repo carries `ownership.json` and CI fails on violations.
+
+| Owner | Direction | Files |
 | --- | --- | --- |
-| Designs (`*.dc.html`) | ✅ source of truth | ❌ |
-| `conventions.md` | ✅ source of truth | mirror at `web/.design-sync/conventions.md` |
-| `HANDOFF.md` | ✅ source of truth | mirror at `web/.design-sync/HANDOFF.md` |
-| `ISSUES-load-states.md` | ✅ | mirror alongside |
-| `github.md` | ✅ sync receipt | ❌ |
-| Component source, hooks, maths | ❌ | ✅ source of truth |
+| **design** | This project is the source of truth. The repo keeps a read-only mirror so a code session can read it; it is **never** pushed back up. | `conventions.md`, `HANDOFF.md`, `ISSUES-load-states.md`, `PROJECT-CONTEXT.md`, the `.dc.html` designs, `splitiq-load.js` |
+| **repo** | Code owns it and pushes it down on sync. Do not hand-edit here — the next sync overwrites it. | `CLAUDE.md`, `CODE-TO-DESIGN.md`, the component `.md` docs, the preview stories, the token CSS |
+| **local** | Repo-side working notes. Never reaches this project. | build notes, status files, the IA brief |
 
-**A code session cannot see this project's files.** Its container is cloned from
-git, so anything not committed is invisible to it. When a doc here changes and
-code needs it, it must be committed to `web/.design-sync/` — present it for
-download and say so explicitly. Do not assume the other session can read it.
+`conventions.md` is ours to revise freely. It no longer travels automatically:
+when it changes, say so and hand the file over for download so the repo's mirror
+can be updated. Same for `HANDOFF.md` and `ISSUES-load-states.md`.
 
-## Standing rules
+## Three opening documents, no overlap
 
-- **Read `conventions.md` before designing.** It records lessons already paid
-  for — chart scale requirements, the `--color-bg` token trap, percentage
-  padding as a vertical position, `sc-for` per-item styles. Add to it whenever a
-  new one is found, and tell the user you did.
-- **Read `HANDOFF.md` before answering anything about the code.** It carries the
-  token seam spec, the component inventory, and the per-screen build notes.
-- **Refresh `github.md` on any turn that reads the repo.** Move the previous
-  `## Last sync` into `## Sync history`; never delete it.
-- **Numbers are computed, never typed.** Any caption stating a count, rank or
-  comparison is derived in `renderVals()`. Screens that cite the same reading
-  must derive it the same way — Coach and Body share readiness 72, sleep 6.4h,
-  RHR 60 because both compute them.
-- **Light is primary.** Pastel fills, darker inks, white cards on `#bcc5dd`,
-  minimum font weight 500 (Archivo). Dark is dropped.
+- **`PROJECT-CONTEXT.md`** — the mechanics. How we work.
+- **`conventions.md`** — the style guide. How it should look.
+- **`CLAUDE.md`** — the subject matter. Glossary, the five destinations, which
+  numbers are real, the chart rules. This is now the design system's README,
+  and it is repo-owned.
 
-## Known tension
+## Neither side can see the other's container
 
-The bound design system's snapshot still describes SplitIQ as dark-only and sets
-`:root{--color-bg:#08080d}`. Every light screen must redefine `--color-bg` in its
-own helmet. Until the snapshot is re-synced, its prose disagrees with
-`HANDOFF.md` — trust `HANDOFF.md` and `conventions.md`.
+A code session is cloned from git, so anything living only in this project is
+invisible to it. When something here changes and code needs it, hand the file
+over explicitly — it does not propagate.
 
-## State
+## Numbers
 
-All five nav destinations are designed: Today, Train, Progress, Body, Coach.
-Undrawn states, in one family — load pending, load unavailable, readiness
-NO DATA, chat empty and error. The token seam (`HANDOFF.md` §1) blocks
-consistent implementation of everything else.
+- **Training zone bands are derived, never typed.** They come from
+  `derivePaceZones(cp)` against a live critical-power anchor, so any watt figure
+  written into prose is a snapshot. CI recomputes every published band in every
+  tracked markdown file. If a design needs bands, show them as derived.
+- **Any caption stating a count, rank or comparison is computed.** CI cannot
+  check a design, so this one is on us. In this project the load model lives in
+  `splitiq-load.js` and every screen citing form, CTL, ATL, readiness or
+  baseline coverage reads it — see `conventions.md`, "One reading, one
+  derivation".
+- **Contrast ratios published in `conventions.md` are recomputed from the real
+  palette.** A ratio written there must be measured or the repo's build fails.
+
+## Palette state
+
+The app still ships **dark**, with colour-named hex tokens. The rename to
+role-named tokens is in flight, not merged; light is the target and dark is kept
+as a second theme rather than deleted. `conventions.md` carries the banner
+saying which half is live — trust that banner over older prose, including
+`HANDOFF.md` §1's "dark: dropped", which describes the target state of that PR
+and not what ships today.
+
+## Design state
+
+All five mobile destinations are drawn — Today, Train, Progress, Body, Coach —
+plus the first desktop screen, `SplitIQ Desktop Overview.dc.html` (chosen
+direction: 1b Ledger). Undrawn: load pending, load unavailable, readiness
+NO DATA, chat empty and chat error. The token seam (`HANDOFF.md` §1) blocks
+consistent implementation of the rest.

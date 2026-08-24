@@ -84,6 +84,36 @@ different measurements. Four separate AA failures were shipped during this
 revision, every one of them a colour chosen against a background that was
 darkened afterwards.
 
+### Measured contrast — the light palette
+
+Computed from the real hex pairs above. AA body text needs 4.5:1.
+
+| Ink | on card `#ffffff` | on inset `#eef4fb` | on ground `#bcc5dd` |
+|---|---|---|---|
+| text `#1c1e2a` | 16.55 | 14.95 | 9.59 |
+| body `#4a4f63` | 8.10 | 7.32 | 4.69 |
+| label `#43485a` | 9.07 | 8.20 | 5.26 |
+
+Accent inks, each against its own wash and against the card:
+
+| Accent ink | on its wash | on card | on ground `#bcc5dd` |
+|---|---|---|---|
+| accent `#0a7093` | 5.12 | 5.59 | **3.24 fails** |
+| positive `#10795a` | 4.95 | 5.37 | **3.11 fails** |
+| caution `#8a6a10` | 4.68 | 5.06 | **2.93 fails** |
+| warning `#a34c1c` | 4.94 | 5.82 | **3.37 fails** |
+| critical `#a32040` | 5.83 | 7.39 | **4.28 fails** |
+| accentAlt `#5f45b0` | 6.03 | 7.08 | **4.10 fails** |
+| accentAlt2 `#a3407a` | 5.00 | 5.87 | **3.40 fails** |
+| cycling `#10786c` | 4.70 | 5.35 | **3.10 fails** |
+
+**No accent ink passes AA directly on the app ground.** Coloured type belongs on
+a card or on its own wash — the ground takes only the three neutrals above. This
+is the single most likely way to reintroduce the contrast failures this revision
+already paid for once.
+
+Token file: `splitiq-light-tokens.css`.
+
 ### Type
 
 **Archivo for language, IBM Plex Mono with tabular figures for measurement.**
@@ -121,7 +151,7 @@ the reader four things:
    envelope of the same window being plotted, which contains every point by
    construction).
 3. **A score headline with a plain-language label under it** — `463` /
-   "heaviest week logged", `−8.9` / "Loaded".
+   "heaviest week logged", `−8.9` / "Neutral".
 4. **A caption that names what is measured and what is modelled.** Bars are
    sessions that happened; the fatigue ribbon is a model.
 
@@ -132,6 +162,58 @@ smoothing over them. This is the treatment used by the Load pane — copy it.
 Any sentence in a caption that states a count, a rank or a comparison is
 computed in `renderVals()`, never typed as literal copy. Hand-typed claims drift
 from the data the moment the data moves.
+
+### One reading, one derivation — share the module
+
+Matching a number by tuning until the digits agree is not deriving it the same
+way. Two screens once both showed form −8.9 while one had CTL 51.1 and the other
+CTL 16.4: the difference had been matched, the components had not, and every
+computed caption downstream ("10.9 short of CTL 62") only held under its own CTL.
+
+Put the model in one plain `.js` file — the series, the seed, the EMA constants,
+the readiness deductions, the TSB band function — load it from each DC's
+`<helmet>` as a classic script that assigns a global, and read it in
+`renderVals()`. `splitiq-load.js` is that file; the desktop overview and Coach
+both read it.
+
+Guard the load order: `if (!window.SIQ) return {}` in `renderVals()`, plus a
+short interval in `componentDidMount` that `forceUpdate`s once the global
+appears. Without it a slow script leaves the screen on placeholders.
+
+The band function is part of the model, not the screen. The app's own
+`tsbColor` thresholds are +10 / −10 / −30, so −8.9 is **Neutral** and green
+everywhere. Two screens colouring one number differently is the same defect as
+two screens computing it differently.
+
+### A coverage claim needs a series with the gaps in it
+
+"personal · 17/28 days" is a claim about the data, so it must be counted from
+the data — `arr.filter(v => v != null).length`, never a literal. The trap is
+one step earlier: a mock series with all 28 values cannot support a 17/28 label,
+and a tile claiming eleven missing days beside a chart drawing twenty-eight
+solid bars is a contradiction on one screen. Put the nulls in the series, then
+count them; the chart's gaps and the tile's fraction then agree by construction.
+
+The same applies to staleness: derive "no reading in N days" from the last
+non-null index, and derive the deduction's points from that N.
+
+### Session type is a design-system key, not a coarse discipline
+
+Mock data that carries only `erg` / `str` / `bike` cannot colour a chart or fill
+a TYPE column correctly. Those three collapse six real types into one accent —
+a threshold piece comes out cyan, a `Lower A` comes out purple — which is
+exactly the decorative accent use the table above forbids, and a table stating
+"Z2 Aerobic" beside `VO2 8x500m` is stating something false.
+
+Carry the design system's own nine session-type strings per row
+(`'Z2 Aerobic'`, `'Threshold'`, `'VO₂ Intervals'`, `'Sharpener'`, `'Rest'`,
+`'Upper Strength'`, `'Lower Strength'`, `'Combined'`, `'Cycling'`) and key the
+ink map off those. `LogEntry` already expects them as `entry.type`. Keep the
+coarse discipline as a separate field if a layout needs it — one drives
+equipment, the other drives colour and label.
+
+Build chart legends from the types actually present in the window, not a fixed
+list, so the legend can never name a type the chart doesn't contain.
 
 ### Per-item styles in `sc-for` need one trailing hole
 
