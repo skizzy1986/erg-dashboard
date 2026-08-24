@@ -1240,23 +1240,22 @@ function mountStrengthLogger(root) {
     const sec = new Set((secondary || []).map(normalizeMuscle).filter(Boolean));
     rootEl.querySelectorAll('.muscle').forEach((n) => {
       const m = n.getAttribute('data-muscle');
-      n.setAttribute(
-        'fill',
-        prim.has(m)
-          ? THEME.critical
-          : sec.has(m)
-            ? THEME.caution
-            : THEME.neutral
-      );
+      // style, not setAttribute: a presentation attribute does not resolve
+      // var() in Safari, and the inline style also beats the SVG's own fill.
+      n.style.fill = prim.has(m)
+        ? THEME.critical
+        : sec.has(m)
+          ? THEME.caution
+          : THEME.neutral;
     });
   }
   function heatmapSVG() {
     const M = (d, a) =>
-      `<g>${a.map((s) => `<${s.t} class="muscle" data-muscle="${d}" fill="#46525f" ${s.a}/>`).join('')}</g>`;
+      `<g>${a.map((s) => `<${s.t} class="muscle" data-muscle="${d}" style="fill:var(--color-neutral)" ${s.a}/>`).join('')}</g>`;
     return `<svg viewBox="0 0 470 426" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Muscles worked">
-      <text x="120" y="13" text-anchor="middle" fill="#8b97a7" font-size="12" font-family="sans-serif">FRONT</text>
-      <text x="340" y="13" text-anchor="middle" fill="#8b97a7" font-size="12" font-family="sans-serif">BACK</text>
-      <g fill="#2b3441">
+      <text x="120" y="13" text-anchor="middle" style="fill:var(--color-muted)" font-size="12" font-family="sans-serif">FRONT</text>
+      <text x="340" y="13" text-anchor="middle" style="fill:var(--color-muted)" font-size="12" font-family="sans-serif">BACK</text>
+      <g style="fill:var(--color-surface-alt)">
         <circle cx="120" cy="38" r="19"/><rect x="113" y="54" width="14" height="14" rx="4"/>
         <rect x="100" y="188" width="40" height="26" rx="8"/>
         <circle cx="58" cy="208" r="7"/><circle cx="182" cy="208" r="7"/>
@@ -1364,9 +1363,9 @@ function mountStrengthLogger(root) {
     body.innerHTML = `
       <div class="demo-map">${heatmapSVG()}
         <div class="demo-legend">
-          <span><i style="background:#ef4444"></i>Primary</span>
-          <span><i style="background:#f59e0b"></i>Secondary</span>
-          <span><i style="background:#46525f"></i>Not emphasised</span>
+          <span><i style="background:var(--color-critical)"></i>Primary</span>
+          <span><i style="background:var(--color-caution)"></i>Secondary</span>
+          <span><i style="background:var(--color-neutral)"></i>Not emphasised</span>
         </div>
       </div>
       <div class="demo-muscles"><b>Primary:</b> ${tag(m.primary_muscles)}<br><b>Secondary:</b> ${tag(m.secondary_muscles)}</div>
