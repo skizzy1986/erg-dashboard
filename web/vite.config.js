@@ -279,6 +279,9 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        // Extracted from main.jsx so the boot decision is testable. main.jsx
+        // itself stays excluded — it is bootstrap only now.
+        'src/AuthGate.jsx': { lines: 80, functions: 80, branches: 70 },
       },
     },
   },
