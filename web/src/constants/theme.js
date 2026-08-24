@@ -15,6 +15,7 @@ export const THEME = {
   accentAlt2: '#f472b6',
   positiveAlt: '#2dd4bf',
   surfaceAlt: '#1e1e30',
+  surfaceDeep: '#12121f',
   neutral: '#3a3a4a',
   textSubtle: '#aaaacc',
   textFaint: '#6c6c88',
