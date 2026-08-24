@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { THEME } from '../theme.js';
-import { DARK } from '../themeValues.js';
+import { DARK, LIGHT, DEFAULT_THEME } from '../themeValues.js';
 import { cssVarName } from '../../utils/themeCss.js';
 
 const EXPECTED_KEYS = [
@@ -86,5 +86,47 @@ describe('DARK — the palette values THEME resolves to', () => {
     expect(DARK.divider).toBe('#3e3e5a');
     expect(DARK.neutralAccent).toBe('#888888');
     expect(DARK.textStrong).toBe('#ffffff');
+  });
+});
+
+describe('LIGHT — the second palette', () => {
+  it('defines exactly the same keys as DARK', () => {
+    expect(Object.keys(LIGHT).sort()).toEqual(Object.keys(DARK).sort());
+  });
+
+  it('every value is a 6-digit lowercase hex colour', () => {
+    for (const value of Object.values(LIGHT)) {
+      expect(value).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+
+  it('moves every value — no token is shared with the dark palette', () => {
+    const shared = Object.keys(DARK).filter((k) => DARK[k] === LIGHT[k]);
+    expect(shared).toEqual([]);
+  });
+
+  it('paints the ground conventions.md settled on, not the withdrawn one', () => {
+    expect(LIGHT.bg).toBe('#bcc5dd');
+    expect(LIGHT.bg).not.toBe('#c3cade');
+  });
+
+  it('gives muted #4a4f63 and textSubtle #43485a, per conventions.md', () => {
+    // HANDOFF.md §1 published #43485a as --color-muted; conventions.md:101-105
+    // reassigns it to textSubtle, the one neutral that passes on every ground.
+    expect(LIGHT.textSubtle).toBe('#43485a');
+    expect(LIGHT.muted).toBe('#4a4f63');
+  });
+
+  it('keeps cycling distinct from positive', () => {
+    // Both sides rejected folding these: positive is done/UT1/lower strength,
+    // cycling is the discipline. Same-looking greens, different jobs.
+    expect(LIGHT.cycling).not.toBe(LIGHT.positive);
+    expect(DARK.cycling).not.toBe(DARK.positive);
+  });
+});
+
+describe('DEFAULT_THEME', () => {
+  it('is one of the two palettes', () => {
+    expect([DARK, LIGHT]).toContain(DEFAULT_THEME);
   });
 });
