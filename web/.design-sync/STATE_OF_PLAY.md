@@ -96,8 +96,9 @@ muted      #7e7e9a on surface #1a1a2e -> 4.34  FAIL AA
 textSubtle #aaaacc on raised  #2a2a48 -> 6.13  pass
 ```
 
-`conventions.md` is inlined into the design agent's prompt, so the failure reproduces
-in every mockup it builds. `textSubtle` is a clean swap.
+`conventions.md` was the `readmeHeader` at the time, so the failure reproduced in every
+mockup built from it. `textSubtle` is a clean swap. (Since #258, `readmeHeader` points at
+`CLAUDE.md` and `conventions.md` is design-owned — see `ownership.json`.)
 
 ---
 

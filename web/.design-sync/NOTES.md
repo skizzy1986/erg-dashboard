@@ -13,6 +13,37 @@ before re-running the sync.
   `.design-sync/`, `.ds-sync/` and `ds-bundle/` are all package-relative, and
   every command below is run from `web/`.
 
+## Who owns what
+
+`ownership.json` is the machine-readable answer, and `npm run check:design-sync`
+enforces it. Three owners:
+
+- **`repo`** — written here, pushed to the design project. Listed below.
+- **`design`** — authored in the design project; the copy here is a **read-only
+  mirror** committed so a code session can read it (`conventions.md`,
+  `HANDOFF.md`, `ISSUES-load-states.md`, `PROJECT-CONTEXT.md`, `designs/*`).
+  **Do not edit these here** — the next download overwrites you, and `config.json`
+  is forbidden from referencing them.
+- **`local`** — working documents, neither pushed nor mirrored (this file,
+  `STATE_OF_PLAY.md`, `DESIGN_BRIEF.md`).
+
+### Why the manifest exists
+
+`conventions.md` used to move in both directions with nothing arbitrating it.
+`config.json` pushed the repo's copy up as `readmeHeader`, while
+`PROJECT-CONTEXT.md` declared the design project the source of truth and
+`HANDOFF.md` §3 authored it outright. Whichever side acted last silently won —
+which is how `e61092c` (#240) replaced `85eab51` (#224)'s measured dark contrast
+ratios with the light palette's, in the one file guaranteed to reach the design
+agent's prompt.
+
+The fix is one-directional ownership, checked rather than agreed: `readmeHeader`
+now points at **`CLAUDE.md`** — the domain briefing, which the repo genuinely owns
+because the domain lives in the code — and the guard fails if `config.json` ever
+names a `design`-owned path again. As a side effect the synced design system stops
+shipping a second, stale copy of the style guide, which is the "Known tension"
+`PROJECT-CONTEXT.md` records.
+
 ## Sync inputs this repo owns
 
 | File | Why it exists |
@@ -22,6 +53,8 @@ before re-running the sync.
 | `.design-sync/base.css` | Generated. The token layer (`--color-*`) plus the app ground. Wired as `cfg.cssEntry`. |
 | `.design-sync/docs/*.md` | Per-component docs. Their `category:` frontmatter is what sets the DS pane groups (session / metrics / charts / tooltips / feedback / mobile) — without them everything lands in `general`. |
 | `.design-sync/previews/*.tsx` | Authored preview stories, one file per component. |
+| `.design-sync/CLAUDE.md` | **`cfg.readmeHeader`** — the domain briefing, and the one input guaranteed to be inlined into the design agent's prompt. Glossary, the five destinations, which numbers are real, the chart rules. |
+| `.design-sync/CODE-TO-DESIGN.md` | Dated bulletin of what changed in the app since the last sync. Written at sync time. |
 | `scripts/check-design-sync-entry.mjs` | Guards the barrel: bundles `entry.jsx` with rolldown and checks every `componentSrcMap` path still exists. `npm run check:design-sync`, wired into CI (#225). |
 
 ## Gotchas
