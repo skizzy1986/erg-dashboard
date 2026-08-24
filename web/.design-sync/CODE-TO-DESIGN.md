@@ -1,12 +1,24 @@
 # Code → Design Handover (2026-08-24)
 
-*Reciprocal of [`HANDOFF.md`](HANDOFF.md). Paste into a Claude Design session when the two
-sides need re-syncing. This is about **how Code and Design stay on the same page** — the
+*Reciprocal of [`HANDOFF.md`](HANDOFF.md). Read from the repo when the two sides need
+re-syncing. This is about **how Code and Design stay on the same page** — the
 state of the spec against the code, and what each side still owes the other. Visual
 direction lives in the handoff and the brief, not here.*
 
 *This is a **dated bulletin**. Read it on re-sync, or when the spec looks out of step with
 the app. [`CLAUDE.md`](CLAUDE.md) is the standing context — read that every session.*
+
+> **Read this from git, don't upload it.** Design has read access to the repo, so every
+> repo-owned document is **linked, not copied**. A copy is a snapshot and snapshots go
+> stale — which is the failure this whole workstream keeps paying for. A link cannot.
+>
+> **The link resolves to `main`.** Work sitting in an unmerged branch is invisible to a
+> design session exactly as it is to a fresh code session, so "I read it and it said X"
+> means `main` said X. If a document looks behind what you have been told, check whether
+> the change has merged before assuming it was not made.
+>
+> Access is read-only in that direction. Design-owned files still travel by hand-off and
+> land in the repo by a code commit.
 
 ---
 
@@ -78,7 +90,6 @@ converging before the seam wires the token up — the light palette's name is th
 | | Owed by | Blocks |
 |---|---|---|
 | Open the design project, then re-sync | Human — needs interactive `/design-login` | `#258` |
-| Upload `CODE-TO-DESIGN.md` to the project root | Human — no automatic path exists for it | — |
 | `PROJECT-CONTEXT.md` and `conventions.md` revisions travel by hand-off, not by sync | Design | — |
 | The `var(--color-*)` seam | Code | `#250` |
 | The light flip | Code | `#251` |

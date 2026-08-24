@@ -27,6 +27,24 @@ enforces it. Three owners:
 - **`local`** — working documents, neither pushed nor mirrored (this file,
   `STATE_OF_PLAY.md`, `DESIGN_BRIEF.md`).
 
+### The two containers, and which way each can see
+
+Confirmed 2026-08-24, having been assumed wrong in both directions before that. The
+visibility is **asymmetric**:
+
+- **Code cannot see the design project.** A code session is cloned from git, so anything
+  living only in the project is invisible to it. Design-owned files reach the repo by
+  hand-off and land as a commit. This half was always documented.
+- **Design can read the repo.** Read-only, and it resolves to **`main`**. So repo-owned
+  documents are **linked, not uploaded** — a copy is a snapshot and goes stale, which is
+  the failure this workstream keeps paying for; a link cannot.
+
+The `main` part is not a footnote. A design session read `CODE-TO-DESIGN.md` and quoted a
+headline four PRs old — correctly, because the refresh was still on an unmerged branch.
+**Work that has not merged is invisible to design**, exactly as it is to a fresh code
+session. If a document looks behind what someone was told, check whether it merged before
+concluding the change was not made.
+
 ### Why the manifest exists
 
 `conventions.md` used to move in both directions with nothing arbitrating it.
