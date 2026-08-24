@@ -381,7 +381,7 @@ export default function RecoveryView({ isWide }) {
                 borderRadius: 6,
                 padding: '11px 14px',
                 fontSize: 11,
-                color: '#888860',
+                color: THEME.muted,
                 lineHeight: 1.6,
               }}
             >
@@ -511,7 +511,7 @@ export default function RecoveryView({ isWide }) {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#888860',
+                  color: THEME.muted,
                   lineHeight: 1.6,
                   borderTop: `1px solid ${THEME.divider}`,
                   paddingTop: 10,
@@ -688,7 +688,7 @@ export default function RecoveryView({ isWide }) {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#888860',
+                  color: THEME.muted,
                   lineHeight: 1.6,
                   borderTop: `1px solid ${THEME.divider}`,
                   paddingTop: 10,

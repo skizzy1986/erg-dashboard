@@ -49,7 +49,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 11,
-            color: '#ff8fa8',
+            color: THEME.accentAlt2,
             marginBottom: 6,
           }}
         >
@@ -194,7 +194,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 9,
-            color: '#888860',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginBottom: 6,
           }}
@@ -928,7 +928,7 @@ export default function ProgramYear() {
           borderRadius: 6,
           padding: '11px 14px',
           fontSize: 10,
-          color: '#888860',
+          color: THEME.muted,
           lineHeight: 1.6,
         }}
       >

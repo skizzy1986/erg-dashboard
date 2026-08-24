@@ -59,10 +59,11 @@ class ErrorBoundary extends Component {
         <div
           style={{
             padding: '24px',
-            background: '#1a0d0d',
+            background:
+              'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
             border: `1px solid ${THEME.critical}50`,
             borderRadius: 6,
-            color: '#ffaaaa',
+            color: THEME.critical,
             fontFamily: "'DM Mono',monospace",
             fontSize: 12,
             lineHeight: 1.6,

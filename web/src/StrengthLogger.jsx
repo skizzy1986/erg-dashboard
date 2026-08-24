@@ -10,6 +10,7 @@
    ═══════════════════════════════════════════════════════════════ */
 import { useEffect, useRef } from 'react';
 import { supabase as sb } from './supabaseClient.js';
+import { THEME } from './constants/theme.js';
 import {
   saveDraft as _saveDraft,
   loadDraft,
@@ -17,9 +18,11 @@ import {
 } from './utils/strengthDraft.js';
 
 const CSS = `
-.slog{ --bg:#08080d; --panel:#2a2a48; --panel2:#1e1e30; --line:#4a4a68;
-  --txt:#e8e8f0; --mut:#7e7e9a; --accent:#00d4ff; --accent2:#00a8cc;
-  --good:#34d399; --warn:#ffd700; --bad:#ff2d55; --coach:#a78bfa; --radius:12px;
+.slog{ --bg:var(--color-bg); --panel:var(--color-raised); --panel2:var(--color-surface-alt);
+  --line:var(--color-border); --txt:var(--color-text); --mut:var(--color-muted);
+  --accent:var(--color-accent); --accent2:#00a8cc;
+  --good:var(--color-positive); --warn:var(--color-caution); --bad:var(--color-critical);
+  --coach:var(--color-accent-alt); --radius:12px;
   color:var(--txt); font-family:'DM Mono','Courier New',monospace; display:block; }
 .slog *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .slog h1,.slog h2,.slog h3{margin:0;font-weight:700}
@@ -1238,7 +1241,11 @@ function mountStrengthLogger(root) {
       const m = n.getAttribute('data-muscle');
       n.setAttribute(
         'fill',
-        prim.has(m) ? '#ef4444' : sec.has(m) ? '#f59e0b' : '#46525f'
+        prim.has(m)
+          ? THEME.critical
+          : sec.has(m)
+            ? THEME.caution
+            : THEME.neutral
       );
     });
   }

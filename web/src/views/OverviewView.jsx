@@ -336,7 +336,7 @@ export default function OverviewView({
                         <span
                           style={{
                             fontSize: 10,
-                            color: '#7a9a8a',
+                            color: THEME.positive,
                             lineHeight: 1.3,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -465,7 +465,7 @@ export default function OverviewView({
         <div
           style={{
             fontSize: 10,
-            color: '#888860',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginBottom: 5,
           }}
@@ -645,13 +645,14 @@ export default function OverviewView({
             {consistency.conflict && (
               <div
                 style={{
-                  background: '#1a0d0d',
+                  background:
+                    'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
                   border: `1px solid ${THEME.critical}50`,
                   borderRadius: 3,
                   padding: '7px 10px',
                   marginBottom: 4,
                   fontSize: 10,
-                  color: '#ffaaaa',
+                  color: THEME.critical,
                 }}
               >
                 {consistency.msg}
@@ -719,7 +720,7 @@ export default function OverviewView({
                     <div
                       style={{
                         fontSize: 9,
-                        color: '#888860',
+                        color: THEME.muted,
                         lineHeight: 1.5,
                         marginTop: 2,
                       }}

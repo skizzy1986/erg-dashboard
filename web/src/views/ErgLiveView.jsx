@@ -106,7 +106,8 @@ function ConnectScreen({
       {error && (
         <div
           style={{
-            background: '#2a0a14',
+            background:
+              'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
             border: `1px solid ${THEME.critical}`,
             borderRadius: 8,
             padding: '12px 16px',
@@ -139,7 +140,7 @@ function ConnectScreen({
         {connecting ? 'CONNECTING…' : 'CONNECT TO PM5'}
       </button>
 
-      <div style={{ fontSize: 10, color: '#3a3a5a', letterSpacing: 1 }}>
+      <div style={{ fontSize: 10, color: THEME.textDim, letterSpacing: 1 }}>
         Chrome / Edge · Android or Desktop
       </div>
     </div>
@@ -390,7 +391,10 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
                 borderRadius: 6,
                 cursor: 'pointer',
                 border: `1px solid ${srpe === v ? THEME.positive : THEME.border}`,
-                background: srpe === v ? '#0d2a1a' : 'transparent',
+                background:
+                  srpe === v
+                    ? 'color-mix(in srgb, var(--color-positive) 12%, var(--color-bg))'
+                    : 'transparent',
                 color: srpe === v ? THEME.positive : THEME.muted,
                 fontFamily: 'inherit',
               }}

@@ -121,7 +121,7 @@ export default function ProgramMicrocycle() {
           borderRadius: 6,
           padding: '11px 14px',
           fontSize: 11,
-          color: '#888860',
+          color: THEME.muted,
           lineHeight: 1.6,
         }}
       >
@@ -148,7 +148,9 @@ export default function ProgramMicrocycle() {
           Technogym ↔ Concept2 conversion (auto-building from Strava):{' '}
         </span>
         {TECHNOGYM_CONVERSION.status}{' '}
-        <span style={{ color: '#888860' }}>{TECHNOGYM_CONVERSION.method}</span>{' '}
+        <span style={{ color: THEME.muted }}>
+          {TECHNOGYM_CONVERSION.method}
+        </span>{' '}
         Once enough paired HR130 points land, this yields real watt targets for
         the camp machine.{' '}
         <span style={{ color: THEME.muted }}>

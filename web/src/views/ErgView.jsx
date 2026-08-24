@@ -942,7 +942,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         <div
           style={{
             fontSize: 10,
-            color: '#888860',
+            color: THEME.muted,
             lineHeight: 1.6,
             borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 8,
@@ -1126,7 +1126,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#888860',
+            color: THEME.muted,
             marginBottom: 4,
           }}
         >

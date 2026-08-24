@@ -333,7 +333,7 @@ export default function LogEntry({ entry, done = false }) {
                 borderRadius: 4,
                 padding: '10px 12px',
                 fontSize: 11,
-                color: '#ffaa44',
+                color: THEME.caution,
                 lineHeight: 1.7,
               }}
             >

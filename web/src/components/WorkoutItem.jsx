@@ -116,7 +116,7 @@ export default function WorkoutItem({
               <span
                 style={{
                   fontSize: 11,
-                  color: session.done ? '#7a9a8a' : THEME.text,
+                  color: session.done ? THEME.positive : THEME.text,
                   lineHeight: 1.4,
                 }}
               >
