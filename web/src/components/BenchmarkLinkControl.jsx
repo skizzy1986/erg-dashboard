@@ -62,7 +62,7 @@ export default function BenchmarkLinkControl({
           letterSpacing: 1,
           fontWeight: 700,
           marginLeft: 6,
-          color: linked ? THEME.green : THEME.textFaint,
+          color: linked ? THEME.positive : THEME.textFaint,
         }}
       >
         {linked ? 'LINKED ✓' : 'LINK'}
@@ -107,7 +107,7 @@ export default function BenchmarkLinkControl({
         </select>
       )}
       {error && (
-        <div style={{ fontSize: 9, color: THEME.red, marginTop: 3 }}>
+        <div style={{ fontSize: 9, color: THEME.critical, marginTop: 3 }}>
           {error}
         </div>
       )}

@@ -11,22 +11,22 @@
   --color-border: #4a4a68;
   --color-text: #e8e8f0;
   --color-muted: #7e7e9a;
-  --color-cyan: #00d4ff;
-  --color-green: #34d399;
-  --color-gold: #ffd700;
-  --color-orange: #ff6b35;
-  --color-red: #ff2d55;
-  --color-purple: #a78bfa;
-  --color-pink: #f472b6;
-  --color-teal: #2dd4bf;
+  --color-accent: #00d4ff;
+  --color-positive: #34d399;
+  --color-caution: #ffd700;
+  --color-warning: #ff6b35;
+  --color-critical: #ff2d55;
+  --color-accentAlt: #a78bfa;
+  --color-accentAlt2: #f472b6;
+  --color-positiveAlt: #2dd4bf;
   --color-surfaceAlt: #1e1e30;
   --color-neutral: #3a3a4a;
   --color-textSubtle: #aaaacc;
   --color-textFaint: #6c6c88;
   --color-textDim: #5a5a74;
   --color-divider: #3e3e5a;
-  --color-grey: #888888;
-  --color-white: #ffffff;
+  --color-neutralAccent: #888888;
+  --color-textStrong: #ffffff;
 }
 
 html,

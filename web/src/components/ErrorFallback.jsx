@@ -24,7 +24,7 @@ export default function ErrorFallback({ resetError }) {
         style={{
           fontSize: 15,
           fontWeight: 700,
-          color: THEME.red,
+          color: THEME.critical,
           letterSpacing: 1,
         }}
       >
@@ -44,7 +44,7 @@ export default function ErrorFallback({ resetError }) {
       <button
         onClick={resetError}
         style={{
-          background: THEME.green,
+          background: THEME.positive,
           border: 'none',
           borderRadius: 6,
           padding: '10px 16px',

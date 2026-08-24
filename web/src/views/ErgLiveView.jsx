@@ -14,12 +14,12 @@ const C = {
   bg: THEME.bg,
   panel: THEME.surface,
   border: THEME.border,
-  accent: THEME.green,
-  cyan: THEME.cyan,
-  gold: THEME.gold,
+  accent: THEME.positive,
+  cyan: THEME.accent,
+  gold: THEME.caution,
   text: THEME.text,
   muted: THEME.muted,
-  err: THEME.red,
+  err: THEME.critical,
 };
 
 const SRPE_GUIDE = [

@@ -14,7 +14,7 @@ export default function WorkoutItem({
   return (
     <div
       style={{
-        background: open || highlight ? `${THEME.cyan}10` : THEME.raised,
+        background: open || highlight ? `${THEME.accent}10` : THEME.raised,
         border: `1px solid ${open || highlight ? color + '50' : THEME.border}`,
         borderRadius: 6,
         overflow: 'hidden',
@@ -45,7 +45,7 @@ export default function WorkoutItem({
                 <div
                   style={{
                     fontSize: 9,
-                    color: highlight ? THEME.cyan : THEME.muted,
+                    color: highlight ? THEME.accent : THEME.muted,
                     letterSpacing: 1,
                     fontWeight: 700,
                   }}
@@ -57,7 +57,7 @@ export default function WorkoutItem({
                     style={{
                       fontSize: 17,
                       fontWeight: 700,
-                      color: highlight ? THEME.cyan : THEME.text,
+                      color: highlight ? THEME.accent : THEME.text,
                       lineHeight: 1.1,
                     }}
                   >
@@ -78,7 +78,7 @@ export default function WorkoutItem({
             <div
               style={{
                 fontSize: 7,
-                color: THEME.cyan,
+                color: THEME.accent,
                 letterSpacing: 2,
                 marginBottom: 3,
               }}
@@ -91,7 +91,7 @@ export default function WorkoutItem({
               {session.done ? (
                 <span
                   style={{
-                    color: THEME.green,
+                    color: THEME.positive,
                     flexShrink: 0,
                     fontSize: 12,
                     fontWeight: 700,
@@ -118,7 +118,7 @@ export default function WorkoutItem({
                 }}
               >
                 {session.slot && (
-                  <span style={{ color: THEME.grey, fontWeight: 700 }}>
+                  <span style={{ color: THEME.neutralAccent, fontWeight: 700 }}>
                     {session.slot}{' '}
                   </span>
                 )}
@@ -163,7 +163,7 @@ export default function WorkoutItem({
             <div
               style={{
                 background: THEME.bg,
-                borderLeft: `2px solid ${THEME.green}`,
+                borderLeft: `2px solid ${THEME.positive}`,
                 borderRadius: 5,
                 padding: '10px 12px',
                 fontSize: 11,
@@ -172,7 +172,7 @@ export default function WorkoutItem({
                 marginBottom: session.meal ? 6 : 0,
               }}
             >
-              <span style={{ color: THEME.green, fontWeight: 700 }}>
+              <span style={{ color: THEME.positive, fontWeight: 700 }}>
                 🍽 FUEL:{' '}
               </span>
               {session.fuel}
@@ -182,7 +182,7 @@ export default function WorkoutItem({
             <div
               style={{
                 background: THEME.bg,
-                borderLeft: `2px solid ${THEME.gold}`,
+                borderLeft: `2px solid ${THEME.caution}`,
                 borderRadius: 5,
                 padding: '10px 12px',
                 fontSize: 11,
@@ -192,7 +192,7 @@ export default function WorkoutItem({
             >
               <div
                 style={{
-                  color: THEME.gold,
+                  color: THEME.caution,
                   fontWeight: 700,
                   fontSize: 9,
                   letterSpacing: 2,
@@ -203,7 +203,7 @@ export default function WorkoutItem({
               </div>
               {session.meal.pre && (
                 <div style={{ marginBottom: session.meal.post ? 5 : 0 }}>
-                  <span style={{ color: THEME.gold, fontWeight: 700 }}>
+                  <span style={{ color: THEME.caution, fontWeight: 700 }}>
                     Pre:{' '}
                   </span>
                   {session.meal.pre}
@@ -211,7 +211,7 @@ export default function WorkoutItem({
               )}
               {session.meal.post && (
                 <div>
-                  <span style={{ color: THEME.gold, fontWeight: 700 }}>
+                  <span style={{ color: THEME.caution, fontWeight: 700 }}>
                     Post:{' '}
                   </span>
                   {session.meal.post}

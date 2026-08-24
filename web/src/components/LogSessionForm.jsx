@@ -30,12 +30,12 @@ export default function LogSessionForm({ onSaved }) {
             : "max · can't talk";
   const srpeColor =
     srpe <= 4
-      ? THEME.green
+      ? THEME.positive
       : srpe <= 6
-        ? THEME.gold
+        ? THEME.caution
         : srpe <= 8
-          ? THEME.orange
-          : THEME.red;
+          ? THEME.warning
+          : THEME.critical;
 
   const setRow = (i, field, val) =>
     setRows(rows.map((r, j) => (j === i ? { ...r, [field]: val } : r)));
@@ -141,14 +141,14 @@ export default function LogSessionForm({ onSaved }) {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: `${THEME.green}15`,
-          border: `1px solid ${THEME.green}`,
+          background: `${THEME.positive}15`,
+          border: `1px solid ${THEME.positive}`,
           borderRadius: 6,
           padding: '12px',
           marginBottom: 14,
           fontSize: 12,
           fontWeight: 700,
-          color: THEME.green,
+          color: THEME.positive,
           cursor: 'pointer',
           fontFamily: 'inherit',
           letterSpacing: 1,
@@ -163,7 +163,7 @@ export default function LogSessionForm({ onSaved }) {
     <div
       style={{
         background: THEME.raised,
-        border: `1px solid ${THEME.green}`,
+        border: `1px solid ${THEME.positive}`,
         borderRadius: 6,
         padding: '14px 16px',
         marginBottom: 14,
@@ -181,7 +181,7 @@ export default function LogSessionForm({ onSaved }) {
           style={{
             fontSize: 12,
             fontWeight: 700,
-            color: THEME.green,
+            color: THEME.positive,
             letterSpacing: 1,
           }}
         >
@@ -345,7 +345,7 @@ export default function LogSessionForm({ onSaved }) {
                 alignItems: 'center',
                 gap: 6,
                 fontSize: 10,
-                color: THEME.gold,
+                color: THEME.caution,
                 cursor: 'pointer',
               }}
             >
@@ -353,7 +353,7 @@ export default function LogSessionForm({ onSaved }) {
                 type="checkbox"
                 checked={r.pr}
                 onChange={(e) => setRow(i, 'pr', e.target.checked)}
-                style={{ accentColor: THEME.gold }}
+                style={{ accentColor: THEME.caution }}
               />
               🏆 PR
             </label>
@@ -382,7 +382,7 @@ export default function LogSessionForm({ onSaved }) {
         <div
           style={{
             fontSize: 10,
-            color: msg.type === 'ok' ? THEME.green : THEME.red,
+            color: msg.type === 'ok' ? THEME.positive : THEME.critical,
             marginBottom: 10,
             lineHeight: 1.5,
           }}
@@ -395,7 +395,7 @@ export default function LogSessionForm({ onSaved }) {
         disabled={saving}
         style={{
           width: '100%',
-          background: saving ? THEME.border : THEME.green,
+          background: saving ? THEME.border : THEME.positive,
           border: 'none',
           borderRadius: 6,
           padding: '12px',

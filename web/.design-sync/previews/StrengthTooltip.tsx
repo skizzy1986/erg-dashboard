@@ -8,14 +8,14 @@ const Frame = ({ children }: { children: React.ReactNode }) => (
 // lift series is being hovered on a multi-lift chart.
 export const PerLiftSeriesColour = () => (
   <Frame>
-    <StrengthTooltip active payload={[{ stroke: THEME.purple, payload: { date: '7/08', e1rm: 95 } }]} />
-    <StrengthTooltip active payload={[{ stroke: THEME.green, payload: { date: '7/08', e1rm: 142 } }]} />
-    <StrengthTooltip active payload={[{ stroke: THEME.cyan, payload: { date: '7/08', e1rm: 74 } }]} />
+    <StrengthTooltip active payload={[{ stroke: THEME.accentAlt, payload: { date: '7/08', e1rm: 95 } }]} />
+    <StrengthTooltip active payload={[{ stroke: THEME.positive, payload: { date: '7/08', e1rm: 142 } }]} />
+    <StrengthTooltip active payload={[{ stroke: THEME.accent, payload: { date: '7/08', e1rm: 74 } }]} />
   </Frame>
 );
 
 export const SingleLift = () => (
   <Frame>
-    <StrengthTooltip active payload={[{ stroke: THEME.purple, payload: { date: '7/15', e1rm: 97.5 } }]} />
+    <StrengthTooltip active payload={[{ stroke: THEME.accentAlt, payload: { date: '7/15', e1rm: 97.5 } }]} />
   </Frame>
 );

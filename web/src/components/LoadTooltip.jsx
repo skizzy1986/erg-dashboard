@@ -6,12 +6,12 @@ export default function LoadTooltip({ active, payload }) {
   const d = payload[0].payload;
   const tsbColor =
     d.tsb > 10
-      ? THEME.green
+      ? THEME.positive
       : d.tsb > -10
-        ? THEME.gold
+        ? THEME.caution
         : d.tsb > -30
-          ? THEME.orange
-          : THEME.red;
+          ? THEME.warning
+          : THEME.critical;
   return (
     <div
       style={{
@@ -37,12 +37,16 @@ export default function LoadTooltip({ active, payload }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         <div>
-          <span style={{ color: THEME.cyan }}>CTL </span>
-          <span style={{ color: THEME.white, fontWeight: 700 }}>{d.ctl}</span>
+          <span style={{ color: THEME.accent }}>CTL </span>
+          <span style={{ color: THEME.textStrong, fontWeight: 700 }}>
+            {d.ctl}
+          </span>
         </div>
         <div>
-          <span style={{ color: THEME.orange }}>ATL </span>
-          <span style={{ color: THEME.white, fontWeight: 700 }}>{d.atl}</span>
+          <span style={{ color: THEME.warning }}>ATL </span>
+          <span style={{ color: THEME.textStrong, fontWeight: 700 }}>
+            {d.atl}
+          </span>
         </div>
         <div>
           <span style={{ color: tsbColor }}>TSB </span>

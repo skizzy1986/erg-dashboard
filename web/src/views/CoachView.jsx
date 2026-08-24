@@ -6,13 +6,13 @@ const C = {
   bg: THEME.bg,
   panel: THEME.surface,
   border: THEME.border,
-  cyan: THEME.cyan,
+  cyan: THEME.accent,
   text: THEME.text,
   muted: THEME.muted,
-  err: THEME.red,
+  err: THEME.critical,
   userBubble: THEME.raised,
   userBubbleBorder: THEME.border,
-  assistantBorder: THEME.cyan,
+  assistantBorder: THEME.accent,
 };
 
 const STARTER_PROMPTS = [

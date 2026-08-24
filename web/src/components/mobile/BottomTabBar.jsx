@@ -54,7 +54,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
               fontSize: 9,
               letterSpacing: 1,
               fontWeight: activeTab === id ? 700 : 400,
-              color: activeTab === id ? THEME.green : THEME.muted,
+              color: activeTab === id ? THEME.positive : THEME.muted,
             }}
           >
             {label}
