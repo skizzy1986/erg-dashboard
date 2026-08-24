@@ -1,0 +1,44 @@
+name: Zone bands
+
+# Rowing zone bands are derived from the live rowing_cp anchor by
+# derivePaceZones() — they are not constants. Any watt figure written into prose
+# is a snapshot, and the same wrong AT ceiling (205 W, the CP anchor restated as
+# the band's top) reached three separate documents before anything caught it:
+# CLAUDE.md (#266), web/.design-sync/CLAUDE.md (#268) and
+# coach/CODE_TO_COACH_HANDOVER.md (#275).
+#
+# A zone check already existed by #268 and still missed the third copy, because
+# it lived in the design-sync guard — which runs inside ci-web.yml's lint job,
+# gated on 'web/**'. A change to coach/ or the repo-root CLAUDE.md never
+# triggered it. This workflow exists so the guard fires on the documents it is
+# meant to protect, not only on the ones that happen to sit under web/.
+#
+# The script imports trainingConfig.js directly and has no third-party
+# dependencies, so this needs node and a checkout — no npm ci.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - 'web/src/constants/trainingConfig.js'
+      - 'web/src/utils/pace.js'
+      - 'web/scripts/check-zone-bands.mjs'
+      - '.github/workflows/zone-bands.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zone-bands-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Zone bands match derivePaceZones
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node web/scripts/check-zone-bands.mjs

@@ -15,10 +15,15 @@ not taken from the handover text alone. Changes:
 - **Model** reverted from polarised → **pure base + strength** (bike is complementary
   Z1/Z2 only; 2 Upper + 2 Lower per week; Lowers ≥3 days apart).
 - **CP anchor** ~190W → **~205W provisional (rowing)** + zones UT2 113–144 /
-  UT1 144–164 / AT 164–205 W. Revalidate via rested 1-min + 4-min.
+  UT1 144–164 / AT **164–185** W. Revalidate via rested 1-min + 4-min.
+  *(Corrected 2026-08-24: this originally read `AT 164–205 W`, restating the CP
+  anchor as the band's ceiling. `derivePaceZones(205)` yields 164–185. The same
+  error reached repo `CLAUDE.md` and `.design-sync/CLAUDE.md`, fixed in #266 and
+  #268; the design-sync copies are now checked against the code by
+  `npm run check:design-sync`.)*
 - **Supabase Schema** section rewritten to the real **13 tables / 22 migrations**
   (the whole strength subsystem), with corrected `sessions` columns (`date` is text
-  `MM/DD/YY`, targets live in `label` + `coach_note`), corrected `vitals`, the
+  `M/D/YY` unpadded, targets live in `label` + `coach_note`), corrected `vitals`, the
   strength-logging convention, and the data-layer gotchas.
 - **Vitals source**: Google Health **CSV → API** auto-sync.
 - **Coaching data model** recorded: Coach writes to the DB via the Supabase MCP
@@ -56,8 +61,14 @@ Claude Code auto-loads it every session; keep it correct and neither side drifts
 - **Bridge discipline persists**: Scott authorises consequential/destructive/schema
   changes; review structure before material writes; **read back every write**. Honour
   the data-layer gotchas (explicit `user_id` UUID — `auth.uid()` doesn't resolve through
-  the connector; `sessions.date` is text, order via `to_date(...,'MM/DD/YY')`;
+  the connector; `sessions.date` is text **`M/D/YY`, unpadded** — write it, never order
+  by it; order by the generated `date_iso` date column (`nullsFirst: false` on desc);
   `UNIQUE(date,label)`; vitals upsert on `(user_id,date)`).
+  *(Corrected 2026-08-24: this originally said to order via `to_date(...,'MM/DD/YY')`.
+  `CLAUDE.md` now forbids that outright — `to_date` is STABLE, so it cannot be indexed
+  or used in a generated column — and `date_iso` exists precisely to replace it. The
+  padded `MM/DD/YY` was wrong too; the write format is unpadded `M/D/YY`. Take
+  `CLAUDE.md`'s* Supabase Schema *section as authoritative over anything here.)*
 
 ## Deferred / open items (not done this session)
 

@@ -165,59 +165,7 @@ if (!existsSync(conventionsPath)) {
   }
 }
 
-// 4. Any zone band published in the design-sync docs must match derivePaceZones.
-//
-//    The same wrong AT ceiling reached two separate files: the repo CLAUDE.md and
-//    .design-sync/CLAUDE.md both gave AT as 164-205 W. 205 is the CP anchor, which
-//    sits one line above in both — the band's ceiling is 185. #266 fixed one copy
-//    and missed the other, which is the argument for checking rather than reading.
-//
-//    Bands are derived from CP, so anything written down is a snapshot. Verify the
-//    snapshot against the function at the CP the doc itself quotes.
-for (const rel of ['.design-sync/CLAUDE.md', '.design-sync/conventions.md']) {
-  const abs = join(webRoot, rel);
-  if (!existsSync(abs)) continue;
-  const md = readFileSync(abs, 'utf8');
-
-  //  "UT2 / UT1 / AT — ... 113-144 / 144-164 / 164-185 W"
-  const line = md.match(
-    /UT2[^\n]*?AT[^\n]*?([0-9]+)[–-]([0-9]+)\s*\/\s*([0-9]+)[–-]([0-9]+)\s*\/\s*([0-9]+)[–-]([0-9]+)\s*W/
-  );
-  if (!line) continue;
-
-  const cpMatch = md.match(/~([0-9]{2,4})\s*W/);
-  const cp = cpMatch ? Number(cpMatch[1]) : null;
-  if (!cp) {
-    failures.push(
-      `${rel} publishes UT2/UT1/AT watt bands but names no CP to derive them from`
-    );
-    continue;
-  }
-
-  try {
-    const { derivePaceZones } = await import(
-      pathToFileURL(join(webRoot, 'src/constants/trainingConfig.js')).href
-    );
-    const zones = derivePaceZones(cp);
-    const claimed = line.slice(1).map(Number);
-    ['UT2', 'UT1', 'AT'].forEach((name, i) => {
-      const z = zones.find((x) => x.zone === name);
-      const [lo, hi] = [claimed[i * 2], claimed[i * 2 + 1]];
-      if (z.wattsLow !== lo || z.wattsHigh !== hi) {
-        failures.push(
-          `${rel} gives ${name} as ${lo}-${hi} W; derivePaceZones(${cp}) yields ` +
-            `${z.wattsLow}-${z.wattsHigh}`
-        );
-      }
-    });
-  } catch (e) {
-    failures.push(
-      `src/constants/trainingConfig.js could not be imported — ${e?.message ?? e}`
-    );
-  }
-}
-
-// 5. Every file in .design-sync/ has a declared owner, and nothing design-owned
+// 4. Every file in .design-sync/ has a declared owner, and nothing design-owned
 //    is pushed back at the design project.
 //
 //    conventions.md used to move both ways with nothing arbitrating it: config.json

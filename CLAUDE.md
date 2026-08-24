@@ -323,6 +323,7 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 | `Lint & Format` | ESLint errors + Prettier formatting + `npm audit --audit-level=high` |
 | `Test & Coverage` | All Vitest tests pass; coverage meets the ratcheting thresholds in `web/vite.config.js` (`test.coverage.thresholds` — the **only** source of truth for the numbers), raised as extractions add tests |
 | `Build` | `npm run build` exits 0 (runs only after Test passes) |
+| `Zone bands` | Every rowing zone band published in any tracked `.md` recomputes against `derivePaceZones()` (`npm run check:zones`). **Path-filtered on `**/*.md`, not `web/**`** — the earlier version lived in the design-sync guard and so never fired on `coach/` or the repo-root `CLAUDE.md`, which is how the same wrong AT ceiling reached three documents (#266, #268, #275). |
 
 Coverage thresholds live in `web/vite.config.js` (`test.coverage.thresholds`) and
 **ratchet upward**. Scope is explicit — `coverage.all` + `include: ['src/**']`
