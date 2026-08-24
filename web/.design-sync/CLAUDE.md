@@ -54,7 +54,7 @@ Terms that appear on screen. Get these wrong and the design is wrong.
   types after a session.
 - **CP** — critical power, the wattage sustainable more or less indefinitely. ~205W,
   provisional. Every rowing zone derives from it.
-- **UT2 / UT1 / AT** — aerobic training bands off CP: 113–144 / 144–164 / 164–205 W.
+- **UT2 / UT1 / AT** — aerobic training bands off CP: 113–144 / 144–164 / 164–185 W.
   Almost all rowing volume is UT1/UT2; there is no programmed threshold work right now.
 - **Microcycle** — one week's pattern. **Home weeks** load, **FIFO weeks** deload.
 - **Readiness** — a derived morning score from RHR, HRV and sleep against personal
