@@ -14,16 +14,7 @@ import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad } from '../../utils/trainingLoad.js';
 import { THEME } from '../../constants/theme.js';
 
-const C = {
-  bg: THEME.bg,
-  panel: THEME.raised,
-  accent: THEME.positive,
-  text: THEME.text,
-  muted: THEME.muted,
-  err: THEME.critical,
-};
-
-const tickStyle = { fontSize: 9, fill: C.muted };
+const tickStyle = { fontSize: 9, fill: THEME.muted };
 
 export default function MobileRecovery() {
   const {
@@ -58,10 +49,10 @@ export default function MobileRecovery() {
 
   const readinessColor =
     readinessScore >= 80
-      ? '#34d399'
+      ? THEME.positive
       : readinessScore >= 60
-        ? '#ffd700'
-        : '#ff2d55';
+        ? THEME.caution
+        : THEME.critical;
 
   const coachingText =
     readinessLabel === 'READY'
@@ -103,7 +94,7 @@ export default function MobileRecovery() {
     <div
       style={{
         padding: '16px 16px 24px',
-        background: C.bg,
+        background: THEME.bg,
         minHeight: '100vh',
       }}
     >
@@ -120,7 +111,7 @@ export default function MobileRecovery() {
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: 2,
-            color: C.accent,
+            color: THEME.positive,
           }}
         >
           RECOVERY
@@ -134,14 +125,18 @@ export default function MobileRecovery() {
               border: 'none',
               padding: 0,
               cursor: isSyncing ? 'default' : 'pointer',
-              color: isSyncing ? C.muted : syncFailed ? C.err : C.accent,
+              color: isSyncing
+                ? THEME.muted
+                : syncFailed
+                  ? THEME.critical
+                  : THEME.positive,
               fontSize: 16,
               lineHeight: 1,
             }}
           >
             {isSyncing ? '…' : '↻'}
           </button>
-          <span style={{ fontSize: 11, color: C.muted }}>{todayStr}</span>
+          <span style={{ fontSize: 11, color: THEME.muted }}>{todayStr}</span>
         </span>
       </div>
 
@@ -149,7 +144,7 @@ export default function MobileRecovery() {
         <div
           style={{
             textAlign: 'center',
-            color: C.muted,
+            color: THEME.muted,
             marginTop: 40,
             fontSize: 12,
           }}
@@ -160,10 +155,10 @@ export default function MobileRecovery() {
 
       {!isLoading && !latest && (
         <div style={{ textAlign: 'center', marginTop: 40 }}>
-          <div style={{ fontSize: 13, color: C.muted }}>
+          <div style={{ fontSize: 13, color: THEME.muted }}>
             No vitals recorded yet
           </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 8 }}>
+          <div style={{ fontSize: 11, color: THEME.muted, marginTop: 8 }}>
             Connect Google Health to populate this view
           </div>
         </div>
@@ -174,7 +169,7 @@ export default function MobileRecovery() {
           {/* Readiness hero */}
           <div
             style={{
-              background: C.panel,
+              background: THEME.raised,
               borderRadius: 12,
               padding: '20px',
               marginBottom: 12,
@@ -195,7 +190,7 @@ export default function MobileRecovery() {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: C.muted,
+                color: THEME.muted,
                 marginTop: 6,
               }}
             >
@@ -228,11 +223,15 @@ export default function MobileRecovery() {
                   ((latest.rhr ?? 0) - personalBaselines.rhrBaseline) * 10
                 ) / 10;
               const rhrColor =
-                rhrDelta > 5 ? '#ff2d55' : rhrDelta > 2 ? '#ffd700' : '#34d399';
+                rhrDelta > 5
+                  ? THEME.critical
+                  : rhrDelta > 2
+                    ? THEME.caution
+                    : THEME.positive;
               return (
                 <div
                   style={{
-                    background: C.panel,
+                    background: THEME.raised,
                     borderRadius: 10,
                     padding: '14px',
                   }}
@@ -241,7 +240,7 @@ export default function MobileRecovery() {
                     style={{
                       fontSize: 9,
                       letterSpacing: 2,
-                      color: C.muted,
+                      color: THEME.muted,
                       marginBottom: 4,
                     }}
                   >
@@ -252,7 +251,9 @@ export default function MobileRecovery() {
                   >
                     {latest.rhr ?? '—'} bpm
                   </div>
-                  <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>
+                  <div
+                    style={{ fontSize: 10, color: THEME.muted, marginTop: 4 }}
+                  >
                     {rhrDelta > 0
                       ? '↑ +' + rhrDelta
                       : rhrDelta < 0
@@ -270,11 +271,15 @@ export default function MobileRecovery() {
                   (personalBaselines.hrvBaseline - (latest.hrv ?? 0)) * 10
                 ) / 10;
               const hrvColor =
-                deficit < 3 ? '#34d399' : deficit < 8 ? '#ffd700' : '#ff2d55';
+                deficit < 3
+                  ? THEME.positive
+                  : deficit < 8
+                    ? THEME.caution
+                    : THEME.critical;
               return (
                 <div
                   style={{
-                    background: C.panel,
+                    background: THEME.raised,
                     borderRadius: 10,
                     padding: '14px',
                   }}
@@ -283,7 +288,7 @@ export default function MobileRecovery() {
                     style={{
                       fontSize: 9,
                       letterSpacing: 2,
-                      color: C.muted,
+                      color: THEME.muted,
                       marginBottom: 4,
                     }}
                   >
@@ -294,7 +299,9 @@ export default function MobileRecovery() {
                   >
                     {latest.hrv ?? '—'} ms
                   </div>
-                  <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>
+                  <div
+                    style={{ fontSize: 10, color: THEME.muted, marginTop: 4 }}
+                  >
                     {(latest.hrv ?? 0) >= personalBaselines.hrvBaseline
                       ? '↑ +' +
                         Math.round(
@@ -312,14 +319,14 @@ export default function MobileRecovery() {
             {(() => {
               const sleepColor =
                 latest.sleep >= 7
-                  ? '#34d399'
+                  ? THEME.positive
                   : latest.sleep >= 6.5
-                    ? '#ffd700'
-                    : '#ff2d55';
+                    ? THEME.caution
+                    : THEME.critical;
               return (
                 <div
                   style={{
-                    background: C.panel,
+                    background: THEME.raised,
                     borderRadius: 10,
                     padding: '14px',
                   }}
@@ -328,7 +335,7 @@ export default function MobileRecovery() {
                     style={{
                       fontSize: 9,
                       letterSpacing: 2,
-                      color: C.muted,
+                      color: THEME.muted,
                       marginBottom: 4,
                     }}
                   >
@@ -339,7 +346,9 @@ export default function MobileRecovery() {
                   >
                     {latest.sleep ?? '—'}h
                   </div>
-                  <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>
+                  <div
+                    style={{ fontSize: 10, color: THEME.muted, marginTop: 4 }}
+                  >
                     {latest.sleep >= 7 ? 'Target met' : 'Below 7h target'}
                   </div>
                 </div>
@@ -349,7 +358,7 @@ export default function MobileRecovery() {
             {latest.sleep_score != null ? (
               <div
                 style={{
-                  background: C.panel,
+                  background: THEME.raised,
                   borderRadius: 10,
                   padding: '14px',
                 }}
@@ -358,7 +367,7 @@ export default function MobileRecovery() {
                   style={{
                     fontSize: 9,
                     letterSpacing: 2,
-                    color: C.muted,
+                    color: THEME.muted,
                     marginBottom: 4,
                   }}
                 >
@@ -370,10 +379,10 @@ export default function MobileRecovery() {
                     fontWeight: 700,
                     color:
                       latest.sleep_score >= 80
-                        ? '#34d399'
+                        ? THEME.positive
                         : latest.sleep_score >= 70
-                          ? '#ffd700'
-                          : '#ff2d55',
+                          ? THEME.caution
+                          : THEME.critical,
                   }}
                 >
                   {latest.sleep_score}
@@ -382,7 +391,7 @@ export default function MobileRecovery() {
             ) : (
               <div
                 style={{
-                  background: C.panel,
+                  background: THEME.raised,
                   borderRadius: 10,
                   padding: '14px',
                 }}
@@ -391,7 +400,7 @@ export default function MobileRecovery() {
                   style={{
                     fontSize: 9,
                     letterSpacing: 2,
-                    color: C.muted,
+                    color: THEME.muted,
                     marginBottom: 4,
                   }}
                 >
@@ -403,12 +412,12 @@ export default function MobileRecovery() {
                     fontWeight: 700,
                     color:
                       tsbValue == null
-                        ? '#7e7e9a'
+                        ? THEME.muted
                         : tsbValue > 10
-                          ? '#34d399'
+                          ? THEME.positive
                           : tsbValue > -10
-                            ? '#ffd700'
-                            : '#ff2d55',
+                            ? THEME.caution
+                            : THEME.critical,
                   }}
                 >
                   {tsbValue == null ? '—' : tsbValue.toFixed(1)}
@@ -420,7 +429,7 @@ export default function MobileRecovery() {
           {/* HRV 14-day trend */}
           <div
             style={{
-              background: C.panel,
+              background: THEME.raised,
               borderRadius: 10,
               padding: '14px',
               marginBottom: 10,
@@ -430,7 +439,7 @@ export default function MobileRecovery() {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: C.muted,
+                color: THEME.muted,
                 marginBottom: 6,
               }}
             >
@@ -447,13 +456,13 @@ export default function MobileRecovery() {
                 />
                 <ReferenceLine
                   y={personalBaselines.hrvBaseline}
-                  stroke="#ff6b35"
+                  stroke={THEME.warning}
                   strokeDasharray="3 3"
                 />
                 <Line
                   type="monotone"
                   dataKey="hrv"
-                  stroke="#00d4ff"
+                  stroke={THEME.accent}
                   dot={false}
                   strokeWidth={2}
                   isAnimationActive={false}
@@ -466,7 +475,7 @@ export default function MobileRecovery() {
           {/* RHR 14-day trend */}
           <div
             style={{
-              background: C.panel,
+              background: THEME.raised,
               borderRadius: 10,
               padding: '14px',
               marginBottom: 10,
@@ -476,7 +485,7 @@ export default function MobileRecovery() {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: C.muted,
+                color: THEME.muted,
                 marginBottom: 6,
               }}
             >
@@ -493,13 +502,13 @@ export default function MobileRecovery() {
                 />
                 <ReferenceLine
                   y={personalBaselines.rhrBaseline}
-                  stroke="#00d4ff"
+                  stroke={THEME.accent}
                   strokeDasharray="3 3"
                 />
                 <Line
                   type="monotone"
                   dataKey="rhr"
-                  stroke="#ff6b35"
+                  stroke={THEME.warning}
                   dot={false}
                   strokeWidth={2}
                   isAnimationActive={false}
@@ -512,7 +521,7 @@ export default function MobileRecovery() {
           {/* Sleep 14-day bar chart */}
           <div
             style={{
-              background: C.panel,
+              background: THEME.raised,
               borderRadius: 10,
               padding: '14px',
               marginBottom: 10,
@@ -522,7 +531,7 @@ export default function MobileRecovery() {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: C.muted,
+                color: THEME.muted,
                 marginBottom: 6,
               }}
             >
@@ -530,10 +539,14 @@ export default function MobileRecovery() {
             </div>
             <ResponsiveContainer width="100%" height={80}>
               <BarChart data={trend14} barCategoryGap="20%">
-                <ReferenceLine y={7} stroke="#34d399" strokeDasharray="3 3" />
+                <ReferenceLine
+                  y={7}
+                  stroke={THEME.positive}
+                  strokeDasharray="3 3"
+                />
                 <Bar
                   dataKey="sleep"
-                  fill="#a78bfa"
+                  fill={THEME.accentAlt}
                   radius={[3, 3, 0, 0]}
                   isAnimationActive={false}
                 />
@@ -545,7 +558,7 @@ export default function MobileRecovery() {
           {history.length > 0 && (
             <div
               style={{
-                background: C.panel,
+                background: THEME.raised,
                 borderRadius: 10,
                 padding: '14px',
                 marginBottom: 10,
@@ -555,7 +568,7 @@ export default function MobileRecovery() {
                 style={{
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: C.muted,
+                  color: THEME.muted,
                   marginBottom: 6,
                 }}
               >
@@ -565,12 +578,12 @@ export default function MobileRecovery() {
                 <LineChart data={history.slice(-7)}>
                   <ReferenceLine
                     y={80}
-                    stroke="#34d399"
+                    stroke={THEME.positive}
                     strokeDasharray="3 3"
                   />
                   <ReferenceLine
                     y={60}
-                    stroke="#ffd700"
+                    stroke={THEME.caution}
                     strokeDasharray="3 3"
                   />
                   <Line
@@ -590,7 +603,7 @@ export default function MobileRecovery() {
           {weightData && (
             <div
               style={{
-                background: C.panel,
+                background: THEME.raised,
                 borderRadius: 10,
                 padding: '14px',
                 marginBottom: 10,
@@ -600,7 +613,7 @@ export default function MobileRecovery() {
                 style={{
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: C.muted,
+                  color: THEME.muted,
                   marginBottom: 6,
                 }}
               >
@@ -611,7 +624,7 @@ export default function MobileRecovery() {
                   <Line
                     type="monotone"
                     dataKey="bodyweight"
-                    stroke="#ffd700"
+                    stroke={THEME.caution}
                     dot={false}
                     strokeWidth={2}
                     isAnimationActive={false}
@@ -620,7 +633,7 @@ export default function MobileRecovery() {
                   <Line
                     type="monotone"
                     dataKey="sma7"
-                    stroke="#ffd70088"
+                    stroke={`${THEME.caution}88`}
                     strokeDasharray="4 4"
                     dot={false}
                     strokeWidth={1}

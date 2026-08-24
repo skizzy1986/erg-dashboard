@@ -1,13 +1,15 @@
+import { THEME } from './theme.js';
+
 export const C = {
-  'Z2 Aerobic': '#00d4ff',
-  Threshold: '#ffd700',
-  'VO₂ Intervals': '#ff6b35',
-  Sharpener: '#ff2d55',
-  Rest: '#3a3a4a',
-  'Upper Strength': '#a78bfa',
-  'Lower Strength': '#34d399',
-  Combined: '#f472b6',
-  Cycling: '#2dd4bf',
+  'Z2 Aerobic': THEME.accent,
+  Threshold: THEME.caution,
+  'VO₂ Intervals': THEME.warning,
+  Sharpener: THEME.critical,
+  Rest: THEME.neutral,
+  'Upper Strength': THEME.accentAlt,
+  'Lower Strength': THEME.positive,
+  Combined: THEME.accentAlt2,
+  Cycling: THEME.positiveAlt,
 };
 export const ICON = {
   'Z2 Aerobic': '🚣',
