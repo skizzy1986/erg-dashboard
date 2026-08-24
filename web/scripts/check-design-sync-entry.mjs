@@ -18,7 +18,7 @@
 // failure being guarded.
 //
 //   npm run check:design-sync
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -81,8 +81,8 @@ if (!existsSync(entry)) {
 // 3. Every contrast claim conventions.md publishes must survive arithmetic, and
 //    every --color-* it names must exist.
 //
-//    conventions.md is the readmeHeader — the one input guaranteed to be inlined
-//    into the design agent's prompt, so a wrong number here reaches every design.
+//    conventions.md is the design project's style guide and is mirrored here, so a
+//    wrong ratio in it reaches every design built against it.
 //    Its own revision history is the argument for checking it: #224 measured the
 //    ratios, #240 replaced them with a different palette's, and #262 records that
 //    "four separate AA failures were shipped during this revision, every one of
@@ -92,6 +92,7 @@ const conventionsRel = '.design-sync/conventions.md';
 const conventionsPath = join(webRoot, conventionsRel);
 
 let claimsChecked = 0;
+let classified = 0;
 
 if (!existsSync(conventionsPath)) {
   failures.push(`${conventionsRel} is missing`);
@@ -216,6 +217,123 @@ for (const rel of ['.design-sync/CLAUDE.md', '.design-sync/conventions.md']) {
   }
 }
 
+// 5. Every file in .design-sync/ has a declared owner, and nothing design-owned
+//    is pushed back at the design project.
+//
+//    conventions.md used to move both ways with nothing arbitrating it: config.json
+//    pushed the repo's copy up as readmeHeader while PROJECT-CONTEXT.md declared the
+//    project the source of truth and HANDOFF.md §3 authored it. Whichever side acted
+//    last silently won — which is how #240 replaced #224's measured contrast ratios
+//    with a different palette's. ownership.json declares the direction per path; this
+//    check is what makes the declaration binding.
+const ownershipRel = '.design-sync/ownership.json';
+const ownershipPath = join(webRoot, ownershipRel);
+const dsRoot = join(webRoot, '.design-sync');
+
+if (!existsSync(ownershipPath)) {
+  failures.push(
+    `${ownershipRel} is missing — every .design-sync file needs an owner`
+  );
+} else {
+  let owners;
+  try {
+    ({ owners } = JSON.parse(readFileSync(ownershipPath, 'utf8')));
+  } catch (e) {
+    failures.push(`${ownershipRel} is not valid JSON — ${e.message}`);
+    owners = null;
+  }
+
+  if (owners) {
+    //  Only the two glob shapes actually used: "dir/*.ext" and a literal path.
+    const matches = (pattern, rel) => {
+      const star = pattern.indexOf('*');
+      if (star === -1) return pattern === rel;
+      const head = pattern.slice(0, star);
+      const tail = pattern.slice(star + 1);
+      return (
+        rel.startsWith(head) &&
+        rel.endsWith(tail) &&
+        !rel.slice(head.length, rel.length - tail.length).includes('/')
+      );
+    };
+
+    const walk = (dir, prefix = '') => {
+      const out = [];
+      for (const name of readdirSync(dir)) {
+        const abs = join(dir, name);
+        const rel = prefix ? `${prefix}/${name}` : name;
+        if (statSync(abs).isDirectory()) out.push(...walk(abs, rel));
+        else out.push(rel);
+      }
+      return out;
+    };
+
+    const onDisk = walk(dsRoot);
+    classified = onDisk.length;
+    const rules = Object.entries(owners).flatMap(([owner, spec]) =>
+      (spec.paths ?? []).map((pattern) => ({
+        owner,
+        pattern,
+        pushed: spec.pushed,
+      }))
+    );
+
+    const ownerOf = (rel) => {
+      const hits = rules.filter((r) => matches(r.pattern, rel));
+      return hits.length === 1 ? hits[0] : hits;
+    };
+
+    for (const rel of onDisk) {
+      const hit = ownerOf(rel);
+      if (Array.isArray(hit)) {
+        failures.push(
+          hit.length === 0
+            ? `${ownershipRel} does not classify .design-sync/${rel} — declare it ` +
+                'repo (pushed), design (mirrored down) or local (neither)'
+            : `${ownershipRel} classifies .design-sync/${rel} ${hit.length} times: ` +
+                hit.map((h) => `${h.owner} via "${h.pattern}"`).join(', ')
+        );
+      }
+    }
+
+    for (const { pattern } of rules) {
+      if (!onDisk.some((rel) => matches(pattern, rel))) {
+        failures.push(
+          `${ownershipRel} lists "${pattern}", which matches no file in .design-sync/`
+        );
+      }
+    }
+
+    //  The load-bearing check: anything config.json uploads must be repo-owned.
+    const pushInputs = [
+      ['entry', cfg.entry],
+      ['cssEntry', cfg.cssEntry],
+      ['docsDir', cfg.docsDir],
+      ['readmeHeader', cfg.readmeHeader],
+    ].filter(([, v]) => typeof v === 'string');
+
+    for (const [key, value] of pushInputs) {
+      const rel = value.replace(/^\.design-sync\//, '');
+      const hits = rules.filter(
+        (r) => matches(r.pattern, rel) || r.pattern.startsWith(`${rel}/`)
+      );
+      const designOwned = hits.filter((h) => h.owner === 'design');
+      if (designOwned.length) {
+        failures.push(
+          `config.json ${key} points at "${value}", which ownership.json says the ` +
+            'design project owns. Pushing it would overwrite the source of truth — ' +
+            "this is the loop that lost #224's contrast ratios."
+        );
+      } else if (!hits.length) {
+        failures.push(
+          `config.json ${key} points at "${value}", which ${ownershipRel} does not ` +
+            'classify'
+        );
+      }
+    }
+  }
+}
+
 if (failures.length) {
   console.error('\ndesign-sync entry guard FAILED\n');
   for (const f of failures) console.error(`  ✗ ${f}\n`);
@@ -231,6 +349,8 @@ if (failures.length) {
 }
 
 console.log(
-  'design-sync: barrel bundles, every componentSrcMap path resolves, and ' +
-    `${claimsChecked} published contrast claim(s) in conventions.md recompute.`
+  'design-sync: barrel bundles, every componentSrcMap path resolves, ' +
+    `${claimsChecked} published contrast claim(s) recompute, and all ` +
+    `${classified} files in .design-sync/ have a declared owner with nothing ` +
+    'design-owned being pushed back.'
 );

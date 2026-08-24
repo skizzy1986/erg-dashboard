@@ -130,10 +130,14 @@ freeze the contradiction into another bundle. **Re-sync after the role rename la
 (#248), which is when those references move in lockstep with the code. Re-run
 `node .design-sync/gen-css.mjs` first — step one of every sync. Tracked as #258.
 
-While re-syncing, verify how `CLAUDE.md` reaches the design agent. `readmeHeader` inlining
-is the only channel *confirmed* to work; whether the app auto-loads a file by that name is
-unverified. If it does not, point `readmeHeader` at it. The behavioural test: ask for a
-chart and see whether it produces a labelled axis and a computed caption unprompted.
+**Done — `readmeHeader` now points at `CLAUDE.md`.** This section asked for it, and it
+was the right call for a second reason: `readmeHeader` previously pushed `conventions.md`
+*up*, over the copy the design project owns. That was a two-way flow with nothing
+arbitrating it. `ownership.json` now declares the direction per file and
+`npm run check:design-sync` fails if `config.json` ever names a design-owned path again.
+
+The behavioural test still stands: ask for a chart and see whether it produces a labelled
+axis and a computed caption unprompted.
 
 ## Build order — when the designs become buildable
 

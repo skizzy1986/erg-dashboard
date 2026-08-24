@@ -1,0 +1,49 @@
+{
+  "$comment": [
+    "Who owns each file in .design-sync/, and which direction it moves.",
+    "",
+    "conventions.md used to move both ways with nothing arbitrating: config.json",
+    "pushed the repo's copy up as readmeHeader, while PROJECT-CONTEXT.md declared",
+    "the design project the source of truth and HANDOFF.md §3 authored it. Whichever",
+    "side acted last silently won — which is how #240 replaced #224's measured",
+    "contrast ratios. This file makes the direction explicit per path, and",
+    "check:design-sync enforces it.",
+    "",
+    "owner=repo   — written here, pushed to the design project. The repo wins.",
+    "owner=design — authored in the design project, committed here as a read-only",
+    "               mirror so a code session can read it. Never pushed back up;",
+    "               config.json must not reference these or the loop returns.",
+    "owner=local  — working documents. Neither pushed nor mirrored."
+  ],
+  "owners": {
+    "repo": {
+      "pushed": true,
+      "paths": [
+        "config.json",
+        "ownership.json",
+        "entry.jsx",
+        "gen-css.mjs",
+        "base.css",
+        "CLAUDE.md",
+        "CODE-TO-DESIGN.md",
+        "docs/*.md",
+        "previews/*.tsx"
+      ]
+    },
+    "design": {
+      "pushed": false,
+      "paths": [
+        "conventions.md",
+        "HANDOFF.md",
+        "ISSUES-load-states.md",
+        "PROJECT-CONTEXT.md",
+        "designs/*.html",
+        "designs/README.md"
+      ]
+    },
+    "local": {
+      "pushed": false,
+      "paths": ["NOTES.md", "STATE_OF_PLAY.md", "DESIGN_BRIEF.md"]
+    }
+  }
+}
