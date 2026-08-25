@@ -161,13 +161,14 @@ export default defineConfig({
       //   measured: lines 48.98 / functions 46.81 / branches 40.38
       thresholds: {
         // Global floor — ratcheted up as extractions land tests (measured
-        // lines 84.31 / functions 79.33 / branches 76.31 on 2026-08-22, after
-        // wiring the Coach training context (#199) put useCoach.sendMessage
-        // under test for the first time; ~4 points headroom for denominator
-        // drift).
-        lines: 80,
-        functions: 75,
-        branches: 72,
+        // lines 88.96 / functions 83.21 / branches 80.65 on 2026-08-25, after
+        // Phase B's five mobile destinations landed with useHashRoute,
+        // MobileToday, MobileApp and tsbBand tests; ~4 points headroom for
+        // denominator drift, same margin as the 2026-08-22 ratchet which read
+        // lines 84.31 / functions 79.33 / branches 76.31 and set 80/75/72).
+        lines: 85,
+        functions: 79,
+        branches: 76,
         // Commercial-baseline gate (80/80/70) for new/extracted code, applied
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.
