@@ -100,7 +100,7 @@ function Login() {
           SPLITIQ
         </div>
         <div style={{ fontSize: 11, color: C.muted, marginBottom: 22 }}>
-          Sign in to continue
+          Sign in to continue — BASELINE STIMULUS
         </div>
 
         <div style={{ marginBottom: 14 }}>

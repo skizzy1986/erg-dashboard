@@ -165,45 +165,6 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - name: DEBUG (throwaway branch only) — what does the browser compute?
-        run: |
-          npm run build >/dev/null 2>&1 || echo "BUILD FAILED"
-          # Port 4180, NOT 4173 — playwright.config.js webServer owns 4173 and
-          # a squatter makes the real test run abort.
-          npx vite preview --port 4180 --strictPort >/tmp/preview.log 2>&1 &
-          PREVIEW_PID=$!
-          for i in $(seq 1 40); do curl -sf http://localhost:4180/ -o /tmp/idx.html && break; sleep 0.5; done
-
-          # Written into the project dir so node resolves @playwright/test from
-          # ./node_modules — /tmp cannot see it.
-          cat > probe.mjs <<'EOF'
-          import { chromium } from '@playwright/test';
-          const b = await chromium.launch();
-          const c = await b.newContext({ viewport: { width: 1280, height: 800 } });
-          await c.addInitScript(() => {
-            window.matchMedia = () => { throw new Error('e2e: forced render error'); };
-          });
-          const p = await c.newPage();
-          await p.goto('http://localhost:4180/');
-          await p.waitForSelector('[role=alert]', { timeout: 15000 });
-          console.log('ALERT bg   :', await p.$eval('[role=alert]', (e) => getComputedStyle(e).backgroundColor));
-          console.log('BODY bg    :', await p.$eval('body', (e) => getComputedStyle(e).backgroundColor));
-          console.log('THEME.bg   :', await p.evaluate(() => {
-            const d = document.createElement('div');
-            d.style.background = '#3d0812';
-            return d.style.background;
-          }));
-          const shot = await p.screenshot();
-          console.log('PNG bytes  :', shot.length);
-          await b.close();
-          EOF
-          sed -i 's/^          //' probe.mjs
-          node probe.mjs || echo "PROBE FAILED"
-          kill $PREVIEW_PID 2>/dev/null || true
-          rm -f probe.mjs
-          sleep 2
-        env:
-          HOME: /root
       # Rewriting a baseline reports the test as failed, which is not a failure
       # of this job — the regenerated PNGs still have to leave the container.
       - run: npm run test:visual:update
