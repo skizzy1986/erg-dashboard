@@ -130,3 +130,40 @@ describe('DEFAULT_THEME', () => {
     expect([DARK, LIGHT]).toContain(DEFAULT_THEME);
   });
 });
+
+describe('the literals the seam left behind', () => {
+  // Five dark-palette hexes were still written out longhand in view source after
+  // the flip — the header gradient's far stop, the today card's, every
+  // `linear-gradient(...,#1e1e30)` second stop, `color:'#fff'`, and `'#888'`.
+  // On light they kept painting dark: the stat-tile values went white-on-white
+  // and vanished from the desktop overview entirely.
+  //
+  // Each was replaced by the token whose DARK value it already was, so the swap
+  // is a no-op on dark. 'locks the canonical values' above holds that half. What
+  // it does not state is the premise the two shorthands rest on, and those cover
+  // 33 of the 47 sites — so state it here rather than leave it assumed.
+  const expand = (hex) =>
+    hex.length === 4 ? '#' + [...hex.slice(1)].map((c) => c + c).join('') : hex;
+
+  it.each([
+    ['#fff', 'textStrong'],
+    ['#888', 'neutralAccent'],
+  ])('%s is shorthand for DARK.%s', (hex, key) => {
+    expect(DARK[key]).toBe(expand(hex));
+  });
+
+  it.each([
+    ['#08080d', 'bg'],
+    ['#2a2a48', 'raised'],
+    ['#1e1e30', 'surfaceAlt'],
+  ])('%s was DARK.%s', (hex, key) => {
+    expect(DARK[key]).toBe(hex);
+  });
+
+  it.each(['bg', 'raised', 'surfaceAlt', 'textStrong', 'neutralAccent'])(
+    'LIGHT.%s differs from DARK — the substitution is what moves on light',
+    (key) => {
+      expect(LIGHT[key]).not.toBe(DARK[key]);
+    }
+  );
+});
