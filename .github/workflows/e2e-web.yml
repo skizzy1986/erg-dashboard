@@ -39,6 +39,11 @@ name: E2E — Web
 # dependabot-maintenance.yml): the PNGs land, but the Visual check keeps showing
 # the previous run until something else pushes.
 #
+# The retrigger reaches this workflow through `pull_request`, not `push` — `on.push`
+# above is main-only — so the branch must have an open PR for the re-run to happen.
+# That is the normal case (baselines are regenerated on a branch already under
+# review), but a branch with no PR gets the commit and no re-run.
+#
 # What this does NOT do is decide whether the new screenshots are RIGHT. That
 # judgement belongs on the PR, reading the committed PNG diff — the job only
 # removes the clerical step of moving files.
