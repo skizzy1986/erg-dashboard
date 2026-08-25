@@ -1,5 +1,5 @@
 export const THEME = {
-  bg: '#08080d',
+  bg: '#3d0812',
   surface: '#1a1a2e',
   raised: '#2a2a48',
   field: '#08080d',

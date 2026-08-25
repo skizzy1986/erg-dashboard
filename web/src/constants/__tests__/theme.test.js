@@ -42,7 +42,7 @@ describe('THEME', () => {
   });
 
   it('locks the canonical values', () => {
-    expect(THEME.bg).toBe('#08080d');
+    expect(THEME.bg).toBe('#3d0812');
     expect(THEME.surface).toBe('#1a1a2e');
     expect(THEME.raised).toBe('#2a2a48');
     expect(THEME.field).toBe('#08080d');
