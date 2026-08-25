@@ -515,10 +515,41 @@ Rebase early and often; a branch that tracks `main` closely rarely conflicts. Ne
 to `#build` in Slack. Check `#build` to confirm a change landed correctly
 without needing to prompt Coach.
 
+### Concurrent sessions: one worktree each
+
+**Every Claude Code session works in its own git worktree.** Call `EnterWorktree`
+before the first edit — not as a rescue once a conflict appears.
+
+Sessions launched in the same directory share one working tree and one `HEAD`.
+There is no isolation between them: a `git checkout` in one session yanks the
+files out from under another mid-edit, and two sessions editing one file race on
+every write. This is not hypothetical. On **2026-08-25** three concurrent
+sessions — one on #279, one on #287, one on #291 — collided here. The tree
+changed branches four times in forty minutes, and one session's uncommitted work
+surfaced in another session's `git status` while a subagent was reading it.
+
+- **Start with `EnterWorktree`.** It cuts a new branch from a freshly-fetched
+  `origin/main` (`worktree.baseRef: "fresh"` in `.claude/settings.json`) — the
+  same rule as step 1 above.
+- **Continuing an open PR?** `EnterWorktree` always makes a *new* branch, so for
+  existing work use `git worktree add <path> <branch>` and then `EnterWorktree`
+  with `path`.
+- **Commit or stash before you switch.** A worktree switch does not carry
+  uncommitted changes across; they stay in the tree you left.
+- **One branch, one worktree** — git refuses to check the same branch out twice,
+  and that refusal is the constraint doing the real work.
+- **Run `npm install` in `web/` first.** A worktree is a fresh checkout with no
+  `node_modules`, so `npm test` / `lint` / `build` cannot run until you do.
+- Worktrees live in `.claude/worktrees/` and are gitignored.
+
+Check for company before assuming the tree is yours: the Claude Code session
+list shows which other sessions are running in this directory.
+
 ## Safety Constraints
 
 - Never push directly to main — always use feature branches; branch protection enforces this
 - Branch from a freshly-fetched `origin/main`; keep branches short-lived and rebase (not merge) to stay current — `--force-with-lease` only, never `--force`
+- Work in your own worktree (`EnterWorktree`) — never share a working tree with another running session
 - Never hardcode credentials — use `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 - Never delete Supabase rows without confirming with the user first
 - Always run `npm run build` before marking a feature complete
