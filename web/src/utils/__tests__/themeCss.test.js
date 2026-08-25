@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cssVars, cssVarName } from '../themeCss.js';
+import { cssVars, cssVarName, alpha } from '../themeCss.js';
 import { THEME } from '../../constants/theme.js';
 import { DARK } from '../../constants/themeValues.js';
 
@@ -42,5 +42,40 @@ describe('cssVars', () => {
     expect(out).toContain('--color-baz: qux;');
     expect((out.match(/--color-/g) ?? []).length).toBe(2);
     expect(out.startsWith(':root {')).toBe(true);
+  });
+});
+
+describe('alpha', () => {
+  // The suffixes actually in use across web/src, with the percentage each
+  // two-digit hex denotes. These are the values the views rendered before the
+  // token seam, when THEME held literals and `${THEME.accent}15` concatenated
+  // into #00d4ff15.
+  it.each([
+    ['10', 6.27],
+    ['12', 7.06],
+    ['15', 8.24],
+    ['18', 9.41],
+    ['20', 12.55],
+    ['30', 18.82],
+    ['40', 25.1],
+    ['50', 31.37],
+    ['66', 40],
+    ['99', 60],
+  ])('reads %s as %s%%', (hexPair, pct) => {
+    expect(alpha('var(--color-accent)', hexPair)).toBe(
+      `color-mix(in srgb, var(--color-accent) ${pct}%, transparent)`
+    );
+  });
+
+  it('emits one CSS component, not a token followed by a bare number', () => {
+    // The whole point. `var(--color-accent)15` parses as two components, which
+    // makes the declaration invalid at computed-value time and the browser
+    // drops it silently. Nothing may trail the closing paren.
+    expect(alpha(THEME.accent, '30')).toMatch(/^color-mix\(.*\)$/);
+    expect(alpha(THEME.accent, '30')).not.toMatch(/\)\s*[0-9a-fA-F]{2}$/);
+  });
+
+  it('takes a var() reference, so it resolves on whichever theme is live', () => {
+    expect(alpha(THEME.critical, '50')).toContain('var(--color-critical)');
   });
 });
