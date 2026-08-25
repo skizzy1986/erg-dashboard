@@ -111,7 +111,7 @@ export default function LogEntry({ entry, done = false }) {
                     fontWeight: 700,
                     color: THEME.textSubtle,
                     border:
-                      '1px solid color-mix(in srgb, var(--color-textSubtle) 60%, transparent)',
+                      '1px solid color-mix(in srgb, var(--color-text-subtle) 60%, transparent)',
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',

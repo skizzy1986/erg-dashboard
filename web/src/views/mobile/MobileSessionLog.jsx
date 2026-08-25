@@ -225,7 +225,7 @@ export default function MobileSessionLog() {
                 <span
                   style={{
                     background:
-                      'color-mix(in srgb, var(--color-accentAlt) 13.33%, transparent)',
+                      'color-mix(in srgb, var(--color-accent-alt) 13.33%, transparent)',
                     color: THEME.accentAlt,
                     borderRadius: 4,
                     padding: '2px 6px',
