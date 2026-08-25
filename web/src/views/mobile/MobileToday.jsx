@@ -14,6 +14,7 @@ import {
   PLANNED_STATUS,
 } from '../../constants/sessionStatus.js';
 import { THEME } from '../../constants/theme.js';
+import { alpha } from '../../utils/themeCss.js';
 import { FONT } from '../../constants/type.js';
 import { RADIUS, SPACE, TYPE } from '../../constants/tokens.js';
 
@@ -46,7 +47,7 @@ const Card = ({ children, accent, wash }) => (
       border: `1px solid ${THEME.border}`,
       ...(accent ? { borderLeft: `3px solid ${accent}` } : null),
       borderRadius: RADIUS.md,
-      boxShadow: '0 1px 2px #1c1e2a1a',
+      boxShadow: `0 1px 2px ${alpha(THEME.text, '1a')}`,
       padding: `${SPACE.lg}px`,
       marginBottom: SPACE.sm,
     }}

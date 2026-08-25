@@ -3,6 +3,7 @@ import MobileAnalytics from './MobileAnalytics.jsx';
 import MobileSessionLog from './MobileSessionLog.jsx';
 import MobileStrength from './MobileStrength.jsx';
 import { THEME } from '../../constants/theme.js';
+import { alpha } from '../../utils/themeCss.js';
 import { FONT } from '../../constants/type.js';
 import { RADIUS, SPACE, TYPE } from '../../constants/tokens.js';
 
@@ -52,7 +53,7 @@ export default function MobileProgress() {
                 borderRadius: RADIUS.sm,
                 padding: `${SPACE.sm}px`,
                 background: on ? THEME.surface : 'transparent',
-                boxShadow: on ? '0 1px 2px #1c1e2a1a' : 'none',
+                boxShadow: on ? `0 1px 2px ${alpha(THEME.text, '1a')}` : 'none',
                 color: on ? THEME.accent : THEME.textSubtle,
                 fontSize: TYPE.label.size,
                 fontWeight: TYPE.label.weight,
