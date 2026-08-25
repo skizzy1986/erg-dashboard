@@ -120,4 +120,28 @@ describe('the hardware back button unwinds one level at a time', () => {
     back();
     expect(mockMinimize).toHaveBeenCalledTimes(1);
   });
+
+  // Both halves of Capacitor's listener API are async, and React does not
+  // await a cleanup — so re-registering per navigation left the order of
+  // "old removed" against "new registered" undefined: two listeners holding
+  // different closures, or none and a dropped press. Registered once instead,
+  // reading the current route from a ref (Seer, PR #293).
+  it('registers exactly one listener however much you navigate', async () => {
+    const user = userEvent.setup();
+    render(<MobileApp />);
+    await user.click(tab('Progress'));
+    await user.click(tab('Body'));
+    await user.click(tab('Train'));
+    await user.click(tab('Coach'));
+    expect(backHandlers).toHaveLength(1);
+  });
+
+  it('the one listener still sees the current route', async () => {
+    const user = userEvent.setup();
+    render(<MobileApp />);
+    await user.click(tab('Coach'));
+    back();
+    expect(await screen.findByText('TODAY')).toBeInTheDocument();
+    expect(mockMinimize).not.toHaveBeenCalled();
+  });
 });
