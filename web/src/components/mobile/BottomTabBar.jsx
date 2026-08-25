@@ -1,15 +1,10 @@
 import React from 'react';
 import { THEME } from '../../constants/theme.js';
-import { LAYER } from '../../constants/tokens.js';
+import { LAYER, TYPE } from '../../constants/tokens.js';
+import { DESTINATIONS } from '../../constants/destinations.js';
 
-const TABS = [
-  { id: 'analytics', label: 'Analytics', icon: '📊' },
-  { id: 'erg', label: 'Live', icon: '🚣' },
-  { id: 'log', label: 'Log', icon: '📝' },
-  { id: 'strength', label: 'Strength', icon: '💪' },
-  { id: 'recovery', label: 'Recovery', icon: '❤️' },
-  { id: 'coach', label: 'Coach', icon: '🤖' },
-];
+// The artboards draw a 64px bar; 56 was the old value.
+export const TAB_BAR_HEIGHT = 64;
 
 export default function BottomTabBar({ activeTab, onTabChange }) {
   return (
@@ -20,7 +15,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
         left: 0,
         right: 0,
         zIndex: LAYER.nav,
-        height: 56,
+        height: TAB_BAR_HEIGHT,
         paddingBottom: 'env(safe-area-inset-bottom)',
         display: 'flex',
         flexDirection: 'row',
@@ -30,7 +25,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
         borderTop: `1px solid ${THEME.border}`,
       }}
     >
-      {TABS.map(({ id, label, icon }) => (
+      {DESTINATIONS.map(({ id, label, icon }) => (
         <button
           key={id}
           onClick={() => onTabChange(id)}
@@ -40,7 +35,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            height: 56,
+            height: TAB_BAR_HEIGHT,
             border: 'none',
             background: 'transparent',
             cursor: 'pointer',
@@ -52,10 +47,10 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
           </span>
           <span
             style={{
-              fontSize: 9,
+              fontSize: TYPE.caption.size,
               letterSpacing: 1,
-              fontWeight: activeTab === id ? 700 : 400,
-              color: activeTab === id ? THEME.positive : THEME.muted,
+              fontWeight: TYPE.label.weight,
+              color: activeTab === id ? THEME.accent : THEME.textSubtle,
             }}
           >
             {label}

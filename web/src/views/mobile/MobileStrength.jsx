@@ -1,16 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStrengthPRs } from '../../hooks/useStrengthPRs.js';
-import StrengthLogger from '../../StrengthLogger.jsx';
 import { THEME } from '../../constants/theme.js';
 import { FONT } from '../../constants/type.js';
 
 export default function MobileStrength() {
-  const [showLogger, setShowLogger] = useState(false);
   const { data, isLoading } = useStrengthPRs();
-
-  if (showLogger) {
-    return <StrengthLogger />;
-  }
 
   return (
     <div
@@ -126,25 +120,6 @@ export default function MobileStrength() {
           ))}
         </div>
       )}
-
-      <button
-        onClick={() => setShowLogger(true)}
-        style={{
-          background: THEME.raised,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 8,
-          padding: '14px',
-          color: THEME.accentAlt,
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: 1,
-          cursor: 'pointer',
-          width: '100%',
-          fontFamily: 'inherit',
-        }}
-      >
-        OPEN STRENGTH LOGGER
-      </button>
     </div>
   );
 }
