@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { C, ICON } from '../constants/ui.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 export default function LogEntry({ entry, done = false }) {
   const [open, setOpen] = useState(false);
@@ -21,15 +22,15 @@ export default function LogEntry({ entry, done = false }) {
   return (
     <div
       style={{
-        borderTop: `1px solid ${open ? color + '50' : THEME.border}`,
-        borderRight: `1px solid ${open ? color + '50' : THEME.border}`,
-        borderBottom: `1px solid ${open ? color + '50' : THEME.border}`,
+        borderTop: `1px solid ${open ? alpha(color, '50') : THEME.border}`,
+        borderRight: `1px solid ${open ? alpha(color, '50') : THEME.border}`,
+        borderBottom: `1px solid ${open ? alpha(color, '50') : THEME.border}`,
         borderLeft: cancelled
           ? `3px dotted ${THEME.muted}`
           : `3px ${planned ? 'dashed' : 'solid'} ${color}`,
         borderRadius: 6,
         overflow: 'hidden',
-        background: open ? `${color}10` : THEME.raised,
+        background: open ? alpha(color, '10') : THEME.raised,
         opacity: done ? 0.5 : cancelled ? 0.8 : 1,
       }}
     >
@@ -75,7 +76,8 @@ export default function LogEntry({ entry, done = false }) {
                     letterSpacing: 1.5,
                     fontWeight: 700,
                     color: THEME.positive,
-                    border: `1px solid ${THEME.positive}66`,
+                    border:
+                      '1px solid color-mix(in srgb, var(--color-positive) 40%, transparent)',
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -92,7 +94,7 @@ export default function LogEntry({ entry, done = false }) {
                     letterSpacing: 1.5,
                     fontWeight: 700,
                     color,
-                    border: `1px solid ${color}66`,
+                    border: `1px solid ${alpha(color, '66')}`,
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -109,7 +111,8 @@ export default function LogEntry({ entry, done = false }) {
                     letterSpacing: 1.5,
                     fontWeight: 700,
                     color: THEME.textSubtle,
-                    border: `1px solid ${THEME.textSubtle}99`,
+                    border:
+                      '1px solid color-mix(in srgb, var(--color-text-subtle) 60%, transparent)',
                     borderRadius: 3,
                     padding: '1px 5px',
                     verticalAlign: 'middle',
@@ -147,8 +150,8 @@ export default function LogEntry({ entry, done = false }) {
         {!isErg && entry.prs > 0 && (
           <div
             style={{
-              background: `${color}20`,
-              border: `1px solid ${color}40`,
+              background: alpha(color, '20'),
+              border: `1px solid ${alpha(color, '40')}`,
               borderRadius: 4,
               padding: '3px 7px',
               flexShrink: 0,
@@ -331,7 +334,7 @@ export default function LogEntry({ entry, done = false }) {
                 borderRadius: 4,
                 padding: '10px 12px',
                 fontSize: 11,
-                color: '#ffaa44',
+                color: THEME.caution,
                 lineHeight: 1.7,
               }}
             >

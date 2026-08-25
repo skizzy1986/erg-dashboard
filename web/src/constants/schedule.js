@@ -1,8 +1,9 @@
+import { THEME } from './theme.js';
 export const MICROCYCLE = {
   home: {
     label: 'HOME WEEK — Loading (PUSH)',
     sub: 'Off-swing · full volume · build while fresh · trained engine can absorb it · erg 6am / strength 4pm',
-    color: '#00d4ff',
+    color: THEME.accent,
     days: [
       {
         day: 'Sun',
@@ -124,7 +125,7 @@ export const MICROCYCLE = {
   fifo: {
     label: 'FIFO WEEK — Consolidation (RECOVER)',
     sub: "On-swing · 12hr shifts · the deload that banks last week's gains · sleep is king",
-    color: '#ffd700',
+    color: THEME.caution,
     machineNote:
       "Camp uses Technogym (Concept2 harder to access). For FIFO maintenance rows that's fine — connect Technogym app → Strava so sessions auto-capture. Log as HR/sRPE-anchored cross-training, NOT on the Concept2 watts trend or HR130 barometer (brand power numbers aren't comparable). Row to HR130 + report sRPE — those transfer across machines, watts don't. Comparable data resumes on the home Concept2. BUILDING a personal conversion (see below) to eventually give real Technogym watt targets.",
     days: [

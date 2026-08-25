@@ -45,7 +45,7 @@ stale-but-live constant quietly hands out wrong pace bands."*
 ## What Code did since the last edition
 
 **The palette rename shipped** (`#277`). `THEME` keys are role-named:
-`accent` `positive` `caution` `warning` `critical` `accentAlt` `accentAlt2` `positiveAlt`
+`accent` `positive` `caution` `warning` `critical` `accentAlt` `accentAlt2` `cycling`
 `neutralAccent` `textStrong`. **No value moved** — every hex appears on both a `+` and a
 `-` line, which is what let seven colour-locking test files through unmodified.
 
@@ -72,7 +72,7 @@ manifest is complete. `check:zones` recomputes every rowing zone band published 
 tracked markdown file against `derivePaceZones`. Each was written against a failure that
 had already shipped — the same wrong AT ceiling had reached three separate documents.
 
-## One correction to carry forward
+## One correction, now closed
 
 **`teal` was not folded into `positive`, and the two sides named it differently.**
 
@@ -82,8 +82,12 @@ discipline, and folding loses cycling's accent. `#277` reached the same conclusi
 independently and kept it.
 
 But it named the key **`positiveAlt`**, while the light palette names it **`cycling`**.
-`positiveAlt` reintroduces by name the conflation both sides rejected on substance. Worth
-converging before the seam wires the token up — the light palette's name is the better one.
+`positiveAlt` reintroduces by name the conflation both sides rejected on substance.
+
+**Converged on `cycling`** — the light palette's name — before the seam wires the token up,
+as this section asked. The value did not move; `base.css` is regenerated. `THEME` is now
+`accent` `positive` `caution` `warning` `critical` `accentAlt` `accentAlt2` `cycling`
+`neutralAccent` `textStrong`, and both sides name the discipline the same thing.
 
 ## What is still owed, and by whom
 

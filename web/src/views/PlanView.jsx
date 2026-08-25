@@ -1,4 +1,5 @@
 import LogEntry from '../components/LogEntry.jsx';
+import { THEME } from '../constants/theme.js';
 
 // ── PLAN VIEW (today + future prescriptions from status='planned') ──
 export default function PlanView({ plannedSessions, loggedKeys, isWide }) {
@@ -21,18 +22,18 @@ export default function PlanView({ plannedSessions, loggedKeys, isWide }) {
     <>
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
-          borderLeft: '3px dashed #00d4ff',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
+          borderLeft: `3px dashed ${THEME.accent}`,
           borderRadius: 6,
           padding: '11px 14px',
           marginBottom: 14,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: '#00d4ff', fontWeight: 700 }}>THE PLAN. </span>
+        <span style={{ color: THEME.accent, fontWeight: 700 }}>THE PLAN. </span>
         Upcoming prescriptions from Coach (today forward). A dashed border marks
         a planned session; tap any card for the targets. Cards mark ✓ done once
         you log the matching session.
@@ -40,12 +41,12 @@ export default function PlanView({ plannedSessions, loggedKeys, isWide }) {
       {items.length === 0 ? (
         <div
           style={{
-            background: '#2a2a48',
-            border: '1px solid #4a4a68',
+            background: THEME.raised,
+            border: `1px solid ${THEME.border}`,
             borderRadius: 6,
             padding: '18px 16px',
             fontSize: 11,
-            color: '#7e7e9a',
+            color: THEME.muted,
             textAlign: 'center',
           }}
         >

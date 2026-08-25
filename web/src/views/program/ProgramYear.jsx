@@ -11,6 +11,8 @@ import {
   EVENT_PATHWAY,
   ANNUAL_ARC,
 } from '../../constants/program.js';
+import { THEME } from '../../constants/theme.js';
+import { alpha } from '../../utils/themeCss.js';
 
 export default function ProgramYear() {
   return (
@@ -18,8 +20,8 @@ export default function ProgramYear() {
       {/* Race target banner */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#ff2d5520,#1e1e30)',
-          border: '1px solid #ff2d5550',
+          background: `linear-gradient(135deg,${alpha(THEME.critical, '20')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.critical, '50')}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -29,7 +31,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#ff2d55',
+            color: THEME.critical,
             marginBottom: 6,
           }}
         >
@@ -39,7 +41,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: '#fff',
+            color: THEME.textStrong,
             marginBottom: 3,
           }}
         >
@@ -48,30 +50,34 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 11,
-            color: '#ff8fa8',
+            color: THEME.accentAlt2,
             marginBottom: 6,
           }}
         >
           {RACE_TARGET.when} · {RACE_TARGET.formats}
         </div>
-        <div style={{ fontSize: 10, color: '#888', lineHeight: 1.5 }}>
+        <div
+          style={{ fontSize: 10, color: THEME.neutralAccent, lineHeight: 1.5 }}
+        >
           {RACE_TARGET.note}
         </div>
       </div>
       <div
         style={{
-          background: '#1e1e30',
-          border: '1px solid #4a4a68',
-          borderLeft: '3px solid #00d4ff',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${THEME.border}`,
+          borderLeft: `3px solid ${THEME.accent}`,
           borderRadius: 6,
           padding: '12px 14px',
           marginBottom: 14,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: '#00d4ff', fontWeight: 700 }}>ANNUAL ARC: </span>
+        <span style={{ color: THEME.accent, fontWeight: 700 }}>
+          ANNUAL ARC:{' '}
+        </span>
         Periodised to peak for the Feb 2027 champs across all 3 formats. Base →
         threshold → power → sharpen. Plans firm up at each block boundary;
         detail beyond the current block is directional.
@@ -81,9 +87,9 @@ export default function ProgramYear() {
           <div
             key={i}
             style={{
-              background: b.current ? '#2a2a48' : '#1e1e30',
-              border: `1px solid ${b.current ? '#00d4ff40' : '#4a4a68'}`,
-              borderLeft: `3px solid ${b.current ? '#00d4ff' : b.test.includes('2k') ? '#ff2d55' : '#5a5a74'}`,
+              background: b.current ? THEME.raised : THEME.surfaceAlt,
+              border: `1px solid ${b.current ? alpha(THEME.accent, '40') : THEME.border}`,
+              borderLeft: `3px solid ${b.current ? THEME.accent : b.test.includes('2k') ? THEME.critical : THEME.textDim}`,
               borderRadius: 6,
               padding: '12px 14px',
             }}
@@ -100,20 +106,20 @@ export default function ProgramYear() {
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: b.current ? '#00d4ff' : '#e8e8f0',
+                  color: b.current ? THEME.accent : THEME.text,
                 }}
               >
                 {b.current && '▶ '}
                 {b.block}
               </span>
-              <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+              <span style={{ fontSize: 9, color: THEME.muted }}>
                 {b.months} · {b.weeks}
               </span>
             </div>
             <div
               style={{
                 fontSize: 10,
-                color: '#aaaacc',
+                color: THEME.textSubtle,
                 lineHeight: 1.5,
                 marginBottom: 5,
               }}
@@ -123,7 +129,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: b.test.includes('2k') ? '#ff2d55' : '#7e7e9a',
+                color: b.test.includes('2k') ? THEME.critical : THEME.muted,
                 lineHeight: 1.4,
               }}
             >
@@ -136,7 +142,7 @@ export default function ProgramYear() {
         style={{
           marginTop: 12,
           fontSize: 9,
-          color: '#6c6c88',
+          color: THEME.textFaint,
           lineHeight: 1.5,
           fontStyle: 'italic',
         }}
@@ -151,8 +157,8 @@ export default function ProgramYear() {
       {/* Season banner */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#ff2d5518,#1e1e30)',
-          border: '1px solid #ff2d5540',
+          background: `linear-gradient(135deg,${alpha(THEME.critical, '18')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.critical, '40')}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginTop: 14,
@@ -170,18 +176,20 @@ export default function ProgramYear() {
             style={{
               fontSize: 13,
               fontWeight: 700,
-              color: '#ff2d55',
+              color: THEME.critical,
               letterSpacing: 1,
             }}
           >
             🏆 {SEASON.label}
           </div>
-          <div style={{ fontSize: 9, color: '#888' }}>{SEASON.span}</div>
+          <div style={{ fontSize: 9, color: THEME.neutralAccent }}>
+            {SEASON.span}
+          </div>
         </div>
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.6,
             marginBottom: 8,
           }}
@@ -191,7 +199,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 9,
-            color: '#888860',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginBottom: 6,
           }}
@@ -204,7 +212,7 @@ export default function ProgramYear() {
             color: '#666',
             lineHeight: 1.5,
             fontStyle: 'italic',
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 7,
           }}
         >
@@ -215,9 +223,9 @@ export default function ProgramYear() {
       {/* Event ladder */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#ffd70012,#1e1e30)',
-          border: '1px solid #ffd70040',
-          borderLeft: '3px solid #ffd700',
+          background: `linear-gradient(135deg,${alpha(THEME.caution, '12')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.caution, '40')}`,
+          borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginTop: 14,
@@ -227,7 +235,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#ffd700',
+            color: THEME.caution,
             marginBottom: 8,
           }}
         >
@@ -236,7 +244,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.5,
             marginBottom: 10,
           }}
@@ -247,12 +255,12 @@ export default function ProgramYear() {
         {EVENT_LADDER.map((e, i) => {
           const col =
             e.kind === 'TARGET'
-              ? '#ff2d55'
+              ? THEME.critical
               : e.kind === 'competition'
-                ? '#ff6b35'
+                ? THEME.warning
                 : e.kind === 'optional'
-                  ? '#a78bfa'
-                  : '#00d4ff';
+                  ? THEME.accentAlt
+                  : THEME.accent;
           const tag =
             e.kind === 'TARGET'
               ? '🎯 TARGET'
@@ -270,7 +278,9 @@ export default function ProgramYear() {
                 marginBottom: 8,
                 paddingBottom: 8,
                 borderBottom:
-                  i < EVENT_LADDER.length - 1 ? '1px solid #3e3e5a' : 'none',
+                  i < EVENT_LADDER.length - 1
+                    ? `1px solid ${THEME.divider}`
+                    : 'none',
               }}
             >
               <div style={{ width: 88, flexShrink: 0 }}>
@@ -278,7 +288,7 @@ export default function ProgramYear() {
                   style={{
                     fontSize: 9,
                     fontWeight: 700,
-                    color: '#e8e8f0',
+                    color: THEME.text,
                   }}
                 >
                   {e.date}
@@ -308,7 +318,7 @@ export default function ProgramYear() {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#888',
+                    color: THEME.neutralAccent,
                     lineHeight: 1.5,
                   }}
                 >
@@ -321,7 +331,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 8,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginTop: 4,
             fontStyle: 'italic',
@@ -337,9 +347,9 @@ export default function ProgramYear() {
       {/* Volume progression — serious-competitor arc */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#34d39915,#1e1e30)',
-          border: '1px solid #34d39940',
-          borderLeft: '3px solid #34d399',
+          background: `linear-gradient(135deg,${alpha(THEME.positive, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.positive, '40')}`,
+          borderLeft: `3px solid ${THEME.positive}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginTop: 14,
@@ -349,7 +359,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#34d399',
+            color: THEME.positive,
             marginBottom: 6,
           }}
         >
@@ -358,7 +368,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 11,
-            color: '#e8e8f0',
+            color: THEME.text,
             fontWeight: 700,
             lineHeight: 1.5,
             marginBottom: 8,
@@ -369,12 +379,12 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.5,
             marginBottom: 10,
           }}
         >
-          <span style={{ color: '#34d399' }}>Principle: </span>
+          <span style={{ color: THEME.positive }}>Principle: </span>
           {VOLUME_PROGRESSION.principle}
         </div>
 
@@ -387,7 +397,7 @@ export default function ProgramYear() {
               alignItems: 'baseline',
               marginBottom: 6,
               paddingBottom: 6,
-              borderBottom: i < 3 ? '1px solid #3e3e5a' : 'none',
+              borderBottom: i < 3 ? `1px solid ${THEME.divider}` : 'none',
             }}
           >
             <div style={{ width: 96, flexShrink: 0 }}>
@@ -395,7 +405,7 @@ export default function ProgramYear() {
                 style={{
                   fontSize: 9,
                   fontWeight: 700,
-                  color: '#e8e8f0',
+                  color: THEME.text,
                 }}
               >
                 {t.phase}
@@ -404,7 +414,7 @@ export default function ProgramYear() {
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#34d399',
+                  color: THEME.positive,
                 }}
               >
                 {t.target}
@@ -413,7 +423,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: '#888',
+                color: THEME.neutralAccent,
                 lineHeight: 1.5,
               }}
             >
@@ -425,10 +435,10 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 10,
-            color: '#ffd700',
+            color: THEME.caution,
             lineHeight: 1.6,
             marginTop: 8,
-            background: '#08080d',
+            background: THEME.field,
             borderRadius: 4,
             padding: '9px 11px',
           }}
@@ -439,7 +449,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginTop: 8,
             fontStyle: 'italic',
@@ -450,7 +460,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 9,
-            color: '#6c6c88',
+            color: THEME.textFaint,
             lineHeight: 1.5,
             marginTop: 6,
           }}
@@ -462,9 +472,9 @@ export default function ProgramYear() {
       {/* Season 2 sketch */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#a78bfa15,#1e1e30)',
-          border: '1px solid #a78bfa40',
-          borderLeft: '3px solid #a78bfa',
+          background: `linear-gradient(135deg,${alpha(THEME.accentAlt, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.accentAlt, '40')}`,
+          borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginTop: 14,
@@ -482,19 +492,21 @@ export default function ProgramYear() {
             style={{
               fontSize: 13,
               fontWeight: 700,
-              color: '#a78bfa',
+              color: THEME.accentAlt,
               letterSpacing: 1,
             }}
           >
             🏆 {SEASON_2.label}{' '}
             <span style={{ fontSize: 8, color: '#666' }}>(sketch)</span>
           </div>
-          <div style={{ fontSize: 9, color: '#888' }}>{SEASON_2.span}</div>
+          <div style={{ fontSize: 9, color: THEME.neutralAccent }}>
+            {SEASON_2.span}
+          </div>
         </div>
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.6,
             marginBottom: 8,
           }}
@@ -504,10 +516,10 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 9,
-            color: '#ffd700',
+            color: THEME.caution,
             lineHeight: 1.6,
             marginBottom: 10,
-            background: '#08080d',
+            background: THEME.field,
             borderRadius: 4,
             padding: '9px 11px',
           }}
@@ -518,16 +530,16 @@ export default function ProgramYear() {
         {SEASON_2.phases.map((p, i) => {
           const col =
             p.kind === 'TARGET'
-              ? '#ff2d55'
+              ? THEME.critical
               : p.kind === 'aspirational'
-                ? '#a78bfa'
+                ? THEME.accentAlt
                 : p.kind === 'competition'
-                  ? '#ff6b35'
+                  ? THEME.warning
                   : p.kind === 'recover'
-                    ? '#3a3a4a'
+                    ? THEME.neutral
                     : p.kind === 'optional'
-                      ? '#34d399'
-                      : '#00d4ff';
+                      ? THEME.positive
+                      : THEME.accent;
           return (
             <div
               key={i}
@@ -537,7 +549,9 @@ export default function ProgramYear() {
                 marginBottom: 7,
                 paddingBottom: 7,
                 borderBottom:
-                  i < SEASON_2.phases.length - 1 ? '1px solid #3e3e5a' : 'none',
+                  i < SEASON_2.phases.length - 1
+                    ? `1px solid ${THEME.divider}`
+                    : 'none',
               }}
             >
               <div
@@ -555,7 +569,7 @@ export default function ProgramYear() {
                 style={{
                   flex: 1,
                   fontSize: 9,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -569,7 +583,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#a78bfa',
+            color: THEME.accentAlt,
             marginTop: 10,
             marginBottom: 8,
           }}
@@ -580,8 +594,8 @@ export default function ProgramYear() {
           <div
             key={i}
             style={{
-              background: '#08080d',
-              borderLeft: '2px solid #a78bfa',
+              background: THEME.field,
+              borderLeft: `2px solid ${THEME.accentAlt}`,
               borderRadius: 4,
               padding: '9px 11px',
               marginBottom: 6,
@@ -591,7 +605,7 @@ export default function ProgramYear() {
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#e8e8f0',
+                color: THEME.text,
                 marginBottom: 2,
               }}
             >
@@ -600,7 +614,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: '#888',
+                color: THEME.neutralAccent,
                 lineHeight: 1.5,
                 marginBottom: 3,
               }}
@@ -610,7 +624,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: '#a78bfa',
+                color: THEME.accentAlt,
                 lineHeight: 1.5,
               }}
             >
@@ -621,7 +635,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 8,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginTop: 6,
             fontStyle: 'italic',
@@ -636,9 +650,9 @@ export default function ProgramYear() {
       {/* Athlete background */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #f472b630',
-          borderLeft: '3px solid #f472b6',
+          background: THEME.raised,
+          border: `1px solid ${alpha(THEME.accentAlt2, '30')}`,
+          borderLeft: `3px solid ${THEME.accentAlt2}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginTop: 14,
@@ -648,7 +662,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#f472b6',
+            color: THEME.accentAlt2,
             marginBottom: 6,
           }}
         >
@@ -657,7 +671,7 @@ export default function ProgramYear() {
         <div
           style={{
             fontSize: 11,
-            color: '#e8e8f0',
+            color: THEME.text,
             fontWeight: 700,
             lineHeight: 1.5,
             marginBottom: 10,
@@ -670,7 +684,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 8,
             letterSpacing: 2,
-            color: '#00d4ff',
+            color: THEME.accent,
             marginBottom: 5,
           }}
         >
@@ -681,7 +695,7 @@ export default function ProgramYear() {
             key={i}
             style={{
               fontSize: 10,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.5,
               marginBottom: 3,
               paddingLeft: 4,
@@ -695,7 +709,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 8,
             letterSpacing: 2,
-            color: '#34d399',
+            color: THEME.positive,
             margin: '10px 0 5px',
           }}
         >
@@ -706,7 +720,7 @@ export default function ProgramYear() {
             key={i}
             style={{
               fontSize: 10,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.5,
               marginBottom: 3,
               paddingLeft: 4,
@@ -720,7 +734,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 8,
             letterSpacing: 2,
-            color: '#ffd700',
+            color: THEME.caution,
             margin: '10px 0 5px',
           }}
         >
@@ -731,7 +745,7 @@ export default function ProgramYear() {
             key={i}
             style={{
               fontSize: 10,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.5,
               marginBottom: 3,
               paddingLeft: 4,
@@ -747,7 +761,7 @@ export default function ProgramYear() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#00d4ff',
+          color: THEME.accent,
           margin: '20px 0 8px',
         }}
       >
@@ -758,8 +772,8 @@ export default function ProgramYear() {
           <div
             key={e.step}
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '11px 14px',
               display: 'flex',
@@ -772,8 +786,8 @@ export default function ProgramYear() {
                 width: 22,
                 height: 22,
                 borderRadius: '50%',
-                background: '#4a4a68',
-                color: '#00d4ff',
+                background: THEME.border,
+                color: THEME.accent,
                 fontSize: 11,
                 fontWeight: 700,
                 display: 'flex',
@@ -796,7 +810,7 @@ export default function ProgramYear() {
                   style={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#e8e8f0',
+                    color: THEME.text,
                   }}
                 >
                   {e.event}
@@ -806,10 +820,10 @@ export default function ProgramYear() {
                     fontSize: 8,
                     color:
                       e.type === 'Virtual'
-                        ? '#00d4ff'
+                        ? THEME.accent
                         : e.type === 'International'
-                          ? '#ff2d55'
-                          : '#34d399',
+                          ? THEME.critical
+                          : THEME.positive,
                     letterSpacing: 1,
                   }}
                 >
@@ -819,7 +833,7 @@ export default function ProgramYear() {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginBottom: 3,
                 }}
               >
@@ -828,7 +842,7 @@ export default function ProgramYear() {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.4,
                 }}
               >
@@ -844,7 +858,7 @@ export default function ProgramYear() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#ffd700',
+          color: THEME.caution,
           margin: '20px 0 8px',
         }}
       >
@@ -855,8 +869,8 @@ export default function ProgramYear() {
           <div
             key={o.name}
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderLeft: `3px solid ${o.color}`,
               borderRadius: 6,
               padding: '11px 14px',
@@ -874,7 +888,7 @@ export default function ProgramYear() {
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: '#fff',
+                  color: THEME.textStrong,
                 }}
               >
                 {o.name}
@@ -892,7 +906,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: '#00d4ff',
+                color: THEME.accent,
                 marginBottom: 4,
               }}
             >
@@ -901,7 +915,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 10,
-                color: '#aaaacc',
+                color: THEME.textSubtle,
                 lineHeight: 1.4,
               }}
             >
@@ -915,13 +929,13 @@ export default function ProgramYear() {
       <div
         style={{
           marginTop: 12,
-          background: '#1e1e30',
-          border: '1px solid #ffd70030',
-          borderLeft: '3px solid #ffd700',
+          background: THEME.surfaceAlt,
+          border: `1px solid ${alpha(THEME.caution, '30')}`,
+          borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '11px 14px',
           fontSize: 10,
-          color: '#888860',
+          color: THEME.muted,
           lineHeight: 1.6,
         }}
       >

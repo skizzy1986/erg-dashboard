@@ -17,14 +17,21 @@ import {
   handleMutationError,
 } from './utils/queryErrorHandlers.js';
 import ErrorFallback from './components/ErrorFallback.jsx';
-import { THEME } from './constants/theme.js';
+import { DARK, DEFAULT_THEME } from './constants/themeValues.js';
 import { cssVars } from './utils/themeCss.js';
+import './fonts.css';
 
 initSentry();
 
 const themeStyle = document.createElement('style');
 themeStyle.id = 'theme-vars';
-themeStyle.textContent = cssVars(THEME);
+// values, never THEME — THEME holds var() pointers and would self-reference.
+// Light at :root, so no surface depends on the attribute being present; dark
+// scoped under [data-theme='dark'] for a surface that opts in.
+themeStyle.textContent = [
+  cssVars(DEFAULT_THEME),
+  cssVars(DARK, "[data-theme='dark']"),
+].join('\n');
 document.head.appendChild(themeStyle);
 
 if (Capacitor.isNativePlatform()) {

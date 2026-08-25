@@ -1,0 +1,54 @@
+/* Self-hosted type (#254, slice S-1a). SplitIQ named 'DM Mono' in ~45 places
+   and loaded it nowhere, so the whole app rendered in the Courier fallback.
+   Archivo carries language, IBM Plex Mono carries measurement.
+
+   Latin subset only — one athlete, one language, and the other 18 files Google
+   serves would sit in the service worker's precache for nothing.
+
+   Archivo is a variable font: Google returns one identical file for every
+   weight it is asked for, so it ships once with a range rather than three
+   times. IBM Plex Mono is static and needs a face per weight.
+
+   font-display: swap — the ground and layout paint immediately and the text
+   reflows when the face lands, which is the right trade for a screen read
+   between intervals. */
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 500 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url('./fonts/archivo-var.woff2') format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./fonts/ibm-plex-mono-700.woff2') format('woff2');
+}
+
+/* Pointers so JS names a role, not a font stack. Mirrors the colour seam:
+   constants/type.js holds var() strings, this file holds the values. */
+:root {
+  --font-sans: Archivo, system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}

@@ -1,6 +1,7 @@
 import LogSessionForm from '../components/LogSessionForm.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import { SRPE_GUIDE } from '../constants/trainingConfig.js';
+import { THEME } from '../constants/theme.js';
 
 // ── LOG VIEW (session log form + sRPE reference + logged history) ──
 export default function LogView({ logDisplaySessions, isWide, onSaved }) {
@@ -8,18 +9,20 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
     <>
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
-          borderLeft: '3px solid #ffd700',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
+          borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '11px 14px',
           marginBottom: 14,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: '#ffd700', fontWeight: 700 }}>SESSION LOG: </span>
+        <span style={{ color: THEME.caution, fontWeight: 700 }}>
+          SESSION LOG:{' '}
+        </span>
         Share Concept2 links or Fitbod screenshots to add sessions. sRPE
         captured every session.
       </div>
@@ -30,9 +33,9 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
       {/* sRPE scale reference */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
-          borderLeft: '3px solid #ff6b35',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
+          borderLeft: `3px solid ${THEME.warning}`,
           borderRadius: 6,
           padding: '12px 14px',
           marginBottom: 14,
@@ -42,7 +45,7 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#ff6b35',
+            color: THEME.warning,
             marginBottom: 8,
           }}
         >
@@ -73,13 +76,19 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
               <span
                 style={{
                   fontSize: 11,
-                  color: '#e8e8f0',
+                  color: THEME.text,
                   fontWeight: 600,
                 }}
               >
                 {s.label}
               </span>
-              <span style={{ fontSize: 10, color: '#888', marginLeft: 6 }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: THEME.neutralAccent,
+                  marginLeft: 6,
+                }}
+              >
                 — {s.anchor}
               </span>
             </div>
@@ -88,7 +97,7 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
         <div
           style={{
             fontSize: 8,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginTop: 6,
             fontStyle: 'italic',

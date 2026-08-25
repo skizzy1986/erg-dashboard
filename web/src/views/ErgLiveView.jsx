@@ -9,18 +9,7 @@ import { parsePace, formatElapsed } from '../services/pm5Bluetooth';
 import { THEME } from '../constants/theme.js';
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
 import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
-
-const C = {
-  bg: THEME.bg,
-  panel: THEME.surface,
-  border: THEME.border,
-  accent: THEME.positive,
-  cyan: THEME.accent,
-  gold: THEME.caution,
-  text: THEME.text,
-  muted: THEME.muted,
-  err: THEME.critical,
-};
+import { FONT } from '../constants/type.js';
 
 const SRPE_GUIDE = [
   { v: 1, label: '1 — Very easy' },
@@ -60,7 +49,7 @@ function ConnectScreen({
           style={{
             fontSize: 11,
             letterSpacing: 3,
-            color: C.muted,
+            color: THEME.muted,
             marginBottom: 8,
           }}
         >
@@ -70,8 +59,8 @@ function ConnectScreen({
           style={{
             fontSize: 36,
             fontWeight: 700,
-            color: C.accent,
-            fontFamily: 'monospace',
+            color: THEME.positive,
+            fontFamily: FONT.mono,
           }}
         >
           C2 CONNECT
@@ -89,8 +78,8 @@ function ConnectScreen({
           style={{
             fontSize: 10,
             letterSpacing: 2,
-            color: C.gold,
-            border: `1px solid ${C.gold}`,
+            color: THEME.caution,
+            border: `1px solid ${THEME.caution}`,
             borderRadius: 6,
             padding: '6px 12px',
           }}
@@ -103,7 +92,7 @@ function ConnectScreen({
         style={{
           textAlign: 'center',
           fontSize: 12,
-          color: C.muted,
+          color: THEME.muted,
           lineHeight: 1.8,
           maxWidth: 300,
         }}
@@ -118,12 +107,13 @@ function ConnectScreen({
       {error && (
         <div
           style={{
-            background: '#2a0a14',
-            border: `1px solid ${C.err}`,
+            background:
+              'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
+            border: `1px solid ${THEME.critical}`,
             borderRadius: 8,
             padding: '12px 16px',
             fontSize: 12,
-            color: C.err,
+            color: THEME.critical,
             maxWidth: 360,
             textAlign: 'center',
           }}
@@ -140,8 +130,8 @@ function ConnectScreen({
           fontSize: 14,
           fontWeight: 700,
           letterSpacing: 2,
-          background: connecting ? C.border : C.accent,
-          color: C.bg,
+          background: connecting ? THEME.border : THEME.positive,
+          color: THEME.surface,
           border: 'none',
           borderRadius: 10,
           cursor: connecting ? 'default' : 'pointer',
@@ -151,7 +141,7 @@ function ConnectScreen({
         {connecting ? 'CONNECTING…' : 'CONNECT TO PM5'}
       </button>
 
-      <div style={{ fontSize: 10, color: '#3a3a5a', letterSpacing: 1 }}>
+      <div style={{ fontSize: 10, color: THEME.textDim, letterSpacing: 1 }}>
         Chrome / Edge · Android or Desktop
       </div>
     </div>
@@ -192,15 +182,15 @@ function RowingScreen({ metrics, status, todaySession, onEnd }) {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: isRowing ? C.accent : C.muted,
-              boxShadow: isRowing ? `0 0 8px ${C.accent}` : 'none',
+              background: isRowing ? THEME.positive : THEME.muted,
+              boxShadow: isRowing ? `0 0 8px ${THEME.positive}` : 'none',
             }}
           />
           <span
             style={{
               fontSize: 10,
               letterSpacing: 2,
-              color: isRowing ? C.accent : C.muted,
+              color: isRowing ? THEME.positive : THEME.muted,
             }}
           >
             {isRowing ? 'ROWING' : 'CONNECTED'}
@@ -213,9 +203,9 @@ function RowingScreen({ metrics, status, todaySession, onEnd }) {
             fontSize: 10,
             letterSpacing: 1,
             background: 'transparent',
-            border: `1px solid ${C.err}`,
+            border: `1px solid ${THEME.critical}`,
             borderRadius: 6,
-            color: C.err,
+            color: THEME.critical,
             cursor: 'pointer',
             fontFamily: 'inherit',
           }}
@@ -239,7 +229,7 @@ function RowingScreen({ metrics, status, todaySession, onEnd }) {
           label="500m PACE"
           value={metrics?.paceStr ?? '--:--'}
           unit="/500m"
-          accent={C.cyan}
+          accent={THEME.accent}
           size="large"
           dimmed={!isRowing}
         />
@@ -258,21 +248,21 @@ function RowingScreen({ metrics, status, todaySession, onEnd }) {
             label="WATTS"
             value={metrics?.watts}
             unit="W"
-            accent={C.gold}
+            accent={THEME.caution}
             dimmed={!isRowing}
           />
           <LiveMetric
             label="SPM"
             value={metrics?.strokeRate}
             unit="spm"
-            accent={C.accent}
+            accent={THEME.positive}
             dimmed={!isRowing}
           />
           <LiveMetric
             label="DIST"
             value={metrics?.distance}
             unit="m"
-            accent={C.cyan}
+            accent={THEME.accent}
             dimmed={!isRowing}
           />
         </div>
@@ -314,15 +304,15 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
         minHeight: 'calc(100vh - 80px)',
       }}
     >
-      <div style={{ fontSize: 11, letterSpacing: 3, color: C.muted }}>
+      <div style={{ fontSize: 11, letterSpacing: 3, color: THEME.muted }}>
         SESSION COMPLETE
       </div>
 
       {/* Totals */}
       <div
         style={{
-          background: C.panel,
-          border: `1px solid ${C.border}`,
+          background: THEME.surface,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 10,
           padding: 20,
           display: 'grid',
@@ -334,7 +324,7 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           label="DISTANCE"
           value={summary.distance}
           unit="m"
-          accent={C.cyan}
+          accent={THEME.accent}
           size="normal"
         />
         <LiveMetric
@@ -347,28 +337,28 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           label="AVG PACE"
           value={summary.avgPace ? parsePace(summary.avgPace) : '--'}
           unit="/500m"
-          accent={C.cyan}
+          accent={THEME.accent}
           size="normal"
         />
         <LiveMetric
           label="AVG WATT"
           value={summary.avgWatts}
           unit="W"
-          accent={C.gold}
+          accent={THEME.caution}
           size="normal"
         />
         <LiveMetric
           label="AVG SPM"
           value={summary.avgSpm}
           unit="spm"
-          accent={C.accent}
+          accent={THEME.positive}
           size="normal"
         />
         <LiveMetric
           label="CALORIES"
           value={summary.calories}
           unit="kcal"
-          accent="#7e7e9a"
+          accent={THEME.muted}
           size="normal"
         />
       </div>
@@ -379,7 +369,7 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: C.muted,
+            color: THEME.muted,
             marginBottom: 8,
           }}
         >
@@ -401,9 +391,12 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
                 fontSize: 11,
                 borderRadius: 6,
                 cursor: 'pointer',
-                border: `1px solid ${srpe === v ? C.accent : C.border}`,
-                background: srpe === v ? '#0d2a1a' : 'transparent',
-                color: srpe === v ? C.accent : C.muted,
+                border: `1px solid ${srpe === v ? THEME.positive : THEME.border}`,
+                background:
+                  srpe === v
+                    ? 'color-mix(in srgb, var(--color-positive) 12%, var(--color-bg))'
+                    : 'transparent',
+                color: srpe === v ? THEME.positive : THEME.muted,
                 fontFamily: 'inherit',
               }}
             >
@@ -419,7 +412,7 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: C.muted,
+            color: THEME.muted,
             marginBottom: 6,
           }}
         >
@@ -433,10 +426,10 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           style={{
             width: '100%',
             boxSizing: 'border-box',
-            background: C.panel,
-            border: `1px solid ${C.border}`,
+            background: THEME.surface,
+            border: `1px solid ${THEME.border}`,
             borderRadius: 6,
-            color: C.text,
+            color: THEME.text,
             fontFamily: 'inherit',
             fontSize: 12,
             padding: '10px 12px',
@@ -452,8 +445,8 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           style={{
             fontSize: 12,
             letterSpacing: 2,
-            color: C.accent,
-            border: `1px solid ${C.accent}`,
+            color: THEME.positive,
+            border: `1px solid ${THEME.positive}`,
             borderRadius: 8,
             padding: '12px 16px',
             textAlign: 'center',
@@ -467,8 +460,8 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           style={{
             fontSize: 12,
             letterSpacing: 2,
-            color: C.gold,
-            border: `1px solid ${C.gold}`,
+            color: THEME.caution,
+            border: `1px solid ${THEME.caution}`,
             borderRadius: 8,
             padding: '12px 16px',
             textAlign: 'center',
@@ -482,8 +475,8 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
           style={{
             fontSize: 12,
             letterSpacing: 1,
-            color: C.err,
-            border: `1px solid ${C.err}`,
+            color: THEME.critical,
+            border: `1px solid ${THEME.critical}`,
             borderRadius: 8,
             padding: '12px 16px',
             textAlign: 'center',
@@ -508,8 +501,8 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: 1,
-            background: C.accent,
-            color: C.bg,
+            background: THEME.positive,
+            color: THEME.surface,
             border: 'none',
             borderRadius: 8,
             cursor: 'pointer',
@@ -529,8 +522,8 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: 1,
-              background: saving ? C.border : C.accent,
-              color: C.bg,
+              background: saving ? THEME.border : THEME.positive,
+              color: THEME.surface,
               border: 'none',
               borderRadius: 8,
               cursor: saving ? 'default' : 'pointer',
@@ -546,9 +539,9 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
               fontSize: 12,
               letterSpacing: 1,
               background: 'transparent',
-              border: `1px solid ${C.border}`,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 8,
-              color: C.muted,
+              color: THEME.muted,
               cursor: 'pointer',
               fontFamily: 'inherit',
             }}

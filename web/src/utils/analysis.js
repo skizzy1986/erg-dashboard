@@ -1,4 +1,5 @@
 import { RHR_DEFAULT, HRV_DEFAULT } from './recoveryAnalytics.js';
+import { THEME } from '../constants/theme.js';
 
 // ── ADAPTIVE DECISION ENGINE ──────────────────────────────────
 // The coaching brain: reads current recovery/load data, fires rules
@@ -71,7 +72,7 @@ export function autoregulate(tsb, readiness, firedRules) {
     (readiness && readiness.score != null && readiness.score < 50)
   ) {
     signal = 'RED';
-    color = '#ff2d55';
+    color = THEME.critical;
     guidance =
       "Ease or swap to recovery. The body's signalling fatigue louder than the plan. Quality work won't land well today.";
   } else if (
@@ -80,12 +81,12 @@ export function autoregulate(tsb, readiness, firedRules) {
     firedRules.some((f) => f.id === 'R5')
   ) {
     signal = 'AMBER';
-    color = '#ffd700';
+    color = THEME.caution;
     guidance =
       "Proceed, but hold the easy end genuinely easy. Don't add intensity. Keep quality sessions controlled, not maximal.";
   } else {
     signal = 'GREEN';
-    color = '#34d399';
+    color = THEME.positive;
     guidance =
       "Clear to train as planned. Form and recovery support it — if it's a quality day, you can commit to it.";
   }

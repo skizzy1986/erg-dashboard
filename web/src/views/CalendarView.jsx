@@ -18,6 +18,7 @@ import {
 import { compareBenchmarkSeverity } from '../utils/benchmarkStatus.js';
 import { MICROCYCLE, PHASE_CONTEXT } from '../constants/schedule.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 // ── CALENDAR VIEW ──
 export default function CalendarView({
@@ -105,21 +106,23 @@ export default function CalendarView({
     <>
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
-          borderLeft: '3px solid #00d4ff',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
+          borderLeft: `3px solid ${THEME.accent}`,
           borderRadius: 6,
           padding: '11px 14px',
           marginBottom: 14,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: '#00d4ff', fontWeight: 700 }}>YOUR WEEKS · </span>
+        <span style={{ color: THEME.accent, fontWeight: 700 }}>
+          YOUR WEEKS ·{' '}
+        </span>
         {todayCycle.label.split('—')[0].trim()} · {PHASE_CONTEXT.phaseLabel}.{' '}
-        <span style={{ color: '#34d399' }}>✓ done</span> ·{' '}
-        <span style={{ color: '#00d4ff' }}>● today</span> · upcoming.
+        <span style={{ color: THEME.positive }}>✓ done</span> ·{' '}
+        <span style={{ color: THEME.accent }}>● today</span> · upcoming.
         {sawSwitch ? ' Roster switches mid-view (home↔FIFO).' : ''}
       </div>
       <div
@@ -140,12 +143,12 @@ export default function CalendarView({
           const st = d.status.state;
           const statusColor =
             st === 'done'
-              ? '#34d399'
+              ? THEME.positive
               : st === 'today'
-                ? '#00d4ff'
+                ? THEME.accent
                 : st === 'missed'
-                  ? '#7e7e9a'
-                  : '#6c6c88';
+                  ? THEME.muted
+                  : THEME.textFaint;
           const statusLabel =
             st === 'done'
               ? `✓ DONE${d.status.logged.length > 1 ? ' ×' + d.status.logged.length : ''}`
@@ -206,7 +209,7 @@ export default function CalendarView({
                   <span
                     style={{
                       fontSize: 7,
-                      color: '#ff6b35',
+                      color: THEME.warning,
                       letterSpacing: 2,
                     }}
                   >
@@ -240,9 +243,9 @@ export default function CalendarView({
       {/* Upcoming events from the ladder */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#ffd70010,#1e1e30)',
-          border: '1px solid #ffd70030',
-          borderLeft: '3px solid #ffd700',
+          background: `linear-gradient(135deg,${alpha(THEME.caution, '10')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.caution, '30')}`,
+          borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '12px 14px',
           marginTop: 14,
@@ -252,7 +255,7 @@ export default function CalendarView({
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#ffd700',
+            color: THEME.caution,
             marginBottom: 8,
           }}
         >
@@ -263,7 +266,7 @@ export default function CalendarView({
             style={{
               fontSize: 9,
               letterSpacing: 2,
-              color: '#7e7e9a',
+              color: THEME.muted,
               marginBottom: 8,
             }}
           >
@@ -274,12 +277,12 @@ export default function CalendarView({
           const e = bench.entry;
           const col =
             e.kind === 'TARGET'
-              ? '#ff2d55'
+              ? THEME.critical
               : e.kind === 'competition'
-                ? '#ff6b35'
+                ? THEME.warning
                 : e.kind === 'optional'
-                  ? '#a78bfa'
-                  : '#00d4ff';
+                  ? THEME.accentAlt
+                  : THEME.accent;
           return (
             <div
               key={bench.index}
@@ -289,7 +292,9 @@ export default function CalendarView({
                 marginBottom: 6,
                 paddingBottom: 6,
                 borderBottom:
-                  i < visibleEvents.length - 1 ? '1px solid #3e3e5a' : 'none',
+                  i < visibleEvents.length - 1
+                    ? `1px solid ${THEME.divider}`
+                    : 'none',
               }}
             >
               <div
@@ -307,7 +312,7 @@ export default function CalendarView({
                 style={{
                   flex: 1,
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.4,
                 }}
               >

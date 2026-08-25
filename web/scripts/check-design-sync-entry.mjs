@@ -141,9 +141,12 @@ if (!existsSync(conventionsPath)) {
   }
 
   //  Any --color-* it names must actually be generated from THEME.
-  const named = [...md.matchAll(/--color-([a-zA-Z][a-zA-Z0-9]*)/g)].map(
-    (m) => m[1]
-  );
+  //  Custom properties are kebab-case; THEME keys are camelCase. Match the
+  //  whole kebab name (the old pattern stopped at the first hyphen, so
+  //  --color-accent-alt was read as --color-accent and passed on the wrong key).
+  const named = [
+    ...md.matchAll(/--color-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)/g),
+  ].map((m) => m[1].replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase()));
   if (named.length) {
     try {
       const { THEME } = await import(
@@ -152,7 +155,7 @@ if (!existsSync(conventionsPath)) {
       for (const key of [...new Set(named)]) {
         if (!(key in THEME)) {
           failures.push(
-            `${conventionsRel} names --color-${key}, which theme.js does not ` +
+            `${conventionsRel} names --color-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}, which theme.js does not ` +
               'define — it will resolve to nothing in a generated design'
           );
         }

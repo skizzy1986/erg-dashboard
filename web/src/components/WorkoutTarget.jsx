@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { THEME } from '../constants/theme.js';
 
-const C = {
-  panel: THEME.surface,
-  border: THEME.border,
-  accent: THEME.caution,
-  text: THEME.text,
-  muted: THEME.muted,
-};
-
 export default function WorkoutTarget({ session }) {
   const [open, setOpen] = useState(false);
 
@@ -18,7 +10,7 @@ export default function WorkoutTarget({ session }) {
         style={{
           padding: '8px 12px',
           fontSize: 10,
-          color: C.muted,
+          color: THEME.muted,
           letterSpacing: 1,
         }}
       >
@@ -30,8 +22,8 @@ export default function WorkoutTarget({ session }) {
   return (
     <div
       style={{
-        background: C.panel,
-        border: `1px solid ${C.border}`,
+        background: THEME.surface,
+        border: `1px solid ${THEME.border}`,
         borderRadius: 8,
         overflow: 'hidden',
       }}
@@ -47,30 +39,37 @@ export default function WorkoutTarget({ session }) {
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: C.text,
+          color: THEME.text,
           fontFamily: 'inherit',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 9, letterSpacing: 2, color: C.accent }}>
+          <span style={{ fontSize: 9, letterSpacing: 2, color: THEME.caution }}>
             TARGET
           </span>
           <span style={{ fontSize: 12, fontWeight: 600 }}>{session.label}</span>
         </div>
-        <span style={{ fontSize: 10, color: C.muted }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 10, color: THEME.muted }}>
+          {open ? '▲' : '▼'}
+        </span>
       </button>
 
       {open && (
         <div
-          style={{ padding: '0 14px 12px', borderTop: `1px solid ${C.border}` }}
+          style={{
+            padding: '0 14px 12px',
+            borderTop: `1px solid ${THEME.border}`,
+          }}
         >
           {session.duration && (
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 8 }}>
-              <span style={{ color: C.text, fontWeight: 600 }}>
+            <div style={{ fontSize: 11, color: THEME.muted, marginTop: 8 }}>
+              <span style={{ color: THEME.text, fontWeight: 600 }}>
                 {session.duration} min
               </span>
               {' · '}sRPE target:{' '}
-              <span style={{ color: C.text }}>{session.srpe || 'easy'}</span>
+              <span style={{ color: THEME.text }}>
+                {session.srpe || 'easy'}
+              </span>
             </div>
           )}
           {session.notes && (
@@ -78,9 +77,9 @@ export default function WorkoutTarget({ session }) {
               style={{
                 marginTop: 8,
                 fontSize: 11,
-                color: C.muted,
+                color: THEME.muted,
                 lineHeight: 1.6,
-                borderLeft: `2px solid ${C.accent}`,
+                borderLeft: `2px solid ${THEME.caution}`,
                 paddingLeft: 10,
               }}
             >

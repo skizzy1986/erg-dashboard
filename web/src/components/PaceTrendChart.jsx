@@ -9,6 +9,7 @@ import {
 } from 'recharts';
 import { formatPace } from '../utils/pace.js';
 import { THEME } from '../constants/theme.js';
+import { FONT } from '../constants/type.js';
 
 export function PaceTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
@@ -21,7 +22,7 @@ export function PaceTooltip({ active, payload }) {
         borderRadius: 6,
         padding: '10px 12px',
         fontSize: 11,
-        fontFamily: "'DM Mono',monospace",
+        fontFamily: FONT.mono,
       }}
     >
       <div
@@ -55,8 +56,8 @@ export function CustomDot(props) {
       cx={cx}
       cy={cy}
       r={4}
-      fill="#00d4ff"
-      stroke="#08080d"
+      fill={THEME.accent}
+      stroke={THEME.field}
       strokeWidth={1}
     />
   ) : (
@@ -65,8 +66,8 @@ export function CustomDot(props) {
       cx={cx}
       cy={cy}
       r={4}
-      fill="#08080d"
-      stroke="#00d4ff"
+      fill={THEME.field}
+      stroke={THEME.accent}
       strokeWidth={2}
     />
   );
@@ -99,8 +100,8 @@ export default function PaceTrendChart({
           dataKey="date_display"
           tick={{
             fontSize: 9,
-            fill: '#7e7e9a',
-            fontFamily: "'DM Mono',monospace",
+            fill: THEME.muted,
+            fontFamily: FONT.mono,
           }}
           axisLine={false}
           tickLine={false}
@@ -109,8 +110,8 @@ export default function PaceTrendChart({
           domain={[paceCeiling, paceFloor]}
           tick={{
             fontSize: 9,
-            fill: '#7e7e9a',
-            fontFamily: "'DM Mono',monospace",
+            fill: THEME.muted,
+            fontFamily: FONT.mono,
           }}
           tickFormatter={(v) => formatPace(v)}
           axisLine={false}
@@ -133,10 +134,10 @@ export default function PaceTrendChart({
         <Line
           type="monotone"
           dataKey="pace_500m"
-          stroke="#00d4ff"
+          stroke={THEME.accent}
           strokeWidth={2}
           dot={<CustomDot />}
-          activeDot={{ r: 5, fill: '#00d4ff' }}
+          activeDot={{ r: 5, fill: THEME.accent }}
         />
       </ComposedChart>
     </ResponsiveContainer>

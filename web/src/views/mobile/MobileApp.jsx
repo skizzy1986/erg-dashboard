@@ -6,8 +6,10 @@ import MobileSessionLog from './MobileSessionLog.jsx';
 import MobileStrength from './MobileStrength.jsx';
 import MobileRecovery from './MobileRecovery.jsx';
 import BottomTabBar from '../../components/mobile/BottomTabBar.jsx';
+import { THEME } from '../../constants/theme.js';
 import ErgLiveView from '../ErgLiveView.jsx';
 import CoachView from '../CoachView.jsx';
+import { FONT } from '../../constants/type.js';
 
 export default function MobileApp() {
   const [activeTab, setActiveTab] = useState('analytics');
@@ -45,8 +47,8 @@ export default function MobileApp() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#0a0a0f',
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+        background: THEME.bg,
+        fontFamily: FONT.sans,
         paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
       }}
     >

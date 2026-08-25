@@ -16,6 +16,9 @@ import CalendarView from './views/CalendarView.jsx';
 import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
+import { THEME } from './constants/theme.js';
+import { alpha } from './utils/themeCss.js';
+import { FONT } from './constants/type.js';
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -58,11 +61,12 @@ class ErrorBoundary extends Component {
         <div
           style={{
             padding: '24px',
-            background: '#1a0d0d',
-            border: '1px solid #ff2d5550',
+            background:
+              'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
+            border: `1px solid ${alpha(THEME.critical, '50')}`,
             borderRadius: 6,
-            color: '#ffaaaa',
-            fontFamily: "'DM Mono',monospace",
+            color: THEME.critical,
+            fontFamily: FONT.mono,
             fontSize: 12,
             lineHeight: 1.6,
           }}
@@ -70,7 +74,9 @@ class ErrorBoundary extends Component {
           ⚠️ This section hit a render error and was isolated to protect the
           rest of the dashboard.
           <br />
-          <span style={{ color: '#888', fontSize: 10 }}>{this.state.msg}</span>
+          <span style={{ color: THEME.neutralAccent, fontSize: 10 }}>
+            {this.state.msg}
+          </span>
         </div>
       );
     }
@@ -202,14 +208,14 @@ export default function App() {
   const loadAvailable = latest != null;
   const loadUnavailable = !loadAvailable && !loadPending;
   const tsbColor = !loadAvailable
-    ? '#7e7e9a'
+    ? THEME.muted
     : latest.tsb > 10
-      ? '#34d399'
+      ? THEME.positive
       : latest.tsb > -10
-        ? '#ffd700'
+        ? THEME.caution
         : latest.tsb > -30
-          ? '#ff6b35'
-          : '#ff2d55';
+          ? THEME.warning
+          : THEME.critical;
 
   const ergSessions = loggedSessions.filter((e) => e._isErg);
   const strengthSessions = loggedSessions.filter((e) => e.exercises);
@@ -224,9 +230,9 @@ export default function App() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#08080d',
-        color: '#e8e8f0',
-        fontFamily: "'DM Mono','Courier New',monospace",
+        background: THEME.field,
+        color: THEME.text,
+        fontFamily: FONT.sans,
         paddingBottom: 60,
         overflowX: 'hidden',
         maxWidth: '100vw',
@@ -236,8 +242,8 @@ export default function App() {
       {/* HEADER */}
       <div
         style={{
-          background: 'linear-gradient(180deg,#1e1e30 0%,#08080d 100%)',
-          borderBottom: '1px solid #4a4a68',
+          background: `linear-gradient(180deg,${THEME.surfaceAlt} 0%,${THEME.bg} 100%)`,
+          borderBottom: `1px solid ${THEME.border}`,
           padding: '24px 14px 18px',
           boxSizing: 'border-box',
           width: '100%',
@@ -263,7 +269,7 @@ export default function App() {
               style={{
                 fontSize: 9,
                 letterSpacing: 3,
-                color: '#00d4ff',
+                color: THEME.accent,
                 marginBottom: 4,
                 minWidth: 0,
               }}
@@ -274,7 +280,7 @@ export default function App() {
               style={{
                 fontSize: 8,
                 letterSpacing: 1,
-                color: '#6c6c88',
+                color: THEME.textFaint,
                 flexShrink: 0,
               }}
             >
@@ -285,7 +291,7 @@ export default function App() {
             style={{
               fontSize: 24,
               fontWeight: 700,
-              color: '#fff',
+              color: THEME.textStrong,
               letterSpacing: -1,
             }}
           >
@@ -336,16 +342,19 @@ export default function App() {
               style={{
                 flex: '1 1 auto',
                 minWidth: 0,
-                background: view === v ? '#4a4a68' : 'transparent',
-                border: view === v ? '1px solid #00d4ff' : '1px solid #4a4a68',
-                color: view === v ? '#00d4ff' : '#7e7e9a',
+                background: view === v ? THEME.border : 'transparent',
+                border:
+                  view === v
+                    ? `1px solid ${THEME.accent}`
+                    : `1px solid ${THEME.border}`,
+                color: view === v ? THEME.accent : THEME.muted,
                 borderRadius: 6,
                 padding: '8px 6px',
                 fontSize: 9,
                 letterSpacing: 0.5,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                fontFamily: "'DM Mono',monospace",
+                fontFamily: FONT.mono,
               }}
             >
               {label.toUpperCase()}
@@ -449,11 +458,11 @@ export default function App() {
           style={{
             marginTop: 16,
             padding: '12px 16px',
-            background: '#1e1e30',
-            border: '1px solid #4a4a68',
+            background: THEME.surfaceAlt,
+            border: `1px solid ${THEME.border}`,
             borderRadius: 6,
             fontSize: 10,
-            color: '#5a5a74',
+            color: THEME.textDim,
             textAlign: 'center',
             lineHeight: 1.7,
           }}

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { THEME } from '../theme.js';
+import { DARK, LIGHT, DEFAULT_THEME } from '../themeValues.js';
+import { cssVarName } from '../../utils/themeCss.js';
 
 const EXPECTED_KEYS = [
   'bg',
@@ -16,7 +18,7 @@ const EXPECTED_KEYS = [
   'critical',
   'accentAlt',
   'accentAlt2',
-  'positiveAlt',
+  'cycling',
   'surfaceAlt',
   'surfaceDeep',
   'neutral',
@@ -35,36 +37,133 @@ describe('THEME', () => {
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
+  it('is a pointer table — every value is a var(--color-*) reference', () => {
+    for (const [key, value] of Object.entries(THEME)) {
+      expect(value).toBe(`var(${cssVarName(key)})`);
+    }
+  });
+
+  it('points at exactly the keys the palette defines', () => {
+    expect(Object.keys(THEME).sort()).toEqual(Object.keys(DARK).sort());
+  });
+});
+
+describe('DARK — the palette values THEME resolves to', () => {
+  it('has exactly the 24 expected keys (no more, no fewer)', () => {
+    const keys = Object.keys(DARK);
+    expect(keys).toHaveLength(24);
+    expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
+  });
+
   it('every value is a 6-digit lowercase hex colour', () => {
-    for (const value of Object.values(THEME)) {
+    for (const value of Object.values(DARK)) {
       expect(value).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
 
   it('locks the canonical values', () => {
-    expect(THEME.bg).toBe('#08080d');
-    expect(THEME.surface).toBe('#1a1a2e');
-    expect(THEME.raised).toBe('#2a2a48');
-    expect(THEME.field).toBe('#08080d');
-    expect(THEME.border).toBe('#4a4a68');
-    expect(THEME.text).toBe('#e8e8f0');
-    expect(THEME.muted).toBe('#7e7e9a');
-    expect(THEME.accent).toBe('#00d4ff');
-    expect(THEME.positive).toBe('#34d399');
-    expect(THEME.caution).toBe('#ffd700');
-    expect(THEME.warning).toBe('#ff6b35');
-    expect(THEME.critical).toBe('#ff2d55');
-    expect(THEME.accentAlt).toBe('#a78bfa');
-    expect(THEME.accentAlt2).toBe('#f472b6');
-    expect(THEME.positiveAlt).toBe('#2dd4bf');
-    expect(THEME.surfaceAlt).toBe('#1e1e30');
-    expect(THEME.surfaceDeep).toBe('#12121f');
-    expect(THEME.neutral).toBe('#3a3a4a');
-    expect(THEME.textSubtle).toBe('#aaaacc');
-    expect(THEME.textFaint).toBe('#6c6c88');
-    expect(THEME.textDim).toBe('#5a5a74');
-    expect(THEME.divider).toBe('#3e3e5a');
-    expect(THEME.neutralAccent).toBe('#888888');
-    expect(THEME.textStrong).toBe('#ffffff');
+    expect(DARK.bg).toBe('#08080d');
+    expect(DARK.surface).toBe('#1a1a2e');
+    expect(DARK.raised).toBe('#2a2a48');
+    expect(DARK.field).toBe('#08080d');
+    expect(DARK.border).toBe('#4a4a68');
+    expect(DARK.text).toBe('#e8e8f0');
+    expect(DARK.muted).toBe('#7e7e9a');
+    expect(DARK.accent).toBe('#00d4ff');
+    expect(DARK.positive).toBe('#34d399');
+    expect(DARK.caution).toBe('#ffd700');
+    expect(DARK.warning).toBe('#ff6b35');
+    expect(DARK.critical).toBe('#ff2d55');
+    expect(DARK.accentAlt).toBe('#a78bfa');
+    expect(DARK.accentAlt2).toBe('#f472b6');
+    expect(DARK.cycling).toBe('#2dd4bf');
+    expect(DARK.surfaceAlt).toBe('#1e1e30');
+    expect(DARK.surfaceDeep).toBe('#12121f');
+    expect(DARK.neutral).toBe('#3a3a4a');
+    expect(DARK.textSubtle).toBe('#aaaacc');
+    expect(DARK.textFaint).toBe('#6c6c88');
+    expect(DARK.textDim).toBe('#5a5a74');
+    expect(DARK.divider).toBe('#3e3e5a');
+    expect(DARK.neutralAccent).toBe('#888888');
+    expect(DARK.textStrong).toBe('#ffffff');
   });
+});
+
+describe('LIGHT — the second palette', () => {
+  it('defines exactly the same keys as DARK', () => {
+    expect(Object.keys(LIGHT).sort()).toEqual(Object.keys(DARK).sort());
+  });
+
+  it('every value is a 6-digit lowercase hex colour', () => {
+    for (const value of Object.values(LIGHT)) {
+      expect(value).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+
+  it('moves every value — no token is shared with the dark palette', () => {
+    const shared = Object.keys(DARK).filter((k) => DARK[k] === LIGHT[k]);
+    expect(shared).toEqual([]);
+  });
+
+  it('paints the ground conventions.md settled on, not the withdrawn one', () => {
+    expect(LIGHT.bg).toBe('#bcc5dd');
+    expect(LIGHT.bg).not.toBe('#c3cade');
+  });
+
+  it('gives muted #4a4f63 and textSubtle #43485a, per conventions.md', () => {
+    // HANDOFF.md §1 published #43485a as --color-muted; conventions.md:101-105
+    // reassigns it to textSubtle, the one neutral that passes on every ground.
+    expect(LIGHT.textSubtle).toBe('#43485a');
+    expect(LIGHT.muted).toBe('#4a4f63');
+  });
+
+  it('keeps cycling distinct from positive', () => {
+    // Both sides rejected folding these: positive is done/UT1/lower strength,
+    // cycling is the discipline. Same-looking greens, different jobs.
+    expect(LIGHT.cycling).not.toBe(LIGHT.positive);
+    expect(DARK.cycling).not.toBe(DARK.positive);
+  });
+});
+
+describe('DEFAULT_THEME', () => {
+  it('is one of the two palettes', () => {
+    expect([DARK, LIGHT]).toContain(DEFAULT_THEME);
+  });
+});
+
+describe('the literals the seam left behind', () => {
+  // Five dark-palette hexes were still written out longhand in view source after
+  // the flip — the header gradient's far stop, the today card's, every
+  // `linear-gradient(...,#1e1e30)` second stop, `color:'#fff'`, and `'#888'`.
+  // On light they kept painting dark: the stat-tile values went white-on-white
+  // and vanished from the desktop overview entirely.
+  //
+  // Each was replaced by the token whose DARK value it already was, so the swap
+  // is a no-op on dark. 'locks the canonical values' above holds that half. What
+  // it does not state is the premise the two shorthands rest on, and those cover
+  // 33 of the 47 sites — so state it here rather than leave it assumed.
+  const expand = (hex) =>
+    hex.length === 4 ? '#' + [...hex.slice(1)].map((c) => c + c).join('') : hex;
+
+  it.each([
+    ['#fff', 'textStrong'],
+    ['#888', 'neutralAccent'],
+  ])('%s is shorthand for DARK.%s', (hex, key) => {
+    expect(DARK[key]).toBe(expand(hex));
+  });
+
+  it.each([
+    ['#08080d', 'bg'],
+    ['#2a2a48', 'raised'],
+    ['#1e1e30', 'surfaceAlt'],
+  ])('%s was DARK.%s', (hex, key) => {
+    expect(DARK[key]).toBe(hex);
+  });
+
+  it.each(['bg', 'raised', 'surfaceAlt', 'textStrong', 'neutralAccent'])(
+    'LIGHT.%s differs from DARK — the substitution is what moves on light',
+    (key) => {
+      expect(LIGHT[key]).not.toBe(DARK[key]);
+    }
+  );
 });

@@ -2,14 +2,7 @@ import React, { useState } from 'react';
 import { useStrengthPRs } from '../../hooks/useStrengthPRs.js';
 import StrengthLogger from '../../StrengthLogger.jsx';
 import { THEME } from '../../constants/theme.js';
-
-const C = {
-  bg: THEME.bg,
-  panel: THEME.raised,
-  accent: THEME.positive,
-  text: THEME.text,
-  muted: THEME.muted,
-};
+import { FONT } from '../../constants/type.js';
 
 export default function MobileStrength() {
   const [showLogger, setShowLogger] = useState(false);
@@ -23,7 +16,7 @@ export default function MobileStrength() {
     <div
       style={{
         padding: '16px 16px 24px',
-        background: C.bg,
+        background: THEME.bg,
         minHeight: '100vh',
       }}
     >
@@ -41,12 +34,12 @@ export default function MobileStrength() {
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: 2,
-              color: '#a78bfa',
+              color: THEME.accentAlt,
             }}
           >
             STRENGTH
           </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: THEME.muted, marginTop: 2 }}>
             Personal Records
           </div>
         </div>
@@ -56,7 +49,7 @@ export default function MobileStrength() {
         <div
           style={{
             textAlign: 'center',
-            color: C.muted,
+            color: THEME.muted,
             marginTop: 40,
             fontSize: 12,
           }}
@@ -69,7 +62,7 @@ export default function MobileStrength() {
         <div
           style={{
             textAlign: 'center',
-            color: C.muted,
+            color: THEME.muted,
             marginTop: 40,
             fontSize: 12,
           }}
@@ -91,7 +84,7 @@ export default function MobileStrength() {
             <div
               key={pr.exercise_name}
               style={{
-                background: C.panel,
+                background: THEME.raised,
                 borderRadius: 10,
                 padding: '14px',
               }}
@@ -100,7 +93,7 @@ export default function MobileStrength() {
                 style={{
                   fontSize: 9,
                   letterSpacing: 2,
-                  color: C.muted,
+                  color: THEME.muted,
                   marginBottom: 6,
                   textTransform: 'uppercase',
                 }}
@@ -111,8 +104,8 @@ export default function MobileStrength() {
                 style={{
                   fontSize: 28,
                   fontWeight: 700,
-                  color: '#a78bfa',
-                  fontFamily: "'DM Mono', monospace",
+                  color: THEME.accentAlt,
+                  fontFamily: FONT.mono,
                 }}
               >
                 {pr.best_e1rm_kg != null
@@ -120,12 +113,12 @@ export default function MobileStrength() {
                   : '—'}
               </div>
               {pr.heaviest_kg != null && (
-                <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: THEME.muted, marginTop: 4 }}>
                   Heaviest: {pr.heaviest_kg}kg
                 </div>
               )}
               {pr.logged_sets != null && (
-                <div style={{ fontSize: 9, color: '#4a4a68', marginTop: 2 }}>
+                <div style={{ fontSize: 9, color: THEME.border, marginTop: 2 }}>
                   {pr.logged_sets} sets
                 </div>
               )}
@@ -137,11 +130,11 @@ export default function MobileStrength() {
       <button
         onClick={() => setShowLogger(true)}
         style={{
-          background: C.panel,
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 8,
           padding: '14px',
-          color: '#a78bfa',
+          color: THEME.accentAlt,
           fontSize: 13,
           fontWeight: 700,
           letterSpacing: 1,

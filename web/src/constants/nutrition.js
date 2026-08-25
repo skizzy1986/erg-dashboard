@@ -1,23 +1,24 @@
+import { THEME } from './theme.js';
 export const MACRO_TARGETS = [
   {
     macro: 'Protein',
     target: '~190g',
     rule: '2g per kg',
-    color: '#ff2d55',
+    color: THEME.critical,
     note: 'Non-negotiable floor. Protects muscle in a deficit, drives recovery across 9 sessions/week. Hit this first every day.',
   },
   {
     macro: 'Carbs',
     target: 'High',
     rule: 'fill remaining',
-    color: '#00d4ff',
+    color: THEME.accent,
     note: 'After protein, bias calories here — not fat. Fuels 5 erg + 4 lifting sessions. Low carb + your volume = dead legs.',
   },
   {
     macro: 'Fat',
     target: '~75g floor',
     rule: '0.8g per kg',
-    color: '#ffd700',
+    color: THEME.caution,
     note: "Don't drop below the floor — matters for hormones. Fill remaining calories after protein and carbs are set.",
   },
 ];
@@ -117,25 +118,25 @@ export const FUELLING = {
   byType: [
     {
       type: 'Fasted easy row (UT1/UT2)',
-      color: '#00d4ff',
+      color: THEME.accent,
       guide:
         'KEEP fasted — at HR130 you burn mostly fat; fasted enhances fat-ox adaptation, exactly what base wants. If ever flat: banana / few dates 20min before. >75min: sip carbs during.',
     },
     {
       type: 'Two-a-day (erg AM + lift PM)',
-      color: '#f472b6',
+      color: THEME.accentAlt2,
       guide:
         "THE priority. Fasted row fine. THEN: refuel within 30–60min post-row (40–60g carb + 25–30g protein) to restock glycogen. Eat properly ACROSS the day — don't coast on light meals till 4pm (that's the energy leak). Pre-lift 2–3pm: real carb meal/snack so you can load the squat.",
     },
     {
       type: 'Strength day',
-      color: '#34d399',
+      color: THEME.positive,
       guide:
         "Glycogen-dependent — unlike easy rowing. Arrive fuelled: carbs in the 2–3 hrs before. Protein 25–40g post. Don't lift depleted.",
     },
     {
       type: 'Hard intervals (Build phase)',
-      color: '#ff6b35',
+      color: THEME.warning,
       guide:
         'FUEL these (unlike easy work): carbs 1–2hr before, carbs during if >45min work. Dial when Build arrives.',
     },

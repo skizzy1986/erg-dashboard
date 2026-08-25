@@ -10,6 +10,8 @@
    ═══════════════════════════════════════════════════════════════ */
 import { useEffect, useRef } from 'react';
 import { supabase as sb } from './supabaseClient.js';
+import { THEME } from './constants/theme.js';
+import { LAYER } from './constants/tokens.js';
 import {
   saveDraft as _saveDraft,
   loadDraft,
@@ -17,10 +19,12 @@ import {
 } from './utils/strengthDraft.js';
 
 const CSS = `
-.slog{ --bg:#08080d; --panel:#2a2a48; --panel2:#1e1e30; --line:#4a4a68;
-  --txt:#e8e8f0; --mut:#7e7e9a; --accent:#00d4ff; --accent2:#00a8cc;
-  --good:#34d399; --warn:#ffd700; --bad:#ff2d55; --coach:#a78bfa; --radius:12px;
-  color:var(--txt); font-family:'DM Mono','Courier New',monospace; display:block; }
+.slog{ --bg:var(--color-bg); --panel:var(--color-raised); --panel2:var(--color-surface-alt);
+  --line:var(--color-border); --txt:var(--color-text); --mut:var(--color-muted);
+  --accent:var(--color-accent); --accent2:#00a8cc;
+  --good:var(--color-positive); --warn:var(--color-caution); --bad:var(--color-critical);
+  --coach:var(--color-accent-alt); --radius:12px;
+  color:var(--txt); font-family:var(--font-mono); display:block; }
 .slog *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .slog h1,.slog h2,.slog h3{margin:0;font-weight:700}
 .slog button{font-family:inherit;cursor:pointer;border:none;font-size:15px}
@@ -76,9 +80,9 @@ const CSS = `
 .slog nav button{flex:1;background:var(--panel2);color:var(--mut);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:700;padding:10px;border-radius:10px;border:1px solid var(--line)}
 .slog nav button.active{color:var(--accent);border-color:var(--accent)}
 .slog nav svg{width:18px;height:18px}
-.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:110;max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
+.slog #restBar{position:fixed;left:0;right:0;bottom:0;z-index:${LAYER.bar};max-width:680px;margin:0 auto;background:var(--accent2);color:#04222b;padding:14px 18px calc(14px + env(safe-area-inset-bottom, 0px));display:flex;justify-content:space-between;align-items:center}
 .slog #restBar .t{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
-.slog .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.slog .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:${LAYER.backdrop};display:flex;align-items:flex-end;justify-content:center}
 .slog .sheet{background:var(--panel);width:100%;max-width:680px;max-height:88vh;border-radius:18px 18px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;animation:slogup .22s ease}
 @keyframes slogup{from{transform:translateY(40px);opacity:.6}to{transform:translateY(0);opacity:1}}
 .slog .sheet-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
@@ -91,7 +95,7 @@ const CSS = `
 .slog .ex-item .nm{font-weight:600}
 .slog .ex-item .meta{font-size:12px;color:var(--mut);text-transform:capitalize}
 .slog .empty{text-align:center;color:var(--mut);padding:30px 10px;font-size:14px}
-.slog #toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:11px 18px;border-radius:11px;z-index:80;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;max-width:90%}
+.slog #toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:11px 18px;border-radius:11px;z-index:${LAYER.toast};font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;max-width:90%}
 .slog #toast.show{opacity:.95}
 .slog .spin{width:20px;height:20px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:slogr .7s linear infinite;display:inline-block}
 @keyframes slogr{to{transform:rotate(360deg)}}
@@ -1236,19 +1240,22 @@ function mountStrengthLogger(root) {
     const sec = new Set((secondary || []).map(normalizeMuscle).filter(Boolean));
     rootEl.querySelectorAll('.muscle').forEach((n) => {
       const m = n.getAttribute('data-muscle');
-      n.setAttribute(
-        'fill',
-        prim.has(m) ? '#ef4444' : sec.has(m) ? '#f59e0b' : '#46525f'
-      );
+      // style, not setAttribute: a presentation attribute does not resolve
+      // var() in Safari, and the inline style also beats the SVG's own fill.
+      n.style.fill = prim.has(m)
+        ? THEME.critical
+        : sec.has(m)
+          ? THEME.caution
+          : THEME.neutral;
     });
   }
   function heatmapSVG() {
     const M = (d, a) =>
-      `<g>${a.map((s) => `<${s.t} class="muscle" data-muscle="${d}" fill="#46525f" ${s.a}/>`).join('')}</g>`;
+      `<g>${a.map((s) => `<${s.t} class="muscle" data-muscle="${d}" style="fill:var(--color-neutral)" ${s.a}/>`).join('')}</g>`;
     return `<svg viewBox="0 0 470 426" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Muscles worked">
-      <text x="120" y="13" text-anchor="middle" fill="#8b97a7" font-size="12" font-family="sans-serif">FRONT</text>
-      <text x="340" y="13" text-anchor="middle" fill="#8b97a7" font-size="12" font-family="sans-serif">BACK</text>
-      <g fill="#2b3441">
+      <text x="120" y="13" text-anchor="middle" style="fill:var(--color-muted)" font-size="12" font-family="sans-serif">FRONT</text>
+      <text x="340" y="13" text-anchor="middle" style="fill:var(--color-muted)" font-size="12" font-family="sans-serif">BACK</text>
+      <g style="fill:var(--color-surface-alt)">
         <circle cx="120" cy="38" r="19"/><rect x="113" y="54" width="14" height="14" rx="4"/>
         <rect x="100" y="188" width="40" height="26" rx="8"/>
         <circle cx="58" cy="208" r="7"/><circle cx="182" cy="208" r="7"/>
@@ -1356,9 +1363,9 @@ function mountStrengthLogger(root) {
     body.innerHTML = `
       <div class="demo-map">${heatmapSVG()}
         <div class="demo-legend">
-          <span><i style="background:#ef4444"></i>Primary</span>
-          <span><i style="background:#f59e0b"></i>Secondary</span>
-          <span><i style="background:#46525f"></i>Not emphasised</span>
+          <span><i style="background:var(--color-critical)"></i>Primary</span>
+          <span><i style="background:var(--color-caution)"></i>Secondary</span>
+          <span><i style="background:var(--color-neutral)"></i>Not emphasised</span>
         </div>
       </div>
       <div class="demo-muscles"><b>Primary:</b> ${tag(m.primary_muscles)}<br><b>Secondary:</b> ${tag(m.secondary_muscles)}</div>

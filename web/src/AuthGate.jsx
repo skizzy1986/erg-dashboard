@@ -9,19 +9,9 @@ import SplashScreen from './components/mobile/SplashScreen.jsx';
 import MobileApp from './views/mobile/MobileApp.jsx';
 import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
+import { FONT } from './constants/type.js';
 
 // ── THEME TOKENS (match the dashboard) ───────────────────────────
-const C = {
-  bg: THEME.bg,
-  panel: THEME.raised,
-  field: THEME.field,
-  border: THEME.border,
-  accent: THEME.positive,
-  text: THEME.text,
-  muted: THEME.muted,
-  err: THEME.critical,
-};
-
 // ── LOGIN SCREEN ─────────────────────────────────────────────────
 function Login() {
   const [email, setEmail] = useState('');
@@ -47,12 +37,12 @@ function Login() {
   };
 
   const inp = {
-    background: C.field,
-    border: `1px solid ${C.border}`,
+    background: THEME.field,
+    border: `1px solid ${THEME.border}`,
     borderRadius: 5,
     padding: '11px 12px',
     fontSize: 14,
-    color: C.text,
+    color: THEME.text,
     fontFamily: 'inherit',
     width: '100%',
     boxSizing: 'border-box',
@@ -60,7 +50,7 @@ function Login() {
   const lbl = {
     fontSize: 9,
     letterSpacing: 1,
-    color: C.muted,
+    color: THEME.muted,
     marginBottom: 4,
     display: 'block',
   };
@@ -72,8 +62,8 @@ function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: C.bg,
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
+        background: THEME.bg,
+        fontFamily: FONT.sans,
         padding: 20,
       }}
     >
@@ -82,8 +72,8 @@ function Login() {
         style={{
           width: '100%',
           maxWidth: 320,
-          background: C.panel,
-          border: `1px solid ${C.border}`,
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 10,
           padding: '26px 22px',
         }}
@@ -92,20 +82,23 @@ function Login() {
           style={{
             fontSize: 15,
             fontWeight: 700,
-            color: C.accent,
+            color: THEME.positive,
             letterSpacing: 1,
             marginBottom: 4,
           }}
         >
           SPLITIQ
         </div>
-        <div style={{ fontSize: 11, color: C.muted, marginBottom: 22 }}>
+        <div style={{ fontSize: 11, color: THEME.muted, marginBottom: 22 }}>
           Sign in to continue
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <label style={lbl}>EMAIL</label>
+          <label style={lbl} htmlFor="login-email">
+            EMAIL
+          </label>
           <input
+            id="login-email"
             style={inp}
             type="email"
             autoComplete="username"
@@ -114,8 +107,11 @@ function Login() {
           />
         </div>
         <div style={{ marginBottom: 18 }}>
-          <label style={lbl}>PASSWORD</label>
+          <label style={lbl} htmlFor="login-password">
+            PASSWORD
+          </label>
           <input
+            id="login-password"
             style={inp}
             type="password"
             autoComplete="current-password"
@@ -128,7 +124,7 @@ function Login() {
           <div
             style={{
               fontSize: 11,
-              color: C.err,
+              color: THEME.critical,
               marginBottom: 14,
               lineHeight: 1.5,
             }}
@@ -142,13 +138,13 @@ function Login() {
           disabled={busy}
           style={{
             width: '100%',
-            background: busy ? C.border : C.accent,
+            background: busy ? THEME.border : THEME.positive,
             border: 'none',
             borderRadius: 6,
             padding: '12px',
             fontSize: 13,
             fontWeight: 700,
-            color: C.bg,
+            color: THEME.surface,
             cursor: busy ? 'default' : 'pointer',
             fontFamily: 'inherit',
             letterSpacing: 1,
@@ -171,13 +167,13 @@ function SignOutButton() {
         top: 'calc(8px + env(safe-area-inset-top, 0px))',
         right: 8,
         zIndex: 1000,
-        background: '#08080dcc',
-        border: `1px solid ${C.border}`,
+        background: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
+        border: `1px solid ${THEME.border}`,
         borderRadius: 5,
         padding: '5px 10px',
         fontSize: 9,
         letterSpacing: 1,
-        color: C.muted,
+        color: THEME.muted,
         cursor: 'pointer',
         fontFamily: 'inherit',
         backdropFilter: 'blur(4px)',
@@ -201,14 +197,14 @@ function InstallButton() {
         bottom: 16,
         right: 16,
         zIndex: 999,
-        background: C.accent,
+        background: THEME.positive,
         border: 'none',
         borderRadius: 5,
         padding: '10px 14px',
         fontSize: 11,
         letterSpacing: 1,
         fontWeight: 700,
-        color: C.bg,
+        color: THEME.surface,
         cursor: 'pointer',
         fontFamily: 'inherit',
       }}
@@ -259,9 +255,9 @@ export default function AuthGate() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: C.bg,
-          color: C.muted,
-          fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+          background: THEME.bg,
+          color: THEME.muted,
+          fontFamily: FONT.sans,
           fontSize: 12,
         }}
       >

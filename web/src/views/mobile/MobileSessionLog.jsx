@@ -1,27 +1,19 @@
 import React, { useState } from 'react';
 import { useSessions } from '../../hooks/useSessions.js';
 import { THEME } from '../../constants/theme.js';
-
-const C = {
-  bg: THEME.bg,
-  panel: THEME.raised,
-  accent: THEME.positive,
-  text: THEME.text,
-  muted: THEME.muted,
-  err: THEME.critical,
-};
+import { alpha } from '../../utils/themeCss.js';
 
 function typeColor(type) {
   const t = (type ?? '').toLowerCase();
-  if (t.includes('erg') || t.includes('row')) return '#00d4ff';
-  if (t.includes('strength')) return '#a78bfa';
-  return '#7e7e9a';
+  if (t.includes('erg') || t.includes('row')) return THEME.accent;
+  if (t.includes('strength')) return THEME.accentAlt;
+  return THEME.muted;
 }
 
 function srpeColor(srpe) {
-  if (srpe <= 4) return '#34d399';
-  if (srpe <= 6) return '#ffd700';
-  return '#ff6b35';
+  if (srpe <= 4) return THEME.positive;
+  if (srpe <= 6) return THEME.caution;
+  return THEME.warning;
 }
 
 function formatDate(dateStr) {
@@ -60,7 +52,7 @@ export default function MobileSessionLog() {
     <div
       style={{
         padding: '16px 16px 24px',
-        background: C.bg,
+        background: THEME.bg,
         minHeight: '100vh',
       }}
     >
@@ -76,12 +68,12 @@ export default function MobileSessionLog() {
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: 2,
-            color: C.accent,
+            color: THEME.positive,
           }}
         >
           SESSIONS
         </span>
-        <span style={{ fontSize: 11, color: C.muted }}>
+        <span style={{ fontSize: 11, color: THEME.muted }}>
           {filtered.length} logged
         </span>
       </div>
@@ -103,8 +95,8 @@ export default function MobileSessionLog() {
               onClick={() => setActiveFilter(f)}
               style={{
                 ...pillBase,
-                background: isActive ? C.accent : C.panel,
-                color: isActive ? C.bg : C.muted,
+                background: isActive ? THEME.positive : THEME.raised,
+                color: isActive ? THEME.bg : THEME.muted,
                 fontWeight: isActive ? 700 : 400,
               }}
             >
@@ -118,7 +110,7 @@ export default function MobileSessionLog() {
         <div
           style={{
             textAlign: 'center',
-            color: C.muted,
+            color: THEME.muted,
             marginTop: 40,
             fontSize: 12,
           }}
@@ -131,7 +123,7 @@ export default function MobileSessionLog() {
         <div
           style={{
             textAlign: 'center',
-            color: C.err,
+            color: THEME.critical,
             marginTop: 40,
             fontSize: 12,
           }}
@@ -144,7 +136,7 @@ export default function MobileSessionLog() {
         <div
           style={{
             textAlign: 'center',
-            color: C.muted,
+            color: THEME.muted,
             marginTop: 40,
             fontSize: 12,
           }}
@@ -164,7 +156,8 @@ export default function MobileSessionLog() {
               justifyContent: 'space-between',
               alignItems: 'flex-start',
               padding: '12px 0',
-              borderBottom: '1px solid #4a4a6833',
+              borderBottom:
+                '1px solid color-mix(in srgb, var(--color-border) 20%, transparent)',
             }}
           >
             <div>
@@ -185,23 +178,25 @@ export default function MobileSessionLog() {
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
+                <span
+                  style={{ fontSize: 13, color: THEME.text, fontWeight: 500 }}
+                >
                   {s.label ?? s.type}
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10, color: C.muted }}>
+                <span style={{ fontSize: 10, color: THEME.muted }}>
                   {s.date ? formatDate(s.date) : ''}
                 </span>
                 {s.duration && (
-                  <span style={{ fontSize: 10, color: C.muted }}>
+                  <span style={{ fontSize: 10, color: THEME.muted }}>
                     {s.duration}min
                   </span>
                 )}
                 {s.srpe != null && (
                   <span
                     style={{
-                      background: srpeColor(s.srpe) + '22',
+                      background: alpha(srpeColor(s.srpe), '22'),
                       color: srpeColor(s.srpe),
                       borderRadius: 4,
                       padding: '1px 5px',
@@ -219,19 +214,20 @@ export default function MobileSessionLog() {
             <div style={{ textAlign: 'right' }}>
               {s.avg_watts != null ? (
                 <span
-                  style={{ fontSize: 12, fontWeight: 700, color: '#00d4ff' }}
+                  style={{ fontSize: 12, fontWeight: 700, color: THEME.accent }}
                 >
                   {s.avg_watts}w
                 </span>
               ) : s.distance_m != null ? (
-                <span style={{ fontSize: 12, color: C.muted }}>
+                <span style={{ fontSize: 12, color: THEME.muted }}>
                   {(s.distance_m / 1000).toFixed(1)}km
                 </span>
               ) : isStrength ? (
                 <span
                   style={{
-                    background: '#a78bfa22',
-                    color: '#a78bfa',
+                    background:
+                      'color-mix(in srgb, var(--color-accent-alt) 13.33%, transparent)',
+                    color: THEME.accentAlt,
                     borderRadius: 4,
                     padding: '2px 6px',
                     fontSize: 9,

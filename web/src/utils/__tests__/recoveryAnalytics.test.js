@@ -11,6 +11,7 @@ import {
   HRV_DEFAULT,
   SLEEP_TARGET,
 } from '../recoveryAnalytics.js';
+import { THEME } from '../../constants/theme.js';
 
 function makeRows(n, overrides = {}) {
   return Array.from({ length: n }, (_, i) => ({
@@ -100,7 +101,7 @@ describe('computeReadiness', () => {
     const r = computeReadiness(atBaseline);
     expect(r.score).toBe(100);
     expect(r.status).toBe('READY');
-    expect(r.color).toBe('#34d399');
+    expect(r.color).toBe(THEME.positive);
     expect(r.partial).toBe(false);
   });
 
@@ -137,10 +138,10 @@ describe('computeReadiness', () => {
     const caution = computeReadiness({ ...atBaseline, rhr: RHR_DEFAULT + 6 });
     expect(caution.score).toBe(76);
     expect(caution.status).toBe('CAUTION');
-    expect(caution.color).toBe('#ffd700');
+    expect(caution.color).toBe(THEME.caution);
     const fatigued = computeReadiness({ ...atBaseline, rhr: RHR_DEFAULT + 11 });
     expect(fatigued.status).toBe('FATIGUED');
-    expect(fatigued.color).toBe('#ff2d55');
+    expect(fatigued.color).toBe(THEME.critical);
   });
 
   it('clamps score to 0 minimum', () => {

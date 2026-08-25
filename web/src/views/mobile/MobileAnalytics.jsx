@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { THEME } from '../../constants/theme.js';
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import { calcTrainingLoad, sessionLoad } from '../../utils/trainingLoad.js';
 import { useSessions } from '../../hooks/useSessions.js';
@@ -6,12 +7,13 @@ import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { useAnchors } from '../../hooks/useAnchors.js';
 import { toISODate } from '../../utils/dateFormat.js';
 import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
+import { FONT } from '../../constants/type.js';
 
 function tsbColor(tsb) {
-  if (tsb > 10) return '#34d399';
-  if (tsb > -10) return '#ffd700';
-  if (tsb > -30) return '#ff6b35';
-  return '#ff2d55';
+  if (tsb > 10) return THEME.positive;
+  if (tsb > -10) return THEME.caution;
+  if (tsb > -30) return THEME.warning;
+  return THEME.critical;
 }
 
 function tsbSignal(tsb) {
@@ -23,9 +25,9 @@ function tsbSignal(tsb) {
 
 function typeColor(type) {
   const t = (type ?? '').toLowerCase();
-  if (t.includes('erg') || t.includes('row')) return '#00d4ff';
-  if (t.includes('strength')) return '#a78bfa';
-  return '#7e7e9a';
+  if (t.includes('erg') || t.includes('row')) return THEME.accent;
+  if (t.includes('strength')) return THEME.accentAlt;
+  return THEME.muted;
 }
 
 export default function MobileAnalytics() {
@@ -74,7 +76,7 @@ export default function MobileAnalytics() {
 
   const recentSessions = recentLive;
 
-  const color = latest ? tsbColor(latest.tsb) : '#7e7e9a';
+  const color = latest ? tsbColor(latest.tsb) : THEME.muted;
   // Pending renders nothing rather than the outage line, so a slow first read
   // does not flash "unavailable" and then replace it with a real signal (#196).
   const signal = latest
@@ -89,7 +91,7 @@ export default function MobileAnalytics() {
   });
 
   return (
-    <div style={{ padding: '16px 16px 24px', background: '#0a0a0f' }}>
+    <div style={{ padding: '16px 16px 24px', background: THEME.bg }}>
       <div
         style={{
           display: 'flex',
@@ -103,17 +105,17 @@ export default function MobileAnalytics() {
             fontSize: 13,
             fontWeight: 700,
             letterSpacing: 2,
-            color: '#34d399',
+            color: THEME.positive,
           }}
         >
           SPLITIQ
         </span>
-        <span style={{ fontSize: 11, color: '#7e7e9a' }}>{dateStr}</span>
+        <span style={{ fontSize: 11, color: THEME.muted }}>{dateStr}</span>
       </div>
 
       <div
         style={{
-          background: '#2a2a48',
+          background: THEME.raised,
           borderRadius: 12,
           padding: '20px',
           marginBottom: 12,
@@ -123,7 +125,7 @@ export default function MobileAnalytics() {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#7e7e9a',
+            color: THEME.muted,
             marginBottom: 6,
           }}
         >
@@ -132,10 +134,10 @@ export default function MobileAnalytics() {
         <div
           style={{
             fontSize: 52,
-            fontWeight: 800,
+            fontWeight: 700,
             color,
             lineHeight: 1,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           {latest ? latest.tsb.toFixed(1) : '—'}
@@ -156,7 +158,7 @@ export default function MobileAnalytics() {
         <div
           style={{
             flex: 1,
-            background: '#2a2a48',
+            background: THEME.raised,
             borderRadius: 10,
             padding: '14px 16px',
           }}
@@ -165,7 +167,7 @@ export default function MobileAnalytics() {
             style={{
               fontSize: 9,
               letterSpacing: 2,
-              color: '#7e7e9a',
+              color: THEME.muted,
               marginBottom: 4,
             }}
           >
@@ -175,8 +177,8 @@ export default function MobileAnalytics() {
             style={{
               fontSize: 32,
               fontWeight: 700,
-              color: '#00d4ff',
-              fontFamily: "'DM Mono', monospace",
+              color: THEME.accent,
+              fontFamily: FONT.mono,
             }}
           >
             {latest ? latest.ctl.toFixed(1) : '—'}
@@ -185,7 +187,7 @@ export default function MobileAnalytics() {
         <div
           style={{
             flex: 1,
-            background: '#2a2a48',
+            background: THEME.raised,
             borderRadius: 10,
             padding: '14px 16px',
           }}
@@ -194,7 +196,7 @@ export default function MobileAnalytics() {
             style={{
               fontSize: 9,
               letterSpacing: 2,
-              color: '#7e7e9a',
+              color: THEME.muted,
               marginBottom: 4,
             }}
           >
@@ -204,8 +206,8 @@ export default function MobileAnalytics() {
             style={{
               fontSize: 32,
               fontWeight: 700,
-              color: '#ff6b35',
-              fontFamily: "'DM Mono', monospace",
+              color: THEME.warning,
+              fontFamily: FONT.mono,
             }}
           >
             {latest ? latest.atl.toFixed(1) : '—'}
@@ -215,7 +217,7 @@ export default function MobileAnalytics() {
 
       <div
         style={{
-          background: '#2a2a48',
+          background: THEME.raised,
           borderRadius: 10,
           padding: '14px',
           marginBottom: 16,
@@ -225,7 +227,7 @@ export default function MobileAnalytics() {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#7e7e9a',
+            color: THEME.muted,
             marginBottom: 10,
           }}
         >
@@ -236,7 +238,7 @@ export default function MobileAnalytics() {
             <Line
               type="monotone"
               dataKey="ctl"
-              stroke="#00d4ff"
+              stroke={THEME.accent}
               dot={false}
               isAnimationActive={false}
               strokeWidth={2}
@@ -244,7 +246,7 @@ export default function MobileAnalytics() {
             <Line
               type="monotone"
               dataKey="atl"
-              stroke="#ff6b35"
+              stroke={THEME.warning}
               dot={false}
               isAnimationActive={false}
               strokeWidth={2}
@@ -260,13 +262,13 @@ export default function MobileAnalytics() {
           </LineChart>
         </ResponsiveContainer>
         <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-          <span style={{ fontSize: 10, color: '#7e7e9a' }}>
-            <span style={{ color: '#00d4ff' }}>● </span>CTL
+          <span style={{ fontSize: 10, color: THEME.muted }}>
+            <span style={{ color: THEME.accent }}>● </span>CTL
           </span>
-          <span style={{ fontSize: 10, color: '#7e7e9a' }}>
-            <span style={{ color: '#ff6b35' }}>● </span>ATL
+          <span style={{ fontSize: 10, color: THEME.muted }}>
+            <span style={{ color: THEME.warning }}>● </span>ATL
           </span>
-          <span style={{ fontSize: 10, color: '#7e7e9a' }}>
+          <span style={{ fontSize: 10, color: THEME.muted }}>
             <span style={{ color }}> ● </span>TSB
           </span>
         </div>
@@ -274,7 +276,7 @@ export default function MobileAnalytics() {
 
       <div
         style={{
-          background: '#2a2a48',
+          background: THEME.raised,
           borderRadius: 10,
           padding: '14px',
           marginBottom: 16,
@@ -284,7 +286,7 @@ export default function MobileAnalytics() {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#7e7e9a',
+            color: THEME.muted,
             marginBottom: 10,
           }}
         >
@@ -294,7 +296,7 @@ export default function MobileAnalytics() {
           <BarChart data={weeklyData} barCategoryGap="20%">
             <Bar
               dataKey="weeklyTss"
-              fill="#34d399"
+              fill={THEME.positive}
               radius={[3, 3, 0, 0]}
               isAnimationActive={false}
             />
@@ -307,7 +309,7 @@ export default function MobileAnalytics() {
           style={{
             fontSize: 9,
             letterSpacing: 2,
-            color: '#7e7e9a',
+            color: THEME.muted,
             marginBottom: 8,
           }}
         >
@@ -320,13 +322,16 @@ export default function MobileAnalytics() {
               display: 'flex',
               justifyContent: 'space-between',
               padding: '10px 0',
-              borderBottom: '1px solid #4a4a6833',
+              borderBottom:
+                '1px solid color-mix(in srgb, var(--color-border) 20%, transparent)',
             }}
           >
-            <span style={{ fontSize: 12, color: '#e8e8f0' }}>{s.note}</span>
+            <span style={{ fontSize: 12, color: THEME.text }}>{s.note}</span>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 10, color: '#7e7e9a' }}>{s.date}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#34d399' }}>
+              <div style={{ fontSize: 10, color: THEME.muted }}>{s.date}</div>
+              <div
+                style={{ fontSize: 12, fontWeight: 700, color: THEME.positive }}
+              >
                 {s.tss} TSS
               </div>
             </div>
@@ -346,14 +351,14 @@ export default function MobileAnalytics() {
               style={{
                 fontSize: 9,
                 letterSpacing: 2,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 8,
               }}
             >
               UPCOMING
             </div>
             {upcoming.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#7e7e9a' }}>
+              <div style={{ fontSize: 12, color: THEME.muted }}>
                 No upcoming sessions
               </div>
             ) : (
@@ -365,7 +370,8 @@ export default function MobileAnalytics() {
                     alignItems: 'center',
                     gap: 8,
                     padding: '10px 0',
-                    borderBottom: '1px solid #4a4a6833',
+                    borderBottom:
+                      '1px solid color-mix(in srgb, var(--color-border) 20%, transparent)',
                   }}
                 >
                   <span
@@ -377,10 +383,10 @@ export default function MobileAnalytics() {
                       flexShrink: 0,
                     }}
                   />
-                  <span style={{ fontSize: 12, color: '#e8e8f0', flex: 1 }}>
+                  <span style={{ fontSize: 12, color: THEME.text, flex: 1 }}>
                     {s.label ?? s.type}
                   </span>
-                  <span style={{ fontSize: 10, color: '#7e7e9a' }}>
+                  <span style={{ fontSize: 10, color: THEME.muted }}>
                     {s.date}
                   </span>
                 </div>

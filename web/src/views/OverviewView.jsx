@@ -31,6 +31,9 @@ import { nutritionLog } from '../constants/logs.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
+import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
+import { FONT } from '../constants/type.js';
 
 export default function OverviewView({
   latest,
@@ -79,8 +82,8 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: 'linear-gradient(135deg,#1e1e30,#2a2a48)',
-              border: `1px solid ${sig.color}50`,
+              background: `linear-gradient(135deg,${THEME.surfaceAlt},${THEME.raised})`,
+              border: `1px solid ${alpha(sig.color, '50')}`,
               borderRadius: 8,
               padding: '14px 16px',
               marginBottom: 14,
@@ -99,7 +102,7 @@ export default function OverviewView({
                   style={{
                     fontSize: 14,
                     fontWeight: 700,
-                    color: '#fff',
+                    color: THEME.textStrong,
                   }}
                 >
                   {t.dateStr}
@@ -107,7 +110,7 @@ export default function OverviewView({
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     letterSpacing: 1,
                     marginTop: 1,
                   }}
@@ -127,7 +130,7 @@ export default function OverviewView({
                 >
                   ● {sig.signal}
                 </div>
-                <div style={{ fontSize: 9, color: '#7e7e9a' }}>
+                <div style={{ fontSize: 9, color: THEME.muted }}>
                   readiness{' '}
                   {readiness && readiness.score != null ? readiness.score : '—'}
                 </div>
@@ -164,7 +167,7 @@ export default function OverviewView({
                         <span
                           style={{
                             fontSize: 8,
-                            color: '#34d399',
+                            color: THEME.positive,
                             letterSpacing: 1,
                             fontWeight: 700,
                           }}
@@ -176,11 +179,11 @@ export default function OverviewView({
                     {todaySessions.length === 0 ? (
                       <div
                         style={{
-                          background: '#08080d',
+                          background: THEME.field,
                           borderRadius: 5,
                           padding: '10px 12px',
                           fontSize: 11,
-                          color: '#6c6c88',
+                          color: THEME.textFaint,
                         }}
                       >
                         Rest day — no scheduled session.
@@ -207,7 +210,7 @@ export default function OverviewView({
             <div
               style={{
                 fontSize: 8,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 letterSpacing: 2,
                 marginBottom: 5,
               }}
@@ -215,7 +218,7 @@ export default function OverviewView({
               UPCOMING
             </div>
             {upcoming.length === 0 ? (
-              <div style={{ fontSize: 10, color: '#6c6c88' }}>
+              <div style={{ fontSize: 10, color: THEME.textFaint }}>
                 No more scheduled sessions in the next 3 days.
               </div>
             ) : (
@@ -235,7 +238,7 @@ export default function OverviewView({
                 );
                 const whenLabel =
                   dayDiff === 0 ? 'Today' : dayDiff === 1 ? 'Tomorrow' : u.dow;
-                const slotColor = i === 0 ? '#00d4ff' : '#888';
+                const slotColor = i === 0 ? THEME.accent : THEME.neutralAccent;
                 return (
                   <div
                     key={i}
@@ -244,14 +247,14 @@ export default function OverviewView({
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '5px 0',
-                      borderTop: i > 0 ? '1px solid #3e3e5a' : 'none',
+                      borderTop: i > 0 ? `1px solid ${THEME.divider}` : 'none',
                     }}
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div
                         style={{
                           fontSize: 10,
-                          color: '#aaaacc',
+                          color: THEME.textSubtle,
                           lineHeight: 1.3,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -260,7 +263,7 @@ export default function OverviewView({
                       >
                         {u.label}
                       </div>
-                      <div style={{ fontSize: 8, color: '#6c6c88' }}>
+                      <div style={{ fontSize: 8, color: THEME.textFaint }}>
                         {u.slot}
                       </div>
                     </div>
@@ -295,7 +298,7 @@ export default function OverviewView({
                   <div
                     style={{
                       fontSize: 8,
-                      color: '#34d399',
+                      color: THEME.positive,
                       letterSpacing: 2,
                       margin: '12px 0 5px',
                     }}
@@ -310,7 +313,8 @@ export default function OverviewView({
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '4px 0',
-                        borderTop: i > 0 ? '1px solid #3e3e5a' : 'none',
+                        borderTop:
+                          i > 0 ? `1px solid ${THEME.divider}` : 'none',
                       }}
                     >
                       <div
@@ -324,7 +328,7 @@ export default function OverviewView({
                       >
                         <span
                           style={{
-                            color: '#34d399',
+                            color: THEME.positive,
                             fontSize: 10,
                             flexShrink: 0,
                           }}
@@ -334,7 +338,7 @@ export default function OverviewView({
                         <span
                           style={{
                             fontSize: 10,
-                            color: '#7a9a8a',
+                            color: THEME.positive,
                             lineHeight: 1.3,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -355,16 +359,16 @@ export default function OverviewView({
                         }}
                       >
                         {e.srpe && (
-                          <span style={{ fontSize: 8, color: '#7e7e9a' }}>
+                          <span style={{ fontSize: 8, color: THEME.muted }}>
                             sRPE {e.srpe}
                           </span>
                         )}
                         {e.prs > 0 && (
-                          <span style={{ fontSize: 8, color: '#ffd700' }}>
+                          <span style={{ fontSize: 8, color: THEME.caution }}>
                             🏆{e.prs}
                           </span>
                         )}
-                        <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+                        <span style={{ fontSize: 9, color: THEME.muted }}>
                           {e.date.slice(0, -3)}
                         </span>
                       </div>
@@ -380,8 +384,8 @@ export default function OverviewView({
       {/* Phase context — where you are in the arc */}
       <div
         style={{
-          background: 'linear-gradient(135deg,#00d4ff15,#1e1e30)',
-          border: '1px solid #00d4ff40',
+          background: `linear-gradient(135deg,${alpha(THEME.accent, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.accent, '40')}`,
           borderRadius: 6,
           padding: '13px 16px',
           marginBottom: 16,
@@ -395,10 +399,10 @@ export default function OverviewView({
             marginBottom: 8,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#00d4ff' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: THEME.accent }}>
             {PHASE_CONTEXT.phaseLabel}
           </span>
-          <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+          <span style={{ fontSize: 9, color: THEME.muted }}>
             wk {PHASE_CONTEXT.weeksIn}/{PHASE_CONTEXT.weeksTotal} ·{' '}
             {PHASE_CONTEXT.window}
           </span>
@@ -410,8 +414,8 @@ export default function OverviewView({
               key={p.phase}
               style={{
                 flex: p.phase === 'RACE' ? 1.3 : 1,
-                background: p.active ? '#00d4ff' : '#2a2a48',
-                border: `1px solid ${p.active ? '#00d4ff' : '#4a4a68'}`,
+                background: p.active ? THEME.accent : THEME.raised,
+                border: `1px solid ${p.active ? THEME.accent : THEME.border}`,
                 borderRadius: 3,
                 padding: '5px 4px',
                 textAlign: 'center',
@@ -421,7 +425,7 @@ export default function OverviewView({
                 style={{
                   fontSize: 7,
                   fontWeight: 700,
-                  color: p.active ? '#08080d' : '#7e7e9a',
+                  color: p.active ? THEME.field : THEME.muted,
                   letterSpacing: 0.5,
                 }}
               >
@@ -430,7 +434,7 @@ export default function OverviewView({
               <div
                 style={{
                   fontSize: 6,
-                  color: p.active ? '#08080d99' : '#6c6c88',
+                  color: p.active ? THEME.field : THEME.textFaint,
                 }}
               >
                 {p.window}
@@ -441,29 +445,29 @@ export default function OverviewView({
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.5,
             marginBottom: 5,
           }}
         >
-          <span style={{ color: '#00d4ff' }}>Doing: </span>
+          <span style={{ color: THEME.accent }}>Doing: </span>
           {PHASE_CONTEXT.doing}
         </div>
         <div
           style={{
             fontSize: 10,
-            color: '#aaaacc',
+            color: THEME.textSubtle,
             lineHeight: 1.5,
             marginBottom: 5,
           }}
         >
-          <span style={{ color: '#00d4ff' }}>Why now: </span>
+          <span style={{ color: THEME.accent }}>Why now: </span>
           {PHASE_CONTEXT.why}
         </div>
         <div
           style={{
             fontSize: 10,
-            color: '#888860',
+            color: THEME.muted,
             lineHeight: 1.5,
             marginBottom: 5,
           }}
@@ -473,9 +477,9 @@ export default function OverviewView({
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 6,
           }}
         >
@@ -509,8 +513,8 @@ export default function OverviewView({
           <div
             key={k}
             style={{
-              background: '#2a2a48',
-              border: '1px solid #4a4a68',
+              background: THEME.raised,
+              border: `1px solid ${THEME.border}`,
               borderRadius: 6,
               padding: '11px 13px',
             }}
@@ -518,7 +522,7 @@ export default function OverviewView({
             <div
               style={{
                 fontSize: 8,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 letterSpacing: 3,
                 marginBottom: 4,
               }}
@@ -529,13 +533,13 @@ export default function OverviewView({
               style={{
                 fontSize: 20,
                 fontWeight: 700,
-                color: '#fff',
+                color: THEME.textStrong,
                 letterSpacing: -0.5,
               }}
             >
               {v}
             </div>
-            <div style={{ fontSize: 9, color: '#6c6c88', marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: THEME.textFaint, marginTop: 2 }}>
               {sub}
             </div>
           </div>
@@ -560,8 +564,8 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: 'linear-gradient(135deg,#a78bfa12,#1e1e30)',
-              border: '1px solid #a78bfa40',
+              background: `linear-gradient(135deg,${alpha(THEME.accentAlt, '12')},${THEME.surfaceAlt})`,
+              border: `1px solid ${alpha(THEME.accentAlt, '40')}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 16,
@@ -579,19 +583,19 @@ export default function OverviewView({
                 style={{
                   fontSize: 9,
                   letterSpacing: 3,
-                  color: '#a78bfa',
+                  color: THEME.accentAlt,
                 }}
               >
                 ⚙️ ADAPTIVE ENGINE
               </div>
-              <div style={{ fontSize: 8, color: '#7e7e9a' }}>
+              <div style={{ fontSize: 8, color: THEME.muted }}>
                 {ADAPTIVE_RULES.length} rules · evolving
               </div>
             </div>
             <div
               style={{
                 fontSize: 9,
-                color: '#7e7e9a',
+                color: THEME.muted,
                 marginBottom: 10,
                 lineHeight: 1.5,
               }}
@@ -606,7 +610,7 @@ export default function OverviewView({
               style={{
                 fontSize: 8,
                 letterSpacing: 2,
-                color: fired.length ? '#ff6b35' : '#34d399',
+                color: fired.length ? THEME.warning : THEME.positive,
                 marginBottom: 6,
               }}
             >
@@ -618,8 +622,8 @@ export default function OverviewView({
               <div
                 key={`${f.id}-${i}`}
                 style={{
-                  background: '#08080d',
-                  borderLeft: '2px solid #ff6b35',
+                  background: THEME.field,
+                  borderLeft: `2px solid ${THEME.warning}`,
                   borderRadius: 3,
                   padding: '7px 10px',
                   marginBottom: 4,
@@ -628,26 +632,29 @@ export default function OverviewView({
                 <span
                   style={{
                     fontSize: 9,
-                    color: '#ff6b35',
+                    color: THEME.warning,
                     fontWeight: 700,
                   }}
                 >
                   {f.id}{' '}
                 </span>
-                <span style={{ fontSize: 10, color: '#aaaacc' }}>{f.msg}</span>
+                <span style={{ fontSize: 10, color: THEME.textSubtle }}>
+                  {f.msg}
+                </span>
               </div>
             ))}
 
             {consistency.conflict && (
               <div
                 style={{
-                  background: '#1a0d0d',
-                  border: '1px solid #ff2d5550',
+                  background:
+                    'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
+                  border: `1px solid ${alpha(THEME.critical, '50')}`,
                   borderRadius: 3,
                   padding: '7px 10px',
                   marginBottom: 4,
                   fontSize: 10,
-                  color: '#ffaaaa',
+                  color: THEME.critical,
                 }}
               >
                 {consistency.msg}
@@ -659,7 +666,7 @@ export default function OverviewView({
               <summary
                 style={{
                   fontSize: 9,
-                  color: '#a78bfa',
+                  color: THEME.accentAlt,
                   cursor: 'pointer',
                   letterSpacing: 1,
                 }}
@@ -671,7 +678,7 @@ export default function OverviewView({
                   <div
                     key={r.id}
                     style={{
-                      background: '#08080d',
+                      background: THEME.field,
                       borderRadius: 3,
                       padding: '8px 10px',
                       marginBottom: 4,
@@ -688,7 +695,7 @@ export default function OverviewView({
                         style={{
                           fontSize: 10,
                           fontWeight: 700,
-                          color: '#e8e8f0',
+                          color: THEME.text,
                         }}
                       >
                         {r.id} · {r.domain}
@@ -696,7 +703,7 @@ export default function OverviewView({
                       <span
                         style={{
                           fontSize: 8,
-                          color: r.tier === 1 ? '#34d399' : '#ffd700',
+                          color: r.tier === 1 ? THEME.positive : THEME.caution,
                         }}
                       >
                         T{r.tier}
@@ -705,7 +712,7 @@ export default function OverviewView({
                     <div
                       style={{
                         fontSize: 9,
-                        color: '#aaaacc',
+                        color: THEME.textSubtle,
                         lineHeight: 1.5,
                         marginTop: 2,
                       }}
@@ -715,7 +722,7 @@ export default function OverviewView({
                     <div
                       style={{
                         fontSize: 9,
-                        color: '#888860',
+                        color: THEME.muted,
                         lineHeight: 1.5,
                         marginTop: 2,
                       }}
@@ -725,7 +732,7 @@ export default function OverviewView({
                     <div
                       style={{
                         fontSize: 8,
-                        color: '#6c6c88',
+                        color: THEME.textFaint,
                         lineHeight: 1.4,
                         marginTop: 2,
                         fontStyle: 'italic',
@@ -739,7 +746,7 @@ export default function OverviewView({
                   style={{
                     fontSize: 8,
                     letterSpacing: 2,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     margin: '10px 0 5px',
                   }}
                 >
@@ -750,13 +757,13 @@ export default function OverviewView({
                     key={i}
                     style={{
                       fontSize: 9,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       lineHeight: 1.5,
                       marginBottom: 3,
                       paddingLeft: 4,
                     }}
                   >
-                    <span style={{ color: '#a78bfa' }}>{e.date}</span> ·{' '}
+                    <span style={{ color: THEME.accentAlt }}>{e.date}</span> ·{' '}
                     {e.change}
                   </div>
                 ))}
@@ -785,8 +792,8 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: `linear-gradient(135deg,${auto.color}12,#1e1e30)`,
-              border: `1px solid ${auto.color}50`,
+              background: `linear-gradient(135deg,${alpha(auto.color, '12')},${THEME.surfaceAlt})`,
+              border: `1px solid ${alpha(auto.color, '50')}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 16,
@@ -823,7 +830,7 @@ export default function OverviewView({
             <div
               style={{
                 fontSize: 11,
-                color: '#aaaacc',
+                color: THEME.textSubtle,
                 lineHeight: 1.6,
                 marginBottom: 10,
               }}
@@ -842,7 +849,7 @@ export default function OverviewView({
             >
               <div
                 style={{
-                  background: '#08080d',
+                  background: THEME.field,
                   borderRadius: 4,
                   padding: '9px 11px',
                 }}
@@ -850,7 +857,7 @@ export default function OverviewView({
                 <div
                   style={{
                     fontSize: 8,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     letterSpacing: 2,
                     marginBottom: 2,
                   }}
@@ -861,7 +868,7 @@ export default function OverviewView({
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: '#00d4ff',
+                    color: THEME.accent,
                   }}
                 >
                   {t.ut1Low}–{t.ut1High}W
@@ -869,7 +876,7 @@ export default function OverviewView({
                 <div
                   style={{
                     fontSize: 8,
-                    color: '#6c6c88',
+                    color: THEME.textFaint,
                     marginTop: 1,
                   }}
                 >
@@ -878,7 +885,7 @@ export default function OverviewView({
               </div>
               <div
                 style={{
-                  background: '#08080d',
+                  background: THEME.field,
                   borderRadius: 4,
                   padding: '9px 11px',
                 }}
@@ -886,7 +893,7 @@ export default function OverviewView({
                 <div
                   style={{
                     fontSize: 8,
-                    color: '#7e7e9a',
+                    color: THEME.muted,
                     letterSpacing: 2,
                     marginBottom: 2,
                   }}
@@ -897,7 +904,7 @@ export default function OverviewView({
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: '#34d399',
+                    color: THEME.positive,
                   }}
                 >
                   {t.ut2Low}–{t.ut2High}W
@@ -905,7 +912,7 @@ export default function OverviewView({
                 <div
                   style={{
                     fontSize: 8,
-                    color: '#6c6c88',
+                    color: THEME.textFaint,
                     marginTop: 1,
                   }}
                 >
@@ -913,14 +920,16 @@ export default function OverviewView({
                 </div>
               </div>
             </div>
-            <div style={{ fontSize: 8, color: '#6c6c88', lineHeight: 1.5 }}>
+            <div
+              style={{ fontSize: 8, color: THEME.textFaint, lineHeight: 1.5 }}
+            >
               Targets computed from {t.source}. Recompute automatically as new
               HR130 points land. ● {auto.signal} fuses TSB (
               {tsbNow == null
                 ? 'unavailable'
                 : (tsbNow > 0 ? '+' : '') + tsbNow}
               ), readiness, and fired rules.{' '}
-              <span style={{ color: '#7e7e9a' }}>
+              <span style={{ color: THEME.muted }}>
                 TSB rests on estimated CP until the test — direction meaningful,
                 absolute soft.
               </span>
@@ -932,8 +941,8 @@ export default function OverviewView({
       {/* Training Load Chart */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 16,
@@ -947,10 +956,10 @@ export default function OverviewView({
             marginBottom: 4,
           }}
         >
-          <div style={{ fontSize: 9, letterSpacing: 3, color: '#ff6b35' }}>
+          <div style={{ fontSize: 9, letterSpacing: 3, color: THEME.warning }}>
             TRAINING LOAD
           </div>
-          <div style={{ fontSize: 9, color: '#6c6c88' }}>
+          <div style={{ fontSize: 9, color: THEME.textFaint }}>
             {cpAvailable
               ? `Rowing CP ${cp}W · bike FTP ${ftp ?? '—'}W`
               : 'CP unavailable'}
@@ -961,7 +970,7 @@ export default function OverviewView({
             style={{
               fontSize: 9,
               letterSpacing: 2,
-              color: '#7e7e9a',
+              color: THEME.muted,
               marginTop: 6,
             }}
           >
@@ -980,8 +989,8 @@ export default function OverviewView({
           }}
         >
           {[
-            ['CTL', 'Fitness', latest ? latest.ctl : '—', '#00d4ff'],
-            ['ATL', 'Fatigue', latest ? latest.atl : '—', '#ff6b35'],
+            ['CTL', 'Fitness', latest ? latest.ctl : '—', THEME.accent],
+            ['ATL', 'Fatigue', latest ? latest.atl : '—', THEME.warning],
             [
               'TSB',
               'Form',
@@ -992,7 +1001,7 @@ export default function OverviewView({
             <div
               key={k}
               style={{
-                background: '#08080d',
+                background: THEME.field,
                 borderRadius: 4,
                 padding: '8px 10px',
               }}
@@ -1000,11 +1009,11 @@ export default function OverviewView({
               <div
                 style={{
                   fontSize: 8,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   letterSpacing: 2,
                 }}
               >
-                {k} <span style={{ color: '#5a5a74' }}>{sub}</span>
+                {k} <span style={{ color: THEME.textDim }}>{sub}</span>
               </div>
               <div
                 style={{
@@ -1030,8 +1039,8 @@ export default function OverviewView({
               dataKey="date"
               tick={{
                 fontSize: 8,
-                fill: '#7e7e9a',
-                fontFamily: "'DM Mono',monospace",
+                fill: THEME.muted,
+                fontFamily: FONT.mono,
               }}
               axisLine={false}
               tickLine={false}
@@ -1040,19 +1049,19 @@ export default function OverviewView({
             <YAxis
               tick={{
                 fontSize: 8,
-                fill: '#7e7e9a',
-                fontFamily: "'DM Mono',monospace",
+                fill: THEME.muted,
+                fontFamily: FONT.mono,
               }}
               axisLine={false}
               tickLine={false}
               width={28}
             />
             <Tooltip content={<LoadTooltip />} />
-            <ReferenceLine y={0} stroke="#4a4a68" strokeDasharray="2 2" />
+            <ReferenceLine y={0} stroke={THEME.border} strokeDasharray="2 2" />
             <Line
               type="monotone"
               dataKey="ctl"
-              stroke="#00d4ff"
+              stroke={THEME.accent}
               strokeWidth={2}
               dot={false}
               name="CTL"
@@ -1060,7 +1069,7 @@ export default function OverviewView({
             <Line
               type="monotone"
               dataKey="atl"
-              stroke="#ff6b35"
+              stroke={THEME.warning}
               strokeWidth={2}
               dot={false}
               name="ATL"
@@ -1082,7 +1091,7 @@ export default function OverviewView({
           style={{
             marginTop: 8,
             fontSize: 10,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
           }}
         >
@@ -1100,7 +1109,7 @@ export default function OverviewView({
           style={{
             marginTop: 6,
             fontSize: 9,
-            color: '#5a5a74',
+            color: THEME.textDim,
             lineHeight: 1.5,
           }}
         >
@@ -1115,8 +1124,8 @@ export default function OverviewView({
       {/* Nutrition Status */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 16,
@@ -1130,10 +1139,10 @@ export default function OverviewView({
             marginBottom: 10,
           }}
         >
-          <div style={{ fontSize: 9, letterSpacing: 3, color: '#ff2d55' }}>
+          <div style={{ fontSize: 9, letterSpacing: 3, color: THEME.critical }}>
             NUTRITION STATUS
           </div>
-          <div style={{ fontSize: 9, color: '#6c6c88' }}>
+          <div style={{ fontSize: 9, color: THEME.textFaint }}>
             Share MacroFactor screenshot to update
           </div>
         </div>
@@ -1153,9 +1162,9 @@ export default function OverviewView({
                 style={{
                   marginBottom: 8,
                   padding: '10px 12px',
-                  background: isToday ? '#1e1e30' : '#08080d',
+                  background: isToday ? THEME.surfaceAlt : THEME.field,
                   borderRadius: 4,
-                  border: `1px solid ${isToday ? '#ff2d5530' : '#3e3e5a'}`,
+                  border: `1px solid ${isToday ? alpha(THEME.critical, '30') : THEME.divider}`,
                 }}
               >
                 <div
@@ -1169,7 +1178,7 @@ export default function OverviewView({
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: '#fff',
+                      color: THEME.textStrong,
                     }}
                   >
                     {day.date}
@@ -1177,7 +1186,7 @@ export default function OverviewView({
                   <span
                     style={{
                       fontSize: 9,
-                      color: '#7e7e9a',
+                      color: THEME.muted,
                       letterSpacing: 1,
                     }}
                   >
@@ -1214,7 +1223,7 @@ export default function OverviewView({
                     <div
                       key={label}
                       style={{
-                        background: '#2a2a48',
+                        background: THEME.raised,
                         borderRadius: 3,
                         padding: '6px 6px',
                       }}
@@ -1222,7 +1231,7 @@ export default function OverviewView({
                       <div
                         style={{
                           fontSize: 8,
-                          color: '#7e7e9a',
+                          color: THEME.muted,
                           letterSpacing: 1,
                           marginBottom: 2,
                         }}
@@ -1241,7 +1250,7 @@ export default function OverviewView({
                       <div
                         style={{
                           fontSize: 8,
-                          color: '#5a5a74',
+                          color: THEME.textDim,
                           marginTop: 1,
                         }}
                       >
@@ -1256,22 +1265,22 @@ export default function OverviewView({
                     const net = day.cal - day.burn;
                     const netColor =
                       Math.abs(net) <= 300
-                        ? '#ffd700'
+                        ? THEME.caution
                         : net < 0
-                          ? '#34d399'
-                          : '#ff6b35';
+                          ? THEME.positive
+                          : THEME.warning;
                     return (
                       <div
                         style={{
                           marginTop: 8,
                           paddingTop: 8,
-                          borderTop: '1px solid #3e3e5a',
+                          borderTop: `1px solid ${THEME.divider}`,
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
                         }}
                       >
-                        <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+                        <span style={{ fontSize: 9, color: THEME.muted }}>
                           Intake {day.cal} − burn ~{day.burn} (±15%)
                         </span>
                         <span
@@ -1283,7 +1292,7 @@ export default function OverviewView({
                         >
                           {net > 0 ? '+' : ''}
                           {net}{' '}
-                          <span style={{ fontSize: 9, color: '#7e7e9a' }}>
+                          <span style={{ fontSize: 9, color: THEME.muted }}>
                             {Math.abs(net) <= 300
                               ? '~maintenance'
                               : net < 0
@@ -1300,13 +1309,14 @@ export default function OverviewView({
         <div
           style={{
             fontSize: 10,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.6,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 10,
           }}
         >
-          ✅ <span style={{ color: '#34d399' }}>Expenditure confirmed:</span>{' '}
+          ✅{' '}
+          <span style={{ color: THEME.positive }}>Expenditure confirmed:</span>{' '}
           Fitbit device data (2,650–4,050/day) matches the bottom-up model
           (~3,140 avg) — two independent methods agree. MacroFactor's 1,948
           estimate is ~1,200 kcal low. Eat at maintenance during calibration,
@@ -1315,18 +1325,18 @@ export default function OverviewView({
         <div
           style={{
             fontSize: 10,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.6,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 10,
             marginTop: 2,
           }}
         >
-          📅 <span style={{ color: '#00d4ff' }}>Tracking cadence:</span> Daily
-          CSVs through calibration (~to Jun 24) while baselines set — RHR, HRV,
-          sleep, TDEE, Z2 power. After that, switch CSV export to week-view and
-          share weekly (Sun review prompt set). Daily detail is for calibration,
-          not forever.
+          📅 <span style={{ color: THEME.accent }}>Tracking cadence:</span>{' '}
+          Daily CSVs through calibration (~to Jun 24) while baselines set — RHR,
+          HRV, sleep, TDEE, Z2 power. After that, switch CSV export to week-view
+          and share weekly (Sun review prompt set). Daily detail is for
+          calibration, not forever.
         </div>
       </div>
 
@@ -1334,7 +1344,7 @@ export default function OverviewView({
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#7e7e9a',
+          color: THEME.muted,
           marginBottom: 8,
         }}
       >
@@ -1356,8 +1366,8 @@ export default function OverviewView({
       {/* Sequencing rules */}
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '14px 16px',
         }}
@@ -1366,7 +1376,7 @@ export default function OverviewView({
           style={{
             fontSize: 9,
             letterSpacing: 3,
-            color: '#34d399',
+            color: THEME.positive,
             marginBottom: 10,
           }}
         >
@@ -1395,7 +1405,7 @@ export default function OverviewView({
               gap: 10,
               marginBottom: 6,
               fontSize: 11,
-              color: '#aaaacc',
+              color: THEME.textSubtle,
               lineHeight: 1.5,
             }}
           >

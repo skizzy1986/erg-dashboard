@@ -1,19 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCoach } from '../hooks/useCoach.js';
 import { THEME } from '../constants/theme.js';
-
-const C = {
-  bg: THEME.bg,
-  panel: THEME.surface,
-  border: THEME.border,
-  cyan: THEME.accent,
-  text: THEME.text,
-  muted: THEME.muted,
-  err: THEME.critical,
-  userBubble: THEME.raised,
-  userBubbleBorder: THEME.border,
-  assistantBorder: THEME.accent,
-};
+import { FONT } from '../constants/type.js';
 
 const STARTER_PROMPTS = [
   "How's my training load looking?",
@@ -28,13 +16,13 @@ function MessageBubble({ msg }) {
       style={{
         alignSelf: isUser ? 'flex-end' : 'flex-start',
         maxWidth: '80%',
-        background: isUser ? C.userBubble : C.panel,
-        border: isUser ? `1px solid ${C.userBubbleBorder}` : 'none',
-        borderLeft: isUser ? undefined : `3px solid ${C.assistantBorder}`,
+        background: isUser ? THEME.raised : THEME.surface,
+        border: isUser ? `1px solid ${THEME.border}` : 'none',
+        borderLeft: isUser ? undefined : `3px solid ${THEME.accent}`,
         borderRadius: 8,
         padding: '10px 14px',
         fontSize: 13,
-        color: C.text,
+        color: THEME.text,
         lineHeight: 1.6,
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
@@ -120,8 +108,8 @@ export default function CoachView() {
             style={{
               fontSize: 9,
               letterSpacing: 3,
-              color: C.cyan,
-              fontFamily: "'DM Mono', monospace",
+              color: THEME.accent,
+              fontFamily: FONT.mono,
             }}
           >
             COACH
@@ -135,15 +123,15 @@ export default function CoachView() {
                 key={key}
                 onClick={() => setModel(key)}
                 style={{
-                  background: model === key ? C.panel : 'transparent',
-                  border: `1px solid ${model === key ? C.cyan : C.border}`,
-                  color: model === key ? C.cyan : C.muted,
+                  background: model === key ? THEME.surface : 'transparent',
+                  border: `1px solid ${model === key ? THEME.accent : THEME.border}`,
+                  color: model === key ? THEME.accent : THEME.muted,
                   borderRadius: 4,
                   padding: '3px 8px',
                   fontSize: 9,
                   letterSpacing: 0.5,
                   cursor: 'pointer',
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: FONT.mono,
                 }}
               >
                 {label}
@@ -157,14 +145,14 @@ export default function CoachView() {
           }}
           style={{
             background: 'transparent',
-            border: `1px solid ${C.border}`,
-            color: C.muted,
+            border: `1px solid ${THEME.border}`,
+            color: THEME.muted,
             borderRadius: 4,
             padding: '3px 8px',
             fontSize: 9,
             letterSpacing: 0.5,
             cursor: 'pointer',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           CLEAR
@@ -176,9 +164,9 @@ export default function CoachView() {
         <div
           style={{
             fontSize: 10,
-            color: C.muted,
+            color: THEME.muted,
             marginBottom: 10,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           {[tsbLabel, readinessLabel].filter(Boolean).join(' · ')}
@@ -208,9 +196,9 @@ export default function CoachView() {
             <div
               style={{
                 fontSize: 11,
-                color: C.muted,
+                color: THEME.muted,
                 marginBottom: 8,
-                fontFamily: "'DM Mono', monospace",
+                fontFamily: FONT.mono,
                 letterSpacing: 1,
               }}
             >
@@ -221,15 +209,15 @@ export default function CoachView() {
                 key={prompt}
                 onClick={() => sendMessage(prompt)}
                 style={{
-                  background: C.panel,
-                  border: `1px solid ${C.border}`,
+                  background: THEME.surface,
+                  border: `1px solid ${THEME.border}`,
                   borderRadius: 6,
                   padding: '10px 14px',
-                  color: C.text,
+                  color: THEME.text,
                   fontSize: 13,
                   textAlign: 'left',
                   cursor: 'pointer',
-                  fontFamily: "'DM Mono', monospace",
+                  fontFamily: FONT.mono,
                   lineHeight: 1.4,
                 }}
               >
@@ -248,12 +236,12 @@ export default function CoachView() {
             style={{
               alignSelf: 'flex-start',
               maxWidth: '80%',
-              background: C.panel,
-              borderLeft: `3px solid ${C.assistantBorder}`,
+              background: THEME.surface,
+              borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 8,
               padding: '10px 14px',
               fontSize: 13,
-              color: C.text,
+              color: THEME.text,
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
@@ -271,10 +259,10 @@ export default function CoachView() {
       {error && (
         <div
           style={{
-            color: C.err,
+            color: THEME.critical,
             fontSize: 11,
             padding: '6px 0',
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
           }}
         >
           {error}
@@ -287,7 +275,7 @@ export default function CoachView() {
           display: 'flex',
           gap: 8,
           paddingTop: 12,
-          borderTop: `1px solid ${C.border}`,
+          borderTop: `1px solid ${THEME.border}`,
           alignItems: 'flex-end',
         }}
       >
@@ -301,13 +289,13 @@ export default function CoachView() {
           rows={1}
           style={{
             flex: 1,
-            background: C.panel,
-            border: `1px solid ${C.border}`,
+            background: THEME.surface,
+            border: `1px solid ${THEME.border}`,
             borderRadius: 6,
             padding: '10px 12px',
-            color: C.text,
+            color: THEME.text,
             fontSize: 13,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
             resize: 'none',
             minHeight: 44,
             maxHeight: 120,
@@ -321,8 +309,8 @@ export default function CoachView() {
           onClick={handleSend}
           disabled={isStreaming || !input.trim()}
           style={{
-            background: C.cyan,
-            color: C.bg,
+            background: THEME.accent,
+            color: THEME.surface,
             border: 'none',
             borderRadius: 6,
             padding: '0 16px',
@@ -332,7 +320,7 @@ export default function CoachView() {
             letterSpacing: 1,
             cursor: isStreaming || !input.trim() ? 'not-allowed' : 'pointer',
             opacity: isStreaming || !input.trim() ? 0.4 : 1,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: FONT.mono,
             flexShrink: 0,
           }}
         >

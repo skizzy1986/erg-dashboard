@@ -4,6 +4,8 @@ import {
   RULE_FIRING_HISTORY,
   CONFIDENCE_MIGRATION,
 } from '../constants/logs.js';
+import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 // ── JOURNAL VIEW — the longitudinal spine ─────────────────────
 // Decision ledger (the "why"), open hypotheses, rule-firing history,
@@ -14,18 +16,18 @@ export default function JournalView() {
     <>
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #a78bfa30',
-          borderLeft: '3px solid #a78bfa',
+          background: THEME.raised,
+          border: `1px solid ${alpha(THEME.accentAlt, '30')}`,
+          borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '11px 14px',
           marginBottom: 16,
           fontSize: 11,
-          color: '#aaaacc',
+          color: THEME.textSubtle,
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: '#a78bfa', fontWeight: 700 }}>
+        <span style={{ color: THEME.accentAlt, fontWeight: 700 }}>
           THE LONGITUDINAL SPINE.{' '}
         </span>
         State tells what, the engine tells how we think, this tells WHY.
@@ -38,7 +40,7 @@ export default function JournalView() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#00d4ff',
+          color: THEME.accent,
           marginBottom: 8,
         }}
       >
@@ -58,9 +60,9 @@ export default function JournalView() {
             <div
               key={`${d.date}-${i}`}
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
-                borderLeft: '3px solid #00d4ff',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
+                borderLeft: `3px solid ${THEME.accent}`,
                 borderRadius: 6,
                 padding: '10px 13px',
               }}
@@ -77,7 +79,7 @@ export default function JournalView() {
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#e8e8f0',
+                    color: THEME.text,
                     lineHeight: 1.4,
                   }}
                 >
@@ -87,7 +89,7 @@ export default function JournalView() {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginBottom: 4,
                 }}
               >
@@ -96,7 +98,7 @@ export default function JournalView() {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -111,7 +113,7 @@ export default function JournalView() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#ffd700',
+          color: THEME.caution,
           marginBottom: 8,
         }}
       >
@@ -128,10 +130,10 @@ export default function JournalView() {
         {HYPOTHESES.map((h, i) => {
           const sc =
             h.status === 'supported'
-              ? '#34d399'
+              ? THEME.positive
               : h.status === 'refuted'
-                ? '#ff2d55'
-                : '#ffd700';
+                ? THEME.critical
+                : THEME.caution;
           const si =
             h.status === 'supported'
               ? '✓ SUPPORTED'
@@ -142,8 +144,8 @@ export default function JournalView() {
             <div
               key={i}
               style={{
-                background: '#2a2a48',
-                border: '1px solid #4a4a68',
+                background: THEME.raised,
+                border: `1px solid ${THEME.border}`,
                 borderLeft: `3px solid ${sc}`,
                 borderRadius: 6,
                 padding: '10px 13px',
@@ -161,7 +163,7 @@ export default function JournalView() {
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    color: '#e8e8f0',
+                    color: THEME.text,
                     lineHeight: 1.4,
                     flex: 1,
                   }}
@@ -183,7 +185,7 @@ export default function JournalView() {
               <div
                 style={{
                   fontSize: 10,
-                  color: '#aaaacc',
+                  color: THEME.textSubtle,
                   lineHeight: 1.5,
                 }}
               >
@@ -199,7 +201,7 @@ export default function JournalView() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#ff6b35',
+          color: THEME.warning,
           marginBottom: 8,
         }}
       >
@@ -207,8 +209,8 @@ export default function JournalView() {
       </div>
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '12px 14px',
           marginBottom: 6,
@@ -231,26 +233,28 @@ export default function JournalView() {
                   width: 36,
                   flexShrink: 0,
                   fontSize: 10,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                 }}
               >
                 {f.date}
               </span>
               {f.fired.length ? (
-                <span style={{ fontSize: 10, color: '#ff6b35' }}>
+                <span style={{ fontSize: 10, color: THEME.warning }}>
                   {f.fired.join(', ')}
                 </span>
               ) : (
-                <span style={{ fontSize: 10, color: '#34d399' }}>clear</span>
+                <span style={{ fontSize: 10, color: THEME.positive }}>
+                  clear
+                </span>
               )}
             </div>
           ))}
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
-            borderTop: '1px solid #3e3e5a',
+            borderTop: `1px solid ${THEME.divider}`,
             paddingTop: 8,
             marginTop: 4,
           }}
@@ -267,7 +271,7 @@ export default function JournalView() {
         style={{
           fontSize: 9,
           letterSpacing: 3,
-          color: '#34d399',
+          color: THEME.positive,
           marginBottom: 8,
         }}
       >
@@ -275,8 +279,8 @@ export default function JournalView() {
       </div>
       <div
         style={{
-          background: '#2a2a48',
-          border: '1px solid #4a4a68',
+          background: THEME.raised,
+          border: `1px solid ${THEME.border}`,
           borderRadius: 6,
           padding: '12px 14px',
         }}
@@ -284,16 +288,16 @@ export default function JournalView() {
         {CONFIDENCE_MIGRATION.map((m, i) => {
           const mc =
             m.state === 'MEASURED'
-              ? '#34d399'
+              ? THEME.positive
               : m.state === 'FIRMING'
-                ? '#ffd700'
-                : '#7e7e9a';
+                ? THEME.caution
+                : THEME.muted;
           return (
             <div
               key={i}
               style={{
                 padding: '7px 0',
-                borderBottom: '1px solid #3e3e5a',
+                borderBottom: `1px solid ${THEME.divider}`,
               }}
             >
               <div
@@ -303,7 +307,7 @@ export default function JournalView() {
                   alignItems: 'baseline',
                 }}
               >
-                <span style={{ fontSize: 11, color: '#e8e8f0' }}>
+                <span style={{ fontSize: 11, color: THEME.text }}>
                   {m.metric}
                 </span>
                 <span style={{ fontSize: 8, color: mc, letterSpacing: 1 }}>
@@ -313,7 +317,7 @@ export default function JournalView() {
               <div
                 style={{
                   fontSize: 9,
-                  color: '#7e7e9a',
+                  color: THEME.muted,
                   marginTop: 2,
                   lineHeight: 1.4,
                 }}
@@ -326,7 +330,7 @@ export default function JournalView() {
         <div
           style={{
             fontSize: 9,
-            color: '#7e7e9a',
+            color: THEME.muted,
             lineHeight: 1.5,
             paddingTop: 8,
             fontStyle: 'italic',

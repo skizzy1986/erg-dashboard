@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { installAppFixtures } from './fixtures.js';
+import { DEFAULT_THEME } from '../src/constants/themeValues.js';
+
+// Derived from the palette, not typed. This assertion used to carry a literal
+// rgb(0, 212, 255) and had to be hand-edited by the light flip (#251); reading
+// the token means it asserts the *role* and survives the next palette change.
+const rgb = (hex) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+};
+const ACCENT_RGB = rgb(DEFAULT_THEME.accent);
 
 // Every dashboard tab (matches the NAV in App.jsx).
 const TABS = [
@@ -61,7 +71,7 @@ test.describe('dashboard smoke', () => {
       await navButton.click();
 
       // The active tab button is highlighted with the accent border colour.
-      await expect(navButton).toHaveCSS('border-top-color', 'rgb(0, 212, 255)');
+      await expect(navButton).toHaveCSS('border-top-color', ACCENT_RGB);
 
       // No error-boundary fallback rendered.
       await expect(page.getByText(ERROR_BOUNDARY_TEXT)).toHaveCount(0);

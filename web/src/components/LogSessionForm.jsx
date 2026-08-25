@@ -141,7 +141,8 @@ export default function LogSessionForm({ onSaved }) {
         onClick={() => setOpen(true)}
         style={{
           width: '100%',
-          background: `${THEME.positive}15`,
+          background:
+            'color-mix(in srgb, var(--color-positive) 8.24%, transparent)',
           border: `1px solid ${THEME.positive}`,
           borderRadius: 6,
           padding: '12px',
@@ -401,7 +402,7 @@ export default function LogSessionForm({ onSaved }) {
           padding: '12px',
           fontSize: 12,
           fontWeight: 700,
-          color: THEME.bg,
+          color: THEME.surface,
           cursor: saving ? 'default' : 'pointer',
           fontFamily: 'inherit',
           letterSpacing: 1,

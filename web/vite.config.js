@@ -2,6 +2,18 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { DEFAULT_THEME } from './src/constants/themeValues.js';
+
+// The ground was written down in five places — index.html twice, two PWA
+// manifests and the Android launch theme — each with a "keep in sync" comment
+// and no way to enforce it (#253). It is now derived from the palette. The
+// Android resource cannot be, so a unit test asserts it instead.
+const GROUND = DEFAULT_THEME.bg;
+
+const substituteGround = {
+  name: 'splitiq-ground',
+  transformIndexHtml: (html) => html.replaceAll('%GROUND%', GROUND),
+};
 
 // Upload source maps to Sentry only on release builds that carry an auth token
 // (Vercel production). Without the token the plugin is omitted and local and CI
@@ -49,6 +61,7 @@ const sentryDefine = {
 export default defineConfig({
   plugins: [
     react(),
+    substituteGround,
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
@@ -67,11 +80,11 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'Erg Dashboard',
-        short_name: 'ErgDash',
-        description: 'Personal rowing and strength coaching dashboard',
-        theme_color: '#08080d',
-        background_color: '#08080d',
+        name: 'SplitIQ',
+        short_name: 'SplitIQ',
+        description: 'Performance intelligence for serious athletes.',
+        theme_color: GROUND,
+        background_color: GROUND,
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

@@ -1,3 +1,4 @@
+import { THEME } from './theme.js';
 // Program-structure reference data (phases, annual arc, event pathway,
 // technique/mobility drills, conversions). Pure data — consumed by ProgramView.
 
@@ -41,7 +42,7 @@ export const BUILD1_SESSIONS = [
   {
     name: 'Threshold · 3×2000m',
     serves: '5k engine',
-    color: '#ffd700',
+    color: THEME.caution,
     purpose:
       'Lactate threshold / sustainable power — the core driver of a bigger 2k & 5k.',
     type: 'Distance intervals',
@@ -54,7 +55,7 @@ export const BUILD1_SESSIONS = [
   {
     name: 'Threshold · 4×1500m',
     serves: '5k engine (progression)',
-    color: '#ffd700',
+    color: THEME.caution,
     purpose:
       'Same system, shorter reps slightly faster — progression from 3×2000m.',
     type: 'Distance intervals',
@@ -67,7 +68,7 @@ export const BUILD1_SESSIONS = [
   {
     name: 'VO₂ · 8×500m',
     serves: '1000m / top-end',
-    color: '#ff6b35',
+    color: THEME.warning,
     purpose: 'VO₂max & top-end power. Hard but controlled — not sprints.',
     type: 'Distance intervals',
     work: '500m × 8',
@@ -79,7 +80,7 @@ export const BUILD1_SESSIONS = [
   {
     name: 'Race-pace · 4×1000m',
     serves: '1000m specific',
-    color: '#ff2d55',
+    color: THEME.critical,
     purpose:
       'Race-pace tolerance for the 1000m format. Rehearse the goal pace.',
     type: 'Distance intervals',
@@ -104,7 +105,7 @@ export const VOLUME_EXTRAS = {
   templates: [
     {
       name: 'Technique UT2 · 30min',
-      color: '#00d4ff',
+      color: THEME.accent,
       focus: 'Volume + skill',
       type: 'Single time interval',
       work: '30:00',
@@ -115,7 +116,7 @@ export const VOLUME_EXTRAS = {
     },
     {
       name: 'Easy UT2 flush · 30min',
-      color: '#34d399',
+      color: THEME.positive,
       focus: 'Pure easy volume',
       type: 'Single time interval',
       work: '30:00',
@@ -126,7 +127,7 @@ export const VOLUME_EXTRAS = {
     },
     {
       name: 'Technique + pause · 20min',
-      color: '#a78bfa',
+      color: THEME.accentAlt,
       focus: 'Skill-dominant',
       type: 'Single time interval',
       work: '20:00',
@@ -142,28 +143,28 @@ export const TECHNIQUE_WORK = [
   {
     name: 'Force curve review',
     freq: 'Every session',
-    color: '#00d4ff',
+    color: THEME.accent,
     how: 'PM5: Display → Force Curve. Watch the shape — target a smooth haystack: rapid build, rounded peak mid-drive, gradual taper. Spikes = jerky catch; double-hump = legs/back disconnect; early peak collapse = leaning back too soon. NOTE: the curve is NOT in the Concept2 share links — for coaching feedback on the shape, SCREENSHOT the ErgData/PM5 force-curve display and send the image. Links carry splits/watts/drag/HR only.',
     why: '2–3% efficiency gain = free speed at every intensity.',
   },
   {
     name: 'Rate ladder block',
     freq: '1×/week (inside a UT1 session)',
-    color: '#34d399',
+    color: THEME.positive,
     how: 'Mid-session: 2min @ r20 → 1min @ r22 → 1min @ r24 → 30sec @ r26 → back to r20. Hold the SAME watts-per-stroke feel — rate up by quickening recovery, not yanking the drive. HR will rise slightly; let it settle after.',
     why: "Race pace is r28–32. Rating up efficiently is a motor skill — build it now or it's a gap in November.",
   },
   {
     name: 'Technique 10s',
     freq: '2–3× per long row',
-    color: '#a78bfa',
+    color: THEME.accentAlt,
     how: '10 strokes of deliberate perfect focus: sequence (legs→back→arms / arms→back→legs), long stroke, clean catch. Then resume normal rowing.',
     why: 'Attention resets. Quality strokes under low fatigue groove the pattern that holds under high fatigue.',
   },
   {
     name: 'Video self-review',
     freq: '1×/fortnight (home week)',
-    color: '#ffd700',
+    color: THEME.caution,
     how: 'Phone side-on, 2min of rowing at r20. Check: shins vertical at catch, back angle set before drive, no early arm bend, controlled recovery (not rushing the slide).',
     why: "You can't feel what you can't see. Fortnightly is enough to catch drift.",
   },
@@ -272,35 +273,35 @@ export const ORGS = [
     tier: 'GLOBAL',
     name: 'World Rowing (FISA)',
     site: 'worldrowing.com',
-    color: '#ff2d55',
+    color: THEME.critical,
     note: 'International federation. Runs the World Rowing Indoor Champs (virtual + in-person). Home of your Feb 2027 target.',
   },
   {
     tier: 'GLOBAL',
     name: 'Concept2',
     site: 'concept2.com/events',
-    color: '#ff2d55',
+    color: THEME.critical,
     note: 'Global rankings, Virtual Indoor Sprints, year-round logbook challenges. Follow most closely as a C2 athlete.',
   },
   {
     tier: 'GLOBAL',
     name: 'C.R.A.S.H.-B. Sprints',
     site: 'crash-b.org',
-    color: '#ff2d55',
+    color: THEME.critical,
     note: "World's most prestigious in-person indoor champs (Boston, each winter). Hammer trophy. Bucket-list.",
   },
   {
     tier: 'NATIONAL',
     name: 'Rowing Australia',
     site: 'rowingaustralia.com.au',
-    color: '#ffd700',
+    color: THEME.caution,
     note: 'Australian Indoor Rowing Champs + on-water nationals. Deep masters M40-49 category.',
   },
   {
     tier: 'STATE',
     name: 'Rowing WA',
     site: 'rowingwa.com.au',
-    color: '#34d399',
+    color: THEME.positive,
     note: 'Your state body. State indoor champs, local clubs, sanctioned events. First in-person step.',
   },
 ];
