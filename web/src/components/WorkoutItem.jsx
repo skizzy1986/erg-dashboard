@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { workoutAccent } from '../utils/formatting.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 export default function WorkoutItem({
   session,
@@ -18,7 +19,7 @@ export default function WorkoutItem({
           open || highlight
             ? 'color-mix(in srgb, var(--color-accent) 6.27%, transparent)'
             : THEME.raised,
-        border: `1px solid ${open || highlight ? color + '50' : THEME.border}`,
+        border: `1px solid ${open || highlight ? alpha(color, '50') : THEME.border}`,
         borderRadius: 6,
         overflow: 'hidden',
       }}

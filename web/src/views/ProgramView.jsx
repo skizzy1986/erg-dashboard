@@ -234,7 +234,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                               expanded === `${phase.id}-${i}`
                                 ? alpha(color, '12')
                                 : THEME.raised,
-                            border: `1px solid ${expanded === `${phase.id}-${i}` ? color + '50' : THEME.border}`,
+                            border: `1px solid ${expanded === `${phase.id}-${i}` ? alpha(color, '50') : THEME.border}`,
                             borderLeft: `3px solid ${color}`,
                             borderRadius: 6,
                             padding: '11px 14px',

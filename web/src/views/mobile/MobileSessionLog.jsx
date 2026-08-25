@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSessions } from '../../hooks/useSessions.js';
 import { THEME } from '../../constants/theme.js';
+import { alpha } from '../../utils/themeCss.js';
 
 function typeColor(type) {
   const t = (type ?? '').toLowerCase();
@@ -195,7 +196,7 @@ export default function MobileSessionLog() {
                 {s.srpe != null && (
                   <span
                     style={{
-                      background: srpeColor(s.srpe) + '22',
+                      background: alpha(srpeColor(s.srpe), '22'),
                       color: srpeColor(s.srpe),
                       borderRadius: 4,
                       padding: '1px 5px',

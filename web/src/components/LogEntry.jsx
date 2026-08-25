@@ -22,9 +22,9 @@ export default function LogEntry({ entry, done = false }) {
   return (
     <div
       style={{
-        borderTop: `1px solid ${open ? color + '50' : THEME.border}`,
-        borderRight: `1px solid ${open ? color + '50' : THEME.border}`,
-        borderBottom: `1px solid ${open ? color + '50' : THEME.border}`,
+        borderTop: `1px solid ${open ? alpha(color, '50') : THEME.border}`,
+        borderRight: `1px solid ${open ? alpha(color, '50') : THEME.border}`,
+        borderBottom: `1px solid ${open ? alpha(color, '50') : THEME.border}`,
         borderLeft: cancelled
           ? `3px dotted ${THEME.muted}`
           : `3px ${planned ? 'dashed' : 'solid'} ${color}`,

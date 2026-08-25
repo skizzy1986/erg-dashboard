@@ -65,7 +65,7 @@ export default function MobilityView() {
               key={r.id}
               style={{
                 background: isOpen ? alpha(r.color, '10') : THEME.raised,
-                border: `1px solid ${isOpen ? r.color + '50' : THEME.border}`,
+                border: `1px solid ${isOpen ? alpha(r.color, '50') : THEME.border}`,
                 borderLeft: `3px solid ${r.color}`,
                 borderRadius: 6,
                 overflow: 'hidden',
