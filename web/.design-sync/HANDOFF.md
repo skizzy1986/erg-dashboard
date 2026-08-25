@@ -16,6 +16,15 @@ alongside `conventions.md` and `ISSUES-load-states.md`.
 
 ## 1. The token seam (do this first)
 
+> **Step 1 has shipped.** The role rename landed as `#277` (closing `#248`) with
+> **no value moved** — every hex appears on both a `+` and a `-` line, which is what
+> let the seven colour-locking test files through unmodified. Remaining: the
+> `var()` seam (`#250`), then the light flip (`#251`). Three issues came out of the
+> rename and should land before the seam: `#278` local `C` alias maps whose keys are
+> still colour words (`C.accent` currently holds green, `C.cyan` holds the accent),
+> `#279` raw hex literals in `constants/ui.js`, `#280` prose colour-words in
+> `docs/*.md` naming keys that no longer exist.
+
 ### Decisions taken
 
 - **Shape:** `THEME` values become `var(--color-*)` strings; a `data-theme`
@@ -63,12 +72,17 @@ actually use each colour for:
 | `red` | `critical` | `#a32040` | deep fatigue only |
 | `purple` | `accentAlt` | `#5f45b0` | strength secondary, mobility |
 | `pink` | `accentAlt2` | `#a3407a` | prehab |
-| `teal` | *(fold into `positive`)* | — | duplicate role |
+| `teal` | ~~*(fold into `positive`)*~~ `cycling` | `#10786c` | **Not folded.** Cycling is the discipline; `positive` is done/healthy/UT1/lower strength. `#277` reached the same conclusion but named it `positiveAlt` — converge on `cycling` before the seam. |
 | `grey`, `white` | *(delete)* | — | use `muted` / `surface` |
 
 Keep the structural keys (`bg`, `surface`, `raised`, `field`, `border`, `text`,
 `muted`, `surfaceAlt`, `neutral`, `divider`, and the `text*` ramp) — they are
 already role-named.
+
+`#277` also added `neutralAccent` and `textStrong`, which this table did not
+anticipate. Light values for both are in `conventions.md` and
+`splitiq-light-tokens.css`: `neutralAccent` #98a1bb (rest sessions, non-text),
+`textStrong` #1c1e2a (an alias of `text` on light, kept so dark can diverge).
 
 ### Target state
 
@@ -144,7 +158,13 @@ session in a dark erg room, say) can be scoped without reintroducing a second
    nudged for a different surface — if a new ground appears, it needs its own
    token, not a shifted one.
 2. **Minimum weight 500.** Archivo below 500 on light grounds fails at the
-   sizes used. Any component setting `fontWeight: 400` needs raising.
+   sizes used. Any component setting `fontWeight: 400` needs raising. The
+   typeface is **Archivo + IBM Plex Mono**, self-hosted. `STATE_OF_PLAY.md` §4.1
+   proposed Plex Sans + Plex Mono on metric-compatibility grounds; design
+   overruled it on 2026-08-25 — Archivo has the presence the large figures need.
+   **§4.1 is superseded on the typeface.** `cfg.extraFonts` needs the Archivo
+   woff2 files at 500+ weights, which is what issue **#254** already specifies —
+   that issue stands as written.
 
 ### Acceptance
 
@@ -183,6 +203,16 @@ New patterns from the designs, mapped to where they belong.
 | Sparse-series chart (gaps, not interpolation) | new `components/SparseSeries.jsx` | `points[]` (nulls kept), `band{lo,hi}`, `axis` | Replaces `connectNulls` usage. A missing day renders as a gap. |
 | Signal card | new `components/SignalCard.jsx` | `signal`, `because`, `guidance`, `rules[]` | The autoregulation call as a headline, each fired rule shown against the baseline it fired on. |
 | Roster wave (14 days) | new `components/RosterWave.jsx` | `days[]`, `todayIndex` | Home-week vs FIFO-week colouring; rest days are short grey stubs. Note computed from the two week totals. |
+| Load model | `web/src/lib/load.js` — extract from `analysis.js` | series seed, EMA constants | See §5. One module, every screen that cites form, CTL, ATL or readiness. |
+| `tsbBand(tsb)` | same module | `tsb` | Returns label + token. Replaces inline threshold ternaries. |
+| Small-multiple row | new `components/MetricRow.jsx` | `points[]`, `band`, `axis`, `last`, `delta` | `SparseSeries` with its own labelled axis per row. Gaps, not interpolation. |
+| Sortable session table | new `components/SessionTable.jsx` | `rows[]`, `sortKey`, `sortDir`, `onSort` | TSS column carries a magnitude bar scaled to the heaviest logged session. |
+| Resizable split | new `components/SplitPane.jsx` | `width`, `min`, `max`, `onResize` | Desktop only. |
+| Phase table | new `components/PhaseTable.jsx` | `phases[]`, `weekNo` | Bar widths are real week spans; current phase derived from `weekNo`. |
+| Desktop nav rail | new `components/desktop/NavRail.jsx` | `active`, `onNavigate` | 64px, **five** 38px chips — Overview, Today, Progress, Body, Coach. Train is omitted: no desktop destination, and a nav rail lists destinations that exist rather than dimming ones that do not. 20px stroke glyphs on `currentColor`. **Deliberate divergence from `BottomTabBar`** — its tab list is internal and is the old 13-tab IA, and emoji cannot take the active-state ink on a dark rail. Reasoning in `conventions.md`. Only stroke icons in the system; extend this set rather than starting a third. |
+| Zone table | util in the load module | `cp` | Six bands — Recovery, UT2, UT1, AT, TR, AN — at 0.55/0.70/0.80/0.90/1.05/1.30 × CP. Names and fractions from the shipped `PACE_ZONES`; its watt bounds are frozen at CP 190 and must not be copied. |
+| Erg zone chart | new `components/ErgZoneChart.jsx` | `pieces[]`, `cp` | Watt dots over the derived bands, plus the split view. Split is computed from watts, so the two charts are one measurement — the caption must say so. |
+| Zone distribution list | part of `ErgZoneChart` | `counts`, `cp` | All six bands always shown; empty ones dimmed, never dropped. |
 
 Where a pattern appears on two screens it is one component, not two: the
 sparse-series treatment serves Body's HRV and any other partially-measured
@@ -209,7 +239,7 @@ That file still describes a dark-only system. Replace its theme section with
 the contents of this project's `conventions.md`, which covers:
 
 - light as primary, pastel fills with darker inks, white cards on `#bcc5dd`
-- minimum font weight 500 (Archivo)
+- minimum font weight 500 (Archivo + IBM Plex Mono, self-hosted)
 - contrast picked against the final ground and left alone
 - z-index layering: sheet 200, backdrop 150, nav 100
 - `flex` children and percentage heights — use definite track heights
@@ -311,24 +341,84 @@ Desktop-only affordances drawn: chart hover tooltip (per-day CTL/ATL/TSB),
 resizable panes, sortable data table, year plan + phase table. The four tooltip
 components §2 keeps "for desktop" now have a screen to live on.
 
-New for the inventory:
-
-| Pattern | Lives in | Props | Notes |
-| --- | --- | --- | --- |
-| Load model | `web/src/lib/load.js` — extract from `analysis.js` | series seed, EMA constants | See §6. One module, both screens. |
-| `tsbBand(tsb)` | same module | `tsb` | Returns label + token. Replaces inline threshold ternaries. |
-| Small-multiple row | new `components/MetricRow.jsx` | `points[]`, `band`, `axis`, `last`, `delta` | `SparseSeries` with its own labelled axis per row. Gaps, not interpolation. |
-| Sortable session table | new `components/SessionTable.jsx` | `rows[]`, `sortKey`, `sortDir`, `onSort` | TSS column carries a magnitude bar scaled to the heaviest logged session. |
-| Resizable split | new `components/SplitPane.jsx` | `width`, `min`, `max`, `onResize` | Desktop only. |
-| Phase table | new `components/PhaseTable.jsx` | `phases[]`, `weekNo` | Bar widths are real week spans; current phase derived from `weekNo`. |
+Everything it introduces is in §2’s inventory — the desktop rows sit in that
+single table rather than a second one here.
 
 ---
 
+### Progress — desktop `SplitIQ Desktop Progress.dc.html`
+The four sub-tabs become four panes on 1b’s frame: Load, Erg, Strength, History.
+Each pane owns one of the four tooltip components — `LoadTooltip`, `ErgTooltip`,
+`StrengthTooltip`, `PaceTooltip` — rebuilt light, same content contracts. That
+closes §2’s “keep for desktop” note: they now have a screen.
+
+- Erg watts, splits and every zone band derive from CP in the load module. Split
+  comes from the standard rowing power relation, so the watts chart and the split
+  chart are two views of one measurement, not two measurements.
+- All six zones are named and shown, empty bands dimmed. See `conventions.md`.
+- The strength pane carries the stale-source caveat with its sparsity computed:
+  4 of 20 logged sessions carry sets, 8 points across 4 lifts. Two points per
+  lift states a direction, not a trend, and the caption says so.
+
+### Desktop scope — no live surfaces
+**Decided 2026-08-24.** Live session tracking is mobile-only. Desktop carries no
+prescription card, watt band gauge, set logger, rest timer or sRPE prompt —
+those are logged mid-workout on a phone, and a desktop copy of them would be a
+surface nobody can reach at the moment it is needed.
+
+Desktop is the analytical layer: long windows, several series at once, the full
+zone table, sortable logs, periodisation, and the reasoning behind a call.
+
+Consequences for this document:
+
+- §2’s `PrescriptionCard`, `SessionLibrarySheet`, `BandGauge`, `SetRow`,
+  `LiftCard`, `RestTimer`, `SessionComplete` and `SessionBar` are
+  **mobile-only**. Build them once, for the phone.
+- `BandGauge`’s second use — Progress’s erg barometer — stands, because that is
+  a read of past pieces, not a live gauge.
+- **Train has no desktop counterpart.** The remaining desktop screens are
+  analytical: Progress (built), and the planning and reasoning views.
+- The five destinations are the mobile IA. A desktop screen named after one is
+  the analysis behind it, not the same screen at a wider width.
+
+### Body — desktop `SplitIQ Desktop Body.dc.html`
+The analysis behind readiness, not the score. Four panes: Score, Sleep,
+Resting HR, HRV.
+
+- **Score** carries a waterfall from 100 down to today’s value — each red band is
+  exactly what that metric cost — plus readiness reconstructed across all 28 days
+  from the same formula.
+- **11 of 28 days have no readiness value.** Those are the days RHR is missing.
+  They render as stubs, never zeroes: `computeReadiness` returns null, and a
+  missing score is different information from a low one.
+- **Baseline confidence is per metric, never global.** Sleep personal 28/28, RHR
+  personal 17/28, HRV population default 10/28. A single global confidence badge
+  would overstate what the data supports.
+- **The coefficients are published on screen**, not described: 12 points per hour
+  of sleep below baseline, 2 per beat of RHR above it, 1 per day of HRV staleness
+  on a base of 2, capped at 8. Deductions read those numbers.
+
+New for §2’s inventory:
+
+| Pattern | Lives in | Props | Notes |
+| --- | --- | --- | --- |
+| `readinessSeries()` | the load module | — | Per-day readiness over the window, same arithmetic as the live score. Returns null-score days rather than omitting them. |
+| Score waterfall | new `components/ReadinessWaterfall.jsx` | `deductions[]`, `score` | Running total per column; band height is the cost. Label flips below the bar when the column is too tall for an above-bar label. |
+| Baseline quality list | new `components/BaselineQuality.jsx` | `coverage`, `baselines` | Per-metric coverage bar and personal-vs-default source line. |
+| Out-of-band cap | part of the metric chart | `outside` | 4px `#1c1e2a` top cap on bars outside ±1 SD. Must not be a repaint in the warning ink — that ink is also a metric ink and the encoding collapses. See `conventions.md`. |
+| Coverage grid | part of `BaselineQuality` | `series[]` | One cell per day per metric; grey is unrecorded. |
+| Sensitivity table | new `components/ScoreSensitivity.jsx` | `SENS` | Reads the coefficients from the model — never a hardcoded copy. |
+
 ### Not yet designed
 Undrawn states, in one family: load pending, load unavailable (both specified
-in `ISSUES-load-states.md`), readiness NO DATA (`computeReadiness` returns a
-null score when RHR is missing), chat empty and chat error. A desktop pass is
-separate scope.
+in `ISSUES-load-states.md`), chat empty and chat error.
+
+Readiness NO DATA is **drawn** — desktop Body reconstructs readiness over the
+window and renders the 11 RHR-less days as null-score stubs. The mobile
+readiness card still needs the same state.
+
+Desktop scope is no longer "separate": see the platform-split note above. Built
+so far — Overview, Progress, Body. Train has no desktop counterpart by decision.
 
 ---
 
@@ -367,4 +457,4 @@ gaps.
 8. `ReadinessCard` + `SparseSeries` — Body
 9. `SignalCard` + `RosterWave` — Coach
 10. Undrawn states above
-11. Desktop: the load-model extraction in §6, then `SplitIQ Desktop Overview.dc.html`
+11. Desktop: the load-model extraction in §5, then `SplitIQ Desktop Overview.dc.html`

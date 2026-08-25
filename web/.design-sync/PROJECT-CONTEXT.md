@@ -25,8 +25,26 @@ can be updated. Same for `HANDOFF.md` and `ISSUES-load-states.md`.
 - **`PROJECT-CONTEXT.md`** — the mechanics. How we work.
 - **`conventions.md`** — the style guide. How it should look.
 - **`CLAUDE.md`** — the subject matter. Glossary, the five destinations, which
-  numbers are real, the chart rules. This is now the design system's README,
-  and it is repo-owned.
+  numbers are real, the chart rules. Repo-owned; read it from
+  `web/.design-sync/CLAUDE.md` on `main`, not from the project root copy, which
+  is the old mechanics file awaiting overwrite.
+
+Anchors from that briefing, so they are not re-derived from memory: one user
+(Scott), phone primary, CP ≈ 205W provisional, and the zones **derived** from it —
+UT2 113–144, UT1 144–164, AT 164–185 W. `splitiq-load.js` exposes
+`paceZones(cp)`; no design types a watt band.
+
+## Repo-owned docs are read directly, not uploaded
+
+Confirmed 2026-08-24: `web/.design-sync/` on `main` is readable from this
+project. Repo-owned files are read from there each session rather than uploaded —
+`CLAUDE.md` (the domain briefing), `CODE-TO-DESIGN.md` (the dated bulletin),
+`ownership.json`, `base.css`, `docs/*.md`, `previews/*.tsx`, `config.json`.
+`NOTES.md`, `STATE_OF_PLAY.md` and `DESIGN_BRIEF.md` are `owner: local` in
+`ownership.json` but are committed in that folder, so they are readable too.
+
+Access is **read-only**: design-owned files still travel by download and a human
+commit. Nothing here pushes.
 
 ## Neither side can see the other's container
 
@@ -80,6 +98,14 @@ every session here — stripping it to a pointer would leave sessions with less
 than they have today. The mechanics content is preserved in this file, which the
 sync never touches. After the sync the two divide cleanly: domain briefing there,
 mechanics here.
+
+## Platform split
+
+**Mobile does the doing; desktop does the understanding.** Live surfaces —
+prescription, watt band, set logger, rest timer, sRPE — are mobile-only.
+Desktop is the analytical deep dive and the supplemental material a phone cannot
+hold. The five destinations are the mobile IA; a desktop screen named after one
+is the analysis behind it, not the same screen at a wider width.
 
 ## Design state
 

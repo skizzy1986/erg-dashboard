@@ -79,7 +79,13 @@ for (const rel of files) {
 
     //  Derive against the CP the document itself quotes, so a doc written for a
     //  different anchor is not reported as wrong when it is merely historical.
-    const cpMatch = text.slice(0, m.index).match(/~(\d{2,4})\s?W(?![^ ]*\/)/g);
+    //  Both approximation signs count. The design-side mirrors are committed
+    //  verbatim and write "CP ≈ 205W"; a tilde-only class reads that as quoting
+    //  no CP at all and fails a document whose bands are in fact correct — and
+    //  the mirror cannot be hand-edited to suit the guard.
+    const cpMatch = text
+      .slice(0, m.index)
+      .match(/[~≈]\s?(\d{2,4})\s?W(?![^ ]*\/)/g);
     const cp = cpMatch
       ? Number(cpMatch[cpMatch.length - 1].match(/\d+/)[0])
       : null;
