@@ -50,13 +50,15 @@ check "warn-uncommitted: missing dir fails loudly" 1 "CLAUDE_PROJECT_DIR unset o
 out="$(env -u CLAUDE_PROJECT_DIR bash "$here/warn-uncommitted.sh" 2>&1)"
 check "warn-uncommitted: unset var fails loudly" 1 "<unset>" "$?" "$out"
 
+# Dirty the tree deliberately rather than assert against whatever state the
+# working copy happens to be in — an earlier version of this case read the
+# ambient tree and flipped to a false failure the moment it was clean.
+probe="$root/.hook-uncommitted-probe"
+: > "$probe"
 out="$(CLAUDE_PROJECT_DIR="$root" bash "$here/warn-uncommitted.sh" 2>&1)"
 rc=$?
-if printf '%s' "$out" | grep -qE '^\[HOOK\] [0-9]+ file\(s\) changed|^$'; then
-  check "warn-uncommitted: runs against a real repo" 0 "-" "$rc" ""
-else
-  check "warn-uncommitted: runs against a real repo" 0 "[HOOK]" "$rc" "$out"
-fi
+rm -f "$probe"
+check "warn-uncommitted: warns on a dirty tree" 0 "file(s) changed and uncommitted" "$rc" "$out"
 
 # ---- lint-edited-file.sh -----------------------------------------------------
 out="$(run_lint /home/user/erg-dashboard '{}')"
