@@ -134,6 +134,20 @@ const tokenFor = (hex) => {
   return Object.keys(DARK).find((k) => DARK[k].toLowerCase() === full);
 };
 
+// `${THEME.accent}15` concatenated into the 8-digit hex #00d4ff15 while THEME
+// held literals. Under the seam it renders `var(--color-accent)15`, which CSS
+// reads as two components rather than one colour — the declaration is invalid
+// at computed-value time and is dropped whole, with no fallback and no console
+// warning. 67 borders and backgrounds were rendering nothing before this was
+// found. Same class as a raw literal: a colour that stopped being a colour when
+// the seam landed, and that no diff review would catch.
+const ALPHA_SUFFIX = /\$\{[^{}]*\}[0-9a-fA-F]{2}\b/g;
+
+// cssVarName() emits kebab-case. Two hand-written call sites used camelCase
+// (--color-textSubtle), which names no property, so the color-mix() around each
+// resolved to nothing and both declarations were dropped.
+const CAMEL_VAR = /var\(--color-[a-z0-9-]*[A-Z]/g;
+
 const failures = [];
 const seen = new Map();
 let checked = 0;
@@ -144,6 +158,18 @@ for (const rel of scanned) {
   );
 
   lines.forEach((line, i) => {
+    for (const m of line.match(ALPHA_SUFFIX) ?? []) {
+      failures.push(
+        `${rel}:${i + 1}  ${m} — a token with an alpha suffix stopped being a ` +
+          "colour under the seam; use alpha(TOKEN, 'NN') from utils/themeCss.js"
+      );
+    }
+    for (const m of line.match(CAMEL_VAR) ?? []) {
+      failures.push(
+        `${rel}:${i + 1}  ${m}… — custom properties are kebab-case; this names ` +
+          'no property, so the declaration is dropped'
+      );
+    }
     for (const hex of line.match(HEX) ?? []) {
       checked += 1;
       const allowed = ALLOWED[rel];
