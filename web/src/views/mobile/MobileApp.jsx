@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
-import MobileAnalytics from './MobileAnalytics.jsx';
+import MobileToday from './MobileToday.jsx';
 import MobileProgress from './MobileProgress.jsx';
 import MobileTrain from './MobileTrain.jsx';
 import MobileRecovery from './MobileRecovery.jsx';
@@ -41,7 +41,14 @@ export default function MobileApp() {
   }, [route, live, navigate]);
 
   let content;
-  if (route === 'today') content = <MobileAnalytics />;
+  if (route === 'today')
+    content = (
+      <MobileToday
+        onStartSession={() => {
+          navigate('train');
+        }}
+      />
+    );
   else if (route === 'train')
     content = <MobileTrain mode={trainMode} onMode={setTrainMode} />;
   else if (route === 'progress') content = <MobileProgress />;

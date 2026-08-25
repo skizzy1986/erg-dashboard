@@ -20,7 +20,7 @@ const mockMinimize = vi.fn();
 
 // The destinations render real views with real hooks; this suite is about the
 // shell, so each is stubbed down to a marker.
-vi.mock('../MobileAnalytics.jsx', () => ({ default: () => <p>TODAY</p> }));
+vi.mock('../MobileToday.jsx', () => ({ default: () => <p>TODAY</p> }));
 vi.mock('../MobileProgress.jsx', () => ({ default: () => <p>PROGRESS</p> }));
 vi.mock('../MobileRecovery.jsx', () => ({ default: () => <p>BODY</p> }));
 vi.mock('../../CoachView.jsx', () => ({ default: () => <p>COACH</p> }));

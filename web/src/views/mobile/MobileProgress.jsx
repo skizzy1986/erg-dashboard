@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import MobileAnalytics from './MobileAnalytics.jsx';
 import MobileSessionLog from './MobileSessionLog.jsx';
 import MobileStrength from './MobileStrength.jsx';
 import { THEME } from '../../constants/theme.js';
@@ -9,10 +10,15 @@ import { RADIUS, SPACE, TYPE } from '../../constants/tokens.js';
 // separate "Log" and "Strength" tabs — DESIGN_BRIEF.md §2.2.
 //
 // progress.html draws four sub-tabs (Load · Erg · Strength · History) on one
-// SegmentedNav. Two of them exist today; Load is the session-bar rework and Erg
-// is the barometer, both later work. The strip is built from the panes that
-// exist rather than showing two dead tabs.
+// SegmentedNav. Three of them have content today. Erg is the power-at-HR
+// barometer and is later work, so the strip is built from the panes that exist
+// rather than showing a dead tab.
+//
+// Load is MobileAnalytics, which was the whole Analytics tab before this
+// change: the TSB hero, CTL/ATL, the load trend and the weekly TSS history.
+// That is Progress's question — is the training working — not Today's.
 const PANES = [
+  { id: 'load', label: 'Load', render: () => <MobileAnalytics /> },
   { id: 'history', label: 'History', render: () => <MobileSessionLog /> },
   { id: 'strength', label: 'Strength', render: () => <MobileStrength /> },
 ];
