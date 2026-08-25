@@ -165,14 +165,39 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
-      - name: DEBUG (throwaway branch only) — what does the container build?
+      - name: DEBUG (throwaway branch only) — what is served, what is computed?
         run: |
-          echo "HEAD:        $(git rev-parse HEAD 2>/dev/null || echo 'NO GIT')"
-          echo "source bg:   $(grep -o \"bg: '#[0-9a-f]*'\" src/constants/theme.js | head -1)"
-          echo "baseline px: $(md5sum e2e/visual.spec.js-snapshots/error-fallback-visual-linux.png)"
+          echo "== source =="
+          grep -n "bg:" src/constants/theme.js | head -1
           npm run build >/dev/null 2>&1 || echo "BUILD FAILED"
-          echo "3d0812 in dist: $(grep -ro '3d0812' dist/ | wc -l)"
-          echo "08080d in dist: $(grep -ro '08080d' dist/ | wc -l)"
+          echo "dist  3d0812=$(grep -ro '3d0812' dist/ | wc -l)  08080d=$(grep -ro '08080d' dist/ | wc -l)"
+
+          echo "== served over HTTP =="
+          npx vite preview --port 4173 --strictPort >/tmp/preview.log 2>&1 &
+          for i in $(seq 1 40); do curl -sf http://localhost:4173/ -o /tmp/idx.html && break; sleep 0.5; done
+          asset=$(grep -o '/assets/[A-Za-z0-9._-]*\.js' /tmp/idx.html | head -1)
+          echo "asset: $asset"
+          curl -sf "http://localhost:4173$asset" -o /tmp/served.js
+          echo "served bytes=$(wc -c </tmp/served.js)  3d0812=$(grep -o '3d0812' /tmp/served.js | wc -l)  08080d=$(grep -o '08080d' /tmp/served.js | wc -l)"
+
+          echo "== computed in the browser =="
+          cat > /tmp/probe.mjs <<'EOF'
+          import { chromium } from '@playwright/test';
+          const b = await chromium.launch();
+          const c = await b.newContext({ viewport: { width: 1280, height: 800 } });
+          await c.addInitScript(() => {
+            window.matchMedia = () => { throw new Error('e2e: forced render error'); };
+          });
+          const p = await c.newPage();
+          await p.goto('http://localhost:4173/');
+          await p.waitForSelector('[role=alert]', { timeout: 15000 });
+          const bg = await p.$eval('[role=alert]', (el) => getComputedStyle(el).backgroundColor);
+          console.log('computed [role=alert] background:', bg);
+          console.log('body background:', await p.$eval('body', (el) => getComputedStyle(el).backgroundColor));
+          await b.close();
+          EOF
+          sed -i 's/^          //' /tmp/probe.mjs
+          node /tmp/probe.mjs || echo "PROBE FAILED"
         env:
           HOME: /root
       # Rewriting a baseline reports the test as failed, which is not a failure
