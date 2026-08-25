@@ -36,6 +36,16 @@
 //   docker run --rm -v "$PWD":/repo -w /repo/web -e HOME=/root -e CI=1 \
 //     mcr.microsoft.com/playwright:v1.62.1-noble \
 //     sh -c "npm ci && npm run test:visual:update"
+//
+// That form is POSIX-shell only. Under Git Bash on Windows, MSYS rewrites the
+// container-side `/repo` into a Windows path before Docker ever sees it, so the
+// mount lands somewhere unintended — and `$PWD` compounds it when the checkout
+// path contains a space. Turn the rewriting off and pass a native path, quoting
+// the whole -v argument so the space survives:
+//   MSYS_NO_PATHCONV=1 docker run --rm -v "C:\path\to\erg-dashboard:/repo" \
+//     -w /repo/web -e HOME=/root -e CI=1 \
+//     mcr.microsoft.com/playwright:v1.62.1-noble \
+//     sh -c "npm ci && npm run test:visual:update"
 
 import { test, expect } from '@playwright/test';
 import { installAppFixtures, stubSupabase, seedSession } from './fixtures.js';
