@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { SCREENSHOT_COMPARE } from './scripts/visual-tolerance.mjs';
 
 // E2E smoke tests build the app with a stub Supabase config and serve it via
 // `vite preview`. The auth gate is satisfied by seeding a fake session into
@@ -20,10 +21,18 @@ export default defineConfig({
   timeout: 30_000,
   expect: {
     timeout: 10_000,
-    // maxDiffPixels: 0 with the default per-pixel threshold — no tolerance for
-    // geometry drift (a padding nudge moves hundreds of pixels), some tolerance
-    // for anti-aliasing noise.
-    toHaveScreenshot: { animations: 'disabled', maxDiffPixels: 0 },
+    // Two knobs, not one. `threshold` is a per-pixel YIQ colour distance
+    // (Playwright default 0.2, allowance 35215 x threshold^2 = 1408.6) and
+    // decides whether a pixel counts as different at all; `maxDiffPixels`
+    // bounds how many flagged pixels are allowed. So maxDiffPixels: 0 at the
+    // default threshold is not strict — nothing ever gets flagged. #291 is the
+    // proof: repainting the whole viewport #08080d -> #3d0812 is a delta of
+    // 436.7, three times under the allowance, and updated zero baseline bytes.
+    // threshold: 0 is affordable because baselines are generated and compared
+    // in the same pinned container — at threshold 0 the stable baselines differ
+    // by zero pixels, not few. maxDiffPixels: 0 now equals Playwright's default
+    // and is kept as a statement of intent.
+    toHaveScreenshot: { animations: 'disabled', ...SCREENSHOT_COMPARE },
   },
   use: {
     baseURL: `http://localhost:${PORT}`,

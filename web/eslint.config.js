@@ -112,4 +112,16 @@ export default [
       },
     },
   },
+  {
+    // Vitest globals for the script tests. Flat config merges, so console and
+    // process still come from the block above.
+    files: ['scripts/**/__tests__/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+      },
+    },
+  },
 ];
