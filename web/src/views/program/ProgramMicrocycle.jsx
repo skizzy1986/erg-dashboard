@@ -3,6 +3,7 @@ import { MICROCYCLE } from '../../constants/schedule.js';
 import { TECHNOGYM_CONVERSION } from '../../constants/program.js';
 import { daySessions } from '../../utils/schedule.js';
 import { THEME } from '../../constants/theme.js';
+import { alpha } from '../../utils/themeCss.js';
 
 export default function ProgramMicrocycle() {
   return (
@@ -32,7 +33,7 @@ export default function ProgramMicrocycle() {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${wk.color}30`,
+              border: `1px solid ${alpha(wk.color, '30')}`,
               borderLeft: `3px solid ${wk.color}`,
               borderRadius: 6,
               padding: '11px 14px',
@@ -116,7 +117,7 @@ export default function ProgramMicrocycle() {
       <div
         style={{
           background: THEME.surfaceAlt,
-          border: `1px solid ${THEME.caution}30`,
+          border: `1px solid ${alpha(THEME.caution, '30')}`,
           borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '11px 14px',
@@ -133,7 +134,7 @@ export default function ProgramMicrocycle() {
       <div
         style={{
           background: THEME.surfaceAlt,
-          border: `1px solid ${THEME.accentAlt}30`,
+          border: `1px solid ${alpha(THEME.accentAlt, '30')}`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '11px 14px',
@@ -160,7 +161,7 @@ export default function ProgramMicrocycle() {
       <div
         style={{
           background: THEME.surfaceAlt,
-          border: `1px solid ${THEME.accent}30`,
+          border: `1px solid ${alpha(THEME.accent, '30')}`,
           borderLeft: `3px solid ${THEME.accent}`,
           borderRadius: 6,
           padding: '11px 14px',

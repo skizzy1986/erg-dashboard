@@ -11,6 +11,7 @@ import StrengthTooltip from '../components/StrengthTooltip.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import { STRENGTH_TEMPLATES, PREHAB_NOTE } from '../constants/exercises.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
 
 const LIFT_COLOR = {
@@ -44,7 +45,9 @@ export default function StrengthView({ strengthTrend, strengthSessions }) {
             onClick={() => setActiveLift(lift)}
             style={{
               background:
-                activeLift === lift ? `${LIFT_COLOR[lift]}20` : 'transparent',
+                activeLift === lift
+                  ? alpha(LIFT_COLOR[lift], '20')
+                  : 'transparent',
               border:
                 activeLift === lift
                   ? `1px solid ${LIFT_COLOR[lift]}`

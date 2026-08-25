@@ -17,6 +17,7 @@ import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
 import { calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
+import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -62,7 +63,7 @@ class ErrorBoundary extends Component {
             padding: '24px',
             background:
               'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
-            border: `1px solid ${THEME.critical}50`,
+            border: `1px solid ${alpha(THEME.critical, '50')}`,
             borderRadius: 6,
             color: THEME.critical,
             fontFamily: FONT.mono,

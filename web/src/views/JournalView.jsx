@@ -5,6 +5,7 @@ import {
   CONFIDENCE_MIGRATION,
 } from '../constants/logs.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 // ── JOURNAL VIEW — the longitudinal spine ─────────────────────
 // Decision ledger (the "why"), open hypotheses, rule-firing history,
@@ -16,7 +17,7 @@ export default function JournalView() {
       <div
         style={{
           background: THEME.raised,
-          border: `1px solid ${THEME.accentAlt}30`,
+          border: `1px solid ${alpha(THEME.accentAlt, '30')}`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '11px 14px',

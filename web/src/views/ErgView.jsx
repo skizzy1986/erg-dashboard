@@ -25,6 +25,7 @@ import { toISODate } from '../utils/dateFormat.js';
 import { useErgSessions } from '../hooks/useErgSessions.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
 
 // ── ERG TREND DATA ─────────────────────────────────────────────
@@ -503,7 +504,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
       <div
         style={{
           background: THEME.raised,
-          border: `1px solid ${THEME.positive}30`,
+          border: `1px solid ${alpha(THEME.positive, '30')}`,
           borderLeft: `3px solid ${THEME.positive}`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -890,8 +891,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* CP Test plan */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accent}15,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.accent}50`,
+          background: `linear-gradient(135deg,${alpha(THEME.accent, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.accent, '50')}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -957,7 +958,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
       <div
         style={{
           background: THEME.raised,
-          border: `1px solid ${THEME.accentAlt}30`,
+          border: `1px solid ${alpha(THEME.accentAlt, '30')}`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -1213,7 +1214,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     <div
                       style={{
                         fontSize: 9,
-                        color: `${THEME.accent}99`,
+                        color: alpha(THEME.accent, '99'),
                         lineHeight: 1.4,
                         marginTop: 2,
                       }}

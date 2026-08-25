@@ -17,6 +17,7 @@ import {
 import { bpCategory } from '../utils/formatting.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
 
 // ── RECOVERY VIEW — HRV/RHR/sleep readiness + trends ──────────
@@ -63,7 +64,7 @@ export default function RecoveryView({ isWide }) {
             <div
               style={{
                 background: THEME.raised,
-                border: `1px solid ${readiness.color}40`,
+                border: `1px solid ${alpha(readiness.color, '40')}`,
                 borderLeft: `3px solid ${readiness.color}`,
                 borderRadius: 6,
                 padding: '16px',
@@ -337,7 +338,7 @@ export default function RecoveryView({ isWide }) {
             <div
               style={{
                 background: THEME.raised,
-                border: `1px solid ${THEME.critical}30`,
+                border: `1px solid ${alpha(THEME.critical, '30')}`,
                 borderLeft: `3px solid ${THEME.critical}`,
                 borderRadius: 6,
                 padding: '13px 16px',
@@ -377,7 +378,7 @@ export default function RecoveryView({ isWide }) {
             <div
               style={{
                 background: THEME.surfaceAlt,
-                border: `1px solid ${THEME.positive}30`,
+                border: `1px solid ${alpha(THEME.positive, '30')}`,
                 borderLeft: `3px solid ${THEME.positive}`,
                 borderRadius: 6,
                 padding: '11px 14px',
@@ -448,7 +449,7 @@ export default function RecoveryView({ isWide }) {
                         padding: '10px 12px',
                         background: THEME.field,
                         borderRadius: 4,
-                        border: `1px solid ${b.clean ? THEME.border : `${THEME.textDim}20`}`,
+                        border: `1px solid ${b.clean ? THEME.border : alpha(THEME.textDim, '20')}`,
                       }}
                     >
                       <div

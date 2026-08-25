@@ -1,5 +1,6 @@
 import { toLogDate } from '../utils/dateFormat.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 // Presentational only — props in, no hooks, no data access.
 const COLOURS = {
@@ -48,9 +49,9 @@ export default function BenchmarkBadge({
         fontWeight: 700,
         padding: '1px 5px',
         borderRadius: 3,
-        border: `1px solid ${colour}40`,
+        border: `1px solid ${alpha(colour, '40')}`,
         color: colour,
-        background: `${colour}15`,
+        background: alpha(colour, '15'),
         whiteSpace: 'nowrap',
         marginLeft: 6,
         display: 'inline-block',

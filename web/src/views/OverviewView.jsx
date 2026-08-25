@@ -32,6 +32,7 @@ import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
 
 export default function OverviewView({
@@ -82,7 +83,7 @@ export default function OverviewView({
           <div
             style={{
               background: `linear-gradient(135deg,${THEME.surfaceAlt},${THEME.raised})`,
-              border: `1px solid ${sig.color}50`,
+              border: `1px solid ${alpha(sig.color, '50')}`,
               borderRadius: 8,
               padding: '14px 16px',
               marginBottom: 14,
@@ -383,8 +384,8 @@ export default function OverviewView({
       {/* Phase context — where you are in the arc */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accent}15,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.accent}40`,
+          background: `linear-gradient(135deg,${alpha(THEME.accent, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.accent, '40')}`,
           borderRadius: 6,
           padding: '13px 16px',
           marginBottom: 16,
@@ -433,7 +434,7 @@ export default function OverviewView({
               <div
                 style={{
                   fontSize: 6,
-                  color: p.active ? `${THEME.field}99` : THEME.textFaint,
+                  color: p.active ? alpha(THEME.field, '99') : THEME.textFaint,
                 }}
               >
                 {p.window}
@@ -563,8 +564,8 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: `linear-gradient(135deg,${THEME.accentAlt}12,${THEME.surfaceAlt})`,
-              border: `1px solid ${THEME.accentAlt}40`,
+              background: `linear-gradient(135deg,${alpha(THEME.accentAlt, '12')},${THEME.surfaceAlt})`,
+              border: `1px solid ${alpha(THEME.accentAlt, '40')}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 16,
@@ -648,7 +649,7 @@ export default function OverviewView({
                 style={{
                   background:
                     'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
-                  border: `1px solid ${THEME.critical}50`,
+                  border: `1px solid ${alpha(THEME.critical, '50')}`,
                   borderRadius: 3,
                   padding: '7px 10px',
                   marginBottom: 4,
@@ -791,8 +792,8 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: `linear-gradient(135deg,${auto.color}12,${THEME.surfaceAlt})`,
-              border: `1px solid ${auto.color}50`,
+              background: `linear-gradient(135deg,${alpha(auto.color, '12')},${THEME.surfaceAlt})`,
+              border: `1px solid ${alpha(auto.color, '50')}`,
               borderRadius: 6,
               padding: '14px 16px',
               marginBottom: 16,
@@ -1163,7 +1164,7 @@ export default function OverviewView({
                   padding: '10px 12px',
                   background: isToday ? THEME.surfaceAlt : THEME.field,
                   borderRadius: 4,
-                  border: `1px solid ${isToday ? `${THEME.critical}30` : THEME.divider}`,
+                  border: `1px solid ${isToday ? alpha(THEME.critical, '30') : THEME.divider}`,
                 }}
               >
                 <div

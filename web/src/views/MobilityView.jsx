@@ -5,6 +5,7 @@ import {
   MOBILITY_STREAK_NOTE,
 } from '../constants/mobility.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 export default function MobilityView() {
   const [mobOpen, setMobOpen] = useState(null);
@@ -13,8 +14,8 @@ export default function MobilityView() {
     <>
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accentAlt}15,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.accentAlt}40`,
+          background: `linear-gradient(135deg,${alpha(THEME.accentAlt, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.accentAlt, '40')}`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '13px 16px',
@@ -63,7 +64,7 @@ export default function MobilityView() {
             <div
               key={r.id}
               style={{
-                background: isOpen ? `${r.color}10` : THEME.raised,
+                background: isOpen ? alpha(r.color, '10') : THEME.raised,
                 border: `1px solid ${isOpen ? r.color + '50' : THEME.border}`,
                 borderLeft: `3px solid ${r.color}`,
                 borderRadius: 6,
@@ -233,7 +234,7 @@ export default function MobilityView() {
       <div
         style={{
           background: THEME.surfaceAlt,
-          border: `1px solid ${THEME.accentAlt}30`,
+          border: `1px solid ${alpha(THEME.accentAlt, '30')}`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '10px 13px',

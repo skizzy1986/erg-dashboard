@@ -18,6 +18,7 @@ import {
 import { compareBenchmarkSeverity } from '../utils/benchmarkStatus.js';
 import { MICROCYCLE, PHASE_CONTEXT } from '../constants/schedule.js';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 
 // ── CALENDAR VIEW ──
 export default function CalendarView({
@@ -242,8 +243,8 @@ export default function CalendarView({
       {/* Upcoming events from the ladder */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.caution}10,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.caution}30`,
+          background: `linear-gradient(135deg,${alpha(THEME.caution, '10')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.caution, '30')}`,
           borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '12px 14px',

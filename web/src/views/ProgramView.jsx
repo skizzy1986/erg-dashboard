@@ -26,6 +26,7 @@ import {
 import ProgramMicrocycle from './program/ProgramMicrocycle.jsx';
 import ProgramYear from './program/ProgramYear.jsx';
 import { THEME } from '../constants/theme.js';
+import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
 
 export default function ProgramView({ expanded, setExpanded }) {
@@ -123,7 +124,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   <div
                     style={{
                       background: THEME.raised,
-                      border: `1px solid ${phase.current ? `${THEME.accent}30` : THEME.border}`,
+                      border: `1px solid ${phase.current ? alpha(THEME.accent, '30') : THEME.border}`,
                       borderLeft: `3px solid ${phase.current ? THEME.accent : THEME.textDim}`,
                       borderRadius: 6,
                       padding: '13px 16px',
@@ -231,7 +232,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                           style={{
                             background:
                               expanded === `${phase.id}-${i}`
-                                ? `${color}12`
+                                ? alpha(color, '12')
                                 : THEME.raised,
                             border: `1px solid ${expanded === `${phase.id}-${i}` ? color + '50' : THEME.border}`,
                             borderLeft: `3px solid ${color}`,
@@ -357,7 +358,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.accent}30`,
+              border: `1px solid ${alpha(THEME.accent, '30')}`,
               borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -493,7 +494,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.warning}30`,
+              border: `1px solid ${alpha(THEME.warning, '30')}`,
               borderLeft: `3px solid ${THEME.warning}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -610,7 +611,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.positive}30`,
+              border: `1px solid ${alpha(THEME.positive, '30')}`,
               borderLeft: `3px solid ${THEME.positive}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -804,7 +805,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.surfaceAlt,
-              border: `1px solid ${THEME.caution}30`,
+              border: `1px solid ${alpha(THEME.caution, '30')}`,
               borderLeft: `3px solid ${THEME.caution}`,
               borderRadius: 6,
               padding: '11px 14px',
@@ -929,7 +930,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.positive}30`,
+              border: `1px solid ${alpha(THEME.positive, '30')}`,
               borderLeft: `3px solid ${THEME.positive}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -1035,7 +1036,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.surfaceAlt,
-              border: `1px solid ${THEME.accentAlt2}30`,
+              border: `1px solid ${alpha(THEME.accentAlt2, '30')}`,
               borderLeft: `3px solid ${THEME.accentAlt2}`,
               borderRadius: 6,
               padding: '11px 14px',
@@ -1069,7 +1070,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.surfaceAlt,
-              border: `1px solid ${THEME.accent}30`,
+              border: `1px solid ${alpha(THEME.accent, '30')}`,
               borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 6,
               padding: '11px 14px',
@@ -1224,7 +1225,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.caution}30`,
+              border: `1px solid ${alpha(THEME.caution, '30')}`,
               borderLeft: `3px solid ${THEME.caution}`,
               borderRadius: 6,
               padding: '13px 16px',
@@ -1375,7 +1376,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.surfaceAlt,
-              border: `1px solid ${THEME.critical}30`,
+              border: `1px solid ${alpha(THEME.critical, '30')}`,
               borderLeft: `3px solid ${THEME.critical}`,
               borderRadius: 6,
               padding: '11px 14px',
@@ -1485,7 +1486,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.positive}30`,
+              border: `1px solid ${alpha(THEME.positive, '30')}`,
               borderLeft: `3px solid ${THEME.positive}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -1625,8 +1626,8 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Queued deficit program */}
           <div
             style={{
-              background: `linear-gradient(135deg,${THEME.warning}12,${THEME.surfaceAlt})`,
-              border: `1px solid ${THEME.warning}40`,
+              background: `linear-gradient(135deg,${alpha(THEME.warning, '12')},${THEME.surfaceAlt})`,
+              border: `1px solid ${alpha(THEME.warning, '40')}`,
               borderLeft: `3px solid ${THEME.warning}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -1851,7 +1852,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.accentAlt2}30`,
+              border: `1px solid ${alpha(THEME.accentAlt2, '30')}`,
               borderLeft: `3px solid ${THEME.accentAlt2}`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -1916,7 +1917,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           <div
             style={{
               background: THEME.raised,
-              border: `1px solid ${THEME.accent}30`,
+              border: `1px solid ${alpha(THEME.accent, '30')}`,
               borderLeft: `3px solid ${THEME.accent}`,
               borderRadius: 6,
               padding: '14px 16px',

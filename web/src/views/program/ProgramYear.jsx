@@ -12,6 +12,7 @@ import {
   ANNUAL_ARC,
 } from '../../constants/program.js';
 import { THEME } from '../../constants/theme.js';
+import { alpha } from '../../utils/themeCss.js';
 
 export default function ProgramYear() {
   return (
@@ -19,8 +20,8 @@ export default function ProgramYear() {
       {/* Race target banner */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.critical}20,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.critical}50`,
+          background: `linear-gradient(135deg,${alpha(THEME.critical, '20')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.critical, '50')}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginBottom: 12,
@@ -87,7 +88,7 @@ export default function ProgramYear() {
             key={i}
             style={{
               background: b.current ? THEME.raised : THEME.surfaceAlt,
-              border: `1px solid ${b.current ? `${THEME.accent}40` : THEME.border}`,
+              border: `1px solid ${b.current ? alpha(THEME.accent, '40') : THEME.border}`,
               borderLeft: `3px solid ${b.current ? THEME.accent : b.test.includes('2k') ? THEME.critical : THEME.textDim}`,
               borderRadius: 6,
               padding: '12px 14px',
@@ -156,8 +157,8 @@ export default function ProgramYear() {
       {/* Season banner */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.critical}18,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.critical}40`,
+          background: `linear-gradient(135deg,${alpha(THEME.critical, '18')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.critical, '40')}`,
           borderRadius: 6,
           padding: '14px 16px',
           marginTop: 14,
@@ -222,8 +223,8 @@ export default function ProgramYear() {
       {/* Event ladder */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.caution}12,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.caution}40`,
+          background: `linear-gradient(135deg,${alpha(THEME.caution, '12')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.caution, '40')}`,
           borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -346,8 +347,8 @@ export default function ProgramYear() {
       {/* Volume progression — serious-competitor arc */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.positive}15,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.positive}40`,
+          background: `linear-gradient(135deg,${alpha(THEME.positive, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.positive, '40')}`,
           borderLeft: `3px solid ${THEME.positive}`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -471,8 +472,8 @@ export default function ProgramYear() {
       {/* Season 2 sketch */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accentAlt}15,${THEME.surfaceAlt})`,
-          border: `1px solid ${THEME.accentAlt}40`,
+          background: `linear-gradient(135deg,${alpha(THEME.accentAlt, '15')},${THEME.surfaceAlt})`,
+          border: `1px solid ${alpha(THEME.accentAlt, '40')}`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -650,7 +651,7 @@ export default function ProgramYear() {
       <div
         style={{
           background: THEME.raised,
-          border: `1px solid ${THEME.accentAlt2}30`,
+          border: `1px solid ${alpha(THEME.accentAlt2, '30')}`,
           borderLeft: `3px solid ${THEME.accentAlt2}`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -929,7 +930,7 @@ export default function ProgramYear() {
         style={{
           marginTop: 12,
           background: THEME.surfaceAlt,
-          border: `1px solid ${THEME.caution}30`,
+          border: `1px solid ${alpha(THEME.caution, '30')}`,
           borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
           padding: '11px 14px',
