@@ -1,18 +1,12 @@
 import React from 'react';
 import { THEME } from '../constants/theme.js';
+import { tsbBand } from '../utils/trainingLoad.js';
 import { FONT } from '../constants/type.js';
 
 export default function LoadTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const tsbColor =
-    d.tsb > 10
-      ? THEME.positive
-      : d.tsb > -10
-        ? THEME.caution
-        : d.tsb > -30
-          ? THEME.warning
-          : THEME.critical;
+  const tsbColor = THEME[tsbBand(d.tsb)?.token] ?? THEME.muted;
   return (
     <div
       style={{

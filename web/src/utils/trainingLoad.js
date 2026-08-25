@@ -126,3 +126,57 @@ export function deriveTargets(hr130Series) {
       : 'default (no clean points)',
   };
 }
+
+// The TSB bands, in one place. These thresholds were inlined at five call
+// sites and had already drifted: four surfaces banded on +10 / -10 / -30 while
+// useCoach.js banded on +10 / -10 alone, so a TSB of -20 read "Fatigued —
+// normal mid-week" on screen and RED to the Coach. HANDOFF.md §5 calls that
+// the same defect as computing the number two different ways.
+//
+// `token` is a THEME key, not a colour — this module is pure maths and does
+// not import the palette. Callers do THEME[band.token].
+//
+// `signal` reproduces useCoach's existing three-way mapping exactly, which is
+// why `fatigued` and `deep` share RED. That collapse is preserved rather than
+// corrected: telling the Coach RED for a state the dashboard calls normal is
+// arguably wrong, but changing what the Coach is told is a training decision,
+// not a refactor. See the note in useCoach.js.
+export const TSB_BANDS = [
+  {
+    key: 'fresh',
+    floor: 10,
+    label: 'Fresh — good form',
+    token: 'positive',
+    signal: 'GREEN',
+  },
+  {
+    key: 'neutral',
+    floor: -10,
+    label: 'Neutral — balanced',
+    token: 'caution',
+    signal: 'AMBER',
+  },
+  {
+    key: 'fatigued',
+    floor: -30,
+    label: 'Fatigued — normal mid-week',
+    token: 'warning',
+    signal: 'RED',
+  },
+  {
+    key: 'deep',
+    floor: -Infinity,
+    label: 'High fatigue — rest critical',
+    token: 'critical',
+    signal: 'RED',
+  },
+];
+
+// Returns null for a missing reading — "no band" is a real state and must not
+// render as the worst one.
+export function tsbBand(tsb) {
+  if (tsb == null || !Number.isFinite(tsb)) return null;
+  return (
+    TSB_BANDS.find((b) => tsb > b.floor) ?? TSB_BANDS[TSB_BANDS.length - 1]
+  );
+}

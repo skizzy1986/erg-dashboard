@@ -1,7 +1,11 @@
 import React, { useMemo } from 'react';
 import { THEME } from '../../constants/theme.js';
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
-import { calcTrainingLoad, sessionLoad } from '../../utils/trainingLoad.js';
+import {
+  calcTrainingLoad,
+  sessionLoad,
+  tsbBand,
+} from '../../utils/trainingLoad.js';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { useAnchors } from '../../hooks/useAnchors.js';
@@ -9,19 +13,8 @@ import { toISODate } from '../../utils/dateFormat.js';
 import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 import { FONT } from '../../constants/type.js';
 
-function tsbColor(tsb) {
-  if (tsb > 10) return THEME.positive;
-  if (tsb > -10) return THEME.caution;
-  if (tsb > -30) return THEME.warning;
-  return THEME.critical;
-}
-
-function tsbSignal(tsb) {
-  if (tsb > 10) return 'Fresh — good form';
-  if (tsb > -10) return 'Neutral — balanced';
-  if (tsb > -30) return 'Fatigued — normal mid-week';
-  return 'High fatigue — rest critical';
-}
+const tsbColor = (tsb) => THEME[tsbBand(tsb)?.token] ?? THEME.muted;
+const tsbSignal = (tsb) => tsbBand(tsb)?.label ?? 'No reading';
 
 function typeColor(type) {
   const t = (type ?? '').toLowerCase();

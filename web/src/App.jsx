@@ -15,7 +15,7 @@ import ProgramView from './views/ProgramView.jsx';
 import CalendarView from './views/CalendarView.jsx';
 import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
-import { calcTrainingLoad } from './utils/trainingLoad.js';
+import { tsbBand, calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
@@ -207,15 +207,8 @@ export default function App() {
   // flash an outage line and then replace it with real numbers.
   const loadAvailable = latest != null;
   const loadUnavailable = !loadAvailable && !loadPending;
-  const tsbColor = !loadAvailable
-    ? THEME.muted
-    : latest.tsb > 10
-      ? THEME.positive
-      : latest.tsb > -10
-        ? THEME.caution
-        : latest.tsb > -30
-          ? THEME.warning
-          : THEME.critical;
+  const tsbColor =
+    THEME[tsbBand(loadAvailable ? latest.tsb : null)?.token] ?? THEME.muted;
 
   const ergSessions = loggedSessions.filter((e) => e._isErg);
   const strengthSessions = loggedSessions.filter((e) => e.exercises);
