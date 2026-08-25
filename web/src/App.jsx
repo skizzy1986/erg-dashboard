@@ -73,7 +73,9 @@ class ErrorBoundary extends Component {
           ⚠️ This section hit a render error and was isolated to protect the
           rest of the dashboard.
           <br />
-          <span style={{ color: '#888', fontSize: 10 }}>{this.state.msg}</span>
+          <span style={{ color: THEME.neutralAccent, fontSize: 10 }}>
+            {this.state.msg}
+          </span>
         </div>
       );
     }
@@ -239,7 +241,7 @@ export default function App() {
       {/* HEADER */}
       <div
         style={{
-          background: `linear-gradient(180deg,${THEME.surfaceAlt} 0%,#08080d 100%)`,
+          background: `linear-gradient(180deg,${THEME.surfaceAlt} 0%,${THEME.bg} 100%)`,
           borderBottom: `1px solid ${THEME.border}`,
           padding: '24px 14px 18px',
           boxSizing: 'border-box',
@@ -288,7 +290,7 @@ export default function App() {
             style={{
               fontSize: 24,
               fontWeight: 700,
-              color: '#fff',
+              color: THEME.textStrong,
               letterSpacing: -1,
             }}
           >

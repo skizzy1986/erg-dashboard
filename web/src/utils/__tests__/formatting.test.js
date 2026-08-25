@@ -157,11 +157,11 @@ describe('bpCategory', () => {
   it('flags non-numeric readings', () => {
     expect(bpCategory('120', 80)).toEqual({
       label: 'Check reading',
-      color: '#888',
+      color: THEME.neutralAccent,
     });
     expect(bpCategory(120, undefined)).toEqual({
       label: 'Check reading',
-      color: '#888',
+      color: THEME.neutralAccent,
     });
   });
 

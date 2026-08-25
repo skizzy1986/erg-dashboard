@@ -82,7 +82,13 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
               >
                 {s.label}
               </span>
-              <span style={{ fontSize: 10, color: '#888', marginLeft: 6 }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: THEME.neutralAccent,
+                  marginLeft: 6,
+                }}
+              >
                 — {s.anchor}
               </span>
             </div>

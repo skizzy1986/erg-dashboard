@@ -81,7 +81,7 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: `linear-gradient(135deg,${THEME.surfaceAlt},#2a2a48)`,
+              background: `linear-gradient(135deg,${THEME.surfaceAlt},${THEME.raised})`,
               border: `1px solid ${sig.color}50`,
               borderRadius: 8,
               padding: '14px 16px',
@@ -101,7 +101,7 @@ export default function OverviewView({
                   style={{
                     fontSize: 14,
                     fontWeight: 700,
-                    color: '#fff',
+                    color: THEME.textStrong,
                   }}
                 >
                   {t.dateStr}
@@ -237,7 +237,7 @@ export default function OverviewView({
                 );
                 const whenLabel =
                   dayDiff === 0 ? 'Today' : dayDiff === 1 ? 'Tomorrow' : u.dow;
-                const slotColor = i === 0 ? THEME.accent : '#888';
+                const slotColor = i === 0 ? THEME.accent : THEME.neutralAccent;
                 return (
                   <div
                     key={i}
@@ -383,7 +383,7 @@ export default function OverviewView({
       {/* Phase context — where you are in the arc */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accent}15,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.accent}15,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.accent}40`,
           borderRadius: 6,
           padding: '13px 16px',
@@ -532,7 +532,7 @@ export default function OverviewView({
               style={{
                 fontSize: 20,
                 fontWeight: 700,
-                color: '#fff',
+                color: THEME.textStrong,
                 letterSpacing: -0.5,
               }}
             >
@@ -563,7 +563,7 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: `linear-gradient(135deg,${THEME.accentAlt}12,#1e1e30)`,
+              background: `linear-gradient(135deg,${THEME.accentAlt}12,${THEME.surfaceAlt})`,
               border: `1px solid ${THEME.accentAlt}40`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -791,7 +791,7 @@ export default function OverviewView({
         return (
           <div
             style={{
-              background: `linear-gradient(135deg,${auto.color}12,#1e1e30)`,
+              background: `linear-gradient(135deg,${auto.color}12,${THEME.surfaceAlt})`,
               border: `1px solid ${auto.color}50`,
               borderRadius: 6,
               padding: '14px 16px',
@@ -1177,7 +1177,7 @@ export default function OverviewView({
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: '#fff',
+                      color: THEME.textStrong,
                     }}
                   >
                     {day.date}

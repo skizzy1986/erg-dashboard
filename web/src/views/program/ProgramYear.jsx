@@ -19,7 +19,7 @@ export default function ProgramYear() {
       {/* Race target banner */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.critical}20,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.critical}20,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.critical}50`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -40,7 +40,7 @@ export default function ProgramYear() {
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: '#fff',
+            color: THEME.textStrong,
             marginBottom: 3,
           }}
         >
@@ -55,7 +55,9 @@ export default function ProgramYear() {
         >
           {RACE_TARGET.when} · {RACE_TARGET.formats}
         </div>
-        <div style={{ fontSize: 10, color: '#888', lineHeight: 1.5 }}>
+        <div
+          style={{ fontSize: 10, color: THEME.neutralAccent, lineHeight: 1.5 }}
+        >
           {RACE_TARGET.note}
         </div>
       </div>
@@ -154,7 +156,7 @@ export default function ProgramYear() {
       {/* Season banner */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.critical}18,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.critical}18,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.critical}40`,
           borderRadius: 6,
           padding: '14px 16px',
@@ -179,7 +181,9 @@ export default function ProgramYear() {
           >
             🏆 {SEASON.label}
           </div>
-          <div style={{ fontSize: 9, color: '#888' }}>{SEASON.span}</div>
+          <div style={{ fontSize: 9, color: THEME.neutralAccent }}>
+            {SEASON.span}
+          </div>
         </div>
         <div
           style={{
@@ -218,7 +222,7 @@ export default function ProgramYear() {
       {/* Event ladder */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.caution}12,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.caution}12,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.caution}40`,
           borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,
@@ -313,7 +317,7 @@ export default function ProgramYear() {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#888',
+                    color: THEME.neutralAccent,
                     lineHeight: 1.5,
                   }}
                 >
@@ -342,7 +346,7 @@ export default function ProgramYear() {
       {/* Volume progression — serious-competitor arc */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.positive}15,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.positive}15,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.positive}40`,
           borderLeft: `3px solid ${THEME.positive}`,
           borderRadius: 6,
@@ -418,7 +422,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: '#888',
+                color: THEME.neutralAccent,
                 lineHeight: 1.5,
               }}
             >
@@ -467,7 +471,7 @@ export default function ProgramYear() {
       {/* Season 2 sketch */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accentAlt}15,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.accentAlt}15,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.accentAlt}40`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
@@ -494,7 +498,9 @@ export default function ProgramYear() {
             🏆 {SEASON_2.label}{' '}
             <span style={{ fontSize: 8, color: '#666' }}>(sketch)</span>
           </div>
-          <div style={{ fontSize: 9, color: '#888' }}>{SEASON_2.span}</div>
+          <div style={{ fontSize: 9, color: THEME.neutralAccent }}>
+            {SEASON_2.span}
+          </div>
         </div>
         <div
           style={{
@@ -607,7 +613,7 @@ export default function ProgramYear() {
             <div
               style={{
                 fontSize: 9,
-                color: '#888',
+                color: THEME.neutralAccent,
                 lineHeight: 1.5,
                 marginBottom: 3,
               }}
@@ -881,7 +887,7 @@ export default function ProgramYear() {
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: '#fff',
+                  color: THEME.textStrong,
                 }}
               >
                 {o.name}

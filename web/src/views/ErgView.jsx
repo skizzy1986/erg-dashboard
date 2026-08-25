@@ -890,7 +890,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
       {/* CP Test plan */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accent}15,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.accent}15,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.accent}50`,
           borderRadius: 6,
           padding: '14px 16px',

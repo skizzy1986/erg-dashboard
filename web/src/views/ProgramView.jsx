@@ -142,7 +142,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                         style={{
                           fontSize: 13,
                           fontWeight: 700,
-                          color: '#fff',
+                          color: THEME.textStrong,
                         }}
                       >
                         {phase.name}
@@ -216,7 +216,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     }}
                   >
                     {phase.weekly.map((s, i) => {
-                      const color = C[s.type] || '#888';
+                      const color = C[s.type] || THEME.neutralAccent;
                       const isRest = s.type === 'Rest';
                       return (
                         <div
@@ -274,7 +274,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                                   style={{
                                     fontSize: 12,
                                     fontWeight: 700,
-                                    color: '#fff',
+                                    color: THEME.textStrong,
                                   }}
                                 >
                                   {s.label}
@@ -444,7 +444,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#888',
+                    color: THEME.neutralAccent,
                     lineHeight: 1.5,
                     marginBottom: 6,
                   }}
@@ -698,7 +698,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#888',
+                    color: THEME.neutralAccent,
                     lineHeight: 1.5,
                     borderTop: `1px solid ${THEME.divider}`,
                     paddingTop: 5,
@@ -776,7 +776,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <span
                       style={{
                         fontSize: 11,
-                        color: '#fff',
+                        color: THEME.textStrong,
                         fontWeight: 600,
                       }}
                     >
@@ -881,7 +881,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   <span
                     style={{
                       fontSize: 11,
-                      color: '#fff',
+                      color: THEME.textStrong,
                       fontWeight: 600,
                     }}
                   >
@@ -971,7 +971,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: '#fff',
+                      color: THEME.textStrong,
                     }}
                   >
                     {d.day}
@@ -1447,7 +1447,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                   <span
                     style={{
                       fontSize: 11,
-                      color: '#fff',
+                      color: THEME.textStrong,
                       fontWeight: 600,
                     }}
                   >
@@ -1556,7 +1556,12 @@ export default function ProgramView({ expanded, setExpanded }) {
                       >
                         {d.day}
                       </td>
-                      <td style={{ padding: '5px 5px', color: '#888' }}>
+                      <td
+                        style={{
+                          padding: '5px 5px',
+                          color: THEME.neutralAccent,
+                        }}
+                      >
                         {d.train}
                       </td>
                       <td
@@ -1620,7 +1625,7 @@ export default function ProgramView({ expanded, setExpanded }) {
           {/* Queued deficit program */}
           <div
             style={{
-              background: `linear-gradient(135deg,${THEME.warning}12,#1e1e30)`,
+              background: `linear-gradient(135deg,${THEME.warning}12,${THEME.surfaceAlt})`,
               border: `1px solid ${THEME.warning}40`,
               borderLeft: `3px solid ${THEME.warning}`,
               borderRadius: 6,
@@ -1743,7 +1748,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                     <td
                       style={{
                         padding: '5px',
-                        color: '#888',
+                        color: THEME.neutralAccent,
                         textAlign: 'right',
                         fontSize: 8,
                       }}

@@ -61,7 +61,7 @@ export function bpCategory(sys, dia) {
     dia > 160 ||
     dia >= sys
   ) {
-    return { label: 'Check reading', color: '#888' };
+    return { label: 'Check reading', color: THEME.neutralAccent };
   }
   if (sys < 120 && dia < 80) return { label: 'Optimal', color: THEME.positive };
   if (sys < 130 && dia < 80) return { label: 'Normal', color: THEME.positive };

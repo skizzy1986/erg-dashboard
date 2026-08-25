@@ -242,7 +242,7 @@ export default function CalendarView({
       {/* Upcoming events from the ladder */}
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.caution}10,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.caution}10,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.caution}30`,
           borderLeft: `3px solid ${THEME.caution}`,
           borderRadius: 6,

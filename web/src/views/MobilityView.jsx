@@ -13,7 +13,7 @@ export default function MobilityView() {
     <>
       <div
         style={{
-          background: `linear-gradient(135deg,${THEME.accentAlt}15,#1e1e30)`,
+          background: `linear-gradient(135deg,${THEME.accentAlt}15,${THEME.surfaceAlt})`,
           border: `1px solid ${THEME.accentAlt}40`,
           borderLeft: `3px solid ${THEME.accentAlt}`,
           borderRadius: 6,
@@ -93,7 +93,7 @@ export default function MobilityView() {
                       style={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: '#fff',
+                        color: THEME.textStrong,
                       }}
                     >
                       {r.name}
@@ -118,7 +118,7 @@ export default function MobilityView() {
                   <div
                     style={{
                       fontSize: 10,
-                      color: '#888',
+                      color: THEME.neutralAccent,
                       lineHeight: 1.6,
                       marginBottom: 10,
                       fontStyle: 'italic',
@@ -189,7 +189,7 @@ export default function MobilityView() {
                         <div
                           style={{
                             fontSize: 10,
-                            color: '#888',
+                            color: THEME.neutralAccent,
                             lineHeight: 1.6,
                             paddingLeft: 19,
                           }}
@@ -239,7 +239,7 @@ export default function MobilityView() {
           padding: '10px 13px',
           marginBottom: 10,
           fontSize: 10,
-          color: '#888',
+          color: THEME.neutralAccent,
           lineHeight: 1.6,
         }}
       >
@@ -248,7 +248,7 @@ export default function MobilityView() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {mobilityLog.map((m, i) => {
           const r = MOBILITY_ROUTINES.find((x) => x.id === m.type);
-          const col = r ? r.color : '#888';
+          const col = r ? r.color : THEME.neutralAccent;
           return (
             <div
               key={i}
@@ -280,7 +280,7 @@ export default function MobilityView() {
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      color: '#fff',
+                      color: THEME.textStrong,
                     }}
                   >
                     {m.label}
