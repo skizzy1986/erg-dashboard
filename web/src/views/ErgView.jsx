@@ -1214,7 +1214,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
                     <div
                       style={{
                         fontSize: 9,
-                        color: alpha(THEME.accent, '99'),
+                        color: THEME.accent,
                         lineHeight: 1.4,
                         marginTop: 2,
                       }}

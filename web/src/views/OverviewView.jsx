@@ -434,7 +434,7 @@ export default function OverviewView({
               <div
                 style={{
                   fontSize: 6,
-                  color: p.active ? alpha(THEME.field, '99') : THEME.textFaint,
+                  color: p.active ? THEME.field : THEME.textFaint,
                 }}
               >
                 {p.window}
