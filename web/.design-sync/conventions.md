@@ -98,6 +98,20 @@ accentAlt2    #a3407a   prehab. Wash #f7e9f2
 UI. It is for marks that carry no information on their own. `textFaint` clears
 3:1 on a card or inset but not 4.5 — large text and UI marks only, never body.
 
+**Two more keys arrived with the rename.** `#277` shipped `neutralAccent` and
+`textStrong`, neither of which had a light value. `neutralAccent` is the rest
+accent — #98a1bb, non-text, the same value as `neutral` and `textDim`; it exists
+as a separate key because it marks rest *sessions* rather than dead space, so it
+can move independently later. `textStrong` is #1c1e2a, the same as `text`: on a
+light ground there is nothing above it, and a key that is currently an alias is
+still worth keeping so the dark theme has somewhere to diverge.
+
+**On `positiveAlt`.** `#277` kept cycling as its own token rather than folding it
+into `positive` — the right call, reached independently — but named it
+`positiveAlt`, which reintroduces by name the conflation both sides rejected on
+substance. `cycling` is the name to converge on before the seam wires it up.
+Code agrees.
+
 **One published value moves.** §1 gives `--color-muted: #43485a`. That value is
 the label neutral and belongs to `textSubtle`, which needs to be the one that
 passes on every ground. `muted` takes #4a4f63 — still AA everywhere (8.10 on a
@@ -163,13 +177,47 @@ Token file: `splitiq-light-tokens.css`.
 ### Type
 
 **Archivo for language, IBM Plex Mono with tabular figures for measurement.**
+Both self-hosted.
+
+*Reverted 2026-08-25.* `STATE_OF_PLAY.md` §4.1 had re-decided this as Plex Sans
++ Plex Mono on metric compatibility — the two Plex families share vertical
+metrics, so a sans label above a mono figure aligns without optical fudging.
+Design overruled it: Archivo has presence at the large sizes this app leans on,
+and a readiness score set in it reads as a brand asset rather than as UI
+furniture. The `LiveMetric` alignment is handled per construction instead.
+
+Consequence for code: `cfg.extraFonts` needs the **Archivo** woff2 files at 500+
+weights, which is what issue **#254** already says. §4.1 is superseded on this
+point.
 Anything that is a split, watt, pace, TSS, weight or tabular date is mono;
 anything that is a label, button, sentence or nav item is sans. A number inside
 a sentence stays in the sentence's face.
 
 Four ranks on any one screen: `52` hero · `20` title · `14` body · `9` section
 label. `fontSize: 9` is reserved for section labels and is not the default for
-anything else.
+anything else. *(A dense desktop screen needs more than four — the full
+eight-size ladder is below, and it is the whole set.)*
+
+**The ladder, in full.** Eight sizes, and this is the whole set — anything not on
+it is a straggler:
+
+```
+52  hero        the one headline figure on a screen
+26  sub-hero    a screen's secondary scores (signal, readiness)
+20  title       page title, primary card title
+17  figure      mono metric figures
+13  body        sentences, nav items, buttons
+12  secondary   captions, table cells, dense rows
+11  fine        tile source lines, legends, nav tags
+ 9  label       section labels, chart axis and tick labels
+```
+
+**9 is the floor.** Nothing renders below it. Density is not an excuse for
+smaller type — if a row cannot fit 9px labels, it does not get labels: the
+desktop overview's 28-bar chart carries three date ticks and a hover tooltip
+instead of 28 day initials, because 28 initials only fit at 8px.
+
+`fontSize: 9` stays reserved for labels and ticks, never body.
 
 **Weight floor 500.** On a light ground Archivo at 400 reads thin and strains.
 Body 500, secondary 600, labels and all figures 700. Nothing is set lighter
@@ -242,6 +290,105 @@ count them; the chart's gaps and the tile's fraction then agree by construction.
 
 The same applies to staleness: derive "no reading in N days" from the last
 non-null index, and derive the deduction's points from that N.
+
+### Desktop and mobile do different jobs
+
+**Mobile does the doing. Desktop does the understanding.**
+
+Sessions are logged mid-workout, between intervals, with a heart rate still
+coming down — that is a phone in a boathouse, and every live surface belongs
+there: the prescription, the watt band, the set logger, the rest timer, the sRPE
+prompt. None of it belongs on desktop. Nobody stops a piece to go and find a
+laptop.
+
+Desktop is for the analytical deep dive and the supplemental material a phone
+cannot hold: long windows, many series at once, the full zone table, sortable
+logs, periodisation, the reasoning behind a call. Breadth is the point, and the
+affordances follow — hover for detail, resizable panes, dense tables, several
+charts on one surface.
+
+This is why the two platforms do not share an information architecture. The five
+destinations are the mobile IA. A desktop screen named after a mobile
+destination should be read as “the analysis behind that destination”, never as
+the same screen at a wider width — and where a destination is purely a live
+surface, it has no desktop counterpart at all.
+
+### Icons: emoji on mobile, stroke glyphs on the desktop rail
+
+The system’s established glyph vocabulary is **emoji**: `BottomTabBar` renders
+six fixed tabs as 18px emoji over tracked captions, and `ICON` maps the nine
+session types the same way. Use those wherever the mobile surfaces are being
+matched — do not invent a second vocabulary there.
+
+The desktop nav rail is a **deliberate divergence**, and this is the reasoning
+rather than a preference:
+
+- `BottomTabBar`’s tab list is internal and not configurable by props, and its
+  six tabs are the old thirteen-tab IA (Analytics, Live, Log, Strength,
+  Recovery, Coach). The desktop rail carries the five-destination IA plus
+  Overview. The component cannot express it, so it is not a candidate.
+- Emoji are full-colour bitmaps. A 64px dark rail needs the glyph to take the
+  active-state ink; an emoji cannot, so active and inactive would differ only by
+  background, and the glyph would fight the dark ground at every size.
+- Emoji render differently per platform. A tab bar can absorb that; a
+  permanently visible desktop rail cannot.
+
+So: 20px stroke glyphs on `currentColor`, 1.7px stroke, in a 38px chip — grid
+for Overview, calendar for Today, ascending bars for Progress, pulse for Body,
+speech bubble for Coach. **This is the only place in the system that uses stroke
+icons.** If a second desktop surface needs icons, extend this set rather than
+starting a third vocabulary.
+
+**Five chips, not six. Train is absent from the desktop rail.** It has no desktop
+destination (see the platform split above), so there is nothing to navigate to.
+It was briefly drawn as a dimmed sixth chip; that was wrong twice over — the ink
+was never measured (#5a6180 on the rail ground #2b2f42 is 2.18:1, under the 3:1
+floor for meaningful non-text UI), and a chip that keeps its pointer cursor and
+tooltip while looking disabled promises a destination it cannot deliver.
+
+The rule: **a nav rail lists destinations that exist.** A destination that does
+not exist on a platform is omitted, not dimmed. Dimming is for something
+temporarily unavailable, and it still has to clear 3:1 and drop its
+interactive affordances.
+
+### A state’s encoding must not be a colour another role already owns
+
+Marking an out-of-band value by repainting it in the warning ink works until the
+metric’s own ink *is* the warning ink. On the Body screen’s Resting HR pane it
+collapsed exactly that way: metric ink `#a34c1c`, out-of-band ink `#a34c1c`, so
+all 17 bars came out identical and 6 genuinely outside ±1 SD were
+indistinguishable — while the chart header and caption both asserted the
+encoding.
+
+Same failure family as “Above AT” and the coverage claim without gaps: **a chart
+stating something its marks do not carry.**
+
+Give a state an encoding it owns outright, independent of any palette entry the
+series might also use — a cap, an outline, a hatch, a shape. On the metric charts
+an out-of-band bar keeps its metric ink and gains a 4px `#1c1e2a` top cap. That
+reads at 28 bars, works on every ink, and cannot be swallowed by a palette
+collision. Reserve the accent inks for identity, not for state.
+
+And where a caption names an encoding, derive the count from the same predicate
+that draws it — “6 of 17 readings fall outside ±1 SD and carry the dark cap”,
+never a static sentence that can outlive the rule.
+
+### The zone table has six bands, not three
+
+`derivePaceZones(cp)` returns **Recovery, UT2, UT1, AT, TR, AN**. A screen that
+shows three of them and calls anything above the third “Above AT” is inventing a
+zone name for a band the table already names — that piece is TR.
+
+Take the names and the fractions from the shipped table, not the watt bounds:
+the bundled `PACE_ZONES` numbers are frozen at the old CP of 190. The fractions
+of CP are 0.55 · 0.70 · 0.80 · 0.90 · 1.05 · 1.30, which at CP 205 give
+Recovery 0–113, UT2 113–144, UT1 144–164, AT 164–185, TR 185–215, AN 215–267.
+`splitiq-load.js` exposes `zoneTable(cp)`; derive every band and every axis
+label from it.
+
+Show all six even when some carry no volume — dim the empty ones rather than
+dropping them, so the reader sees the whole table and can tell an empty band
+from a missing one.
 
 ### Session type is a design-system key, not a coarse discipline
 

@@ -29,8 +29,21 @@
 //
 // BASELINES ARE GENERATED IN THE CI PLAYWRIGHT CONTAINER, never on a dev
 // machine — glyph rasterisation differs and a locally-generated baseline fails
-// forever. See the `visual-baselines` job in .github/workflows/e2e-web.yml, or:
+// forever. Dispatch `E2E — Web` on your branch with `update_baselines: true` and
+// it regenerates them and commits them to that branch (#288); reviewing the
+// resulting PNG diff on the PR is where "is this right?" gets decided. The
+// equivalent by hand, if you have a Docker daemon:
 //   docker run --rm -v "$PWD":/repo -w /repo/web -e HOME=/root -e CI=1 \
+//     mcr.microsoft.com/playwright:v1.62.1-noble \
+//     sh -c "npm ci && npm run test:visual:update"
+//
+// That form is POSIX-shell only. Under Git Bash on Windows, MSYS rewrites the
+// container-side `/repo` into a Windows path before Docker ever sees it, so the
+// mount lands somewhere unintended — and `$PWD` compounds it when the checkout
+// path contains a space. Turn the rewriting off and pass a native path, quoting
+// the whole -v argument so the space survives:
+//   MSYS_NO_PATHCONV=1 docker run --rm -v "C:\path\to\erg-dashboard:/repo" \
+//     -w /repo/web -e HOME=/root -e CI=1 \
 //     mcr.microsoft.com/playwright:v1.62.1-noble \
 //     sh -c "npm ci && npm run test:visual:update"
 

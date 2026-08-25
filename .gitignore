@@ -24,3 +24,7 @@ web/.design-sync/node_modules
 # written by whatever Deno happens to be on a dev machine is noise, not a
 # reproducibility guarantee.
 deno.lock
+
+# Per-session git worktrees (EnterWorktree). Concurrent Claude Code sessions each
+# get their own checkout here, so two sessions cannot race on one working tree.
+.claude/worktrees/
