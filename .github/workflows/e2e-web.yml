@@ -19,9 +19,34 @@ name: E2E — Web
 # For the visual suite that pinning is load-bearing in a second way: glyph
 # rasterisation differs between images, so a baseline generated anywhere other
 # than this exact image fails forever. That is what the `Update Visual
-# Baselines` job is for — run it from the Actions tab when a design change is
-# meant to move pixels, download the artifact, commit the PNGs. A bump of
-# @playwright/test can also require it.
+# Baselines` job is for — dispatch it from the Actions tab on the branch whose
+# design change is meant to move pixels, and it regenerates the PNGs and commits
+# them to that branch (#288). A bump of @playwright/test can also require it.
+#
+# Regenerating and committing are deliberately two jobs. The PNGs can only be
+# produced inside the container, but pushing from inside it is fragile —
+# actions/checkout silently falls back to a REST tarball when it cannot use git,
+# leaving no .git to commit into — so `Commit Visual Baselines` runs on a plain
+# runner and consumes the artifact. The artifact upload is therefore load-bearing
+# now, and is still the escape hatch if the push is refused.
+#
+# `contents: write` is scoped to that one job; everything else here is read-only,
+# and it refuses to push to main. It pushes with VISUAL_BASELINE_PAT (a
+# fine-grained PAT, this repo only, Contents: read+write) so that the push
+# retriggers this workflow and Playwright Visual re-runs against the new
+# baselines. Without that secret it falls back to GITHUB_TOKEN, which still
+# commits but never retriggers a workflow (see the note in
+# dependabot-maintenance.yml): the PNGs land, but the Visual check keeps showing
+# the previous run until something else pushes.
+#
+# The retrigger reaches this workflow through `pull_request`, not `push` — `on.push`
+# above is main-only — so the branch must have an open PR for the re-run to happen.
+# That is the normal case (baselines are regenerated on a branch already under
+# review), but a branch with no PR gets the commit and no re-run.
+#
+# What this does NOT do is decide whether the new screenshots are RIGHT. That
+# judgement belongs on the PR, reading the committed PNG diff — the job only
+# removes the clerical step of moving files.
 #
 # Path filtering is job-level (`changes` job + `if:`), not workflow-level
 # `on.paths` — see the note in ci-web.yml for why (required-check safety).
@@ -33,9 +58,14 @@ on:
   workflow_dispatch:
     inputs:
       update_baselines:
-        description: 'Regenerate the visual baselines and upload them as an artifact'
+        description: 'Regenerate the visual baselines and commit them to this branch'
         type: boolean
         default: false
+
+# Read-only floor for the whole workflow, so the one `contents: write` below is
+# an explicit, auditable exception rather than an inherited repo default.
+permissions:
+  contents: read
 
 concurrency:
   group: e2e-web-${{ github.ref }}
@@ -141,13 +171,63 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       # Rewriting a baseline reports the test as failed, which is not a failure
-      # of this job — the regenerated PNGs still have to be uploaded.
+      # of this job — the regenerated PNGs still have to leave the container.
       - run: npm run test:visual:update
         continue-on-error: true
         env:
           HOME: /root
+      # Both the handoff to `Commit Visual Baselines` and the manual fallback:
+      # if the push is ever refused, the zip is still downloadable from the run.
       - uses: actions/upload-artifact@v7
         with:
           name: visual-baselines
           path: web/e2e/visual.spec.js-snapshots/
           retention-days: 7
+
+  commit-baselines:
+    name: Commit Visual Baselines
+    # Deliberately NOT the Playwright container: this job only moves files, and a
+    # plain runner has a real git checkout with push credentials attached.
+    runs-on: ubuntu-latest
+    needs: visual-baselines
+    # A baseline commit must never land unreviewed on the default branch. The
+    # regeneration job above still runs and still uploads the artifact when
+    # dispatched on main — only the push is refused.
+    if: github.ref != 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Land on the branch itself, not the detached SHA, so there is
+          # something to push to.
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.VISUAL_BASELINE_PAT || secrets.GITHUB_TOKEN }}
+      # Overwrites in place; it does not delete. Retiring a baseline after its
+      # test is removed stays a manual edit.
+      - uses: actions/download-artifact@v8
+        with:
+          name: visual-baselines
+          path: web/e2e/visual.spec.js-snapshots/
+      - name: Commit and push the regenerated baselines
+        run: |
+          set -euo pipefail
+          snapshots=e2e/visual.spec.js-snapshots
+          # The regeneration step is continue-on-error, so refuse to commit an
+          # empty set rather than silently wiping the baselines.
+          if [ -z "$(find "$snapshots" -name '*.png' -print -quit)" ]; then
+            echo "::error::no baseline PNGs were produced — refusing to commit"
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$snapshots"
+          if git diff --cached --quiet; then
+            echo "Baselines unchanged — nothing to commit."
+            exit 0
+          fi
+          git commit -m "test: regenerate visual baselines (run ${{ github.run_id }})" \
+                     -m "Generated by .github/workflows/e2e-web.yml from ${{ github.sha }}."
+          # Fast-forward only. If the branch moved while the container job ran,
+          # this fails loudly and the artifact remains the fallback. Never --force.
+          git push origin "HEAD:${{ github.ref_name }}"
