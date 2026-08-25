@@ -17,6 +17,7 @@
     "format:check": "prettier --check src/ scripts/",
     "check:zones": "node scripts/check-zone-bands.mjs",
     "check:design-sync": "node scripts/check-design-sync-entry.mjs",
+    "check:colours": "node scripts/check-colour-literals.mjs",
     "prepare": "husky"
   },
   "lint-staged": {

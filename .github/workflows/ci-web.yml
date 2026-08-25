@@ -55,6 +55,12 @@ jobs:
       # imports it, so a rename or deletion in web/src breaks it silently —
       # see web/.design-sync/NOTES.md. Bundling it here is the control.
       - run: npm run check:design-sync
+      # A raw colour hex in a view is pinned to whichever theme it was written
+      # for and looks correct there, so review never catches it. #287 shipped
+      # the light flip claiming zero literals remained; 66 did, and the ones on
+      # the overview painted white text onto a white tile. Nine screenshots
+      # cannot cover that class — this does.
+      - run: npm run check:colours
       # Scoped to production dependencies: dev-only transitive advisories
       # (eslint/vitest/workbox tooling) must not block application PRs. An
       # unscoped gate deadlocked the repo for a month in 2026-08 — it failed
