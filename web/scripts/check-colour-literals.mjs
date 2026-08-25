@@ -143,6 +143,13 @@ const tokenFor = (hex) => {
 // the seam landed, and that no diff review would catch.
 const ALPHA_SUFFIX = /\$\{[^{}]*\}[0-9a-fA-F]{2}\b/g;
 
+// The same defect written as concatenation instead of interpolation:
+// `color + '50'`, where color came from C[], MOBILITY_ROUTINES, or srpeColor()
+// — all of which return THEME values now. A regex built around `${…}` cannot
+// see this shape, which is how seven of these survived a sweep that fixed the
+// sixty-seven beside them. Two spellings, one bug, so both are checked here.
+const ALPHA_CONCAT = /\+ *['"][0-9a-fA-F]{2}['"]/g;
+
 // cssVarName() emits kebab-case. Two hand-written call sites used camelCase
 // (--color-textSubtle), which names no property, so the color-mix() around each
 // resolved to nothing and both declarations were dropped.
@@ -162,6 +169,12 @@ for (const rel of scanned) {
       failures.push(
         `${rel}:${i + 1}  ${m} — a token with an alpha suffix stopped being a ` +
           "colour under the seam; use alpha(TOKEN, 'NN') from utils/themeCss.js"
+      );
+    }
+    for (const m of line.match(ALPHA_CONCAT) ?? []) {
+      failures.push(
+        `${rel}:${i + 1}  ${m} — same defect as \${TOKEN}NN, spelled as ` +
+          "concatenation; use alpha(TOKEN, 'NN') from utils/themeCss.js"
       );
     }
     for (const m of line.match(CAMEL_VAR) ?? []) {
