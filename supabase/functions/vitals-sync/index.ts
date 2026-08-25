@@ -13,9 +13,15 @@ import { captureFunctionError } from "../_shared/sentry.ts";
 
 const FN = "vitals-sync";
 
+// Same list as coach-chat, and for the same reason — supabase.functions.invoke
+// goes through the Sentry-instrumented global fetch, so this function is
+// preflighted with `sentry-trace` and `baggage` too. See coach-chat/index.ts.
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, sentry-trace, baggage",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 function ymd(d: Date): string {
