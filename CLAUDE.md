@@ -284,6 +284,15 @@ when Sentry looks dark:
 `browserTracingIntegration()` is **not** a default integration in the browser SDK;
 `tracesSampleRate` does nothing without it. There is a test asserting this.
 
+It also has a **blast radius outside Sentry**: `tracePropagationTargets` in
+`web/src/utils/sentry.js` includes the Supabase origin, so the SDK attaches
+`sentry-trace` and `baggage` to every call to it. Neither header is CORS-safelisted,
+so both appear in the preflight. Supabase’s own gateway (`/rest`, `/auth`) reflects
+request headers and is unaffected, but **every hand-rolled edge-function
+`Access-Control-Allow-Headers` must list them** or the browser fails the preflight and
+never sends the request — a bare `TypeError: Failed to fetch` on the client with only
+the OPTIONS in the edge logs. This silently killed the Coach tab (#301).
+
 Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip against
 ~40 KB of headroom under the 400 KB budget in `web/scripts/check-bundle-size.mjs`.
 

@@ -10,9 +10,25 @@ import { captureFunctionError } from '../_shared/sentry.ts';
 
 const FN = 'coach-chat';
 
+// `sentry-trace` and `baggage` are not decoration: browserTracingIntegration
+// attaches them to every request whose URL matches tracePropagationTargets in
+// web/src/utils/sentry.js, and that list deliberately includes this Supabase
+// origin. Neither is CORS-safelisted, so both land in the preflight’s
+// Access-Control-Request-Headers — and a preflight that does not allow them
+// fails in the browser, which then never sends the real request at all. The
+// symptom is a bare `TypeError: Failed to fetch` on the client with nothing but
+// the OPTIONS in the edge logs. Supabase’s own gateway (/rest, /auth) reflects
+// request headers back, which is why every other call kept working and only
+// this hand-maintained list broke. Anything the frontend attaches to outgoing
+// requests has to be listed here.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, sentry-trace, baggage',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  // Without this the browser re-preflights every message, and on a cold isolate
+  // that OPTIONS has measured at ~1.1s before the real request even starts.
+  'Access-Control-Max-Age': '86400',
 };
 
 const MAX_CONTEXT_CHARS = 8000;

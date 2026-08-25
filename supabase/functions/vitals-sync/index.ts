@@ -13,9 +13,15 @@ import { captureFunctionError } from "../_shared/sentry.ts";
 
 const FN = "vitals-sync";
 
+// Same list as coach-chat, and for the same reason — supabase.functions.invoke
+// goes through the Sentry-instrumented global fetch, so this function is
+// preflighted with `sentry-trace` and `baggage` too. See coach-chat/index.ts.
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, sentry-trace, baggage",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 function ymd(d: Date): string {
@@ -70,18 +76,18 @@ Deno.serve(async (req: Request) => {
     ),
   );
 
-  // skip Google API calls entirely if all four fields are already populated
+  // skip Google API calls entirely if all four core fields are already populated
   const { data: existing } = await supa
     .from("vitals")
-    .select("rhr, hrv, sleep, bodyweight")
+    .select("rhr_bpm, hrv_ms, sleep_hours, bodyweight_kg")
     .eq("user_id", userId!)
     .eq("date", date)
     .maybeSingle();
   if (
-    existing?.rhr != null &&
-    existing?.hrv != null &&
-    existing?.sleep != null &&
-    existing?.bodyweight != null
+    existing?.rhr_bpm != null &&
+    existing?.hrv_ms != null &&
+    existing?.sleep_hours != null &&
+    existing?.bodyweight_kg != null
   ) {
     return json({ ok: true, date, skipped: true });
   }
@@ -99,6 +105,10 @@ Deno.serve(async (req: Request) => {
     { key: "rhr", dt: "daily-resting-heart-rate", filter: `daily_resting_heart_rate.date >= "${date}" AND daily_resting_heart_rate.date < "${nextDate}"` },
     { key: "sleep", dt: "sleep", filter: `sleep.interval.civil_end_time >= "${date}" AND sleep.interval.civil_end_time < "${nextDate}"`, pageSize: 25 },
     { key: "weight", dt: "weight", filter: `weight.sample_time.civil_time >= "${date}" AND weight.sample_time.civil_time < "${nextDate}"` },
+    { key: "steps", dt: "daily-steps", filter: `daily_steps.date >= "${date}" AND daily_steps.date < "${nextDate}"` },
+    { key: "distance", dt: "daily-distance", filter: `daily_distance.date >= "${date}" AND daily_distance.date < "${nextDate}"` },
+    { key: "activeMin", dt: "daily-active-minutes", filter: `daily_active_minutes.date >= "${date}" AND daily_active_minutes.date < "${nextDate}"` },
+    { key: "calories", dt: "daily-calories-expended", filter: `daily_calories_expended.date >= "${date}" AND daily_calories_expended.date < "${nextDate}"` },
   ] as const;
 
   const settled = await Promise.allSettled(
@@ -109,7 +119,7 @@ Deno.serve(async (req: Request) => {
     byKey[specs[i].key] = settled[i].status === "fulfilled" ? (settled[i] as PromiseFulfilledResult<unknown>).value : null;
   }
 
-  const rec = mapResponses(date, byKey.hrv, byKey.rhr, byKey.sleep, byKey.weight);
+  const rec = mapResponses(date, byKey.hrv, byKey.rhr, byKey.sleep, byKey.weight, byKey.steps, byKey.distance, byKey.activeMin, byKey.calories);
 
   const { error } = await supa.rpc("upsert_vital", {
     p_user_id: userId,
@@ -119,6 +129,10 @@ Deno.serve(async (req: Request) => {
     p_sleep: rec.sleep_hours,
     p_bodyweight: rec.bodyweight_kg,
     p_source: "google_health_api",
+    p_steps: rec.steps_count,
+    p_distance: rec.distance_m,
+    p_active_min: rec.active_minutes,
+    p_calories: rec.calories_kcal,
   });
   if (error) {
     await captureFunctionError(FN, new Error(error.message), {
@@ -134,6 +148,10 @@ Deno.serve(async (req: Request) => {
       ["rhr", rec.rhr_bpm],
       ["sleep", rec.sleep_hours],
       ["bodyweight", rec.bodyweight_kg],
+      ["steps_count", rec.steps_count],
+      ["distance_m", rec.distance_m],
+      ["active_minutes", rec.active_minutes],
+      ["calories_kcal", rec.calories_kcal],
     ] as [string, unknown][]
   ).filter(([, v]) => v == null).map(([k]) => k);
 
