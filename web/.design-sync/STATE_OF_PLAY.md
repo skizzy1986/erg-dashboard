@@ -120,7 +120,14 @@ touches the synced surface.
 
 Three of §8's open items are no longer open.
 
-### 4.1 Typeface — decided: IBM Plex Sans + IBM Plex Mono
+### 4.1 Typeface — ~~decided: IBM Plex Sans + IBM Plex Mono~~ **superseded 2026-08-25**
+
+> **Overruled by design.** The typeface is **Archivo + IBM Plex Mono**, self-hosted —
+> Archivo has the presence the large figures lean on, and a readiness score set in it
+> reads as a brand asset rather than as UI furniture. The `LiveMetric` alignment is
+> handled per construction instead. See `conventions.md` ("Type") and `HANDOFF.md` §4.
+> **Only the typeface is superseded**; `#254` (Archivo self-host) stands as written,
+> and the rest of this section's reasoning is kept as the record of why it was tried.
 
 Self-hosted. Sans for chrome and prose, mono kept for figures. The deciding argument
 was metric compatibility rather than taste: Plex Sans and Plex Mono share vertical

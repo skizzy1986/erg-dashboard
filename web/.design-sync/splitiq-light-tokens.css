@@ -6,6 +6,10 @@
    each accent is a PAIR (a wash for surfaces, an ink for type), and the inset
    and divider neutrals are their own tokens rather than nudged borders.
 
+   #277 shipped this key as `positiveAlt`. That name reintroduces the conflation
+   both sides rejected on substance; `cycling` is the name to converge on, and
+   Code agrees. Declared here under both until the seam picks one.
+
    One correction to §1: it folds `teal` into `positive` as a duplicate role.
    They are different values doing different jobs — positive #10795a is
    done/healthy/UT1/lower strength, cycling #10786c is the discipline. Folding
@@ -64,9 +68,17 @@
 
   --color-cycling-wash: #e3f4f1;     /* cycling */
   --color-cycling: #10786c;          /* 4.70 on wash · 5.35 on surface */
+  --color-positive-alt: #10786c;     /* #277's name for the same token — converge on
+                                        --color-cycling and delete this */
 
   /* rest / neutral marks */
   --color-neutral: #98a1bb;          /* rest marks — non-text */
+  --color-neutral-accent: #98a1bb;   /* #277's neutralAccent: rest SESSIONS, not dead
+                                        space. Same value today, own key so it can
+                                        move independently. Non-text. */
+  --color-text-strong: #1c1e2a;      /* #277's textStrong. Alias of text on light —
+                                        nothing sits above it — kept so dark can
+                                        diverge. */
   --color-neutral-mark: #c8cee0;     /* zero-height bars, gap stubs */
 
   /* type */

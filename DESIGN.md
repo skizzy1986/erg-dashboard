@@ -13,7 +13,9 @@
 | [`web/.design-sync/DESIGN_BRIEF.md`](web/.design-sync/DESIGN_BRIEF.md) | **Prescriptive** | Diagnosis and the IA target — 13 tabs → 5 destinations, the type and spacing scales, slices S-1…S7. Where the handoff is silent, this decides. |
 | [`web/.design-sync/CLAUDE.md`](web/.design-sync/CLAUDE.md) | **Briefing** | What a Claude Design session needs to know about SplitIQ: the domain, the destinations, which numbers are real, the chart rules. The design-side mirror of the repo's `CLAUDE.md`. |
 | [`web/.design-sync/conventions.md`](web/.design-sync/conventions.md) | **Style guide** | Tokens, accent pairs, type, layering, chart rules, and the gotchas the design side has already paid for. Light-primary. Inlined into the design agent's prompt, so it is the one file guaranteed to be read. Mirror — the project holds the source. |
-| [`web/.design-sync/designs/`](web/.design-sync/designs/) | **The designs** | Five self-contained HTML artboards, one per destination. Open in a browser, no build step. Compiled snapshots — the editable `.dc.html` source lives in the design project. Do not edit; they are overwritten on sync. |
+| [`web/.design-sync/designs/`](web/.design-sync/designs/) | **The designs** | Eight self-contained HTML artboards — five mobile destinations, three desktop deep dives. Open in a browser, no build step. Compiled snapshots — the editable `.dc.html` source lives in the design project. Do not edit; they are overwritten on sync. |
+| [`web/.design-sync/splitiq-load.js`](web/.design-sync/splitiq-load.js) | **The model** | The one module every artboard reads for form, CTL/ATL/TSB, `tsbBand()`, readiness and `readinessSeries()`, the six-zone table, erg watts/splits and e1RM. `HANDOFF.md` §5 asks the app for the same single `lib/load.js`. Numbers that are matched rather than derived drift. |
+| [`web/.design-sync/splitiq-light-tokens.css`](web/.design-sync/splitiq-light-tokens.css) | **The tokens** | The full light declaration list with every contrast ratio measured. What the flip (`#251`) implements. |
 | [`web/.design-sync/PROJECT-CONTEXT.md`](web/.design-sync/PROJECT-CONTEXT.md) | Mechanics | The design project's own briefing: which side owns what, and what neither side can see. Mirror — the project holds the source. |
 | [`web/.design-sync/ISSUES-load-states.md`](web/.design-sync/ISSUES-load-states.md) | Spec | The load pending and unavailable states, written as two ready-to-open issues. |
 | [`web/.design-sync/CODE-TO-DESIGN.md`](web/.design-sync/CODE-TO-DESIGN.md) | Handover | The reciprocal of `HANDOFF.md` — what the code side did, where the spec meets reality, and what each side still owes the other. Paste into a design session to re-sync. |
@@ -37,6 +39,21 @@ disagree, `conventions.md` is newer.
 `web/src/constants/theme.js` holds 23 colour-named hex tokens; the light,
 role-named, `var(--color-*)` system described in the handoff has not shipped.
 **Do not assume light until the flip lands.**
+
+## The platform split — mobile does the doing, desktop does the understanding
+
+Decided 2026-08-24, and it decides what gets built where. Sessions are logged
+mid-workout with a heart rate still coming down, so every **live** surface is
+mobile-only: the prescription card, the watt band gauge, the set logger, the rest
+timer, the sRPE prompt. Build each of those once, for the phone.
+
+Desktop is the analytical layer — long windows, many series at once, the full zone
+table, sortable logs, periodisation, the reasoning behind a call. **The five
+destinations are the mobile IA.** A desktop screen named after one of them is the
+analysis *behind* that destination, not the same screen at a wider width — and
+**Train has no desktop counterpart at all**, which is why the desktop nav rail
+carries five chips rather than six. A nav rail lists destinations that exist;
+a destination that does not exist on a platform is omitted, not dimmed.
 
 ## The property boundary — the one hard rule
 
