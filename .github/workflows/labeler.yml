@@ -31,8 +31,18 @@ jobs:
   steward-staleness:
     name: Flag steward skill staleness
     runs-on: ubuntu-latest
+    # Serialise per PR. Two rapid synchronize events (a push, then a
+    # force-push) would otherwise both read "no marker comment yet" and both
+    # create one. Not cancel-in-progress: the later run must still reconcile.
+    concurrency:
+      group: steward-staleness-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     steps:
+      # Advisory, so it must not be able to fail the PR: a thrown API error
+      # would render as a red check, and the skill it guards tells agents to
+      # treat a red check as blocking.
       - uses: actions/github-script@v9
+        continue-on-error: true
         with:
           script: |
             const SKILL = '.claude/skills/steward/SKILL.md';
@@ -47,15 +57,21 @@ jobs:
               (n) =>
                 n.startsWith('.github/workflows/') ||
                 /^web\/scripts\/check-.*\.mjs$/.test(n) ||
-                n === 'web/vite.config.js'
+                ['web/vite.config.js', 'CLAUDE.md', 'WORKFLOW.md', 'DESIGN.md'].includes(n)
             );
             if (cited.length === 0) return;
+            // Filenames are PR-author controlled and backticks are legal in a
+            // git path, so an unescaped name breaks out of the code span and
+            // injects markdown into a comment agents here read as input.
+            // Whitelist the path charset rather than escaping: it also covers
+            // newlines and raw HTML, and these paths only ever display.
+            const safe = (n) => n.replace(/[^A-Za-z0-9._/-]/g, '?');
             const marker = '<!-- steward-staleness -->';
             const body = [
               marker,
               `This PR touches ${cited.length} file(s) that \`${SKILL}\` cites:`,
               '',
-              ...cited.map((n) => `- \`${n}\``),
+              ...cited.map((n) => `- \`${safe(n)}\``),
               '',
               'If a change here contradicts a line in that skill, update the line and the',
               '`Verified against` block. If nothing it cites changed in substance, ignore this.',
