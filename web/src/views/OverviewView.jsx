@@ -10,7 +10,7 @@ import {
 import WorkoutItem from '../components/WorkoutItem.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import LoadTooltip from '../components/LoadTooltip.jsx';
-import { deriveTargets } from '../utils/trainingLoad.js';
+import { deriveTargets, tsbBand } from '../utils/trainingLoad.js';
 import { assessMacro, macroColor } from '../utils/formatting.js';
 import {
   getRosterMode,
@@ -34,6 +34,17 @@ import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
+
+// Desktop says more than mobile about the same band, so the copy stays here
+// while the thresholds come from tsbBand(). Keyed off band.key so the two can
+// never drift apart again.
+const TSB_COPY = {
+  fresh: '✅ Fresh — good form, ready for hard sessions',
+  neutral: '⚡ Neutral — balanced load and recovery',
+  fatigued:
+    '⚠️ Fatigued — normal mid-week training load. Protect Thursday rest.',
+  deep: "🔴 High fatigue — rest day is critical. Don't add sessions.",
+};
 
 export default function OverviewView({
   latest,
@@ -1095,15 +1106,8 @@ export default function OverviewView({
             lineHeight: 1.5,
           }}
         >
-          {tsbNow == null
-            ? 'No training-load reading — form status unknown.'
-            : tsbNow > 10
-              ? '✅ Fresh — good form, ready for hard sessions'
-              : tsbNow > -10
-                ? '⚡ Neutral — balanced load and recovery'
-                : tsbNow > -30
-                  ? '⚠️ Fatigued — normal mid-week training load. Protect Thursday rest.'
-                  : "🔴 High fatigue — rest day is critical. Don't add sessions."}
+          {TSB_COPY[tsbBand(tsbNow)?.key] ??
+            'No training-load reading — form status unknown.'}
         </div>
         <div
           style={{

@@ -150,27 +150,31 @@ test.describe('mobile shell', () => {
   // entirely different component tree, which is why these shots are not
   // optional. BottomTabBar buttons hold an icon span and a label span, so the
   // accessible name is the emoji plus the label; substring matching is enough
-  // and none of the six labels is a substring of another.
+  // and none of the five labels is a substring of another.
   const tab = (page, label) => page.getByRole('button', { name: label });
 
-  test('analytics', async ({ page, context }) => {
+  test('today', async ({ page, context }) => {
     await openAuthed(page, context);
-    await expect(tab(page, 'Analytics')).toBeVisible();
-    await shot(page, 'mobile-analytics');
+    await expect(tab(page, 'Today')).toBeVisible();
+    await shot(page, 'mobile-today');
   });
 
-  test('log', async ({ page, context }) => {
+  test('train', async ({ page, context }) => {
     await openAuthed(page, context);
-    await expect(tab(page, 'Log')).toBeVisible();
-    await switchTo(page, tab(page, 'Log'));
-    await shot(page, 'mobile-log');
+    await switchTo(page, tab(page, 'Train'));
+    await shot(page, 'mobile-train');
   });
 
-  test('recovery', async ({ page, context }) => {
+  test('progress', async ({ page, context }) => {
     await openAuthed(page, context);
-    await expect(tab(page, 'Recovery')).toBeVisible();
-    await switchTo(page, tab(page, 'Recovery'));
-    await shot(page, 'mobile-recovery');
+    await switchTo(page, tab(page, 'Progress'));
+    await shot(page, 'mobile-progress');
+  });
+
+  test('body', async ({ page, context }) => {
+    await openAuthed(page, context);
+    await switchTo(page, tab(page, 'Body'));
+    await shot(page, 'mobile-body');
   });
 });
 

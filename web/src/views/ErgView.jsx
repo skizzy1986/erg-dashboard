@@ -26,6 +26,7 @@ import { useErgSessions } from '../hooks/useErgSessions.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
+import { tsbBand } from '../utils/trainingLoad.js';
 import { FONT } from '../constants/type.js';
 
 // ── ERG TREND DATA ─────────────────────────────────────────────
@@ -239,14 +240,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
   ).length;
   // null (training-load read failed or empty) must not coerce to 0 and paint
   // an amber "neutral" — it is the absence of a reading, not a mid-range one.
-  const tsbColor =
-    tsbNow == null
-      ? THEME.muted
-      : tsbNow > 5
-        ? THEME.positive
-        : tsbNow >= -10
-          ? THEME.caution
-          : THEME.critical;
+  const tsbColor = THEME[tsbBand(tsbNow)?.token] ?? THEME.muted;
 
   // SECTION 2 — pace improvement summary
   const paced = sessions.filter((s) => s.pace_500m != null);

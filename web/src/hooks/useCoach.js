@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient.js';
 import { useTSSHistory } from './useTSSHistory.js';
 import { useVitals } from './useVitals.js';
 import { useSessions } from './useSessions.js';
-import { calcTrainingLoad } from '../utils/trainingLoad.js';
+import { calcTrainingLoad, tsbBand } from '../utils/trainingLoad.js';
 import {
   COMPLETED_STATUSES,
   PLANNED_STATUS,
@@ -46,8 +46,7 @@ export function buildTrainingContext(
     // number. They are classic-TSS values — #208 rescaled sessionLoad from
     // sRPE-hours, and the old GREEN cut of 5 was a pre-rescale figure that
     // would now read "fresh" over most of the dashboard's neutral band.
-    const tsbSignal =
-      latestLoad.tsb > 10 ? 'GREEN' : latestLoad.tsb > -10 ? 'AMBER' : 'RED';
+    const tsbSignal = tsbBand(latestLoad.tsb)?.signal ?? 'UNKNOWN';
     lines.push(
       `TSB: ${latestLoad.tsb} (${tsbSignal}) | CTL: ${latestLoad.ctl} | ATL: ${latestLoad.atl}`
     );

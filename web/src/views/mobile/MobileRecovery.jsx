@@ -11,7 +11,7 @@ import {
 import { useVitals } from '../../hooks/useVitals.js';
 import { useVitalsSync } from '../../hooks/useVitalsSync.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
-import { calcTrainingLoad } from '../../utils/trainingLoad.js';
+import { calcTrainingLoad, tsbBand } from '../../utils/trainingLoad.js';
 import { THEME } from '../../constants/theme.js';
 import { FONT } from '../../constants/type.js';
 
@@ -411,14 +411,7 @@ export default function MobileRecovery() {
                   style={{
                     fontSize: 24,
                     fontWeight: 700,
-                    color:
-                      tsbValue == null
-                        ? THEME.muted
-                        : tsbValue > 10
-                          ? THEME.positive
-                          : tsbValue > -10
-                            ? THEME.caution
-                            : THEME.critical,
+                    color: THEME[tsbBand(tsbValue)?.token] ?? THEME.muted,
                   }}
                 >
                   {tsbValue == null ? '—' : tsbValue.toFixed(1)}
