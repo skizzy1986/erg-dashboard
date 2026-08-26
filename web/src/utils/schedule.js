@@ -1,25 +1,56 @@
-import { MICROCYCLE } from '../constants/schedule.js';
+import {
+  MICROCYCLE,
+  ROSTER_REGIMES,
+  ROSTER_OVERRIDES,
+} from '../constants/schedule.js';
 
 // ── ROSTER AUTO-SWITCH — home vs FIFO by date ─────────────────
-// FIFO is 1wk-on/1wk-off. Anchor on a KNOWN boundary: Scott flies
-// out Tue 2026-06-23 = FIFO week starts. From there, alternate every
-// 7 days. Weeks are computed as whole-week offsets from the anchor.
-// NOTE: Scott had an extra home week for family before this, so we
-// DON'T extrapolate backward past the anchor — only forward from it.
-// If the roster pattern changes, update ROSTER_ANCHOR.
-export const ROSTER_ANCHOR = new Date(2026, 5, 23); // Tue 23 Jun 2026 — FIFO begins (fly out)
-export function getRosterMode(date) {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const anchor = new Date(
-    ROSTER_ANCHOR.getFullYear(),
-    ROSTER_ANCHOR.getMonth(),
-    ROSTER_ANCHOR.getDate()
+// The swing geometry lives in ROSTER_REGIMES (constants/schedule.js):
+// each regime starts on its `from` date with the AWAY block and then
+// alternates away→home on a (awayDays + homeDays) cycle. Resolution
+// order: a ROSTER_OVERRIDES hit wins outright, else the latest regime
+// starting on or before the date governs.
+// NOTE: Scott had an extra home week for family before the first
+// regime, so we DON'T extrapolate backward past it — only forward.
+const localDay = (date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const regimeStart = (from) => {
+  const [y, m, d] = from.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+// Day arithmetic goes through UTC. Two LOCAL midnights either side of a DST
+// transition are 23h or 25h apart, so (a - b) / 86400000 floors to the wrong
+// whole day and the cycle slips permanently. Sydney and Adelaide reproduce it;
+// Perth, Brisbane and CI (UTC) do not, so CI cannot catch it.
+const utcDay = (date) =>
+  Math.floor(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
   );
-  const daysDiff = Math.floor((d - anchor) / 86400000);
-  if (daysDiff < 0) return 'home'; // before the anchor = current home week
-  // From anchor: week 0 = FIFO, week 1 = home, week 2 = FIFO, ...
-  const weekNum = Math.floor(daysDiff / 7);
-  return weekNum % 2 === 0 ? 'fifo' : 'home';
+
+const localISO = (date) =>
+  date.getFullYear() +
+  '-' +
+  String(date.getMonth() + 1).padStart(2, '0') +
+  '-' +
+  String(date.getDate()).padStart(2, '0');
+
+export const ROSTER_ANCHOR = regimeStart(ROSTER_REGIMES[0].from); // Tue 23 Jun 2026 — FIFO begins (fly out)
+
+export function getRosterMode(date) {
+  const d = localDay(date);
+  const override = ROSTER_OVERRIDES[localISO(d)];
+  if (override) return override;
+  let regime = null;
+  for (const r of ROSTER_REGIMES) {
+    if (regimeStart(r.from) <= d) regime = r;
+  }
+  if (!regime) return 'home'; // before the first regime = current home week
+  if (regime.mode) return regime.mode; // off-roster stretch, not a swing
+  const cycle = regime.awayDays + regime.homeDays;
+  const pos = (utcDay(d) - utcDay(regimeStart(regime.from))) % cycle;
+  return pos < regime.awayDays ? 'fifo' : 'home';
 }
 
 // ── SESSION OVERRIDES — one-off changes on top of the template ─
