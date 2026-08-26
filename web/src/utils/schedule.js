@@ -20,6 +20,15 @@ const regimeStart = (from) => {
   return new Date(y, m - 1, d);
 };
 
+// Day arithmetic goes through UTC. Two LOCAL midnights either side of a DST
+// transition are 23h or 25h apart, so (a - b) / 86400000 floors to the wrong
+// whole day and the cycle slips permanently. Sydney and Adelaide reproduce it;
+// Perth, Brisbane and CI (UTC) do not, so CI cannot catch it.
+const utcDay = (date) =>
+  Math.floor(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
+  );
+
 const localISO = (date) =>
   date.getFullYear() +
   '-' +
@@ -40,7 +49,7 @@ export function getRosterMode(date) {
   if (!regime) return 'home'; // before the first regime = current home week
   if (regime.mode) return regime.mode; // off-roster stretch, not a swing
   const cycle = regime.awayDays + regime.homeDays;
-  const pos = Math.floor((d - regimeStart(regime.from)) / 86400000) % cycle;
+  const pos = (utcDay(d) - utcDay(regimeStart(regime.from))) % cycle;
   return pos < regime.awayDays ? 'fifo' : 'home';
 }
 

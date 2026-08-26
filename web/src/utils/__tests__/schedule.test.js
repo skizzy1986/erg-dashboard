@@ -141,6 +141,32 @@ describe('getRosterMode — ROSTER_OVERRIDES', () => {
   });
 });
 
+describe('getRosterMode — invariants a mutant would otherwise survive', () => {
+  afterEach(() => {
+    const extra = ROSTER_REGIMES.findIndex((r) => r.from === '2027-03-01');
+    if (extra !== -1) ROSTER_REGIMES.splice(extra, 1);
+  });
+
+  // 1 May 2026 is 53 days BEFORE the first regime. Extrapolating the 7/7 cycle
+  // backward lands on an away week and would answer 'fifo'; refusing to
+  // extrapolate answers 'home'. The other pre-regime assertions happen to be
+  // 'home' under both, so this is the one that pins the invariant.
+  it('refuses to extrapolate the cycle backward past the first regime', () => {
+    expect(getRosterMode(d(2026, 5, 1))).toBe('home');
+    expect(getRosterMode(d(2026, 5, 12))).toBe('home');
+  });
+
+  // A home-pinned regime returns 'home' even if the mode branch is deleted,
+  // because the arithmetic degrades to NaN and falls through. Only a
+  // fifo-pinned one proves the branch is load-bearing.
+  it('honours a fifo-pinned regime, proving the mode branch is real', () => {
+    ROSTER_REGIMES.push({ from: '2027-03-01', mode: 'fifo' });
+    expect(getRosterMode(d(2027, 3, 1))).toBe('fifo');
+    expect(getRosterMode(d(2027, 3, 15))).toBe('fifo');
+    expect(getRosterMode(d(2027, 4, 20))).toBe('fifo');
+  });
+});
+
 describe('ROSTER_ANCHOR', () => {
   it('is derived from the first regime, so the geometry has one source', () => {
     const [y, m, day] = ROSTER_REGIMES[0].from.split('-').map(Number);
