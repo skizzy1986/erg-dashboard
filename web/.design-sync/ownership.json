@@ -33,6 +33,7 @@
     "design": {
       "pushed": false,
       "paths": [
+        "PIPELINE.md",
         "conventions.md",
         "HANDOFF.md",
         "ISSUES-load-states.md",
