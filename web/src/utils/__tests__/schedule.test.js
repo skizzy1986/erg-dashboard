@@ -43,9 +43,34 @@ describe('getRosterMode', () => {
   });
 });
 
+// Scott came off roster on Fri 7 Aug 2026 and stayed home as a carer until
+// returning to work on 3 Sep. A cycle cannot express that — left to the 7/7
+// regime the app called 13 of those 27 days FIFO and prescribed deload
+// sessions for days he was at home.
+describe('getRosterMode — off-roster stretch from Fri 7 Aug 2026', () => {
+  it('pins every day home from the off-roster date to the next regime', () => {
+    for (let day = 7; day <= 31; day++) {
+      expect(getRosterMode(d(2026, 8, day))).toBe('home');
+    }
+    expect(getRosterMode(d(2026, 9, 1))).toBe('home');
+    expect(getRosterMode(d(2026, 9, 2))).toBe('home');
+  });
+
+  it('does not alter the 7/7 regime before it', () => {
+    expect(getRosterMode(d(2026, 8, 6))).toBe('fifo'); // last 7/7 day
+    expect(getRosterMode(d(2026, 7, 7))).toBe('fifo');
+    expect(getRosterMode(d(2026, 7, 14))).toBe('home');
+  });
+
+  it('yields to the 8/6 regime the day it starts', () => {
+    expect(getRosterMode(d(2026, 9, 2))).toBe('home'); // still off roster
+    expect(getRosterMode(d(2026, 9, 3))).toBe('fifo'); // 8/6 takes over
+  });
+});
+
 describe('getRosterMode — 8/6 regime from Thu 3 Sep 2026', () => {
   it('resolves the regime boundary from the correct regime', () => {
-    expect(getRosterMode(d(2026, 9, 2))).toBe('fifo'); // last day under 7/7
+    expect(getRosterMode(d(2026, 9, 2))).toBe('home'); // last off-roster day
     expect(getRosterMode(d(2026, 9, 3))).toBe('fifo'); // first away day of 8/6
   });
 

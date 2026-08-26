@@ -38,6 +38,7 @@ export function getRosterMode(date) {
     if (regimeStart(r.from) <= d) regime = r;
   }
   if (!regime) return 'home'; // before the first regime = current home week
+  if (regime.mode) return regime.mode; // off-roster stretch, not a swing
   const cycle = regime.awayDays + regime.homeDays;
   const pos = Math.floor((d - regimeStart(regime.from)) / 86400000) % cycle;
   return pos < regime.awayDays ? 'fifo' : 'home';

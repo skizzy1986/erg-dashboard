@@ -7,8 +7,12 @@ import { THEME } from './theme.js';
 // Dates before the first regime are deliberately NOT extrapolated
 // backward (see getRosterMode) — Scott had an extra home week for
 // family before the original anchor.
+// A regime with a fixed `mode` is not a swing at all — it pins every day to
+// that mode until the next regime starts. Use it for off-roster stretches,
+// which a cycle cannot express without pretending they alternate.
 export const ROSTER_REGIMES = [
   { from: '2026-06-23', awayDays: 7, homeDays: 7 }, // Tue 23 Jun — 7-on/7-off
+  { from: '2026-08-07', mode: 'home' }, // Fri 7 Aug — off roster, home continuously
   { from: '2026-09-03', awayDays: 8, homeDays: 6 }, // Thu 3 Sep — fly Thu am, return Thu pm
 ];
 
