@@ -1,4 +1,24 @@
 import { THEME } from './theme.js';
+
+// ── ROSTER REGIMES — the swing geometry, in effect from a date ──
+// Each regime starts on its `from` date with the AWAY (FIFO) block,
+// then alternates away→home every cycle. Ordered oldest→newest; the
+// LATEST regime whose `from` is on or before a date governs it.
+// Dates before the first regime are deliberately NOT extrapolated
+// backward (see getRosterMode) — Scott had an extra home week for
+// family before the original anchor.
+export const ROSTER_REGIMES = [
+  { from: '2026-06-23', awayDays: 7, homeDays: 7 }, // Tue 23 Jun — 7-on/7-off
+  { from: '2026-09-03', awayDays: 8, homeDays: 6 }, // Thu 3 Sep — fly Thu am, return Thu pm
+];
+
+// ── ROSTER OVERRIDES — one-off roster changes on top of the regime ─
+// The roster is not concrete; work and home demands move it. A keyed
+// date forces the mode for that ONE day, leaving the regime untouched.
+// Key = "YYYY-MM-DD", value = 'home' | 'fifo'. Mirrors SESSION_OVERRIDES.
+// e.g. '2026-09-08': 'home'  // came home early, family
+export const ROSTER_OVERRIDES = {};
+
 export const MICROCYCLE = {
   home: {
     label: 'HOME WEEK — Loading (PUSH)',

@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { MICROCYCLE } from '../../constants/schedule.js';
+import { describe, it, expect, afterEach } from 'vitest';
+import {
+  MICROCYCLE,
+  ROSTER_REGIMES,
+  ROSTER_OVERRIDES,
+} from '../../constants/schedule.js';
 import {
   getRosterMode,
   resolveDay,
@@ -36,6 +40,88 @@ describe('getRosterMode', () => {
   it('ignores time-of-day (date components only)', () => {
     expect(getRosterMode(d(2026, 6, 23, 23))).toBe('fifo');
     expect(getRosterMode(d(2026, 6, 22, 1))).toBe('home');
+  });
+});
+
+describe('getRosterMode — 8/6 regime from Thu 3 Sep 2026', () => {
+  it('resolves the regime boundary from the correct regime', () => {
+    expect(getRosterMode(d(2026, 9, 2))).toBe('fifo'); // last day under 7/7
+    expect(getRosterMode(d(2026, 9, 3))).toBe('fifo'); // first away day of 8/6
+  });
+
+  it('runs 8 away days then 6 home days — cycle 1', () => {
+    expect(getRosterMode(d(2026, 9, 3))).toBe('fifo'); // first away
+    expect(getRosterMode(d(2026, 9, 10))).toBe('fifo'); // last away (8th)
+    expect(getRosterMode(d(2026, 9, 11))).toBe('home'); // first home
+    expect(getRosterMode(d(2026, 9, 16))).toBe('home'); // last home (6th)
+  });
+
+  it('repeats the 14-day cycle — cycle 2', () => {
+    expect(getRosterMode(d(2026, 9, 17))).toBe('fifo');
+    expect(getRosterMode(d(2026, 9, 24))).toBe('fifo');
+    expect(getRosterMode(d(2026, 9, 25))).toBe('home');
+    expect(getRosterMode(d(2026, 9, 30))).toBe('home');
+  });
+
+  it('repeats the 14-day cycle — cycle 3', () => {
+    expect(getRosterMode(d(2026, 10, 1))).toBe('fifo');
+    expect(getRosterMode(d(2026, 10, 8))).toBe('fifo');
+    expect(getRosterMode(d(2026, 10, 9))).toBe('home');
+    expect(getRosterMode(d(2026, 10, 14))).toBe('home');
+  });
+
+  it('fixes the four days the 7/7 alternation got wrong', () => {
+    expect(getRosterMode(d(2026, 9, 8))).toBe('fifo'); // was home
+    expect(getRosterMode(d(2026, 9, 15))).toBe('home'); // was fifo
+    expect(getRosterMode(d(2026, 9, 22))).toBe('fifo'); // was home
+    expect(getRosterMode(d(2026, 9, 29))).toBe('home'); // was fifo
+  });
+
+  it('still ignores time-of-day under the new regime', () => {
+    expect(getRosterMode(d(2026, 9, 10, 23))).toBe('fifo');
+    expect(getRosterMode(d(2026, 9, 11, 1))).toBe('home');
+  });
+});
+
+describe('getRosterMode — ROSTER_OVERRIDES', () => {
+  afterEach(() => {
+    for (const k of Object.keys(ROSTER_OVERRIDES)) delete ROSTER_OVERRIDES[k];
+  });
+
+  it('ships empty', () => {
+    expect(ROSTER_OVERRIDES).toEqual({});
+  });
+
+  it('forces home on a day the regime computes as fifo', () => {
+    expect(getRosterMode(d(2026, 9, 8))).toBe('fifo');
+    ROSTER_OVERRIDES['2026-09-08'] = 'home';
+    expect(getRosterMode(d(2026, 9, 8))).toBe('home');
+  });
+
+  it('forces fifo on a day the regime computes as home', () => {
+    expect(getRosterMode(d(2026, 9, 15))).toBe('home');
+    ROSTER_OVERRIDES['2026-09-15'] = 'fifo';
+    expect(getRosterMode(d(2026, 9, 15))).toBe('fifo');
+  });
+
+  it('applies to that ONE day only', () => {
+    ROSTER_OVERRIDES['2026-09-15'] = 'fifo';
+    expect(getRosterMode(d(2026, 9, 14))).toBe('home');
+    expect(getRosterMode(d(2026, 9, 16))).toBe('home');
+  });
+
+  it('wins before the first regime, where the fallback would say home', () => {
+    ROSTER_OVERRIDES['2026-01-01'] = 'fifo';
+    expect(getRosterMode(d(2026, 1, 1))).toBe('fifo');
+  });
+});
+
+describe('ROSTER_ANCHOR', () => {
+  it('is derived from the first regime, so the geometry has one source', () => {
+    const [y, m, day] = ROSTER_REGIMES[0].from.split('-').map(Number);
+    expect(ROSTER_ANCHOR.getFullYear()).toBe(y);
+    expect(ROSTER_ANCHOR.getMonth()).toBe(m - 1);
+    expect(ROSTER_ANCHOR.getDate()).toBe(day);
   });
 });
 
