@@ -110,7 +110,8 @@ is the analysis behind it, not the same screen at a wider width.
 ## Design state
 
 All five mobile destinations are drawn — Today, Train, Progress, Body, Coach —
-plus the first desktop screen, `SplitIQ Desktop Overview.dc.html` (chosen
-direction: 1b Ledger). Undrawn: load pending, load unavailable, readiness
-NO DATA, chat empty and chat error. The token seam (`HANDOFF.md` §1) blocks
-consistent implementation of the rest.
+plus four desktop screens: Overview (chosen direction: 1b Ledger), Progress,
+Body and Planning. Planning is desktop-only; Train has no desktop counterpart.
+Undrawn: load pending, load unavailable, readiness NO DATA, chat empty and chat
+error. The token seam (`HANDOFF.md` §1) blocks consistent implementation of the
+rest.

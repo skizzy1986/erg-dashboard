@@ -334,12 +334,19 @@ rather than a preference:
   permanently visible desktop rail cannot.
 
 So: 20px stroke glyphs on `currentColor`, 1.7px stroke, in a 38px chip — grid
-for Overview, calendar for Today, ascending bars for Progress, pulse for Body,
-speech bubble for Coach. **This is the only place in the system that uses stroke
+for Overview, calendar for Today, ruled lines with markers for Planning,
+ascending bars for Progress, pulse for Body, speech bubble for Coach. **This is the only place in the system that uses stroke
 icons.** If a second desktop surface needs icons, extend this set rather than
 starting a third vocabulary.
 
-**Five chips, not six. Train is absent from the desktop rail.** It has no desktop
+**The rail lists exactly the destinations that exist on desktop.** Today that is
+six: Overview, Today, Planning, Progress, Body, Coach. The list is not the mobile
+IA — Planning has no mobile destination and Train has no desktop one — so it is
+maintained as its own list, and adding a screen means adding its chip to every
+other rail in the same change. A destination reachable only from its own screen
+is not reachable.
+
+**Train is absent.** It has no desktop
 destination (see the platform split above), so there is nothing to navigate to.
 It was briefly drawn as a dimmed sixth chip; that was wrong twice over — the ink
 was never measured (#5a6180 on the rail ground #2b2f42 is 2.18:1, under the 3:1
@@ -350,6 +357,35 @@ The rule: **a nav rail lists destinations that exist.** A destination that does
 not exist on a platform is omitted, not dimmed. Dimming is for something
 temporarily unavailable, and it still has to clear 3:1 and drop its
 interactive affordances.
+
+### A verdict cell must be derived for every row, or absent
+
+A table that says it checks a rule has to check every row. On Planning’s
+discipline split, only the erg verdict was computed — strength printed
+“yes — strength yields” in positive green unconditionally, and bike printed
+“unconstrained”, so a FIFO week that logged *more* strength than the home week
+would still have read as the design working.
+
+Two rules come out of it:
+
+1. **Derive every verdict from the number beside it.** One function, one row at a
+   time. `rosterCheck(kind, home, away)` in the load model returns
+   `held` / `broken` / `as designed` / `no rule` / `no data` — the screen
+   maps those to words and inks and adds nothing.
+2. **A row with no rule gets no verdict, not a neutral-sounding one.** Bike has no
+   roster constraint, so its cell reads “no rule set” in the muted ink. An
+   unjudged row is more honest than a judgement with nothing behind it.
+
+And a threshold that decides a verdict is part of the model, published, and
+stated on screen — `ROSTER.tolerancePct` is 25, the caption says so, and the
+view does not mint it. Same rule as `tsbBand`’s +10 / −10 / −30: a number the
+reader is being judged against cannot live only in a view.
+
+**Policy and outcome must not be two independent assertions.** The rule card and
+the table sat side by side saying “erg: hold” in green and “erg: −30%, not
+holding” in warning ink about the same fact. Both now read from the same check:
+the card names the policy and shows that check’s result, so the two cannot
+disagree.
 
 ### A state’s encoding must not be a colour another role already owns
 
