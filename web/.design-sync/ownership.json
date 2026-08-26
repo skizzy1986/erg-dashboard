@@ -33,8 +33,7 @@
     "design": {
       "pushed": false,
       "paths": [
-        "README.md",
-        "FETCH-DESIGNS.md",
+        "PIPELINE.md",
         "conventions.md",
         "HANDOFF.md",
         "ISSUES-load-states.md",
