@@ -5,15 +5,12 @@
 // Every colour is interpolated from the passed theme — the palette is
 // mid-migration and a literal hex would silently survive the move.
 
-// Not exported: the two translucent accents the design calls for have no THEME
-// token, and inventing one for a one-file detail would be worse than deriving
-// them here.
-function alpha(hex, a) {
-  const h = hex.replace('#', '');
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
+// Not exported: the translucent accents the design calls for have no THEME
+// token. color-mix rather than a parsed rgba() because THEME values are
+// var(--color-*) pointers since #287, not hexes — parsing them yielded
+// rgba(NaN, ...), which the browser drops, and the glow silently vanished.
+function fade(color, pct) {
+  return `color-mix(in srgb, ${color} ${pct}%, transparent)`;
 }
 
 // The reduced-motion resting state is the END of every entrance, not the start —
@@ -76,8 +73,8 @@ export function splashCss(theme) {
   width: 520px;
   height: 520px;
   border-radius: 50%;
-  background: radial-gradient(circle, ${alpha(theme.accent, 0.16)} 0%, ${alpha(theme.accent, 0)} 66%);
-  animation: siq-splash-glow 2600ms ease-in-out infinite;
+  background: radial-gradient(circle, ${fade(theme.accent, 16)} 0%, ${fade(theme.accent, 0)} 66%);
+  animation: siq-splash-glow 4000ms ease-in-out infinite;
 }
 .siq-splash__mark {
   position: relative;
@@ -92,7 +89,7 @@ export function splashCss(theme) {
   inset: -6px;
   border-radius: 34px;
   border: 1px solid ${theme.accent};
-  animation: siq-splash-halo 640ms cubic-bezier(.2, .7, .3, 1) 260ms both;
+  animation: siq-splash-halo 980ms cubic-bezier(.2, .7, .3, 1) 400ms both;
 }
 .siq-splash__tile {
   position: absolute;
@@ -101,14 +98,14 @@ export function splashCss(theme) {
   background: linear-gradient(160deg, ${theme.surfaceAlt} 0%, ${theme.surfaceDeep} 100%);
   border: 1px solid ${theme.divider};
   box-shadow: 0 18px 46px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .05);
-  animation: siq-splash-tile 620ms cubic-bezier(.2, .8, .2, 1) both;
+  animation: siq-splash-tile 950ms cubic-bezier(.2, .8, .2, 1) both;
 }
 .siq-splash__base {
   stroke: ${theme.divider};
   stroke-width: 1.5;
   stroke-linecap: round;
   transform-origin: 30px 88px;
-  animation: siq-splash-base 560ms cubic-bezier(.3, .7, .2, 1) 240ms both;
+  animation: siq-splash-base 860ms cubic-bezier(.3, .7, .2, 1) 370ms both;
 }
 .siq-splash__stroke {
   fill: none;
@@ -116,20 +113,20 @@ export function splashCss(theme) {
   stroke-width: 4.5;
   stroke-linecap: round;
   stroke-dasharray: 260;
-  filter: drop-shadow(0 0 8px ${alpha(theme.accent, 0.55)});
-  animation: siq-splash-draw 2600ms cubic-bezier(.35, .7, .2, 1) infinite both;
+  filter: drop-shadow(0 0 8px ${fade(theme.accent, 55)});
+  animation: siq-splash-draw 4000ms cubic-bezier(.35, .7, .2, 1) infinite both;
 }
 .siq-splash__head {
   fill: ${theme.text};
   offset-path: path('M30 88 C 44 88, 46 40, 62 40 C 78 40, 80 88, 94 88');
-  animation: siq-splash-head 2600ms cubic-bezier(.35, .7, .2, 1) infinite both;
+  animation: siq-splash-head 4000ms cubic-bezier(.35, .7, .2, 1) infinite both;
 }
 .siq-splash__word {
   font-size: 34px;
   font-weight: 600;
   letter-spacing: -.8px;
   color: ${theme.text};
-  animation: siq-splash-word 420ms cubic-bezier(.2, .8, .2, 1) 380ms both;
+  animation: siq-splash-word 650ms cubic-bezier(.2, .8, .2, 1) 580ms both;
 }
 .siq-splash__word-iq {
   font-family: var(--font-mono);
@@ -141,7 +138,7 @@ export function splashCss(theme) {
   font-size: 9px;
   letter-spacing: 3px;
   color: ${theme.textSubtle};
-  animation: siq-splash-sub 400ms cubic-bezier(.2, .8, .2, 1) 520ms both;
+  animation: siq-splash-sub 620ms cubic-bezier(.2, .8, .2, 1) 800ms both;
 }
 .siq-splash__progress {
   position: absolute;
@@ -155,7 +152,7 @@ export function splashCss(theme) {
 .siq-splash__track {
   width: 36%;
   height: 100%;
-  background: linear-gradient(90deg, ${alpha(theme.accent, 0)}, ${theme.accent});
+  background: linear-gradient(90deg, ${fade(theme.accent, 0)}, ${theme.accent});
   animation: siq-splash-track 1500ms cubic-bezier(.55, 0, .45, 1) infinite;
 }
 .siq-splash__caption {

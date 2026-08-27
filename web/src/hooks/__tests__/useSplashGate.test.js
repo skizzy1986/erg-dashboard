@@ -173,7 +173,7 @@ describe('useSplashGate', () => {
   });
 
   // StrictMode double-invokes the arming effect: run, clean up, run again.
-  // This pins the observable contract — one floor, still 700ms — rather than
+  // This pins the observable contract — one floor, still SPLASH_MIN_MS — rather
   // the latch's internals; both passes land in the same commit, so the re-armed
   // delay equals a fresh one and this would also pass without armedRef.
   it('keeps one clock across a StrictMode double-mount', () => {

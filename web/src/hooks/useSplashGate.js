@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const SPLASH_MIN_MS = 700;
+// The floor matches the 4000ms animation cycle in utils/splashCss.js on
+// purpose: below it the splash cleared mid-draw on a warm start, so the mark
+// was never seen finishing. Move one and the other has to follow.
+export const SPLASH_MIN_MS = 4000;
 export const SPLASH_MAX_MS = 5000;
 
 // Owns the whole splash timing decision so main.jsx (coverage-excluded) holds

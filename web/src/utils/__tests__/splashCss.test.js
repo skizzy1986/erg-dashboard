@@ -27,8 +27,16 @@ describe('splashCss', () => {
 
   it('derives the translucent accents from the accent token', () => {
     const css = splashCss({ ...THEME, accent: '#010203' });
-    expect(css).toContain('rgba(1, 2, 3');
-    expect(css).not.toContain('rgba(0, 212, 255');
+    expect(css).toContain('color-mix(in srgb, #010203 16%, transparent)');
+    expect(css).toContain('color-mix(in srgb, #010203 55%, transparent)');
+  });
+
+  // THEME values are var(--color-*) pointers, not hexes (#287). Deriving the
+  // translucent accents by parsing them produced rgba(NaN, ...) — dropped
+  // silently by the browser, so the glow and the stroke halo just disappeared.
+  // The substitution tests above pass a literal hex, so they never saw it.
+  it('emits no unparsed colour when given the real THEME', () => {
+    expect(splashCss(THEME)).not.toContain('NaN');
   });
 
   it('defines all nine namespaced keyframes', () => {
