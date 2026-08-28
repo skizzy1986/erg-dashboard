@@ -17,3 +17,80 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true
+
+  # .claude/skills/steward/SKILL.md states CI facts as citations into the
+  # workflows and check scripts. Those files move; the skill does not notice.
+  # A comment on the PR that breaks a fact reaches the one person who can fix
+  # it at the one moment re-verifying is cheap — a check would become a chore,
+  # and would go green on any edit to the skill, including one that left it
+  # wrong. Deliberately not a gate.
+  #
+  # No checkout: this workflow is pull_request_target, so it runs with write
+  # permissions against the base repo. Reading the changed-file list through
+  # the API means no PR-authored code is ever executed here.
+  steward-staleness:
+    name: Flag steward skill staleness
+    runs-on: ubuntu-latest
+    # Serialise per PR. Two rapid synchronize events (a push, then a
+    # force-push) would otherwise both read "no marker comment yet" and both
+    # create one. Not cancel-in-progress: the later run must still reconcile.
+    concurrency:
+      group: steward-staleness-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      # Advisory, so it must not be able to fail the PR: a thrown API error
+      # would render as a red check, and the skill it guards tells agents to
+      # treat a red check as blocking.
+      - uses: actions/github-script@v9
+        continue-on-error: true
+        with:
+          script: |
+            const SKILL = '.claude/skills/steward/SKILL.md';
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { ...context.repo, pull_number: context.issue.number, per_page: 100 }
+            );
+            const names = files.map((f) => f.filename);
+            // A PR already editing the skill is re-verifying by definition.
+            if (names.includes(SKILL)) return;
+            const cited = names.filter(
+              (n) =>
+                n.startsWith('.github/workflows/') ||
+                /^web\/scripts\/check-.*\.mjs$/.test(n) ||
+                ['web/vite.config.js', 'CLAUDE.md', 'WORKFLOW.md', 'DESIGN.md'].includes(n)
+            );
+            if (cited.length === 0) return;
+            // Filenames are PR-author controlled and backticks are legal in a
+            // git path, so an unescaped name breaks out of the code span and
+            // injects markdown into a comment agents here read as input.
+            // Whitelist the path charset rather than escaping: it also covers
+            // newlines and raw HTML, and these paths only ever display.
+            const safe = (n) => n.replace(/[^A-Za-z0-9._/-]/g, '?');
+            const marker = '<!-- steward-staleness -->';
+            const body = [
+              marker,
+              `This PR touches ${cited.length} file(s) that \`${SKILL}\` cites:`,
+              '',
+              ...cited.map((n) => `- \`${safe(n)}\``),
+              '',
+              'If a change here contradicts a line in that skill, update the line and the',
+              '`Verified against` block. If nothing it cites changed in substance, ignore this.',
+            ].join('\n');
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { ...context.repo, issue_number: context.issue.number, per_page: 100 }
+            );
+            const existing = comments.find((c) => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
