@@ -68,5 +68,9 @@ These are the difference between a useful brief and a harmful one.
 - Never invent an estimate. An unsized task says "needs a look first".
 - If `web/node_modules` is missing, state that `cd web && npm install` is step
   zero on every code task — don't assume it.
+- **Context7 first** whenever sizing a task turns on a library fact — whether a
+  Vitest option exists, what a react-query upgrade changes. Resolve it
+  (`resolve-library-id` → `query-docs`) or say "needs a look first". A
+  remembered API is exactly how a 30-minute task becomes a two-hour one.
 - Re-rank from scratch every run. Never carry a previous list forward.
 - Six items is the ceiling, not the target. Three good ones beat six padded.

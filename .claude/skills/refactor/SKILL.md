@@ -36,6 +36,11 @@ Current extraction targets: the `web/src/App.jsx` shell remainder,
    - Tests for the extracted module land in the SAME change, and the new file
      is covered by the coverage gate in `web/vite.config.js` (the ratchet only
      goes up).
+   - The move is verbatim, so a library lookup should rarely be needed. When one
+     is — a Vitest config key, a react-query import path the new file now needs —
+     the **Context7 first** rule in the preamble applies: look it up, don't
+     recall it. Guessing here silently changes behaviour a verbatim move promised
+     not to touch.
 
 3. Report: new file path, lines removed from the source file, build PASS/FAIL,
    tests PASS/FAIL. If the build fails, stop — never commit red.

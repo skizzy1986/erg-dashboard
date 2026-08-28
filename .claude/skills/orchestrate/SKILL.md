@@ -22,6 +22,10 @@ and wait for Scott.
 3. Pin the stage model via the Agent tool's per-call `model` parameter.
 4. For READ-ONLY stages: run `git status --short` before and after the spawn.
    Any new diff is a stage failure — report and stop.
+5. That preamble carries the **Context7 first** rule, so every subagent inherits
+   it automatically — no per-stage repetition needed. It binds you too, in the
+   stages you run yourself (5 and 7): resolve library facts through
+   `resolve-library-id` → `query-docs` before WebSearch, and name the source.
 
 ## Routing — classify the request first
 
@@ -41,6 +45,8 @@ focused question.
    Task: map the relevant files and functions, existing patterns to follow, the
    Supabase data surface involved, and risks/gotchas. Cite exact paths and line
    numbers. Do not propose a solution — that is the Spec stage's job.
+   Where the map touches a library boundary, settle the library's actual
+   behaviour with Context7 rather than asserting it — WebSearch is the fallback.
 
 2. **Story** — spawn `Product Manager` (model: sonnet, READ-ONLY).
    Task: one-screen user story — "As Scott, I want <capability>, so that
@@ -69,12 +75,16 @@ focused question.
      idempotent upsert on a natural key. Edge functions are Deno under
      `supabase/functions/<name>/` with a pure, separately-testable parser.
      Run the Supabase security/perf advisors after DDL. Patterns:
-     `.claude/skills/supabase-patterns.md`. Do not touch frontend.
+     `.claude/skills/supabase-patterns.md`. Check any `@supabase/supabase-js`
+     or Deno API you are not certain of against Context7 before writing against
+     it. Do not touch frontend.
    - *Frontend addendum:* match inline-style theming, the nav-tab structure,
      `supabaseClient` for data, the single `formatDate` helper. After editing
      any large file, run `npm run build` as a truncation check. Never hardcode
      the user; respect RLS. No new heavy deps unless the spec names them.
-     Layer rules: `.claude/skills/architecture.md`. Do not touch backend/migrations.
+     Layer rules: `.claude/skills/architecture.md`. Check any React, Recharts or
+     `@tanstack/react-query` API you are not certain of against Context7 before
+     writing against it. Do not touch backend/migrations.
 
 5. **Test verification** — YOU run `npm test` and the coverage report, then
    spawn `Test Results Analyzer` (model: sonnet, READ-ONLY) with the output and
@@ -85,7 +95,9 @@ focused question.
    - `Code Reviewer` (model: sonnet): judge the diff — correctness vs the spec,
      layer compliance, security (no hardcoded credentials, RLS considered, no
      unsanitised `dangerouslySetInnerHTML`), style (inline styles, no
-     TypeScript, no leftover `console.log`), tests present.
+     TypeScript, no leftover `console.log`), tests present. Flag any library
+     API the diff relies on that was asserted from memory where Context7 would
+     have settled it.
      Verdict: **APPROVE / REQUEST CHANGES** with numbered findings.
    - `Reality Checker` (model: opus): judge built-vs-story/spec. Evidence =
      test output, build logs, git diff — no screenshots required. Findings by
