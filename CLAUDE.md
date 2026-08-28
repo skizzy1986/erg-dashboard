@@ -293,12 +293,36 @@ request headers and is unaffected, but **every hand-rolled edge-function
 never sends the request — a bare `TypeError: Failed to fetch` on the client with only
 the OPTIONS in the edge logs. This silently killed the Coach tab (#301).
 
-Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip, and there
-is nothing like that much room. The build sits at **395.7 KB against the 400 KB budget**
-in `web/scripts/check-bundle-size.mjs`, leaving **4.3 KB** of headroom (— measured
-2026-08-28). That is an order of magnitude less than Replay needs, so enabling it is a
-code-splitting job rather than a config flag: nothing in `App.jsx` is lazy-loaded, so
-every import ships on first paint. `npm run size` enforces this inside the **Build** job.
+The bundle gate has **two** budgets, because they answer different questions
+(`web/scripts/check-bundle-size.mjs:36-37`). **Entry** — the entry chunk plus its
+transitive *static* imports and their CSS — is what a first paint costs, and is the
+tight ratchet: **134.7 KB against 150 KB**, 15.3 KB spare. **Total** — every emitted
+asset, lazy ones included — is a loose ceiling: **425.5 KB against 450 KB** (— both
+measured 2026-08-28). The entry set is read from `dist/.vite/manifest.json`
+(`build.manifest` in `web/vite.config.js`), the only source that tells a static import
+from a dynamic one; the walk is in `scripts/entry-graph.mjs` and is unit-tested,
+because a walk that wrongly followed `dynamicImports` would report the total as the
+entry and pass.
+
+**Total is expected to sit above its pre-split figure, and that is not a regression.**
+Splitting trades a much smaller entry for a slightly larger total — per-chunk preamble
+plus shared code landing in more than one chunk. Gating on total alone, which this
+script did until #331, made the check actively hostile to the code-splitting it kept
+asking for: the split measured here cut the entry 395.4 → 134.7 KB (−66%) while adding
+26.3 KB to the total. That bind was not theoretical: main sat at 399.2 KB of its
+400 KB total budget — 0.8 KB spare — so the next commit of any size would have failed. Judge a PR on the **entry** row.
+
+Both shells and all fourteen desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
+recharts (90.7 KB, shared by seven files) is out of first paint entirely. What remains
+in the entry is React, react-query and `@supabase/supabase-js` — auth is needed before
+anything can render, so the client cannot be deferred. Note `createClient` pulls in
+`RealtimeClient` unconditionally and nothing in `src/` uses realtime; reclaiming it
+means dropping to `auth-js` + `postgrest-js` directly, which is its own job.
+
+Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
+at first paint, so it lands in the entry, where there is 15.3 KB. It is now a
+lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
+`npm run size` enforces both budgets inside the **Build** job.
 
 Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in

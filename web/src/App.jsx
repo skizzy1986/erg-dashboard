@@ -1,21 +1,7 @@
-import { useState, useEffect, useMemo, Component } from 'react';
+import { useState, useEffect, useMemo, Component, lazy, Suspense } from 'react';
 import { captureError } from './utils/sentry.js';
 import { useSessionLog } from './hooks/useSessionLog.js';
 import { useTSSHistory } from './hooks/useTSSHistory.js';
-import StrengthLogger from './StrengthLogger.jsx';
-import ErgLiveView from './views/ErgLiveView.jsx';
-import CoachView from './views/CoachView.jsx';
-import ErgView from './views/ErgView.jsx';
-import JournalView from './views/JournalView.jsx';
-import RecoveryView from './views/RecoveryView.jsx';
-import StrengthView from './views/StrengthView.jsx';
-import MobilityView from './views/MobilityView.jsx';
-import OverviewView from './views/OverviewView.jsx';
-import ProgramView from './views/ProgramView.jsx';
-import CalendarView from './views/CalendarView.jsx';
-import PlanView from './views/PlanView.jsx';
-import LogView from './views/LogView.jsx';
-import SettingsView from './views/SettingsView.jsx';
 import {
   readStravaCallback,
   stravaCallbackMessage,
@@ -25,6 +11,26 @@ import { tsbBand, calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
+
+// Every tab is lazy. Only one is on screen at a time, and four of them are
+// the heaviest files in the repo (ProgramView ~1,958 lines, StrengthLogger
+// ~1,682, OverviewView ~1,423, ErgView ~1,271), so shipping all fourteen to
+// paint one of them was most of the entry chunk. React.lazy caches the
+// resolved module, so only a tab's FIRST visit suspends.
+const StrengthLogger = lazy(() => import('./StrengthLogger.jsx'));
+const ErgLiveView = lazy(() => import('./views/ErgLiveView.jsx'));
+const CoachView = lazy(() => import('./views/CoachView.jsx'));
+const ErgView = lazy(() => import('./views/ErgView.jsx'));
+const JournalView = lazy(() => import('./views/JournalView.jsx'));
+const RecoveryView = lazy(() => import('./views/RecoveryView.jsx'));
+const StrengthView = lazy(() => import('./views/StrengthView.jsx'));
+const MobilityView = lazy(() => import('./views/MobilityView.jsx'));
+const OverviewView = lazy(() => import('./views/OverviewView.jsx'));
+const ProgramView = lazy(() => import('./views/ProgramView.jsx'));
+const CalendarView = lazy(() => import('./views/CalendarView.jsx'));
+const PlanView = lazy(() => import('./views/PlanView.jsx'));
+const LogView = lazy(() => import('./views/LogView.jsx'));
+const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
 
 /* ═══════════════════════════════════════════════════════════════
    ERG COACHING DASHBOARD · v1.2 beta
@@ -387,100 +393,108 @@ export default function App() {
         </div>
 
         <ErrorBoundary>
-          {/* ── STRENGTH LOGGER VIEW (live set/rep logging → sessions) ── */}
-          {view === 'logger' && <StrengthLogger />}
+          {/* Inside the boundary, so a lazy chunk that fails to load or a
+              tab that throws on first render is still caught and reported.
+              The fallback is null on purpose: a tab is a full-page swap, and
+              a spinner appearing for the ~1 frame a cached chunk takes reads
+              as a flicker. React.lazy resolves each module once, so only the
+              first visit to a tab can suspend at all. */}
+          <Suspense fallback={null}>
+            {/* ── STRENGTH LOGGER VIEW (live set/rep logging → sessions) ── */}
+            {view === 'logger' && <StrengthLogger />}
 
-          {/* ── LIVE ERG VIEW (Bluetooth PM5 → real-time metrics → session save) ── */}
-          {view === 'live' && (
-            <ErgLiveView
-              plannedSessions={plannedSessions}
-              onSessionSaved={() => {
-                setView('log');
-                fetchSessions();
-              }}
-            />
-          )}
+            {/* ── LIVE ERG VIEW (Bluetooth PM5 → real-time metrics → session save) ── */}
+            {view === 'live' && (
+              <ErgLiveView
+                plannedSessions={plannedSessions}
+                onSessionSaved={() => {
+                  setView('log');
+                  fetchSessions();
+                }}
+              />
+            )}
 
-          {/* ── PLAN VIEW (today + future prescriptions from status='planned') ── */}
-          {view === 'plan' && (
-            <PlanView
-              plannedSessions={plannedSessions}
-              loggedKeys={loggedKeys}
-              isWide={isWide}
-            />
-          )}
+            {/* ── PLAN VIEW (today + future prescriptions from status='planned') ── */}
+            {view === 'plan' && (
+              <PlanView
+                plannedSessions={plannedSessions}
+                loggedKeys={loggedKeys}
+                isWide={isWide}
+              />
+            )}
 
-          {/* ── CALENDAR VIEW ── */}
-          {view === 'calendar' && (
-            <CalendarView
-              loggedSessions={loggedSessions}
-              cancelledSessions={cancelledSessions}
-              isWide={isWide}
-            />
-          )}
+            {/* ── CALENDAR VIEW ── */}
+            {view === 'calendar' && (
+              <CalendarView
+                loggedSessions={loggedSessions}
+                cancelledSessions={cancelledSessions}
+                isWide={isWide}
+              />
+            )}
 
-          {/* ── PROGRAM VIEW ── */}
-          {view === 'program' && (
-            <ProgramView expanded={expanded} setExpanded={setExpanded} />
-          )}
+            {/* ── PROGRAM VIEW ── */}
+            {view === 'program' && (
+              <ProgramView expanded={expanded} setExpanded={setExpanded} />
+            )}
 
-          {/* ── OVERVIEW ── */}
-          {view === 'overview' && (
-            <OverviewView
-              latest={latest}
-              loadUnavailable={loadUnavailable}
-              tsbColor={tsbColor}
-              loadData={loadData}
-              loggedSessions={loggedSessions}
-              latestErg={latestErg}
-              latestSquat={latestSquat}
-              totalErgDist={totalErgDist}
-              totalSessions={totalSessions}
-              isWide={isWide}
-              nowTick={nowTick}
-            />
-          )}
+            {/* ── OVERVIEW ── */}
+            {view === 'overview' && (
+              <OverviewView
+                latest={latest}
+                loadUnavailable={loadUnavailable}
+                tsbColor={tsbColor}
+                loadData={loadData}
+                loggedSessions={loggedSessions}
+                latestErg={latestErg}
+                latestSquat={latestSquat}
+                totalErgDist={totalErgDist}
+                totalSessions={totalSessions}
+                isWide={isWide}
+                nowTick={nowTick}
+              />
+            )}
 
-          {/* ── ERG VIEW ── */}
-          {view === 'erg' && (
-            <ErgView
-              tsbNow={latest?.tsb ?? null}
-              ctlNow={latest?.ctl ?? null}
-            />
-          )}
+            {/* ── ERG VIEW ── */}
+            {view === 'erg' && (
+              <ErgView
+                tsbNow={latest?.tsb ?? null}
+                ctlNow={latest?.ctl ?? null}
+              />
+            )}
 
-          {/* ── STRENGTH VIEW ── */}
-          {view === 'strength' && (
-            <StrengthView
-              strengthTrend={strengthTrend}
-              strengthSessions={strengthSessions}
-            />
-          )}
+            {/* ── STRENGTH VIEW ── */}
+            {view === 'strength' && (
+              <StrengthView
+                strengthTrend={strengthTrend}
+                strengthSessions={strengthSessions}
+              />
+            )}
 
-          {/* ── MOBILITY VIEW ── */}
-          {view === 'mobility' && <MobilityView />}
+            {/* ── MOBILITY VIEW ── */}
+            {view === 'mobility' && <MobilityView />}
 
-          {/* ── RECOVERY VIEW ── */}
-          {view === 'recovery' && <RecoveryView isWide={isWide} />}
+            {/* ── RECOVERY VIEW ── */}
+            {view === 'recovery' && <RecoveryView isWide={isWide} />}
 
-          {/* ── LOG VIEW ── */}
-          {view === 'log' && (
-            <LogView
-              logDisplaySessions={logDisplaySessions}
-              isWide={isWide}
-              onSaved={fetchSessions}
-            />
-          )}
+            {/* ── LOG VIEW ── */}
+            {view === 'log' && (
+              <LogView
+                logDisplaySessions={logDisplaySessions}
+                isWide={isWide}
+                onSaved={fetchSessions}
+              />
+            )}
 
-          {/* ── JOURNAL VIEW (longitudinal spine) ── */}
-          {view === 'journal' && <JournalView />}
-          {/* ── COACH VIEW (Claude fitness coach chat) ── */}
-          {view === 'coach' && <CoachView />}
+            {/* ── JOURNAL VIEW (longitudinal spine) ── */}
+            {view === 'journal' && <JournalView />}
+            {/* ── COACH VIEW (Claude fitness coach chat) ── */}
+            {view === 'coach' && <CoachView />}
 
-          {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
-          {view === 'settings' && (
-            <SettingsView onSynced={fetchSessions} notice={stravaNotice} />
-          )}
+            {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
+            {view === 'settings' && (
+              <SettingsView onSynced={fetchSessions} notice={stravaNotice} />
+            )}
+          </Suspense>
         </ErrorBoundary>
 
         <div
