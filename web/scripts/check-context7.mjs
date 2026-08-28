@@ -16,7 +16,7 @@
 //
 //   canonical  .claude/skills/erg-context.md holds the wording
 //   inherits   the skill prepends erg-context.md to its spawns
-//   direct     the skill names Context7 itself (skills that spawn no agents)
+//   direct     the skill names the lookup itself (skills that spawn no agents)
 //   delegates  the skill points at another SKILL.md that is covered
 //   exempt     listed below with a reason, and fails if it becomes covered
 //
@@ -95,9 +95,15 @@ try {
 const texts = new Map(skills.map((rel) => [rel, read(rel)]));
 const routes = new Map();
 
+// `direct` requires the lookup tool, NOT the bare word "Context7". The word
+// alone is not coverage: steward/SKILL.md names the required check-run
+// `Context7 rule reaches every workflow` without stating the rule, and a
+// substring test on the word scored that as covered — turning a valid
+// exemption into a false stale-exemption failure on #328. A skill carries the
+// rule only if it tells you what to actually call.
 for (const [rel, text] of texts) {
   if (text.includes('erg-context.md')) routes.set(rel, 'inherits');
-  else if (text.includes('Context7')) routes.set(rel, 'direct');
+  else if (text.includes(TOOLS[0])) routes.set(rel, 'direct');
 }
 
 // Resolve delegation to a fixpoint so a chain of aliases still counts, and so a
@@ -126,8 +132,9 @@ for (const rel of skills) {
   } else if (!exemption && !routes.has(rel)) {
     failures.push(
       `${rel} is not reached by the Context7-first rule. Prepend ` +
-        `${CANONICAL} to its spawns, name Context7 in the file itself, or ` +
-        'add a reasoned EXEMPT entry in web/scripts/check-context7.mjs'
+        `${CANONICAL} to its spawns, name \`${TOOLS[0]}\` in the file ` +
+        'itself, or add a reasoned EXEMPT entry in ' +
+        'web/scripts/check-context7.mjs'
     );
   }
 }
