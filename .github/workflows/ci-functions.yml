@@ -52,3 +52,7 @@ jobs:
         run: deno run --allow-env vitals-import/test.ts
       - name: vitals-import-api client + mapper
         run: deno run --allow-env vitals-import-api/test.ts
+      # Not auto-discovered: the steps in this job are hardcoded, so a new
+      # function's tests run only once a step is added for them by hand.
+      - name: strava-import mapper + state + tokens + cron guard
+        run: deno run --allow-env strava-import/test.ts
