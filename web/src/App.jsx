@@ -15,6 +15,12 @@ import ProgramView from './views/ProgramView.jsx';
 import CalendarView from './views/CalendarView.jsx';
 import PlanView from './views/PlanView.jsx';
 import LogView from './views/LogView.jsx';
+import SettingsView from './views/SettingsView.jsx';
+import {
+  readStravaCallback,
+  stravaCallbackMessage,
+  clearStravaCallbackFromUrl,
+} from './utils/stravaCallback.js';
 import { tsbBand, calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
@@ -163,9 +169,33 @@ const strengthTrend = {
 // onSaved() so the parent re-fetches and the new entry appears.
 // ── MAIN APP ──────────────────────────────────────────────────
 export default function App() {
-  const [view, setView] = useState('overview');
+  // The Strava OAuth callback returns to `…#/settings?strava=…`. There is no
+  // router here — `view` is useState and nothing else reads the location — so
+  // without this the whole OAuth outcome, errors included, would land on
+  // Overview with no feedback. Read during the FIRST render rather than from an
+  // effect: the params only exist on the render right after the redirect, and
+  // setting `view` from an effect would render Overview and then swap it.
+  const stravaCallback = useMemo(
+    () =>
+      typeof window === 'undefined'
+        ? null
+        : readStravaCallback(window.location),
+    []
+  );
+  const stravaNotice = useMemo(
+    () => stravaCallbackMessage(stravaCallback),
+    [stravaCallback]
+  );
+  const [view, setView] = useState(stravaCallback ? 'settings' : 'overview');
   const [expanded, setExpanded] = useState(null);
   const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
+  // Clearing the URL is an external-system update, so it belongs in an effect.
+  // Without it a refresh replays a stale OAuth result.
+  useEffect(() => {
+    if (stravaCallback && typeof window !== 'undefined') {
+      clearStravaCallbackFromUrl(window);
+    }
+  }, [stravaCallback]);
   const [vw, setVw] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   ); // viewport width → responsive layout
@@ -325,6 +355,7 @@ export default function App() {
             ['log', 'Log'],
             ['journal', 'Journal'],
             ['coach', 'Coach'],
+            ['settings', 'Settings'],
           ].map(([v, label]) => (
             <button
               key={v}
@@ -445,6 +476,11 @@ export default function App() {
           {view === 'journal' && <JournalView />}
           {/* ── COACH VIEW (Claude fitness coach chat) ── */}
           {view === 'coach' && <CoachView />}
+
+          {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
+          {view === 'settings' && (
+            <SettingsView onSynced={fetchSessions} notice={stravaNotice} />
+          )}
         </ErrorBoundary>
 
         <div
