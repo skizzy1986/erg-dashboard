@@ -47,8 +47,19 @@ jobs:
       # their own harness rather than Deno.test() cases, so `deno test` reports
       # a misleading "0 passed" while still honouring their Deno.exit(1).
       # Running them directly makes the pass/fail count the real output.
-      # Typechecking is deliberately left on — both files are clean.
+      #
+      # These steps do NOT typecheck. `deno run` stopped type-checking by
+      # default in Deno 1.23 (verified: a file assigning a string to a
+      # `number` runs without complaint). Adding `--check` is not a free
+      # win — the strava-import suite drives runImport with a structural
+      # fake and carries deliberate casts at that boundary, and the
+      # type-only jsr import that keeps jsr.io out of the test graph would
+      # have to resolve. Anyone turning it on should expect to fix both.
       - name: vitals-import parser + cron guard
         run: deno run --allow-env vitals-import/test.ts
       - name: vitals-import-api client + mapper
         run: deno run --allow-env vitals-import-api/test.ts
+      # Not auto-discovered: the steps in this job are hardcoded, so a new
+      # function's tests run only once a step is added for them by hand.
+      - name: strava-import mapper + state + tokens + cron guard + runImport
+        run: deno run --allow-env strava-import/test.ts

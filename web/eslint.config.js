@@ -39,6 +39,7 @@ export default [
         clearInterval: 'readonly',
         fetch: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         Blob: 'readonly',
         FileReader: 'readonly',
         DataView: 'readonly',

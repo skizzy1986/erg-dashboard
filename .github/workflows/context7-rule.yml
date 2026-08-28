@@ -1,0 +1,63 @@
+name: Context7 rule
+
+# The Context7-first rule is what stops agents answering library questions from
+# memory. No CI runner can verify an agent actually called the connector — MCP
+# is invisible from here — so this guards the only thing that IS checkable and
+# does rot: whether the rule is still written down on every path into the repo.
+#
+# This is a separate workflow rather than another step in ci-web.yml's lint job,
+# and that is the whole point. ci-web.yml's `changes` filter is scoped to
+# 'web/**' (ci-web.yml:33-36), so a PR touching only .claude/skills/** or the
+# repo-root CLAUDE.md skips the entire lint job — the guard would never fire on
+# the files it exists to protect. That is exactly how the zone-band check missed
+# its third copy (zone-bands.yml:10-14): it lived in a web-scoped job. Repeating
+# the mistake for a second guard is not a trade worth making for one fewer file.
+#
+# The script imports nothing outside node builtins, so this needs a checkout and
+# node — no npm ci.
+#
+# Path filtering is at the JOB level, never workflow-level `on.paths`, for the
+# reason ci-web.yml:3-7 gives: a workflow that never triggers reports NOTHING,
+# so as a required check it strands the PR on "Expected — waiting for status",
+# whereas a job skipped by an `if:` reports "skipped", which branch protection
+# counts as passing.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: context7-rule-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect Context7 rule inputs
+    runs-on: ubuntu-latest
+    outputs:
+      rule: ${{ steps.filter.outputs.rule }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            rule:
+              - '.claude/skills/**'
+              - 'CLAUDE.md'
+              - 'web/scripts/check-context7.mjs'
+              - '.github/workflows/context7-rule.yml'
+
+  check:
+    name: Context7 rule reaches every workflow
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.rule == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node web/scripts/check-context7.mjs
