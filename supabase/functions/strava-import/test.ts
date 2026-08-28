@@ -1316,6 +1316,43 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
     r.skipped === 0 && r.failed === 0, r);
 }
 {
+  // A deferral found by the BACKFILL pass must RAISE backfill_cursor_before
+  // ABOVE the activity. The backfill walks backwards with `before=cursor`, and
+  // Strava's `before` is exclusive, so the next run lists epoch < cursor: the
+  // only way to re-list a deferred activity at epoch e is a cursor > e.
+  //
+  // Sentry Seer flagged the Math.max on PR #324 as a CRITICAL bug and proposed
+  // Math.min. That would pin the cursor at the oldest-seen epoch, which is
+  // BELOW the deferred activity, so `before=cursor` would never list it again
+  // — causing exactly the permanent skip the report warned about. This test
+  // fails under Math.min, which is why it exists.
+  const a = summary(1901, "2026-07-10T06:00:00");
+  const e = epochOf("2026-07-10T06:00:00Z");
+  const db = makeDb({
+    // incremental_after above the activity puts it on the backfill side of the
+    // `e > startingIncrementalAfter` test in holdCursorFor.
+    sync: syncRow({
+      backfill_complete: false,
+      backfill_cursor_before: null,
+      incremental_after: e + 10_000,
+    }),
+    tokens: { ...freshTokens },
+  });
+  const net = installStrava({ activities: [a], detail: { 1901: 500 } });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-22 backfill deferral: deferred, not written",
+    r.deferred === 1 && r.imported === 0, r);
+  check("TC-22 BACKFILL DEFERRAL: CURSOR RAISED ABOVE THE ACTIVITY (Math.min fails this)",
+    db.lastSyncPatch().backfill_cursor_before === e + 1,
+    db.lastSyncPatch().backfill_cursor_before);
+  check("TC-22 backfill deferral: a cursor > e re-lists it under exclusive `before`",
+    (db.lastSyncPatch().backfill_cursor_before as number) > e, db.lastSyncPatch());
+  check("TC-22 backfill deferral: backfill is not marked complete",
+    db.lastSyncPatch().backfill_complete === false, db.lastSyncPatch());
+}
+{
   // Same guarantee when the detail fetch itself fails.
   const a = summary(1801, "2026-08-22T06:00:00");
   const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });

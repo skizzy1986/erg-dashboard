@@ -491,6 +491,18 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
   const holdCursorFor = (a: StravaActivity): void => {
     const e = epochSecondsFromUTC(a.start_date as string | null);
     if (!Number.isFinite(e)) return;
+    // The two directions are opposite because the two params are opposite, and
+    // both of Strava's are EXCLUSIVE. Incremental lists epoch > after, so to
+    // re-list e the watermark must drop to e - 1. Backfill walks backwards and
+    // lists epoch < before, so to re-list e the cursor must RISE to e + 1.
+    //
+    // Math.max here is deliberate and load-bearing. A review bot read it as a
+    // forward-advancing cursor and proposed Math.min; that pins the cursor at
+    // the oldest epoch seen, which is below the deferred activity, so
+    // `before=cursor` would never list it again — permanent loss, the exact
+    // failure the suggestion meant to prevent. Raising the cursor re-walks
+    // pages already imported, which the activity-id upsert makes a no-op:
+    // re-listing is free, skipping is for ever. TC-22 fails under Math.min.
     if (e > startingIncrementalAfter) {
       incrementalAfter = Math.min(incrementalAfter, e - 1);
     } else {
