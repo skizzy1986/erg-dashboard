@@ -1,7 +1,5 @@
-import { describeErrorCode } from './stravaStatus.js';
-
 // The OAuth callback lands on `…#/settings?strava=connected` (or
-// `?strava=error&reason=<last_error_code>`). This app has NO router — the tab is
+// `?strava=error&reason=<reason>`). This app has NO router — the tab is
 // a useState — so without reading it here the entire OAuth outcome, success and
 // failure alike, would land silently on Overview.
 //
@@ -9,6 +7,30 @@ import { describeErrorCode } from './stravaStatus.js';
 // mounting App. App.jsx only calls these three.
 
 const PARAMS = ['strava', 'reason'];
+
+// `reason` is the redirect vocabulary emitted by strava-oauth-callback's fail()
+// calls, which is NOT the `last_error_code` enum the sync status uses — the two
+// sets share only `insufficient_scope`. Mapping these through describeErrorCode
+// sent every real reason to the generic "last sync failed" fallback, including
+// `denied`, which is the most common outcome of all and is not a failure.
+export const CALLBACK_REASON_LABELS = {
+  state:
+    'The connection link had expired or been used already. Start the connection again.',
+  code: 'Strava did not send back an authorisation code. Start the connection again.',
+  exchange: 'Strava rejected the connection attempt. Try connecting again.',
+  insufficient_scope:
+    'The connection was missing permission to read your activities. Connect again and approve activity access.',
+  athlete_mismatch:
+    'That is a different Strava account from the one already connected. Disconnect the current account first.',
+  method:
+    'The connection link was opened incorrectly. Start the connection again.',
+  server: 'Something went wrong finishing the connection. Try again.',
+  unknown: 'The connection did not complete. Try again.',
+};
+
+export function describeCallbackReason(reason) {
+  return CALLBACK_REASON_LABELS[reason] ?? CALLBACK_REASON_LABELS.unknown;
+}
 
 function hashQuery(hash) {
   const i = (hash || '').indexOf('?');
@@ -35,11 +57,17 @@ export function stravaCallbackMessage(callback) {
       text: 'Strava connected. Your history is importing now — it continues in the background.',
     };
   }
-  // `reason` is the bounded last_error_code enum, never server prose. An
-  // unrecognised value maps to the generic label rather than being shown raw.
+  // Declining on Strava's consent screen is a choice, not a fault: say so
+  // plainly rather than reporting it as an error against the user.
+  if (callback.reason === 'denied') {
+    return {
+      tone: 'muted',
+      text: 'Strava connection cancelled. Nothing was changed — connect whenever you are ready.',
+    };
+  }
   return {
     tone: 'critical',
-    text: `Strava could not be connected. ${describeErrorCode(callback.reason || 'unknown')}`,
+    text: `Strava could not be connected. ${describeCallbackReason(callback.reason)}`,
   };
 }
 

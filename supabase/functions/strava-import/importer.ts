@@ -16,7 +16,7 @@ import {
   isEligible,
   localDateISO,
   mapActivityToSession,
-  hasDeviceWatts,
+  hasUsableDeviceWatts,
   avgWattsOrNull,
   avgHrOrNull,
   type AdoptionCandidate,
@@ -558,7 +558,7 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
             p_session_id: choice.sessionId,
             p_activity_id: a.id,
             p_avg_watts: avgWattsOrNull(a),
-            p_has_device_watts: hasDeviceWatts(a),
+            p_has_device_watts: hasUsableDeviceWatts(a),
             p_avg_hr: avgHrOrNull(a),
           });
           if (error) throw new Error(`adopt_strava_session failed: ${error.code ?? "unknown"}`);

@@ -182,6 +182,16 @@ export function avgWattsOrNull(a: StravaActivity): number | null {
   return typeof a.average_watts === "number" ? Math.round(a.average_watts) : null;
 }
 
+/**
+ * Adoption overwrites avg_watts whenever the device-watts flag is set, so the
+ * flag alone is not enough: a payload that claims device watts but carries no
+ * numeric average_watts would write NULL over a value the row already had.
+ * Adoption asks this instead, so a malformed payload leaves the row untouched.
+ */
+export function hasUsableDeviceWatts(a: StravaActivity): boolean {
+  return hasDeviceWatts(a) && typeof a.average_watts === "number";
+}
+
 export function avgHrOrNull(a: StravaActivity): number | null {
   if (a.has_heartrate !== true) return null;
   return typeof a.average_heartrate === "number" ? Math.round(a.average_heartrate) : null;

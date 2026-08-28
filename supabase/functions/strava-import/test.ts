@@ -12,6 +12,7 @@
 import {
   avgHrOrNull,
   avgWattsOrNull,
+  hasUsableDeviceWatts,
   buildLabel,
   chooseAdoptionCandidate,
   distanceTolerance,
@@ -168,6 +169,18 @@ const absentFlag = act({ has_device_watts: undefined, device_watts: undefined, a
 check("TC-04 flag absent -> avg_watts null", avgWattsOrNull(absentFlag) === null, avgWattsOrNull(absentFlag));
 check("TC-04 device_watts spelling also accepted",
   avgWattsOrNull(act({ has_device_watts: undefined, device_watts: true, average_watts: 210 })) === 210);
+// Adoption overwrites avg_watts whenever the device-watts flag is set, so the
+// flag alone is not a safe gate: a payload claiming device watts with no numeric
+// average_watts would write NULL over a value the adopted row already had.
+check("TC-04 usable-watts gate true when flag AND number present",
+  hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: 197 })) === true);
+check("TC-04 USABLE-WATTS GATE FALSE WHEN FLAG SET BUT VALUE MISSING",
+  hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: null })) === false);
+check("TC-04 usable-watts gate false when value is not a number",
+  hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: undefined })) === false);
+check("TC-04 usable-watts gate false when no device watts at all",
+  hasUsableDeviceWatts(act({ has_device_watts: false, average_watts: 197 })) === false);
+
 const noHr = act({ has_heartrate: false, average_heartrate: 150 });
 check("TC-04 has_heartrate false -> avg_hr null", mapActivityToSession(noHr).avg_hr === null,
   mapActivityToSession(noHr).avg_hr);

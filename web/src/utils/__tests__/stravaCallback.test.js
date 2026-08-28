@@ -3,8 +3,8 @@ import {
   readStravaCallback,
   stravaCallbackMessage,
   clearStravaCallbackFromUrl,
+  CALLBACK_REASON_LABELS,
 } from '../stravaCallback.js';
-import { ERROR_CODE_LABELS } from '../stravaStatus.js';
 
 describe('readStravaCallback', () => {
   it('reads the params from the hash tail (the app routes on the hash)', () => {
@@ -54,25 +54,57 @@ describe('stravaCallbackMessage', () => {
     expect(m.text).toMatch(/connected/i);
   });
 
-  it('maps the error reason through the bounded enum', () => {
+  // The vocabulary strava-oauth-callback actually emits from its fail() calls.
+  // These are NOT last_error_code values; mapping them through that enum sent
+  // every one of them to the generic "last sync failed" fallback.
+  const EMITTED_REASONS = [
+    'denied',
+    'state',
+    'code',
+    'exchange',
+    'insufficient_scope',
+    'athlete_mismatch',
+    'method',
+    'server',
+  ];
+
+  it('gives every reason the callback can emit its own message', () => {
+    const texts = EMITTED_REASONS.map(
+      (reason) => stravaCallbackMessage({ status: 'error', reason }).text
+    );
+    texts.forEach((t) => {
+      expect(t).toBeTruthy();
+      expect(t).not.toContain(CALLBACK_REASON_LABELS.unknown);
+    });
+    expect(new Set(texts).size).toBe(EMITTED_REASONS.length);
+  });
+
+  it('treats a declined consent as a cancellation, not a failure', () => {
+    const m = stravaCallbackMessage({ status: 'error', reason: 'denied' });
+    expect(m.tone).toBe('muted');
+    expect(m.text).toMatch(/cancelled/i);
+    expect(m.text).not.toMatch(/failed|could not/i);
+  });
+
+  it('names the conflicting-account case rather than blaming the user', () => {
     const m = stravaCallbackMessage({
       status: 'error',
-      reason: 'db_write_failed',
+      reason: 'athlete_mismatch',
     });
     expect(m.tone).toBe('critical');
-    expect(m.text).toContain(ERROR_CODE_LABELS.db_write_failed);
+    expect(m.text).toMatch(/different Strava account/i);
   });
 
   it('falls back to the generic label for an unrecognised reason', () => {
     const m = stravaCallbackMessage({ status: 'error', reason: 'nonsense' });
-    expect(m.text).toContain(ERROR_CODE_LABELS.unknown);
+    expect(m.text).toContain(CALLBACK_REASON_LABELS.unknown);
     expect(m.text).not.toContain('nonsense');
   });
 
   it('handles an error with no reason', () => {
     expect(
       stravaCallbackMessage({ status: 'error', reason: null }).text
-    ).toContain(ERROR_CODE_LABELS.unknown);
+    ).toContain(CALLBACK_REASON_LABELS.unknown);
   });
 
   it('returns null for no callback', () => {
