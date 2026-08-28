@@ -26,10 +26,10 @@ Examples:
    the persona:
 
    > You are doing TECHNICAL research, not market intelligence. Investigate the
-   > topic against official documentation. Check Context7 first for stack
-   > libraries (React, Vite, Vitest, @supabase/supabase-js,
-   > @testing-library/react, Recharts): `resolve-library-id` then `query-docs`;
-   > fall back to WebSearch for anything unindexed. For APIs report: auth
+   > topic against official documentation. The **Context7 first** rule in the
+   > preamble above is the hard floor for this stage: `resolve-library-id` then
+   > `query-docs` for every stack library, WebSearch only for what Context7
+   > cannot resolve, and every claim carries its source. For APIs report: auth
    > method, the specific endpoints this project needs, rate limits, data
    > formats, and whether a Supabase Edge Function or client-side fetch fits.
    > For libraries report: React 18 + Vite compatibility, bundle-size impact,

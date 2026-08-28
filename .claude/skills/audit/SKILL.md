@@ -69,6 +69,11 @@ Then **read the named file**. An issue is a report, not a diagnosis.
 - `analyze_issue_with_seer` is available for root-cause analysis. It is slow and
   may be metered, so run it only on findings that survive the read, and say when
   you are about to.
+- The **Context7 first** rule binds the verification itself. If the cause turns
+  on how a library behaves — a react-query cache eviction, a Recharts prop, a
+  `supabase-js` error shape — resolve it through `resolve-library-id` →
+  `query-docs` before naming it as the cause. A diagnosis from memory is the
+  same guess as a diagnosis from the Sentry title, one level down.
 
 Drop anything you cannot locate in the code. A finding you cannot point at is a
 guess.
