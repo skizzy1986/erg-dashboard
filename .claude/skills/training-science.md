@@ -63,7 +63,10 @@ The primary performance metric in the Erg tab. Measures watts produced
 at exactly 130 bpm heart rate. Rising trend = improving aerobic fitness.
 
 Implementation: linear regression on 8+ {date, watts, hr} data points,
-filtered to rows where hr ≈ 130 ± 5 bpm. Uses mathjs `linearRegression`.
+filtered to rows where hr ≈ 130 ± 5 bpm. The least-squares fit is
+hand-rolled in `views/ErgView.jsx` (`analyzeBarometer`); `mean`/`sampleStdDev`
+come from `utils/stats.js`. mathjs was removed in #54 — it cost ~52 KB gzipped
+for two summary statistics, and never had a `linearRegression` function.
 Returns slope (W/day), R² (confidence), and a verdict (rising/plateaued).
 
 ## Periodization Model
