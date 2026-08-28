@@ -64,40 +64,58 @@ Green is at its most misleading here.
 
 1. Report what **ran**, not what was green. Name any job that reported `skipped`.
 2. If a fact here is contradicted by the file it cites, **say so, and offer to open an issue** — do not work around it silently. You are this file's staleness sensor.
-3. Name a **required** check by name when you say a PR is blocked. Seven are required and five are advisory — see *What protects `main`* — so "CI is red" and "this cannot merge" are different claims.
+3. Name a **required** check by name when you say a PR is blocked. Nine are required — see *What protects `main`* — so "CI is red" and "this cannot merge" are different claims. Use the **check-run name**, which is the job's `name:`, not the workflow's: the ruleset binds to `Zone bands match derivePaceZones`, and nothing reports under `Zone bands`.
 
 ## What protects `main`
 
 Read from the `main` ruleset — Rulesets, **not** classic branch protection, which is
-unconfigured (— confirmed by Scott 2026-08-28, required set expanded same day). Active, targeting the default branch, with
+unconfigured (— confirmed by Scott 2026-08-28 from the ruleset page itself; required set expanded
+from seven to nine later the same day). Active, targeting the default branch, with
 an **empty bypass list**, so it applies to everyone including the repo owner. No agent can
 read this: the GitHub MCP server exposes no branch-protection tool and raw API access is
 blocked from agent sessions. Re-confirm with Scott rather than inferring it from a doc.
 
 | | |
 |---|---|
-| Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`** — those seven, and nothing else. |
-| Advisory — red does **not** block merge | `Zone bands`, `Lighthouse`, `Playwright Smoke`, `Playwright Visual`, `Build Debug APK`. Still fix them; just do not report them as blocking. |
+| Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`, `Zone bands match derivePaceZones`, `Build Debug APK`** — those nine, and nothing else. |
+| Advisory — red does **not** block merge | `Lighthouse`, `Playwright Smoke`, `Playwright Visual`. Still fix them; just do not report them as blocking. |
+| Reports but is not required | `Build Web Assets`, `Seer Code Review`, `Vercel Preview Comments`, `Analyze (JavaScript/TypeScript)`, `Label by changed paths`, `add-to-project`, `Flag steward skill staleness`, `Enable auto-merge`, and every `Detect …` filter job. Red here does not block either — but see the `Build Web Assets` trap below. |
 | Also enforced | a PR before merging · branches up to date before merging · force pushes blocked **on `main` only**, so `--force-with-lease` on your own feature branch is fine |
 | Not enforced | linear history. Squash with `(#N)` is convention, not a gate. |
 
-**A required check can be satisfied by `skipped`** (`ci-web.yml:3-7`), so all seven can be
+**A required check can be satisfied by `skipped`** (`ci-web.yml:3-7`), so all nine can be
 green having run nothing — see *When every check is green*. That applies hardest to
 `Deno Tests`: it is required, but `ci-functions.yml` tests only the two `vitals-import*`
 functions, so on a `coach-chat` change it **runs, passes, and verifies nothing** (#312).
 Requiring it did not close that hole.
 
-**Every reporting check is now safe to require.** `zone-bands.yml` and `ci-android.yml` both
-used workflow-level `on.pull_request.paths`, which reports *nothing* on an unmatched PR — and
-a required check that never reports strands the PR on "Expected — waiting for status". Worse,
-it would have failed *intermittently*: a PR touching a matched path passes, the next one
-hangs. Both now gate a `changes` job, so they report `skipped` instead. Adding either to the
-ruleset is a settings change with no code consequence.
+**`Build Debug APK` is required; the job it depends on is not.** `build-apk` declares
+`needs: [changes, build-web]` with a plain `if:` and no `always()` (`ci-android.yml:64-66`),
+so when `Build Web Assets` **fails**, `build-apk` does not run and reports `skipped` — which
+branch protection counts as passing. Requiring the APK therefore does not require the web
+build behind it. The overlap is partial cover, not full: a genuine compile break also fails
+`Build` in `ci-web.yml`, which is required, but `Build Web Assets` additionally consumes
+`secrets.SUPABASE_URL` / `SUPABASE_ANON_KEY` (`ci-android.yml:55-57`) that `ci-web`'s Build
+does not, so a rotated or missing secret fails it alone — and turns the required APK check
+green by skipping it. *Reasoned from the workflow and GitHub's `needs` semantics; not yet
+observed in this repo. Verify before citing it as the cause of a specific green.* Requiring
+`Build Web Assets` too would close it.
 
-`CLAUDE.md:328`'s four-row table lists `Zone bands` as a gate; it is advisory.
+Both `zone-bands.yml` and `ci-android.yml` reached requirability the same way: each used
+workflow-level `on.pull_request.paths`, which reports *nothing* on an unmatched PR and would
+have stranded the PR on "Expected — waiting for status" — intermittently, since a PR touching
+a matched path passes and the next one hangs. Both now gate a `changes` job and report
+`skipped` instead (#316, #317). Confirmed twice on 2026-08-28: PR #319, a docs-only change,
+reported `skipped` for `Build Debug APK` and `Build Web Assets` rather than nothing.
+
+`CLAUDE.md:328` still says **three** gated jobs and its table omits six of the nine; the
+`Zone bands` row it does carry is now correctly a gate (#311).
 
 ## Verified against
 
 `21370e8` on 2026-08-26, against `.github/workflows/{ci-web,ci-functions,ci-android,e2e-web,zone-bands,dependabot-auto-merge,dependabot-maintenance}.yml`,
 `web/scripts/check-{colour-literals,design-sync-entry,zone-bands,bundle-size}.mjs`, `web/vite.config.js`.
+
+*What protects `main`* re-verified on 2026-08-28 at `5479e21`, against `ci-android.yml` as
+converted by #317 and against the ruleset page as Scott showed it after adding the two checks.
 If one of those has changed since, treat the lines citing it as unverified and re-check that row.
