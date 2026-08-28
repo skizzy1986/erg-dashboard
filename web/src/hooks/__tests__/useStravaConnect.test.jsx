@@ -77,17 +77,15 @@ describe('useStravaConnect — start', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("accepts the edge function's `url` key as well as `authorize_url`", async () => {
+  it('rejects a bare `url` key — the contract is `authorize_url` alone', async () => {
     invokeMock.mockResolvedValue({
       data: { ok: true, url: 'https://example.test/oauth/authorize?y=2' },
       error: null,
     });
     const { result } = renderHook(() => useStravaConnect(), { wrapper });
     result.current.start.mutate();
-    await waitFor(() => expect(result.current.start.isSuccess).toBe(true));
-    expect(window.location.href).toBe(
-      'https://example.test/oauth/authorize?y=2'
-    );
+    await waitFor(() => expect(result.current.start.isError).toBe(true));
+    expect(window.location.href).not.toContain('example.test');
   });
 
   it('fails loudly when the function returns no authorize url', async () => {

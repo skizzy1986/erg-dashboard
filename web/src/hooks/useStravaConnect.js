@@ -22,10 +22,7 @@ export function useStravaConnect() {
         { body: { action: 'start' } }
       );
       if (error) throw error;
-      // The spec pins `authorize_url`; the edge function as written returns
-      // `url`. Both are accepted so the flow works whichever name settles —
-      // FLAGGED FOR REVIEW: pick one and delete the other, do not leave two.
-      const authorizeUrl = data?.authorize_url ?? data?.url;
+      const authorizeUrl = data?.authorize_url;
       if (!authorizeUrl) {
         throw new Error('strava-connect returned no authorize url');
       }

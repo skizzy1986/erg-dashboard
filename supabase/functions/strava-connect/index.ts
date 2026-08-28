@@ -129,7 +129,7 @@ Deno.serve(async (req: Request) => {
 
       // The state is returned to the browser (it has to be — it travels in the
       // URL) but is never logged and never reported to Sentry.
-      return json({ ok: true, url: authorize.toString() });
+      return json({ ok: true, authorize_url: authorize.toString() });
     }
 
     if (action === "disconnect") {

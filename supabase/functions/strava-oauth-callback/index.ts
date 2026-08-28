@@ -23,7 +23,7 @@
 //     redirect is how the authorization code gets forwarded to someone else.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { captureFunctionError } from "../_shared/sentry.ts";
-import { deauthorize, exchangeAuthCode } from "../strava-import/client.ts";
+import { deauthorize, exchangeAuthCode, type StravaTokens } from "../strava-import/client.ts";
 
 const FN = "strava-oauth-callback";
 
@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
 
     const userId = String((redeemed[0] as { user_id: string }).user_id);
 
-    let tokens;
+    let tokens: StravaTokens;
     try {
       tokens = await exchangeAuthCode(clientId!, clientSecret!, code);
     } catch (e) {
