@@ -293,8 +293,12 @@ request headers and is unaffected, but **every hand-rolled edge-function
 never sends the request — a bare `TypeError: Failed to fetch` on the client with only
 the OPTIONS in the edge logs. This silently killed the Coach tab (#301).
 
-Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip against
-~40 KB of headroom under the 400 KB budget in `web/scripts/check-bundle-size.mjs`.
+Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip, and there
+is nothing like that much room. The build sits at **395.7 KB against the 400 KB budget**
+in `web/scripts/check-bundle-size.mjs`, leaving **4.3 KB** of headroom (— measured
+2026-08-28). That is an order of magnitude less than Replay needs, so enabling it is a
+code-splitting job rather than a config flag: nothing in `App.jsx` is lazy-loaded, so
+every import ships on first paint. `npm run size` enforces this inside the **Build** job.
 
 Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in

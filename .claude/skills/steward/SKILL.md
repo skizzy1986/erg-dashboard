@@ -50,7 +50,7 @@ Green is at its most misleading here.
 | **`coach-chat` and `vitals-sync` have no automated verification.** `ci-functions.yml` tests only the two `vitals-import*` functions; Deno files sit outside `lint`/`format`, which are rooted at `web/`. Deployed `vitals-sync` had already drifted from source and "nothing in CI would ever have caught it" (`6904c18`). *Provisional — drop when coverage lands.* | Report "all green" on a `coach-chat` change. Say instead: **no automated check ran against this diff.** |
 | Branch protection requires **up-to-date branches**, and updating one re-runs CI from scratch. | Merge on a green that predates the update. |
 | Coverage thresholds ratchet upward only (`web/vite.config.js`). | Assume red `Test & Coverage` means a failing test. Every test can pass and the job still fail. |
-| Bundle budget is 400 KB gzipped (`web/scripts/check-bundle-size.mjs:15`) and the build sits at 395.7 KB — **4.3 KB spare** (— measured 2026-08-26). Nothing in `App.jsx` is lazy-loaded, so every import ships. `npm run size` runs inside **Build**. `CLAUDE.md:297` still claims ~40 KB; it is stale by an order of magnitude. | Be surprised by a red Build that is not a compile error. |
+| Bundle budget is 400 KB gzipped (`web/scripts/check-bundle-size.mjs:15`) and the build sits at 395.7 KB — **4.3 KB spare** (— re-measured 2026-08-28, unchanged). Nothing in `App.jsx` is lazy-loaded, so every import ships. `npm run size` runs inside **Build**. `CLAUDE.md:296-301` now states this figure; the two agree as of that date. | Be surprised by a red Build that is not a compile error. |
 
 ## When you push a fix
 
