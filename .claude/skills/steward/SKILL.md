@@ -13,7 +13,7 @@ or close/reopen a PR to kick CI; never approve or merge.
 
 Every line is **cited** (`path:line`), **attested** (`— measured YYYY-MM-DD`), or a **dated
 incident** naming the commit or PR that records it. Anything genuinely unknowable is
-quarantined under *Unverified* and stated nowhere else. A claim in none of those forms is a
+quarantined and marked as such rather than stated flat. A claim in none of those forms is a
 defect in this file. A line belongs only if an agent would act wrongly without it; general
 PR etiquette does not.
 
@@ -22,10 +22,10 @@ PR etiquette does not.
 | Fact | Without it you would |
 |---|---|
 | **`pull_request` delivery can lag ~10 minutes.** On 2026-08-26 PR #310 showed 2 checks instead of ~24 for nine minutes after opening, and again after a human reopen; then nine workflows landed at once, all green. **A missing check is not a missing trigger.** | Diagnose a trigger bug and edit workflow YAML. Three wrong diagnoses were made that day before waiting proved to be the answer. |
-| Push and `pull_request` lag move **independently**, and `ci-web.yml` pushes only on `main` (`ci-web.yml:10-11`) — so on any other branch the three required jobs come *only* from the PR event. | Infer from green push runs that the PR's own checks are never coming. |
+| Push and `pull_request` lag move **independently**, and `ci-web.yml` pushes only on `main` (`ci-web.yml:10-11`) — so on any other branch ci-web's three required jobs come *only* from the PR event. | Infer from green push runs that the PR's own checks are never coming. |
 | **Derive the expected set from `.github/workflows/`; never memorise a count.** Over a dozen workflows report on a `web/**` PR, several of them (`labeler`, `add-to-project`, `dependabot-auto-merge`) with no path filter at all. `CLAUDE.md` and `WORKFLOW.md` between them name only four. | Treat an unrecognised check as spurious, or count against a list that was stale the day it was written. |
 | `ci-android.yml` alone uses workflow-level `on.pull_request.paths` (`ci-android.yml:6-11`) — the pattern `ci-web.yml:3-7` warns against. Unmatched, it reports **nothing**, not `skipped`. | Read a correctly-absent check as a lost run. |
-| `zone-bands.yml` filters on `**/*.md` (`zone-bands.yml:22`), so it fires on repo-root `CLAUDE.md` and `coach/`, not just `web/`. | Assume a docs-only PR runs nothing. |
+| `zone-bands.yml` filters on `**/*.md` (`zone-bands.yml:50`), so it fires on repo-root `CLAUDE.md` and `coach/`, not just `web/`. It reports `skipped` when unmatched. | Assume a docs-only PR runs nothing. |
 | **Check tree position before grounding a claim**: `git fetch && git rev-parse HEAD origin/main`. | Report a finding from code no longer on `main`. Two agents did this on 2026-08-26, one commit behind. |
 | **Unmerged PR commits are invisible to `git log --all \| grep '#N'`** — PR numbers appear only in squash-merge subjects. Use the PR API. | Conclude a live PR "does not exist". This happened. |
 
@@ -64,16 +64,37 @@ Green is at its most misleading here.
 
 1. Report what **ran**, not what was green. Name any job that reported `skipped`.
 2. If a fact here is contradicted by the file it cites, **say so, and offer to open an issue** — do not work around it silently. You are this file's staleness sensor.
-3. Never state a conclusion that depends on an unfilled slot below. Name the missing answer and what each answer would change.
+3. Name a **required** check by name when you say a PR is blocked. Seven are required and five are advisory — see *What protects `main`* — so "CI is red" and "this cannot merge" are different claims.
 
-## Unverified — needs Scott
+## What protects `main`
 
-Do not guess, and do not default to the strict or the loose reading; both are wrong in a
-way that looks reasonable. Act up to where the answer changes the action, then ask.
+Read from the `main` ruleset — Rulesets, **not** classic branch protection, which is
+unconfigured (— confirmed by Scott 2026-08-28, required set expanded same day). Active, targeting the default branch, with
+an **empty bypass list**, so it applies to everyone including the repo owner. No agent can
+read this: the GitHub MCP server exposes no branch-protection tool and raw API access is
+blocked from agent sessions. Re-confirm with Scott rather than inferring it from a doc.
 
-| Question | What the repo already says | What is genuinely open |
-|---|---|---|
-| Which checks are **required** on `main`? | Four in-repo sources agree on **lint, test, build**: `ci-web.yml:4-5` ("Lint/Test/Build are REQUIRED status checks on main"), `dependabot-auto-merge.yml:3-4`, `CLAUDE.md:328`, `WORKFLOW.md:77`. Treat those three as required. | Whether protection has *since* added `Zone bands`, `E2E`, `Lighthouse`, `CodeQL` or `PR title lint`. No agent can read this: the GitHub MCP server exposes no branch-protection tool and raw API access is blocked. Until Scott confirms, **treat a red check from those five as blocking** rather than assuming it is advisory. |
+| | |
+|---|---|
+| Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`** — those seven, and nothing else. |
+| Advisory — red does **not** block merge | `Zone bands`, `Lighthouse`, `Playwright Smoke`, `Playwright Visual`, `Build Debug APK`. Still fix them; just do not report them as blocking. |
+| Also enforced | a PR before merging · branches up to date before merging · force pushes blocked **on `main` only**, so `--force-with-lease` on your own feature branch is fine |
+| Not enforced | linear history. Squash with `(#N)` is convention, not a gate. |
+
+**A required check can be satisfied by `skipped`** (`ci-web.yml:3-7`), so all seven can be
+green having run nothing — see *When every check is green*. That applies hardest to
+`Deno Tests`: it is required, but `ci-functions.yml` tests only the two `vitals-import*`
+functions, so on a `coach-chat` change it **runs, passes, and verifies nothing** (#312).
+Requiring it did not close that hole.
+
+**`Build Debug APK` cannot safely be required.** `ci-android.yml` still uses workflow-level
+`on.pull_request.paths`, so on an unmatched PR it reports *nothing* rather than `skipped` —
+and a required check that never reports leaves the PR at "Expected — waiting for status"
+forever. Converting it to the `changes`-job pattern is what would make it requirable;
+`zone-bands.yml` was converted that way for exactly this reason, so `Zone bands` is now
+safe to require even though it is still only advisory.
+
+`CLAUDE.md:328`'s four-row table lists `Zone bands` as a gate; it is advisory.
 
 ## Verified against
 
