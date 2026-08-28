@@ -130,11 +130,17 @@ export function describeConnection(connection, now = new Date()) {
 
   // 'error' joins 'partial' here: it is a failed run with no other home, and
   // letting it fall through would render an outright failure as "healthy".
-  if (status === 'partial' || status === 'error' || failed > 0) {
+  //
+  // Branch on last_run_status ALONE, never on `failed > 0`. failed_total is a
+  // lifetime counter that nothing resets, so a single failure — and the 23505
+  // label-collision path guarantees one eventually — would pin this warning on
+  // every clean run thereafter. A failure signal that never clears is noise,
+  // and it teaches Scott to stop reading the panel.
+  if (status === 'partial' || status === 'error') {
     return {
       kind: 'partial',
-      headline: `Last sync: ${imported} imported, ${failed} failed`,
-      detail: errorDetail || ERROR_CODE_LABELS.unknown,
+      headline: 'Last sync did not finish cleanly',
+      detail: `${errorDetail || ERROR_CODE_LABELS.unknown} ${failed} of ${imported + failed} activities have failed since connecting.`,
       tone: 'warning',
       canSync: true,
       canConnect: false,
@@ -184,13 +190,15 @@ export function describeConnection(connection, now = new Date()) {
   // run succeeded, and a freshly connected row has no run yet.
   return {
     kind: 'healthy',
+    // `imported` is a lifetime total, so it belongs in the detail line phrased
+    // as one — putting it beside "Last sync" read as a per-run count.
     headline: lastRunMs
-      ? `Last sync ${relative(lastRunMs, nowMs)} · ${plural(imported, 'session')} imported`
+      ? `Last sync ${relative(lastRunMs, nowMs)}`
       : 'Connected · waiting for the first sync',
     detail:
       adopted > 0
-        ? `${plural(adopted, 'activity', 'activities')} matched sessions already in the log.`
-        : 'New Strava activities are imported automatically.',
+        ? `${plural(imported, 'session')} imported since connecting; ${plural(adopted, 'activity', 'activities')} matched sessions already in the log.`
+        : `${plural(imported, 'session')} imported since connecting. New Strava activities are imported automatically.`,
     tone: 'positive',
     canSync: true,
     canConnect: false,

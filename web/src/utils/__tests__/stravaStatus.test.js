@@ -72,7 +72,9 @@ describe('describeConnection — the eight kinds', () => {
   it('3. healthy: relative last sync and the imported count', () => {
     const s = describeConnection(healthy(), NOW);
     expect(s.kind).toBe('healthy');
-    expect(s.headline).toBe('Last sync 2 hours ago · 12 sessions imported');
+    expect(s.headline).toBe('Last sync 2 hours ago');
+    // The lifetime total belongs in the detail, phrased as a lifetime total.
+    expect(s.detail).toContain('12 sessions imported since connecting');
     expect(s.tone).toBe('positive');
     expect(s.canSync).toBe(true);
     expect(s.canConnect).toBe(false);
@@ -190,23 +192,30 @@ describe('describeConnection — the eight kinds', () => {
       NOW
     );
     expect(s.kind).toBe('partial');
-    expect(s.headline).toBe('Last sync: 9 imported, 2 failed');
-    expect(s.detail).toBe(ERROR_CODE_LABELS.upstream_5xx);
+    expect(s.headline).toBe('Last sync did not finish cleanly');
+    expect(s.detail).toContain(ERROR_CODE_LABELS.upstream_5xx);
+    // Lifetime counters are named as such, not passed off as this run's.
+    expect(s.detail).toContain(
+      '2 of 11 activities have failed since connecting'
+    );
     expect(s.canSync).toBe(true);
   });
 
-  it('6b. partial: failed_total alone is enough, whatever the status says', () => {
+  // failed_total is cumulative and nothing resets it, so branching on it pinned
+  // the warning on for good after the first failure — and the 23505 collision
+  // path guarantees one eventually. A clean run must read as clean.
+  it('6b. partial: a clean run reads healthy despite past failures', () => {
     const s = describeConnection(
       healthy({ last_run_status: 'ok', failed_total: 1 }),
       NOW
     );
-    expect(s.kind).toBe('partial');
+    expect(s.kind).toBe('healthy');
   });
 
   it("6c. partial: an outright 'error' run is not rendered as healthy", () => {
     const s = describeConnection(healthy({ last_run_status: 'error' }), NOW);
     expect(s.kind).toBe('partial');
-    expect(s.detail).toBe(ERROR_CODE_LABELS.unknown);
+    expect(s.detail).toContain(ERROR_CODE_LABELS.unknown);
   });
 
   it('7. ambiguous: reports how many activities were skipped', () => {

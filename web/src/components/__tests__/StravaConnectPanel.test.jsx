@@ -150,7 +150,12 @@ describe('StravaConnectPanel', () => {
       })
     );
     render(<StravaConnectPanel />);
-    expect(screen.getByText(/5 imported, 2 failed/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/last sync did not finish cleanly/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/2 of 7 activities have failed since connecting/i)
+    ).toBeInTheDocument();
     expect(screen.getByText(/activity read permission/i)).toBeInTheDocument();
   });
 
