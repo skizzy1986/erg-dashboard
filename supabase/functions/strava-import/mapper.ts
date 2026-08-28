@@ -198,6 +198,41 @@ export function avgHrOrNull(a: StravaActivity): number | null {
 }
 
 /**
+ * Does this summary have to be replaced by a DetailedActivity before the row it
+ * produces is worth writing?
+ *
+ * Strava's SummaryActivity — what /athlete/activities returns — does NOT
+ * reliably carry power or heart rate. `average_watts` is documented rides-only,
+ * and `has_device_watts` is a DetailedActivity field. Verified against Scott's
+ * own account: the summary for rowing activity 19859099686 carried distance,
+ * moving_time, average_speed, calories and cadence and NO watts and NO heart
+ * rate, while GET /activities/19859099686 returned average_watts 135.706,
+ * average_heartrate 124.475 and has_device_watts true.
+ *
+ * So the detail fetch is the normal path, not an exception. Without it
+ * avg_watts and avg_hr are null on essentially every imported row, sessionLoad()
+ * in web/src/utils/trainingLoad.js scores every one of them 0, and the feature
+ * imports sessions that contribute nothing at all to CTL/ATL/TSB — the exact
+ * opposite of its purpose, and silently. The 50-call budget in state.ts exists
+ * to pay for these fetches.
+ *
+ * Answering false for a sport we do not import is not an optimisation: a read
+ * spent on a Walk we are going to discard is a read taken away from a row that
+ * would have counted.
+ */
+export function needsDetailFetch(a: StravaActivity): boolean {
+  if (!(ELIGIBLE_SPORT_TYPES as readonly string[]).includes(String(a.sport_type))) return false;
+  if (
+    typeof a.distance !== "number" ||
+    typeof a.moving_time !== "number" ||
+    typeof a.start_date_local !== "string"
+  ) {
+    return true;
+  }
+  return !hasUsableDeviceWatts(a) || avgHrOrNull(a) === null;
+}
+
+/**
  * "<name> HH:MM", truncated to 120 characters.
  *
  * The label MUST NOT embed a watts figure. That is precisely what breaks dedupe

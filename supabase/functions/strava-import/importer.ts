@@ -2,7 +2,14 @@
 // and strava-sync (a user pressing Sync) differ only in how they authenticate
 // and which `mode` they record; everything below runs identically for both, so
 // there is exactly one implementation of the import to reason about.
-import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+//
+// The supabase-js import below is TYPE-ONLY on purpose, and `serviceClient`
+// lives in supaClient.ts rather than here. Deno erases a type-only import
+// without loading the module, so runImport can be exercised against a fake
+// `supa` (which is structural anyway) without pulling the real client into the
+// test's module graph. A value import here would make every test of this file
+// depend on jsr being reachable.
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import {
   getActivity,
   listActivities,
@@ -16,6 +23,7 @@ import {
   isEligible,
   localDateISO,
   mapActivityToSession,
+  needsDetailFetch,
   hasUsableDeviceWatts,
   avgWattsOrNull,
   avgHrOrNull,
@@ -70,6 +78,13 @@ export type ImportResult = {
   updated: number;
   skipped: number;
   failed: number;
+  /**
+   * Eligible activities this run refused to write because it could not fetch
+   * their detail (budget spent, quota nearly spent, or the fetch failed). NOT a
+   * failure and NOT a skip: the cursors were held so the next run re-lists them.
+   * No `*_total` counter accumulates it — it is a property of one chunk.
+   */
+  deferred: number;
   ambiguousActivityIds: number[];
   stopReason: StopReason;
   stravaCalls: number;
@@ -219,6 +234,7 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
     updated: 0,
     skipped: 0,
     failed: 0,
+    deferred: 0,
     ambiguousActivityIds: [],
     stopReason: null,
     stravaCalls: 0,
@@ -243,8 +259,21 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
   }
 
   const store = createSupabaseTokenStore(supa);
+
+  // A DRY RUN MUST NOT BE ABLE TO DISCONNECT STRAVA. getFreshAccessToken
+  // deletes the token row on a second consecutive invalid_grant, and "show me
+  // what would happen" is not permission to destroy the credentials — a dry run
+  // against a revoked connection would leave Scott with no way to refresh and
+  // no obvious cause. Rotation is unavoidable and accepted: listing anything at
+  // all needs a live access token, and Strava rotates the refresh token
+  // whenever it issues one. Deletion is not, so it is suppressed here rather
+  // than left to each call site to remember.
+  const runStore: TokenStore = dryRun
+    ? { read: store.read, rotate: store.rotate, remove: () => Promise.resolve() }
+    : store;
+
   const token = await getFreshAccessToken(
-    store,
+    runStore,
     (rt) => refreshAccessToken(clientId, clientSecret, rt),
     userId,
     now(),
@@ -316,26 +345,52 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
     return epochs;
   };
 
-  let incrementalAfter = sync.incremental_after ?? isoDateToEpochSeconds(sync.backfill_from ?? backfillFrom);
+  // Held FIXED for the whole run. It is the boundary the incremental pass was
+  // asked for, the value `incrementalAfter` may never fall below, and — because
+  // Strava's `after` is exclusive — an exact test for whether a given activity
+  // came from the incremental pass or the backfill pass.
+  const startingIncrementalAfter = sync.incremental_after ??
+    isoDateToEpochSeconds(sync.backfill_from ?? backfillFrom);
+  let incrementalAfter = startingIncrementalAfter;
   let backfillCursor = sync.backfill_cursor_before;
   let backfillComplete = sync.backfill_complete;
 
   try {
     // --- incremental -------------------------------------------------------
+    // `after` is held fixed across the paging loop and ONLY `page` moves.
+    // Advancing the filter and the offset together double-advances: page 2
+    // would be requested against a set that already excludes page 1's
+    // activities, so the block in between is never listed — and the watermark
+    // would have moved past it, so it is never listed again either.
+    const incrementalEpochs: number[] = [];
+    let incrementalExhausted = false;
     for (let page = 1; !checkStop(); page++) {
       const { activities, rateLimit: rl } = await listActivities(accessToken, {
-        after: incrementalAfter,
+        after: startingIncrementalAfter,
         page,
         perPage: PER_PAGE,
       });
       calls++;
       rateLimit = rl;
-      // The watermark advances over EVERYTHING listed, ineligible activities
-      // included. A week of nothing but WeightTraining must still move it, or
-      // that week is re-listed on every run for ever.
-      incrementalAfter = advanceIncrementalWatermark(incrementalAfter, collect(activities)) ??
-        incrementalAfter;
-      if (activities.length < PER_PAGE) break;
+      incrementalEpochs.push(...collect(activities));
+      if (activities.length < PER_PAGE) {
+        incrementalExhausted = true;
+        break;
+      }
+    }
+
+    // The watermark advances over EVERYTHING listed, ineligible activities
+    // included. A week of nothing but WeightTraining must still move it, or
+    // that week is re-listed on every run for ever.
+    //
+    // But it advances ONLY when the loop ran to exhaustion. A loop cut short by
+    // the budget has seen some subset of the window and Strava does not promise
+    // which end of it, so moving the watermark then could step over activities
+    // that were never listed. Re-listing what we already hold is free — the
+    // upsert is idempotent — while skipping is permanent.
+    if (incrementalExhausted) {
+      incrementalAfter = advanceIncrementalWatermark(startingIncrementalAfter, incrementalEpochs) ??
+        startingIncrementalAfter;
     }
 
     // --- backfill ----------------------------------------------------------
@@ -357,13 +412,19 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
         const epochs = collect(activities);
         const next = advanceBackfillCursor(cursor, epochs);
 
-        // Persist BEFORE fetching the next page. A run cut off by the edge
-        // runtime then resumes exactly here instead of re-walking from the
-        // start — the cursor only ever moves after the page it describes has
-        // been taken into `seen`.
-        if (!dryRun && next != null) {
-          await writeSyncState(supa, userId, { backfill_cursor_before: next });
-        }
+        // THE CURSOR IS NOT PERSISTED HERE, and that is the guarantee.
+        //
+        // Collection and writing are separate phases: nothing in `seen` has
+        // reached the database yet. A cursor written now would describe pages
+        // whose rows do not exist, and a kill between here and the write loop
+        // would lose them permanently — they sit BELOW the incremental
+        // watermark, so no later run would ever re-list them. The mid-loop
+        // write this replaced was strictly worse than nothing: without it a
+        // hard kill simply re-walks from the last durable cursor, which is
+        // idempotent and costs one repeated page.
+        //
+        // The cursor is persisted exactly once, at the end of the run, in the
+        // same write as the rows it describes.
         cursor = next ?? cursor;
         backfillCursor = cursor;
 
@@ -404,29 +465,93 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
   result.backfillComplete = backfillComplete;
 
   // -------------------------------------------------------------------------
-  // Filter to what we will actually write.
+  // Enrich from the DetailedActivity, then filter to what we will write.
+  //
+  // The detail fetch is the NORMAL path — see needsDetailFetch in mapper.ts.
+  // The summary does not reliably carry power or heart rate, and a session
+  // imported without them scores 0 in sessionLoad(), so an importer that never
+  // fetched detail would file rows contributing nothing to CTL/ATL/TSB. The
+  // 50-call budget exists to pay for this.
+  //
+  // An eligible activity whose detail could NOT be fetched — budget spent,
+  // quota nearly spent, or the fetch itself failed — is DEFERRED and NOT
+  // written. That is the load-bearing half: a row written with a null
+  // avg_watts is indistinguishable from a genuine no-power session, and the
+  // cursor would move past it, so the power would be lost silently and for
+  // ever. Deferring holds whichever cursor re-lists it and ends the chunk
+  // cleanly for the next run to pick up.
   // -------------------------------------------------------------------------
   const eligible: StravaActivity[] = [];
+  const deferredIds: number[] = [];
+
+  // Hold the cursor that would list this activity again. Everything the
+  // incremental pass returned is strictly newer than startingIncrementalAfter
+  // (Strava's `after` is exclusive), so this is an exact test of which pass
+  // produced the activity, not a guess.
+  const holdCursorFor = (a: StravaActivity): void => {
+    const e = epochSecondsFromUTC(a.start_date as string | null);
+    if (!Number.isFinite(e)) return;
+    if (e > startingIncrementalAfter) {
+      incrementalAfter = Math.min(incrementalAfter, e - 1);
+    } else {
+      backfillCursor = backfillCursor == null ? e + 1 : Math.max(backfillCursor, e + 1);
+      backfillComplete = false;
+    }
+  };
+
+  const defer = (a: StravaActivity, why: string): void => {
+    deferredIds.push(a.id);
+    holdCursorFor(a);
+    result.decisions.push({
+      activityId: a.id,
+      sportType: a.sport_type ?? null,
+      date: typeof a.start_date_local === "string" ? localDateISO(a.start_date_local) : null,
+      action: "skip",
+      // `deferred:` prefix, not a bare skip reason: nothing was decided about
+      // this activity and the next run will process it. It deliberately does
+      // NOT increment result.skipped — skipped_total is cumulative, and an
+      // activity that is merely waiting must not inflate it once per run.
+      detail: `deferred:${why}`,
+    });
+  };
+
   for (const a of seen.values()) {
     let activity = a;
-    // Exception path: a summary missing the fields the mapper needs, for a
-    // sport we do care about. One detail fetch, and only while budget remains.
-    if (
-      (typeof activity.distance !== "number" ||
-        typeof activity.moving_time !== "number" ||
-        typeof activity.start_date_local !== "string") &&
-      (activity.sport_type === "Rowing" || activity.sport_type === "VirtualRide") &&
-      !checkStop()
-    ) {
-      try {
-        const { activity: detail, rateLimit: rl } = await getActivity(accessToken, activity.id);
+
+    if (needsDetailFetch(activity)) {
+      // Do not spend a read on something the summary already proves we will
+      // discard. `malformed` is the only verdict a detail fetch can overturn —
+      // sport_type, before_backfill_from, moving_time and distance are decided
+      // by fields every summary carries.
+      const pre = isEligible(activity, backfillFrom);
+      if (pre.eligible || pre.reason === "malformed") {
+        if (rateLimited || checkStop()) {
+          defer(activity, rateLimited ? "rate_limit" : (stopReason ?? "budget"));
+          continue;
+        }
+        // Counted before the await: the read quota is spent whether or not the
+        // response is one we can use.
         calls++;
-        rateLimit = rl;
-        if (detail) activity = detail as StravaActivity;
-      } catch (e) {
-        if (e instanceof StravaRateLimitError) {
-          rateLimited = true;
-          rateLimit = e.rateLimit;
+        try {
+          const { activity: detail, rateLimit: rl } = await getActivity(accessToken, activity.id);
+          rateLimit = rl;
+          if (!detail) throw new Error("strava activity detail was empty");
+          activity = detail as StravaActivity;
+        } catch (e) {
+          if (e instanceof StravaRateLimitError) {
+            rateLimited = true;
+            rateLimit = e.rateLimit;
+            stopReason = "rate_limit";
+          } else {
+            await captureFunctionError(FN, e, {
+              userId,
+              mode,
+              activityId: activity.id,
+              stage: "detail",
+            });
+          }
+          defer(activity, "detail_unavailable");
+          continue;
         }
       }
     }
@@ -444,7 +569,13 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
       });
     }
   }
+
   result.stravaCalls = calls;
+  result.deferred = deferredIds.length;
+  // Re-read after the loop: a deferral can push stopReason and clear
+  // backfillComplete, and the values captured before it are stale.
+  result.stopReason = stopReason;
+  result.backfillComplete = backfillComplete;
 
   if (eligible.length === 0) {
     result.status = rateLimited ? "rate_limited" : "noop";
@@ -452,6 +583,11 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
     if (!dryRun) {
       await writeSyncState(supa, userId, {
         incremental_after: incrementalAfter,
+        // Persisted here too. There are no rows to write on this path, so the
+        // cursor is trivially not ahead of anything — and omitting it (as this
+        // branch used to) meant a chunk that listed only ineligible activities
+        // threw its whole backfill walk away and re-walked it next run.
+        backfill_cursor_before: backfillCursor,
         backfill_complete: backfillComplete,
         last_run_at: new Date(now()).toISOString(),
         last_run_mode: mode,
@@ -660,9 +796,4 @@ export async function runImport(deps: ImportDeps, opts: ImportOptions): Promise<
   }
 
   return result;
-}
-
-/** Service-role client. Never constructed with the anon key. */
-export function serviceClient(url: string, serviceKey: string): SupabaseClient {
-  return createClient(url, serviceKey, { auth: { persistSession: false } });
 }

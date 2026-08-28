@@ -250,10 +250,14 @@ export async function listActivities(
 }
 
 /**
- * Detail fetch. The summary payload from listActivities already carries every
- * field the mapper needs, so this is the exception path — used only when a
- * summary arrives missing distance, moving_time or start_date_local — and it
- * still spends the same read quota, so it is counted against the same budget.
+ * Detail fetch — the NORMAL path, not an exception.
+ *
+ * The summary payload from listActivities does not reliably carry power or
+ * heart rate (`average_watts` is documented rides-only, `has_device_watts` is a
+ * DetailedActivity field), and a session imported without them scores 0 in
+ * sessionLoad(). See needsDetailFetch in mapper.ts for the verified evidence.
+ * It spends the same read quota as a list call, so it is counted against the
+ * same 50-call budget — which exists precisely to pay for these.
  */
 export async function getActivity(
   accessToken: string,

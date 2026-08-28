@@ -15,7 +15,9 @@ Four functions ship together:
 The pure logic lives in `mapper.ts` (what an activity becomes), `state.ts`
 (cursors and budgets), `tokens.ts` (refresh-token rotation) and `client.ts`
 (all Strava HTTP). `importer.ts` is the only orchestration, shared by both entry
-points, so a manual sync and a scheduled one cannot drift apart.
+points, so a manual sync and a scheduled one cannot drift apart. `supaClient.ts`
+holds `serviceClient` and is the one file that value-imports supabase-js — see
+**Tests** for why that split is load-bearing.
 
 ## Why adoption is the whole feature
 
@@ -42,6 +44,27 @@ Tolerances come from real pairs: `±max(5 m, 0.5%)` (8/6 `13618` vs `13620`;
 7/3 `10187` vs `10192.2`) and a ±1-day window (four rows are filed a day off the
 activity's local date).
 
+### An adopted row keeps its own duration and distance, for ever
+
+`adopt_strava_session` deliberately does not touch `duration` or `distance_m`.
+That promise only holds because `upsert_strava_session` honours it too: once a
+row is linked, **every later run reaches it through `upsert_strava_session`**,
+so an unguarded `DO UPDATE` there would undo the adoption's restraint one cron
+cycle later — `60min` → `60:00`, `13618` → `13620`, and `9min` → `8:49`, which
+changes the parsed duration from 9.0 to 8.82 minutes and therefore the load.
+
+The discriminator is `sessions.source`, which is `'strava'` **only** on rows this
+importer inserted; an adopted row keeps its original `portal` / `coach` /
+`coach_plan` / `claude_csv` / `concept2`. So:
+
+| | `duration`, `distance_m` | `avg_watts`, `avg_hr` |
+|---|---|---|
+| row this importer inserted (`source = 'strava'`) | refreshed each run | enriched (coalesce) |
+| row adopted from another source | **never touched** | enriched (coalesce) |
+
+Adoption never sets `source = 'strava'`, and that omission is what makes the
+guarantee permanent rather than momentary.
+
 ## Eligibility
 
 All four must hold. `sport_type` is an **allow-list**, never a deny-list — the
@@ -66,10 +89,51 @@ The floors keep the 240 s / 1080 m `CP Test` while dropping the 4 s / 16 s /
 | `label` | `` `<name> HH:MM` ``, ≤120 chars. **Never contains a watts figure** — that is what breaks dedupe today |
 | `duration` | `m:ss` from `moving_time` (1560 → `26:00`, 2469 → `41:09`) |
 | `distance_m` | `Math.round(distance)` |
-| `avg_watts` | only when Strava reports device watts; **never a pace-derived estimate** |
-| `avg_hr` | only when `has_heartrate` |
+| `avg_watts` | only when Strava reports device watts; **never a pace-derived estimate**. Almost always comes from the detail fetch, not the list payload — see below |
+| `avg_hr` | only when `has_heartrate`. Same |
 | `status` / `source` | `'completed'` / `'strava'` |
 | `srpe`, `coach_note`, `prs`, `exercises`, `coach_flag`, `benchmark_key` | **never written** |
+
+## The per-activity detail fetch is the normal path, not an exception
+
+Strava's **SummaryActivity** — what `GET /athlete/activities` returns — **does
+not reliably carry power or heart rate.** `average_watts` is documented
+rides-only and `has_device_watts` is a `DetailedActivity` field. Verified against
+Scott's account: the list payload for rowing activity `19859099686` carried
+`distance`, `moving_time`, `average_speed`, `total_calories` and `average_cadence`
+and **no watts and no heart rate**, while `GET /activities/19859099686` returned
+`average_watts: 135.706`, `average_heartrate: 124.475`, `has_device_watts: true`.
+
+An importer that only fetched detail for a summary missing `distance` /
+`moving_time` / `start_date_local` would therefore write `avg_watts` and `avg_hr`
+as **null on essentially every row**. `sessionLoad()` in
+`web/src/utils/trainingLoad.js` scores such a session **0**, so the feature would
+import sessions contributing nothing at all to CTL/ATL/TSB — silently, and the
+exact opposite of its purpose. The 50-call budget exists to pay for these
+fetches.
+
+`needsDetailFetch()` in `mapper.ts` is the gate. It answers true for an eligible
+sport whose summary lacks usable device watts **or** heart rate (or lacks the
+core mapping fields), and false for everything else — including sports we do not
+import, because a read spent on a `Walk` is a read taken from a row that counts.
+An activity the summary already proves ineligible (too short, before
+`STRAVA_BACKFILL_FROM`) costs no read either.
+
+### What happens when the detail cannot be fetched
+
+Budget spent, quota nearly spent, or the fetch itself failed: the activity is
+**deferred, not written**. This is the load-bearing half. A row written with a
+null `avg_watts` is indistinguishable from a genuine no-power session, and the
+cursor would move past it, so the power would be lost silently and permanently.
+
+Deferring instead holds the cursor that re-lists it — `incremental_after` is
+clamped below the activity for something the incremental pass found,
+`backfill_cursor_before` is clamped above it (and `backfill_complete` cleared)
+for something the backfill found — and the chunk ends cleanly for the next run
+to pick up. `ImportResult.deferred` counts them, and each gets a decision with
+`action: "skip"` and `detail: "deferred:<why>"`. **No `*_total` counter
+accumulates a deferral**: it is a property of one chunk, not a verdict on the
+activity.
 
 ## Required secrets
 
@@ -162,7 +226,16 @@ curl -sS -X POST 'https://swdrueaserjzhuxnzmeu.supabase.co/functions/v1/strava-s
 
 Each entry in `.decisions` is `{ activityId, sportType, date, action, detail }`
 where `action` is `insert`, `adopt` (detail = the session id), `update`, `skip`
-(detail = the reason) or `ambiguous` (detail = the tied session ids).
+(detail = the reason) or `ambiguous` (detail = the tied session ids). A `skip`
+whose detail starts `deferred:` is **not** a decision about the activity — the
+run could not fetch its detail and the next run will process it.
+
+A dry run makes **zero writes of any kind**, and that explicitly includes the
+token row: `getFreshAccessToken` deletes it on a second consecutive
+`invalid_grant`, and `runImport` suppresses that deletion under `dry_run`. Token
+*rotation* still happens — listing anything needs a live access token, and
+Strava rotates the refresh token whenever it issues one — but a dry run can
+never disconnect the integration.
 
 **The check that matters.** List the legacy sessions that a Strava activity
 should adopt rather than duplicate:
@@ -210,22 +283,38 @@ select strava_activity_id, count(*) from public.sessions
 
 ## Backfill, incremental and throttling
 
-- **Incremental** lists `?after=<incremental_after>`, paging until exhausted. The
-  watermark advances over **everything seen, ineligible activities included** —
-  otherwise a week of nothing but `WeightTraining` is re-listed for ever.
-- **Backfill** walks *backwards* via `?before=<backfill_cursor_before>`. The
-  cursor is persisted **before** the next page is fetched, so an interrupted run
-  resumes rather than losing the page. `backfill_complete` is set when a page
-  returns an activity older than `STRAVA_BACKFILL_FROM`, comes back short, or is
-  empty.
-- **Budget:** 50 Strava calls and 20 s of wall clock per invocation, and the run
+- **Incremental** lists `?after=<incremental_after>`, paging until exhausted.
+  **`after` is held fixed for the whole paging loop and only `page` moves.**
+  Advancing both together double-advances — page 2 gets requested against a set
+  that already excludes page 1's activities, so the block in between is never
+  listed, and the watermark has moved past it so it is never listed again.
+  The watermark advances over **everything seen, ineligible activities
+  included** — otherwise a week of nothing but `WeightTraining` is re-listed for
+  ever — but **only when the loop ran to exhaustion**: a loop cut short by the
+  budget has seen an unknown subset of the window. Re-listing is free (the
+  upsert is idempotent); skipping is permanent.
+- **Backfill** walks *backwards* via `?before=<backfill_cursor_before>`, at a
+  fixed `page=1` with the cursor moving. The cursor is persisted **once, at the
+  end of the run, in the same write as the rows it describes** — never mid-walk.
+  Collection and writing are separate phases, so a cursor written mid-walk would
+  describe rows that do not exist yet, and a run killed in between would lose
+  them permanently (they sit below `incremental_after`, so nothing re-lists
+  them). Without the mid-walk write an interrupted run simply re-walks from the
+  last durable cursor, which is idempotent and costs one repeated page.
+  `backfill_complete` is set when a page returns an activity older than
+  `STRAVA_BACKFILL_FROM`, comes back short, or is empty.
+- **Budget:** 50 Strava calls (list *and* detail) and 20 s of wall clock per invocation, and the run
   stops at **80% of the 15-minute quota read from the response headers**
   (`X-RateLimit-Limit` / `X-RateLimit-Usage`, preferring the `X-ReadRateLimit-*`
   pair). The remaining 20% is headroom for `vitals-import`, the Coach tab and a
   manual sync — spending the quota to the last call would make *those* fail.
 - **Per-activity `try/catch`:** one failure increments `failed_total`, reports to
   Sentry and continues. A run failing 2 of 14 ends `partial` with 12 rows
-  correctly written.
+  correctly written. A failed *write* does **not** hold the cursor, on purpose: a
+  row that fails every time (a `23505` label collision, say) would otherwise
+  stall the whole import for ever. It is loud — `failed_total`, a non-`ok`
+  status and a Sentry issue — which a deferral is not, and deferrals are the
+  case where holding the cursor is correct.
 - Zero eligible activities → no writes beyond `last_run_at` and
   `last_run_status='noop'`, HTTP 200.
 
@@ -312,18 +401,52 @@ with no symptom except activities quietly ceasing to appear.
 deno run --allow-env supabase/functions/strava-import/test.ts
 ```
 
-150 assertions, TC-01 to TC-15, all pure — no network, no database, no
-dependence on the machine's timezone. Wired into `.github/workflows/ci-functions.yml`;
+242 assertions, TC-01 to TC-25. No network, no database, no dependence on the
+machine's clock or timezone. Wired into `.github/workflows/ci-functions.yml`;
 that job's steps are **hardcoded**, so a new function's tests are not
 auto-discovered and need a step adding by hand.
+
+- **TC-01 to TC-15** cover the pure functions: mapping, eligibility, adoption,
+  cursors, budgets, refresh-token rotation, the cron guard.
+- **TC-16 to TC-25** drive `runImport` itself against two fakes — a Supabase
+  client implementing exactly the surface `importer.ts` uses (backed by a tiny
+  in-memory sessions table, recording every call **in order**) and a
+  `globalThis.fetch` stub, so the real `client.ts` runs. They pin the dry run's
+  zero writes, re-import idempotence, that an adopted row is never duplicated,
+  the per-activity failure isolation, the detail fetch and its deferral
+  behaviour, the cursor-after-rows ordering, multi-page incremental completeness
+  and the `status` precedence.
+
+Call **order** is asserted, not only call counts: two of the defects these tests
+exist to pin (a cursor written before the rows it describes, a watermark moved
+past unlisted activities) are ordering bugs that any count-based assertion
+passes straight through.
+
+`serviceClient` lives in `supaClient.ts` rather than `importer.ts` so that
+`importer.ts` can import `SupabaseClient` as a **type only**. Deno erases a
+type-only import without loading the module, so the suite drives `runImport`
+with a structural fake and never needs `jsr:@supabase/supabase-js` in its module
+graph. Moving `createClient` back into `importer.ts` makes every `runImport`
+test unrunnable offline.
 
 ## Client-facing behaviour
 
 - `strava-connect` `{action:"start"}` → `{ ok, authorize_url }`; send the browser there.
 - `strava-connect` `{action:"disconnect"}` → `{ ok, disconnected, revokedAtStrava }`.
-  `revokedAtStrava:false` means the local tokens are gone but the app
-  authorisation may still stand — point the user at
-  <https://www.strava.com/settings/apps> rather than claiming success.
+  `disconnected` is always `true` on a 200 — the local token row and
+  `connected` flag are gone either way. **`revokedAtStrava` is the only part of
+  the response the UI must actually read.** It is `true` only when Strava itself
+  accepted `POST /oauth/deauthorize`; it is `false` whenever the grant may still
+  stand on Scott's Strava account:
+  - the stored token was already unusable (refresh returned `invalid_grant`, or
+    a 5xx/network failure meant no live access token could be obtained), or
+  - `deauthorize` returned a non-2xx or threw.
+
+  In every one of those cases the app has **destroyed the only credential that
+  could revoke the grant programmatically**, so nothing can undo it later from
+  here. A UI that reports plain success on `revokedAtStrava:false` leaves a live
+  authorisation on the account with no signposting; it must instead point the
+  user at <https://www.strava.com/settings/apps> to finish the job.
 - The callback returns to `STRAVA_APP_REDIRECT_URL` with `?strava=connected` or
   `?strava=error&reason=<denied|state|code|exchange|insufficient_scope|athlete_mismatch|method|server>`.
 - `strava-sync` returns the full `ImportResult` (200, or 207 when a run ended

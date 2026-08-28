@@ -148,8 +148,13 @@ COMMENT ON TABLE public.strava_sync_state IS
 
 COMMENT ON COLUMN public.strava_sync_state.backfill_cursor_before IS
   'Strava `before` epoch-seconds cursor, walking BACKWARDS through history. '
-  'Persisted before the next page is fetched, so an interrupted run resumes '
-  'where it stopped instead of losing the page.';
+  'Written ONCE per run, at the end, in the same statement as the counters — '
+  'never mid-walk. The importer collects pages and writes rows in two separate '
+  'phases, so a cursor persisted mid-walk would describe rows that do not yet '
+  'exist; a run killed in between would lose them permanently, because they '
+  'sit below incremental_after and nothing would re-list them. An interrupted '
+  'run instead re-walks from the last durable cursor, which is idempotent and '
+  'costs one repeated page.';
 
 -- ---------------------------------------------------------------------------
 -- upsert_strava_session — insert-or-refresh a session from a Strava activity.
@@ -194,10 +199,25 @@ BEGIN
     -- the one written here.
     ON CONFLICT (user_id, strava_activity_id) WHERE strava_activity_id IS NOT NULL
     DO UPDATE SET
-      duration   = excluded.duration,
-      distance_m = excluded.distance_m,
-      -- coalesce, not a bare assignment: a re-import from a summary payload
-      -- that happens to lack power must not wipe a figure already recorded.
+      -- GUARDED BY source, and this is not cosmetic. adopt_strava_session links
+      -- a row Scott (or Coach) filed by hand and deliberately does NOT touch
+      -- duration or distance_m — the existing row is the record of what he
+      -- decided the session was. But an adopted row is linked, so the NEXT run
+      -- reaches it through this function instead, and an unguarded assignment
+      -- here would undo that decision one cron cycle later: '60min' becomes
+      -- '60:00', 13618 becomes 13620, and '9min' becomes '8:49' — which changes
+      -- the parsed duration from 9.0 to 8.82 minutes and therefore the load.
+      -- source is the discriminator: it is 'strava' only on rows THIS importer
+      -- inserted; an adopted row keeps its original portal/coach/coach_plan/
+      -- claude_csv/concept2. A row we created may be corrected by a later run;
+      -- a row we adopted may not.
+      duration   = CASE WHEN s.source = 'strava' THEN excluded.duration   ELSE s.duration   END,
+      distance_m = CASE WHEN s.source = 'strava' THEN excluded.distance_m ELSE s.distance_m END,
+      -- avg_watts/avg_hr are deliberately NOT guarded: enriching an adopted row
+      -- with device-measured power and heart rate is the Gate 1 decision, and
+      -- they are machine facts Scott could not have logged himself. coalesce,
+      -- not a bare assignment: a re-import from a payload that happens to lack
+      -- power must not wipe a figure already recorded.
       avg_watts  = coalesce(excluded.avg_watts, s.avg_watts),
       avg_hr     = coalesce(excluded.avg_hr,    s.avg_hr)
     -- THE SET LIST ABOVE IS THE WHOLE CONTRACT. It must never grow to include
@@ -223,8 +243,14 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.upsert_strava_session(uuid,bigint,text,text,text,text,int,int,int) IS
-  'Insert a Strava activity as a session, or refresh the four volatile metrics '
-  'on the session already linked to it. Returns (session_id, action) where '
+  'Insert a Strava activity as a session, or refresh the volatile metrics on '
+  'the session already linked to it. duration and distance_m are refreshed '
+  'ONLY when sessions.source = ''strava'' — i.e. only on rows this importer '
+  'inserted. A row that adopt_strava_session linked keeps its original source '
+  'and therefore keeps the duration and distance_m Scott filed, for ever; '
+  'without that guard the next run after an adoption would silently rewrite '
+  'them. avg_watts and avg_hr are enriched on every linked row (coalesce), '
+  'which is the approved behaviour. Returns (session_id, action) where '
   'action is ''inserted'' or ''updated'' (xmax = 0 distinguishes them). The DO '
   'UPDATE SET list is deliberately minimal — see the inline comment; widening '
   'it breaks re-import idempotence and puts coach_note at risk. Note that a '
@@ -263,6 +289,13 @@ BEGIN
   -- facts he could not have known — the activity id, and device-measured power
   -- and heart rate. Power is written only when Strava says it came from a
   -- meter (p_has_device_watts), never from Strava's pace-derived estimate.
+  --
+  -- NOT touching `source` is what makes the promise permanent rather than
+  -- momentary. The row is linked from here on, so every later run reaches it
+  -- through upsert_strava_session instead — and that function refreshes
+  -- duration and distance_m only where source = 'strava'. Set source to
+  -- 'strava' here and the next cron cycle overwrites exactly the two columns
+  -- this function refused to touch.
   UPDATE public.sessions s SET
     strava_activity_id = p_activity_id,
     avg_watts = CASE WHEN p_has_device_watts THEN p_avg_watts ELSE s.avg_watts END,

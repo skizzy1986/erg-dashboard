@@ -17,7 +17,8 @@
 // that the next run picks up from the persisted cursor.
 import { checkCronSecret } from "../_shared/cronGuard.ts";
 import { captureFunctionError } from "../_shared/sentry.ts";
-import { runImport, serviceClient, type ImportResult } from "./importer.ts";
+import { runImport, type ImportResult } from "./importer.ts";
+import { serviceClient } from "./supaClient.ts";
 
 const FN = "strava-import";
 
@@ -110,6 +111,7 @@ Deno.serve(async (req: Request) => {
         updated: 0,
         skipped: 0,
         failed: 0,
+        deferred: 0,
         ambiguousActivityIds: [],
         stopReason: null,
         stravaCalls: 0,

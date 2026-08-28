@@ -8,7 +8,8 @@
 // the caller is authenticated and the `mode` recorded on the run.
 import { captureFunctionError } from "../_shared/sentry.ts";
 import { subjectFromAuthHeader } from "../_shared/jwtSubject.ts";
-import { runImport, serviceClient } from "../strava-import/importer.ts";
+import { runImport } from "../strava-import/importer.ts";
+import { serviceClient } from "../strava-import/supaClient.ts";
 
 const FN = "strava-sync";
 

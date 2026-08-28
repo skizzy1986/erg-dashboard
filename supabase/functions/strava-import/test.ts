@@ -20,6 +20,7 @@ import {
   isEligible,
   localTimeHHMM,
   mapActivityToSession,
+  needsDetailFetch,
   toLogDateFromLocal,
   typeFamily,
   type AdoptionCandidate,
@@ -34,6 +35,7 @@ import {
 import { EMPTY_RATE_LIMIT, parseRateLimit, StravaAuthError, StravaHttpError, type StravaTokens } from "./client.ts";
 import { getFreshAccessToken, type RotatedTokens, type StoredTokens, type TokenStore } from "./tokens.ts";
 import { checkCronSecret } from "../_shared/cronGuard.ts";
+import { runImport } from "./importer.ts";
 
 let pass = 0, fail = 0;
 const check = (name: string, cond: boolean, actual?: unknown) => {
@@ -190,6 +192,31 @@ check("TC-04 has_heartrate true but no value -> null",
 check("TC-04 no estimate substituted for missing power",
   mapActivityToSession(act({ has_device_watts: false, average_watts: 210, distance: 5000, moving_time: 1200 }))
     .avg_watts === null);
+
+// needsDetailFetch — the gate that decides whether a summary is worth writing
+// at all. The SummaryActivity from /athlete/activities does not reliably carry
+// power or heart rate (verified: the list payload for 19859099686 had neither,
+// the detail payload had both), and a session imported without them scores 0 in
+// sessionLoad(), so it would contribute nothing to CTL/ATL/TSB.
+check("TC-04 a summary with no watts and no HR needs detail",
+  needsDetailFetch(act({ average_watts: undefined, has_device_watts: undefined,
+    average_heartrate: undefined, has_heartrate: undefined })) === true);
+check("TC-04 a summary with HR but no device watts still needs detail",
+  needsDetailFetch(act({ average_watts: undefined, has_device_watts: undefined })) === true);
+check("TC-04 a summary with device watts but no HR still needs detail",
+  needsDetailFetch(act({ average_heartrate: undefined, has_heartrate: undefined })) === true);
+check("TC-04 a summary carrying BOTH needs no detail fetch",
+  needsDetailFetch(rowing) === false && needsDetailFetch(virtualRide) === false);
+check("TC-04 a summary missing distance/moving_time/date needs detail",
+  needsDetailFetch(act({ distance: undefined })) === true &&
+  needsDetailFetch(act({ moving_time: undefined })) === true &&
+  needsDetailFetch(act({ start_date_local: undefined })) === true);
+// A read spent on a sport we discard is a read taken from one that counts.
+for (const sport of ["WeightTraining", "Run", "Walk", "Ride"]) {
+  check(`TC-04 ${sport} never costs a detail fetch`,
+    needsDetailFetch(act({ sport_type: sport, average_watts: undefined,
+      has_device_watts: undefined, has_heartrate: undefined })) === false);
+}
 
 // ---------------------------------------------------------------------------
 // TC-05 — same-day, same-name activities get distinct, watt-free labels
@@ -651,6 +678,843 @@ check("TC-15 default env var still works for the vitals callers",
 // restore prior env state
 if (saved === undefined) Deno.env.delete(CRON_ENV); else Deno.env.set(CRON_ENV, saved);
 if (savedShared === undefined) Deno.env.delete("CRON_SECRET"); else Deno.env.set("CRON_SECRET", savedShared);
+
+// ---------------------------------------------------------------------------
+// runImport — the orchestration itself.
+//
+// Everything above this line is a pure function. runImport is not, and until
+// TC-16 it had no test at all: 600-odd lines carrying six of the nine
+// acceptance criteria, exercised for the first time only against Scott's real
+// Strava account and his real sessions table.
+//
+// It takes injectable `supa`, `now` and `budget` because it was designed to be
+// driven this way. The two fakes below are the whole harness:
+//
+//   makeDb()     — a Supabase client implementing exactly the surface
+//                  importer.ts uses (.from().select()/.update()/.delete() with
+//                  chained filters, and .rpc()), backed by a tiny in-memory
+//                  sessions table, recording every call in order.
+//   installStrava() — globalThis.fetch, so the REAL client.ts runs: its URL
+//                  building, its rate-limit header parsing and its error
+//                  classes are under test too, and no network is touched.
+//
+// Call ORDER is recorded, not just call counts, because two of the defects
+// these tests exist to pin (the cursor written before the rows, the watermark
+// moved past unwritten activities) are ordering bugs that any count-based
+// assertion passes straight through.
+// ---------------------------------------------------------------------------
+console.log("\nTC-16..25 runImport");
+
+// Sentry must stay a no-op: captureFunctionError with a DSN set would try to
+// reach the network from inside a test that has no permission to.
+const savedDsn = Deno.env.get("SENTRY_DSN");
+Deno.env.delete("SENTRY_DSN");
+
+const USER = "11111111-2222-3333-4444-555555555555";
+const epochOf = (iso: string): number => Math.floor(Date.parse(iso) / 1000);
+const NOW_MS = Date.parse("2026-08-28T00:00:00Z");
+
+type FakeRow = Record<string, unknown>;
+type LoggedCall = { table: string; op: string; cols?: string; payload?: unknown };
+
+type SessionRow = {
+  id: number;
+  strava_activity_id: number | null;
+  date_iso: string | null;
+  type: string | null;
+  distance_m: number | null;
+  duration: string | null;
+  source: string;
+};
+
+type DbOpts = {
+  sync?: FakeRow | null;
+  tokens?: FakeRow | null;
+  sessions?: SessionRow[];
+  /** Return an error object to make this write fail; undefined to let it through. */
+  rpcFails?: (name: string, args: FakeRow) => { code: string } | undefined;
+};
+
+function makeDb(opts: DbOpts) {
+  const log: LoggedCall[] = [];
+  const syncPatches: FakeRow[] = [];
+  const rpcCalls: { name: string; args: FakeRow }[] = [];
+  const state = {
+    sync: opts.sync === undefined ? null : opts.sync ? { ...opts.sync } : null,
+    tokens: opts.tokens === undefined ? null : opts.tokens ? { ...opts.tokens } : null,
+    sessions: (opts.sessions ?? []).map((s) => ({ ...s })),
+  };
+  let nextId = 900;
+
+  const settle = (rec: LoggedCall, filters: [string, unknown[]][]) => {
+    if (rec.table === "strava_sync_state") {
+      if (rec.op === "select") return { data: state.sync, error: null };
+      if (rec.op === "update") {
+        const patch = rec.payload as FakeRow;
+        syncPatches.push(patch);
+        if (state.sync) Object.assign(state.sync, patch);
+        return { data: null, error: null };
+      }
+    }
+    if (rec.table === "strava_tokens") {
+      if (rec.op === "select") return { data: state.tokens, error: null };
+      if (rec.op === "delete") {
+        state.tokens = null;
+        return { data: null, error: null };
+      }
+      if (rec.op === "update") {
+        // The compare-and-swap: only the worker that presented the stored
+        // refresh token may write the rotation.
+        const cas = filters.find((f) => f[0] === "eq" && f[1][0] === "refresh_token");
+        const expected = cas ? cas[1][1] : undefined;
+        if (!state.tokens || state.tokens.refresh_token !== expected) {
+          return { data: [], error: null };
+        }
+        Object.assign(state.tokens, rec.payload as FakeRow);
+        return { data: [{ user_id: USER }], error: null };
+      }
+    }
+    if (rec.table === "sessions" && rec.op === "select") {
+      // Two different reads, told apart the same way importer.ts asks for them.
+      if (String(rec.cols).includes("date_iso")) {
+        return {
+          data: state.sessions
+            .filter((s) => s.strava_activity_id == null && s.distance_m != null)
+            .map((s) => ({ id: s.id, date_iso: s.date_iso, type: s.type, distance_m: s.distance_m })),
+          error: null,
+        };
+      }
+      const wanted = filters.find((f) => f[0] === "in")?.[1][1] as number[] | undefined;
+      return {
+        data: state.sessions
+          .filter((s) => s.strava_activity_id != null && (wanted ?? []).includes(s.strava_activity_id))
+          .map((s) => ({ id: s.id, strava_activity_id: s.strava_activity_id })),
+        error: null,
+      };
+    }
+    return { data: null, error: null };
+  };
+
+  const builder = (table: string, op: string, payload?: unknown, cols?: string) => {
+    const rec: LoggedCall = { table, op, payload, cols };
+    log.push(rec);
+    const filters: [string, unknown[]][] = [];
+    // deno-lint-ignore no-explicit-any
+    const self: any = {
+      select: (c?: string) => {
+        rec.cols = c;
+        return self;
+      },
+      maybeSingle: () => Promise.resolve(settle(rec, filters)),
+      single: () => Promise.resolve(settle(rec, filters)),
+      // deno-lint-ignore no-explicit-any
+      then: (ok: any, bad: any) => Promise.resolve(settle(rec, filters)).then(ok, bad),
+    };
+    for (const m of ["eq", "in", "is", "gte", "lte", "not", "neq", "order", "limit"]) {
+      self[m] = (...args: unknown[]) => {
+        filters.push([m, args]);
+        return self;
+      };
+    }
+    return self;
+  };
+
+  const rpc = (name: string, args: FakeRow) => {
+    log.push({ table: "rpc", op: name, payload: args });
+    rpcCalls.push({ name, args });
+    const failure = opts.rpcFails?.(name, args);
+    if (failure) return Promise.resolve({ data: null, error: failure });
+
+    if (name === "upsert_strava_session") {
+      const aid = Number(args.p_activity_id);
+      const existing = state.sessions.find((s) => s.strava_activity_id === aid);
+      if (existing) {
+        // Models migration 012's DO UPDATE, source guard included: duration and
+        // distance_m are refreshed only on rows this importer inserted.
+        if (existing.source === "strava") {
+          existing.duration = args.p_duration as string;
+          existing.distance_m = args.p_distance_m as number;
+        }
+        return Promise.resolve({ data: [{ session_id: existing.id, action: "updated" }], error: null });
+      }
+      const row: SessionRow = {
+        id: nextId++,
+        strava_activity_id: aid,
+        date_iso: null,
+        type: args.p_type as string,
+        distance_m: args.p_distance_m as number,
+        duration: args.p_duration as string,
+        source: "strava",
+      };
+      state.sessions.push(row);
+      return Promise.resolve({ data: [{ session_id: row.id, action: "inserted" }], error: null });
+    }
+    if (name === "adopt_strava_session") {
+      const row = state.sessions.find((s) => s.id === Number(args.p_session_id));
+      if (!row || row.strava_activity_id != null) {
+        return Promise.resolve({ data: [{ session_id: args.p_session_id, action: "adopt_lost_race" }], error: null });
+      }
+      row.strava_activity_id = Number(args.p_activity_id);
+      return Promise.resolve({ data: [{ session_id: row.id, action: "adopted" }], error: null });
+    }
+    return Promise.resolve({ data: null, error: null });
+  };
+
+  const supa = {
+    from: (table: string) => ({
+      select: (cols?: string) => builder(table, "select", undefined, cols),
+      update: (payload: FakeRow) => builder(table, "update", payload),
+      delete: () => builder(table, "delete"),
+      insert: (payload: unknown) => builder(table, "insert", payload),
+    }),
+    rpc,
+  };
+
+  return {
+    supa,
+    log,
+    rpcCalls,
+    syncPatches,
+    state,
+    writes: () => log.filter((c) => c.op === "update" || c.op === "delete" || c.op === "insert"),
+    lastSyncPatch: () => syncPatches[syncPatches.length - 1],
+    indexOf: (pred: (c: LoggedCall) => boolean) => log.findIndex(pred),
+    lastIndexOf: (pred: (c: LoggedCall) => boolean) => {
+      for (let i = log.length - 1; i >= 0; i--) if (pred(log[i])) return i;
+      return -1;
+    },
+  };
+}
+
+// --- the fake Strava HTTP layer -------------------------------------------
+// globalThis.fetch, so the real client.ts runs against it.
+
+type StravaStub = {
+  activities: StravaActivity[];
+  detail?: Record<number, StravaActivity | number>;
+  /** 'ok' | 'invalid_grant' | number (an HTTP status) */
+  token?: "ok" | "invalid_grant" | number;
+  /** Per list call, a status to return instead of 200. */
+  listStatus?: (call: number) => number | undefined;
+  usage?: string;
+  limit?: string;
+};
+
+function installStrava(stub: StravaStub) {
+  const real = globalThis.fetch;
+  const listCalls: { after: number | null; before: number | null; page: number }[] = [];
+  const detailCalls: number[] = [];
+  const epoch = (a: StravaActivity) => Math.floor(Date.parse(String(a.start_date)) / 1000);
+  const headers = {
+    "content-type": "application/json",
+    "x-readratelimit-limit": stub.limit ?? "100,1000",
+    "x-readratelimit-usage": stub.usage ?? "1,1",
+  };
+
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    const href = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const url = new URL(href);
+
+    if (url.href.startsWith("https://www.strava.com/oauth/token")) {
+      const mode = stub.token ?? "ok";
+      if (mode === "invalid_grant") {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400, headers }),
+        );
+      }
+      if (typeof mode === "number") {
+        return Promise.resolve(new Response("{}", { status: mode, headers }));
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            access_token: "fresh-access",
+            refresh_token: "fresh-refresh",
+            expires_at: Math.floor(NOW_MS / 1000) + 21600,
+            athlete_id: 7,
+          }),
+          { status: 200, headers },
+        ),
+      );
+    }
+
+    if (url.pathname === "/api/v3/athlete/activities") {
+      const after = url.searchParams.has("after") ? Number(url.searchParams.get("after")) : null;
+      const before = url.searchParams.has("before") ? Number(url.searchParams.get("before")) : null;
+      const page = Number(url.searchParams.get("page") ?? 1);
+      const perPage = Number(url.searchParams.get("per_page") ?? 30);
+      listCalls.push({ after, before, page });
+
+      const status = stub.listStatus?.(listCalls.length);
+      if (status) return Promise.resolve(new Response("[]", { status, headers }));
+
+      // Strava orders /athlete/activities newest-first.
+      let pool = stub.activities.slice().sort((x, y) => epoch(y) - epoch(x));
+      if (after != null) pool = pool.filter((a) => epoch(a) > after);
+      if (before != null) pool = pool.filter((a) => epoch(a) < before);
+      const slice = pool.slice((page - 1) * perPage, page * perPage);
+      return Promise.resolve(new Response(JSON.stringify(slice), { status: 200, headers }));
+    }
+
+    const m = url.pathname.match(/^\/api\/v3\/activities\/(\d+)$/);
+    if (m) {
+      const id = Number(m[1]);
+      detailCalls.push(id);
+      const d = stub.detail?.[id];
+      if (typeof d === "number") return Promise.resolve(new Response("{}", { status: d, headers }));
+      if (!d) return Promise.resolve(new Response("{}", { status: 404, headers }));
+      return Promise.resolve(new Response(JSON.stringify(d), { status: 200, headers }));
+    }
+
+    return Promise.resolve(new Response("{}", { status: 404, headers }));
+  }) as typeof fetch;
+
+  return {
+    listCalls,
+    detailCalls,
+    restore: () => {
+      globalThis.fetch = real;
+    },
+  };
+}
+
+// --- fixtures --------------------------------------------------------------
+
+const freshTokens = {
+  athlete_id: 7,
+  access_token: "live-access",
+  refresh_token: "live-refresh",
+  expires_at: new Date(NOW_MS + 6 * 3600_000).toISOString(),
+  scope: "activity:read_all",
+};
+
+const syncRow = (over: FakeRow = {}): FakeRow => ({
+  user_id: USER,
+  connected: true,
+  backfill_from: BACKFILL_FROM,
+  backfill_complete: true,
+  backfill_cursor_before: null,
+  incremental_after: epochOf("2026-08-01T00:00:00Z"),
+  imported_total: 0,
+  adopted_total: 0,
+  skipped_total: 0,
+  failed_total: 0,
+  ambiguous_activity_ids: [],
+  rate_limit_resets_at: null,
+  ...over,
+});
+
+/** A list-payload summary: everything a SummaryActivity really carries. */
+const summary = (id: number, localIso: string, over: Partial<StravaActivity> = {}): StravaActivity => ({
+  id,
+  name: `Row ${id}`,
+  sport_type: "Rowing",
+  start_date: `${localIso.slice(0, 19)}Z`,
+  start_date_local: localIso,
+  distance: 5657.2,
+  moving_time: 1560,
+  ...over,
+});
+
+/** The same activity as /activities/:id returns it — with power and HR. */
+const detailed = (s: StravaActivity, over: Partial<StravaActivity> = {}): StravaActivity => ({
+  ...s,
+  average_watts: 135.706,
+  has_device_watts: true,
+  average_heartrate: 124.475,
+  has_heartrate: true,
+  ...over,
+});
+
+/** A summary that already carries power and HR, so no detail fetch is needed. */
+const fullSummary = (id: number, localIso: string, over: Partial<StravaActivity> = {}): StravaActivity =>
+  detailed(summary(id, localIso), over);
+
+// deno-lint-ignore no-explicit-any
+const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, unknown> = {}) =>
+  runImport(
+    {
+      supa: db.supa,
+      clientId: "cid",
+      clientSecret: "csecret",
+      backfillFrom: BACKFILL_FROM,
+      now: () => NOW_MS,
+      ...over,
+      // deno-lint-ignore no-explicit-any
+    } as any,
+    // deno-lint-ignore no-explicit-any
+    { userId: USER, mode: "cron", dryRun: false, ...opts } as any,
+  );
+
+// ---------------------------------------------------------------------------
+// TC-16 — a dry run writes NOTHING
+// ---------------------------------------------------------------------------
+{
+  const a1 = summary(1001, "2026-08-22T21:02:23");
+  const a2 = summary(1002, "2026-08-23T06:10:00");
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({
+    activities: [a1, a2],
+    detail: { 1001: detailed(a1), 1002: detailed(a2) },
+  });
+  const r = await run(db, {}, { dryRun: true });
+  net.restore();
+
+  check("TC-16 dry run sees both activities", r.imported === 2, r);
+  check("TC-16 dry run makes ZERO writes of any kind", db.writes().length === 0, db.writes());
+  check("TC-16 dry run calls no RPC", db.rpcCalls.length === 0, db.rpcCalls);
+  check("TC-16 dry run writes no sync state", db.syncPatches.length === 0, db.syncPatches);
+  check(
+    "TC-16 dry run does not move the incremental cursor",
+    db.state.sync.incremental_after === epochOf("2026-08-01T00:00:00Z"),
+    db.state.sync.incremental_after,
+  );
+  check("TC-16 dry run still fetched detail (it is a read)", net.detailCalls.length === 2, net.detailCalls);
+  check("TC-16 dry run creates no session rows", db.state.sessions.length === 0, db.state.sessions);
+}
+
+// ---------------------------------------------------------------------------
+// TC-17 — nothing to do
+// ---------------------------------------------------------------------------
+{
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [] });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-17 empty account -> noop", r.status === "noop", r);
+  check("TC-17 empty account writes no rows", db.rpcCalls.length === 0, db.rpcCalls);
+  check(
+    "TC-17 empty account does not move the cursor",
+    db.lastSyncPatch().incremental_after === epochOf("2026-08-01T00:00:00Z"),
+    db.lastSyncPatch(),
+  );
+  check("TC-17 no detail fetches", net.detailCalls.length === 0, net.detailCalls);
+}
+{
+  // Ineligible activities are the opposite case, and the invariant is the
+  // other way round: the watermark MUST advance over them or a week of
+  // WeightTraining is re-listed for ever.
+  const w = summary(1201, "2026-08-20T07:00:00", { sport_type: "WeightTraining" });
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [w] });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-17 ineligible-only -> noop", r.status === "noop" && r.imported === 0, r);
+  check("TC-17 ineligible-only costs no detail fetch", net.detailCalls.length === 0, net.detailCalls);
+  check(
+    "TC-17 watermark still advances over ineligible activities",
+    db.lastSyncPatch().incremental_after === epochOf("2026-08-20T07:00:00Z"),
+    db.lastSyncPatch().incremental_after,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TC-18 — one failing activity does not take the others down (criterion 7)
+// ---------------------------------------------------------------------------
+{
+  const acts = [
+    fullSummary(1301, "2026-08-20T06:00:00"),
+    fullSummary(1302, "2026-08-21T06:00:00"),
+    fullSummary(1303, "2026-08-22T06:00:00"),
+  ];
+  const db = makeDb({
+    sync: syncRow(),
+    tokens: { ...freshTokens },
+    rpcFails: (name, args) =>
+      name === "upsert_strava_session" && Number(args.p_activity_id) === 1302
+        ? { code: "23505" }
+        : undefined,
+  });
+  const net = installStrava({ activities: acts });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-18 the other two are written", r.imported === 2, r);
+  check("TC-18 failed count is exactly 1", r.failed === 1, r);
+  check("TC-18 run ends partial", r.status === "partial", r);
+  check("TC-18 partial is not ok", r.ok === false, r);
+  check("TC-18 error code is db_write_failed", r.errorCode === "db_write_failed", r);
+  check(
+    "TC-18 the failure is reported per activity",
+    r.decisions.filter((d) => d.action === "failed").map((d) => d.activityId).join() === "1302",
+    r.decisions,
+  );
+  check("TC-18 two rows exist", db.state.sessions.length === 2, db.state.sessions);
+}
+
+// ---------------------------------------------------------------------------
+// TC-19 — a dry run must never delete the tokens (D4)
+// ---------------------------------------------------------------------------
+{
+  const stale = { ...freshTokens, expires_at: new Date(NOW_MS - 60_000).toISOString() };
+  const db = makeDb({ sync: syncRow(), tokens: stale });
+  const net = installStrava({ activities: [], token: "invalid_grant" });
+  const r = await run(db, {}, { dryRun: true });
+  net.restore();
+
+  check("TC-19 dry run against a revoked token reports auth_failed", r.status === "auth_failed", r);
+  check("TC-19 dry run does NOT delete the token row", db.state.tokens !== null, db.state.tokens);
+  check(
+    "TC-19 dry run issues no delete at all",
+    db.log.filter((c) => c.op === "delete").length === 0,
+    db.log,
+  );
+  check("TC-19 dry run does not disconnect in sync state", db.syncPatches.length === 0, db.syncPatches);
+}
+{
+  // The real run is the control: a genuinely revoked connection still gets
+  // torn down, so TC-19 is proving dryRun suppression, not a broken path.
+  const stale = { ...freshTokens, expires_at: new Date(NOW_MS - 60_000).toISOString() };
+  const db = makeDb({ sync: syncRow(), tokens: stale });
+  const net = installStrava({ activities: [], token: "invalid_grant" });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-19 a REAL run does delete a revoked token row", db.state.tokens === null, db.state.tokens);
+  check("TC-19 a REAL run marks the sync state disconnected",
+    r.status === "auth_failed" && db.lastSyncPatch().connected === false, db.lastSyncPatch());
+}
+
+// ---------------------------------------------------------------------------
+// TC-20 — re-import of a linked activity is one upsert, never a second row
+//         (criterion 2 — the idempotence guarantee)
+// ---------------------------------------------------------------------------
+{
+  const first = fullSummary(1401, "2026-08-20T06:00:00", { name: "Morning Row" });
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net1 = installStrava({ activities: [first] });
+  const r1 = await run(db);
+  net1.restore();
+  check("TC-20 first run inserts", r1.imported === 1 && db.state.sessions.length === 1, r1);
+
+  // Second run: renamed activity, different power, and the watermark has moved
+  // past it — so re-list it explicitly, which is what a backfill overlap or a
+  // manual Sync does.
+  const renamed = fullSummary(1401, "2026-08-20T06:00:00", {
+    name: "Threshold pieces",
+    average_watts: 201.4,
+  });
+  db.syncPatches.length = 0;
+  db.rpcCalls.length = 0;
+  db.state.sync.incremental_after = epochOf("2026-08-01T00:00:00Z");
+  const net2 = installStrava({ activities: [renamed] });
+  const r2 = await run(db);
+  net2.restore();
+
+  check("TC-20 second run makes exactly one RPC call", db.rpcCalls.length === 1, db.rpcCalls);
+  check("TC-20 and it is the upsert, not an adopt", db.rpcCalls[0].name === "upsert_strava_session", db.rpcCalls);
+  check("TC-20 counted as an update, not an import", r2.updated === 1 && r2.imported === 0, r2);
+  check("TC-20 still exactly one session row", db.state.sessions.length === 1, db.state.sessions);
+  check("TC-20 the changed label is still sent (the RPC decides what to keep)",
+    String(db.rpcCalls[0].args.p_label).startsWith("Threshold pieces"), db.rpcCalls[0].args);
+}
+
+// ---------------------------------------------------------------------------
+// TC-21 — an adopted row is not duplicated on the next run (criterion 3)
+// ---------------------------------------------------------------------------
+{
+  const a = fullSummary(1501, "2026-08-20T06:00:00");
+  const legacy: SessionRow = {
+    id: 42,
+    strava_activity_id: null,
+    date_iso: "2026-08-20",
+    type: "Z2 Aerobic",
+    distance_m: 5659,
+    duration: "26min",
+    source: "portal",
+  };
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens }, sessions: [legacy] });
+  const net1 = installStrava({ activities: [a] });
+  const r1 = await run(db);
+  net1.restore();
+
+  check("TC-21 run 1 adopts rather than inserts", r1.adopted === 1 && r1.imported === 0, r1);
+  check("TC-21 run 1 leaves exactly one session row", db.state.sessions.length === 1, db.state.sessions);
+  check("TC-21 run 1 links the legacy row", db.state.sessions[0].id === 42, db.state.sessions);
+
+  db.rpcCalls.length = 0;
+  db.state.sync.incremental_after = epochOf("2026-08-01T00:00:00Z");
+  const net2 = installStrava({ activities: [a] });
+  const r2 = await run(db);
+  net2.restore();
+
+  check("TC-21 run 2 does not duplicate", db.state.sessions.length === 1, db.state.sessions);
+  check("TC-21 run 2 is an update, not an insert or a second adopt",
+    r2.updated === 1 && r2.imported === 0 && r2.adopted === 0, r2);
+  check("TC-21 run 2 makes exactly one RPC call", db.rpcCalls.length === 1, db.rpcCalls);
+  check("TC-21 the adopted row keeps the duration Scott filed",
+    db.state.sessions[0].duration === "26min", db.state.sessions[0]);
+}
+
+// ---------------------------------------------------------------------------
+// TC-22 — the detail fetch, and what happens when the budget runs out (D1)
+// ---------------------------------------------------------------------------
+{
+  // The whole point of D1: a summary carries no watts, so without a detail
+  // fetch avg_watts is null and sessionLoad() scores the session 0.
+  const s = summary(1601, "2026-08-22T21:02:23");
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [s], detail: { 1601: detailed(s) } });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-22 a power-less summary triggers a detail fetch", net.detailCalls.join() === "1601", net.detailCalls);
+  check("TC-22 the imported row carries device watts", db.rpcCalls[0].args.p_avg_watts === 136, db.rpcCalls[0].args);
+  check("TC-22 and heart rate", db.rpcCalls[0].args.p_avg_hr === 124, db.rpcCalls[0].args);
+  check("TC-22 nothing deferred", r.deferred === 0 && r.status === "ok", r);
+}
+{
+  // A summary that already carries both must NOT spend a read.
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [fullSummary(1602, "2026-08-22T21:02:23")] });
+  await run(db);
+  net.restore();
+  check("TC-22 a complete summary costs no detail fetch", net.detailCalls.length === 0, net.detailCalls);
+}
+{
+  // An ineligible-by-summary activity must not have a read spent on it either.
+  const short = summary(1603, "2026-08-22T21:02:23", { moving_time: 40, distance: 90 });
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [short], detail: { 1603: detailed(short) } });
+  await run(db);
+  net.restore();
+  check("TC-22 a fragment costs no detail fetch", net.detailCalls.length === 0, net.detailCalls);
+}
+{
+  // Budget exhausted mid-chunk: the activities whose detail was never fetched
+  // are DEFERRED, not written with a null avg_watts, and the watermark is held
+  // below them so the next run re-lists them.
+  const acts = [
+    summary(1701, "2026-08-20T06:00:00"),
+    summary(1702, "2026-08-21T06:00:00"),
+    summary(1703, "2026-08-22T06:00:00"),
+  ];
+  const detail: Record<number, StravaActivity> = {};
+  for (const a of acts) detail[a.id] = detailed(a);
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: acts, detail });
+  // 1 list call + 2 detail fetches, then the budget is spent.
+  const r = await run(db, { budget: { maxCalls: 3, maxElapsedMs: 60_000 } });
+  net.restore();
+
+  const oldest = epochOf("2026-08-20T06:00:00Z");
+  check("TC-22 budget stop: two written, one deferred",
+    r.imported === 2 && r.deferred === 1, r);
+  check("TC-22 budget stop: the deferred activity is NOT written",
+    db.rpcCalls.every((c) => Number(c.args.p_activity_id) !== 1701), db.rpcCalls);
+  check("TC-22 budget stop: no row has a null avg_watts",
+    db.rpcCalls.every((c) => typeof c.args.p_avg_watts === "number"), db.rpcCalls);
+  check("TC-22 budget stop: the deferral is reported",
+    r.decisions.some((d) => d.activityId === 1701 && String(d.detail).startsWith("deferred:")),
+    r.decisions);
+  check("TC-22 budget stop: stopReason recorded", r.stopReason === "calls", r);
+  check("TC-22 budget stop: the watermark is held BELOW the deferred activity",
+    db.lastSyncPatch().incremental_after === oldest - 1, db.lastSyncPatch().incremental_after);
+  check("TC-22 budget stop: a deferral is not a skip",
+    r.skipped === 0 && r.failed === 0, r);
+}
+{
+  // Same guarantee when the detail fetch itself fails.
+  const a = summary(1801, "2026-08-22T06:00:00");
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [a], detail: { 1801: 500 } });
+  const r = await run(db);
+  net.restore();
+
+  check("TC-22 detail 500 -> nothing written", db.rpcCalls.length === 0 && r.imported === 0, db.rpcCalls);
+  check("TC-22 detail 500 -> deferred", r.deferred === 1, r);
+  check("TC-22 detail 500 -> watermark held below it",
+    db.lastSyncPatch().incremental_after === epochOf("2026-08-22T06:00:00Z") - 1,
+    db.lastSyncPatch().incremental_after);
+}
+
+// ---------------------------------------------------------------------------
+// TC-23 — the backfill cursor never moves ahead of the rows it describes (D2)
+// ---------------------------------------------------------------------------
+{
+  const acts = [
+    fullSummary(1901, "2026-06-20T06:00:00"),
+    fullSummary(1902, "2026-06-21T06:00:00"),
+    fullSummary(1903, "2026-06-22T06:00:00"),
+    // Older than STRAVA_BACKFILL_FROM: this is what terminates the walk.
+    fullSummary(1904, "2026-06-10T06:00:00"),
+  ];
+  const db = makeDb({
+    sync: syncRow({
+      backfill_complete: false,
+      backfill_cursor_before: null,
+      incremental_after: epochOf("2026-08-25T00:00:00Z"),
+    }),
+    tokens: { ...freshTokens },
+  });
+  const net = installStrava({ activities: acts });
+  const r = await run(db);
+  net.restore();
+
+  const firstSyncWrite = db.indexOf((c: LoggedCall) => c.table === "strava_sync_state" && c.op === "update");
+  const lastRowWrite = db.lastIndexOf((c: LoggedCall) => c.table === "rpc");
+
+  check("TC-23 the backfill imported the three in-window activities", r.imported === 3, r);
+  check("TC-23 sync state is written EXACTLY once per run",
+    db.syncPatches.length === 1, db.syncPatches);
+  check("TC-23 the cursor is written AFTER every row it describes",
+    firstSyncWrite > lastRowWrite && lastRowWrite >= 0, { firstSyncWrite, lastRowWrite });
+  check("TC-23 no cursor-only write escapes mid-walk",
+    db.syncPatches.every((p: FakeRow) => "last_run_at" in p), db.syncPatches);
+  check("TC-23 the backfill is marked complete once the floor is reached",
+    db.lastSyncPatch().backfill_complete === true, db.lastSyncPatch());
+}
+{
+  // The zero-eligible path must persist the cursor too, or a chunk that walked
+  // a page of nothing but WeightTraining throws that walk away every run.
+  const db = makeDb({
+    sync: syncRow({
+      backfill_complete: false,
+      backfill_cursor_before: null,
+      incremental_after: epochOf("2026-08-25T00:00:00Z"),
+    }),
+    tokens: { ...freshTokens },
+  });
+  const net = installStrava({
+    activities: [summary(1951, "2026-06-20T06:00:00", { sport_type: "WeightTraining" })],
+  });
+  await run(db);
+  net.restore();
+  check("TC-23 zero-eligible run still persists the backfill cursor",
+    typeof db.lastSyncPatch().backfill_cursor_before === "number", db.lastSyncPatch());
+}
+
+// ---------------------------------------------------------------------------
+// TC-24 — multi-page incremental skips nothing (D3)
+// ---------------------------------------------------------------------------
+{
+  // 150 activities forces a second page at PER_PAGE = 100. They are Runs so the
+  // pass costs no detail fetches; every one still produces a decision, which is
+  // how we prove all 150 were listed.
+  const many: StravaActivity[] = [];
+  for (let i = 0; i < 150; i++) {
+    const day = new Date(Date.UTC(2026, 7, 1, 0, 0, 0) + i * 3600_000).toISOString().slice(0, 19);
+    many.push(summary(2000 + i, day, { sport_type: "Run" }));
+  }
+  const db = makeDb({
+    sync: syncRow({ incremental_after: epochOf("2026-07-31T00:00:00Z") }),
+    tokens: { ...freshTokens },
+  });
+  const net = installStrava({ activities: many });
+  const r = await run(db);
+  net.restore();
+
+  const seenIds = new Set(r.decisions.map((d) => d.activityId));
+  const missing = many.filter((a) => !seenIds.has(a.id)).map((a) => a.id);
+
+  check("TC-24 more than one page was requested", net.listCalls.length >= 2, net.listCalls);
+  check("TC-24 `after` is held FIXED across pages",
+    new Set(net.listCalls.map((c) => c.after)).size === 1, net.listCalls);
+  check("TC-24 only `page` advances",
+    net.listCalls.map((c) => c.page).join() === net.listCalls.map((_c, i) => i + 1).join(),
+    net.listCalls);
+  check("TC-24 every one of the 150 activities was seen", missing.length === 0, missing);
+  check("TC-24 the watermark lands on the newest, not on page 1's oldest",
+    db.lastSyncPatch().incremental_after === Math.max(...many.map((a) => epochOf(String(a.start_date)))),
+    db.lastSyncPatch().incremental_after);
+}
+
+// ---------------------------------------------------------------------------
+// TC-25 — status precedence: rate_limited > partial > error > noop > ok
+// ---------------------------------------------------------------------------
+{
+  // rate_limited outranks a run that wrote rows successfully.
+  const db = makeDb({
+    sync: syncRow({ backfill_complete: false, backfill_cursor_before: null }),
+    tokens: { ...freshTokens },
+  });
+  const net = installStrava({
+    activities: [fullSummary(2201, "2026-08-20T06:00:00")],
+    // call 1 is the incremental list; call 2 is the first backfill page.
+    listStatus: (n) => (n === 2 ? 429 : undefined),
+  });
+  const r = await run(db);
+  net.restore();
+  check("TC-25 rate_limited outranks a successful write",
+    r.status === "rate_limited" && r.imported === 1, r);
+  check("TC-25 rate_limited sets the error code", r.errorCode === "rate_limited", r);
+  check("TC-25 rate_limited arms the quarter-hour hold",
+    typeof db.lastSyncPatch().rate_limit_resets_at === "string", db.lastSyncPatch());
+}
+{
+  // A run held off by a previous 429 returns before touching anything.
+  const db = makeDb({
+    sync: syncRow({ rate_limit_resets_at: new Date(NOW_MS + 300_000).toISOString() }),
+    tokens: { ...freshTokens },
+  });
+  const net = installStrava({ activities: [fullSummary(2202, "2026-08-20T06:00:00")] });
+  const r = await run(db);
+  net.restore();
+  check("TC-25 an armed rate-limit hold short-circuits the run",
+    r.status === "rate_limited" && net.listCalls.length === 0, { r, listCalls: net.listCalls });
+}
+{
+  // Every write fails: error, not partial.
+  const db = makeDb({
+    sync: syncRow(),
+    tokens: { ...freshTokens },
+    rpcFails: () => ({ code: "42501" }),
+  });
+  const net = installStrava({ activities: [fullSummary(2203, "2026-08-20T06:00:00")] });
+  const r = await run(db);
+  net.restore();
+  check("TC-25 all writes failing -> error, not partial", r.status === "error" && r.failed === 1, r);
+}
+{
+  // Eligible but nothing written and nothing failed -> noop. Two candidate
+  // rows inside tolerance is ambiguous, and ambiguity writes nothing.
+  const a = fullSummary(2204, "2026-08-20T06:00:00");
+  const twin = (id: number): SessionRow => ({
+    id,
+    strava_activity_id: null,
+    date_iso: "2026-08-20",
+    type: "erg",
+    distance_m: 5657,
+    duration: "26:00",
+    source: "portal",
+  });
+  const db = makeDb({
+    sync: syncRow(),
+    tokens: { ...freshTokens },
+    sessions: [twin(51), twin(52)],
+  });
+  const net = installStrava({ activities: [a] });
+  const r = await run(db);
+  net.restore();
+  check("TC-25 ambiguous-only run -> noop", r.status === "noop", r);
+  check("TC-25 ambiguity writes nothing", db.rpcCalls.length === 0, db.rpcCalls);
+  check("TC-25 ambiguity is recorded for a human", r.ambiguousActivityIds.join() === "2204", r);
+  check("TC-25 noop is still ok", r.ok === true, r);
+}
+{
+  // A disconnected user is a noop before any network call at all.
+  const db = makeDb({ sync: syncRow({ connected: false }), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [fullSummary(2205, "2026-08-20T06:00:00")] });
+  const r = await run(db);
+  net.restore();
+  check("TC-25 disconnected -> noop with no calls",
+    r.status === "noop" && net.listCalls.length === 0 && db.writes().length === 0, r);
+}
+{
+  // And the plain happy path is 'ok'.
+  const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
+  const net = installStrava({ activities: [fullSummary(2206, "2026-08-20T06:00:00")] });
+  const r = await run(db);
+  net.restore();
+  check("TC-25 a clean run -> ok", r.status === "ok" && r.ok === true, r);
+  check("TC-25 counters are carried forward, not reset",
+    db.lastSyncPatch().imported_total === 1, db.lastSyncPatch());
+}
+
+if (savedDsn === undefined) Deno.env.delete("SENTRY_DSN");
+else Deno.env.set("SENTRY_DSN", savedDsn);
 
 console.log("\nRESULT:", pass, "passed,", fail, "failed");
 if (fail) Deno.exit(1);
