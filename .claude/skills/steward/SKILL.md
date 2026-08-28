@@ -13,7 +13,7 @@ or close/reopen a PR to kick CI; never approve or merge.
 
 Every line is **cited** (`path:line`), **attested** (`— measured YYYY-MM-DD`), or a **dated
 incident** naming the commit or PR that records it. Anything genuinely unknowable is
-quarantined under *Unverified* and stated nowhere else. A claim in none of those forms is a
+quarantined and marked as such rather than stated flat. A claim in none of those forms is a
 defect in this file. A line belongs only if an agent would act wrongly without it; general
 PR etiquette does not.
 
@@ -64,16 +64,26 @@ Green is at its most misleading here.
 
 1. Report what **ran**, not what was green. Name any job that reported `skipped`.
 2. If a fact here is contradicted by the file it cites, **say so, and offer to open an issue** — do not work around it silently. You are this file's staleness sensor.
-3. Never state a conclusion that depends on an unfilled slot below. Name the missing answer and what each answer would change.
+3. Name a **required** check by name when you say a PR is blocked. Three are required and the rest are advisory — see *What protects `main`* — so "CI is red" and "this cannot merge" are different claims.
 
-## Unverified — needs Scott
+## What protects `main`
 
-Do not guess, and do not default to the strict or the loose reading; both are wrong in a
-way that looks reasonable. Act up to where the answer changes the action, then ask.
+Read from the `main` ruleset — Rulesets, **not** classic branch protection, which is
+unconfigured (— confirmed by Scott 2026-08-28). Active, targeting the default branch, with
+an **empty bypass list**, so it applies to everyone including the repo owner. No agent can
+read this: the GitHub MCP server exposes no branch-protection tool and raw API access is
+blocked from agent sessions. Re-confirm with Scott rather than inferring it from a doc.
 
-| Question | What the repo already says | What is genuinely open |
-|---|---|---|
-| Which checks are **required** on `main`? | Four in-repo sources agree on **lint, test, build**: `ci-web.yml:4-5` ("Lint/Test/Build are REQUIRED status checks on main"), `dependabot-auto-merge.yml:3-4`, `CLAUDE.md:328`, `WORKFLOW.md:77`. Treat those three as required. | Whether protection has *since* added `Zone bands`, `E2E`, `Lighthouse`, `CodeQL` or `PR title lint`. No agent can read this: the GitHub MCP server exposes no branch-protection tool and raw API access is blocked. Until Scott confirms, **treat a red check from those five as blocking** rather than assuming it is advisory. |
+| | |
+|---|---|
+| Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`** — those three, any source. Nothing else. |
+| Advisory — red does **not** block merge | `Zone bands`, `CodeQL`, `Lighthouse`, `Validate PR title`, `E2E`, `dependency review`, `Build Debug APK`. Still fix them; just do not report them as blocking. |
+| Also enforced | a PR before merging · branches up to date before merging · force pushes blocked **on `main` only**, so `--force-with-lease` on your own feature branch is fine |
+| Not enforced | linear history. Squash with `(#N)` is convention, not a gate. |
+
+**A required check can be satisfied by `skipped`** (`ci-web.yml:3-7`), so all three can be
+green having run nothing — see *When every check is green*. `CLAUDE.md:328`'s "three jobs"
+is correct; the four-row table under it wrongly lists `Zone bands` as a gate.
 
 ## Verified against
 
