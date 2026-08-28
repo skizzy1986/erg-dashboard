@@ -185,7 +185,7 @@ erg-dashboard/
 
 ## CI/CD
 
-### Web (`ci-web.yml`) — runs on every push and PR
+### Web (`ci-web.yml`) — runs on every PR, and on push to `main`
 
 | Job | What it checks |
 |-----|---------------|
@@ -193,7 +193,7 @@ erg-dashboard/
 | **Test & Coverage** | All Vitest tests pass; posts coverage summary as a PR comment |
 | **Build** | `npm run build` exits 0 (runs only after Test passes) |
 
-### Android (`ci-android.yml`) — runs on push to main/feature branches
+### Android (`ci-android.yml`) — runs on every PR, and on push to `main`
 
 Builds web assets, syncs via `npx cap sync android`, assembles a debug APK
 with Gradle. The APK is uploaded as a build artifact (retained 14 days).
