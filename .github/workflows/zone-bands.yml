@@ -15,27 +15,49 @@ name: Zone bands
 #
 # The script imports trainingConfig.js directly and has no third-party
 # dependencies, so this needs node and a checkout — no npm ci.
+#
+# Path filtering is at the JOB level, never workflow-level `on.paths`, for the
+# same reason ci-web.yml:3-7 gives: a workflow that never triggers reports
+# NOTHING, so as a required check it leaves the PR on "Expected — waiting for
+# status" forever, whereas a job skipped by an `if:` reports "skipped", which
+# branch protection counts as passing. Under the old `on.paths` form this check
+# could not be made required without hanging every PR that touched no markdown —
+# intermittently, since a PR carrying one .md would pass and the next would not.
 
 on:
   pull_request:
-    paths:
-      - '**/*.md'
-      - 'web/src/constants/trainingConfig.js'
-      - 'web/src/utils/pace.js'
-      - 'web/scripts/check-zone-bands.mjs'
-      - '.github/workflows/zone-bands.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: zone-bands-${{ github.ref }}
+  group: zone-bands-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect zone-band inputs
+    runs-on: ubuntu-latest
+    outputs:
+      zones: ${{ steps.filter.outputs.zones }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            zones:
+              - '**/*.md'
+              - 'web/src/constants/trainingConfig.js'
+              - 'web/src/utils/pace.js'
+              - 'web/scripts/check-zone-bands.mjs'
+              - '.github/workflows/zone-bands.yml'
+
   check:
     name: Zone bands match derivePaceZones
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.zones == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

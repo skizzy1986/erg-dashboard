@@ -25,7 +25,7 @@ PR etiquette does not.
 | Push and `pull_request` lag move **independently**, and `ci-web.yml` pushes only on `main` (`ci-web.yml:10-11`) — so on any other branch ci-web's three required jobs come *only* from the PR event. | Infer from green push runs that the PR's own checks are never coming. |
 | **Derive the expected set from `.github/workflows/`; never memorise a count.** Over a dozen workflows report on a `web/**` PR, several of them (`labeler`, `add-to-project`, `dependabot-auto-merge`) with no path filter at all. `CLAUDE.md` and `WORKFLOW.md` between them name only four. | Treat an unrecognised check as spurious, or count against a list that was stale the day it was written. |
 | `ci-android.yml` alone uses workflow-level `on.pull_request.paths` (`ci-android.yml:6-11`) — the pattern `ci-web.yml:3-7` warns against. Unmatched, it reports **nothing**, not `skipped`. | Read a correctly-absent check as a lost run. |
-| `zone-bands.yml` filters on `**/*.md` (`zone-bands.yml:22`), so it fires on repo-root `CLAUDE.md` and `coach/`, not just `web/`. | Assume a docs-only PR runs nothing. |
+| `zone-bands.yml` filters on `**/*.md` (`zone-bands.yml:50`), so it fires on repo-root `CLAUDE.md` and `coach/`, not just `web/`. It reports `skipped` when unmatched. | Assume a docs-only PR runs nothing. |
 | **Check tree position before grounding a claim**: `git fetch && git rev-parse HEAD origin/main`. | Report a finding from code no longer on `main`. Two agents did this on 2026-08-26, one commit behind. |
 | **Unmerged PR commits are invisible to `git log --all \| grep '#N'`** — PR numbers appear only in squash-merge subjects. Use the PR API. | Conclude a live PR "does not exist". This happened. |
 
@@ -87,12 +87,12 @@ green having run nothing — see *When every check is green*. That applies harde
 functions, so on a `coach-chat` change it **runs, passes, and verifies nothing** (#312).
 Requiring it did not close that hole.
 
-**Two checks cannot safely be required** until they change shape. `zone-bands.yml` and
-`ci-android.yml` use workflow-level `on.pull_request.paths`, so on an unmatched PR they
-report *nothing* rather than `skipped` — and a required check that never reports leaves the
-PR at "Expected — waiting for status" forever. Requiring `Zone bands` would hang every
-code-only PR. Converting them to the `changes`-job pattern the other workflows use is what
-makes them requirable.
+**`Build Debug APK` cannot safely be required.** `ci-android.yml` still uses workflow-level
+`on.pull_request.paths`, so on an unmatched PR it reports *nothing* rather than `skipped` —
+and a required check that never reports leaves the PR at "Expected — waiting for status"
+forever. Converting it to the `changes`-job pattern is what would make it requirable;
+`zone-bands.yml` was converted that way for exactly this reason, so `Zone bands` is now
+safe to require even though it is still only advisory.
 
 `CLAUDE.md:328`'s four-row table lists `Zone bands` as a gate; it is advisory.
 
