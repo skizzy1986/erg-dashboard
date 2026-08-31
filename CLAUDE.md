@@ -7,7 +7,7 @@
 ## What This App Is
 
 A personal coaching dashboard for rowing (erg), strength, and cycling training.
-Built by Scott, designed with Claude, deployed on Vercel + Supabase.
+Built by Scott, designed with Claude, deployed on Cloudflare Pages + Supabase.
 
 **Vision**: Replace commercial apps (Strava, Garmin Connect, Concept2 Logbook,
 TrainingPeaks, Ergzone) with a unified, fully personalised training system.
@@ -20,7 +20,7 @@ TrainingPeaks, Ergzone) with a unified, fully personalised training system.
 | Charts     | Recharts                       | Data visualisation                   |
 | Math       | mathjs                         | Linear regression for aerobic trend  |
 | Backend    | Supabase                       | Postgres DB, Auth, Edge Functions    |
-| Hosting    | Vercel                         | Auto-deploy on git push              |
+| Hosting    | Cloudflare Pages               | Deployed from GitHub Actions on push |
 | Testing    | Vitest + React Testing Library | Unit and component tests             |
 
 ## Key Commands
@@ -269,14 +269,16 @@ needs `regionUrl: 'https://de.sentry.io'`. Frontend project: **`erg-dashboard`**
 | Root boundary | `web/src/main.jsx` (`Sentry.ErrorBoundary`) |
 | Per-tab boundary | `web/src/App.jsx` — isolates a broken tab **and** reports via `componentDidCatch` |
 | Supabase failure sink | `web/src/utils/queryErrorHandlers.js`, wired into the `QueryCache`/`MutationCache` in `main.jsx` |
-| Release + source maps | `web/vite.config.js`, on Vercel production builds only |
-| CSP allowlist | `web/vercel.json` — `connect-src` **must** include the ingest host |
+| Release + source maps | `web/vite.config.js`, on deploy-workflow builds only |
+| CSP allowlist | `web/public/_headers` — `connect-src` **must** include the ingest host |
 
 Two failure modes are silent and have bitten this repo before, so check them first
 when Sentry looks dark:
 
-1. **CSP.** If `connect-src` in `web/vercel.json` lacks `https://*.ingest.de.sentry.io`,
+1. **CSP.** If `connect-src` in `web/public/_headers` lacks `https://*.ingest.de.sentry.io`,
    every envelope is blocked in the browser and nothing reaches Sentry, DSN or not.
+   Cloudflare Pages serves that file as response headers; it is the only place
+   the CSP exists, and a static host that cannot set headers would silently drop it.
 2. **Release mismatch.** The SDK's `release` and the string the plugin uploads
    artifacts under must be identical, or Sentry serves minified frames without
    erroring. Both derive from `sentryRelease` in `web/vite.config.js` — keep it that way.
@@ -302,7 +304,7 @@ every import ships on first paint. `npm run size` enforces this inside the **Bui
 
 Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
-the Vercel dashboard, not in the repo.
+GitHub Actions repository secrets, not in the repo.
 
 ### Edge functions — project `erg-dashboard-functions`
 
@@ -324,7 +326,7 @@ Two rules in that module are load-bearing, not preferences:
 The cron monitor is on `vitals-import` (check-ins emitted from inside the function,
 since the scheduler lives outside the repo; the schedule is upserted from
 `MONITOR_SCHEDULE` in code). The uptime monitor points at
-`https://erg-dashboard-eight.vercel.app/`. Adding monitors for the other jobs needs a
+the Pages production URL. Adding monitors for the other jobs needs a
 plan upgrade.
 
 ## CI & Quality Gates
@@ -437,7 +439,7 @@ advisory ones:
 | **product** | What to build next; re-ranking the backlog (`product-manager`, `product-sprint-prioritizer`) |
 | **project-management** | Sequencing and tracking issues/PRs (`project-management-project-shepherd`, `project-manager-senior`) |
 | **testing** | Coverage interpretation, perf, API validation, a11y |
-| **support** | Supabase/Vercel health, analytics reporting |
+| **support** | Supabase/Cloudflare health, analytics reporting |
 
 Workflow and backlog live in GitHub Issues/Projects — see `WORKFLOW.md`.
 
@@ -530,7 +532,7 @@ updates) follow the same PR workflow:
      feature branch. Keep branches short-lived and **merge fast** to minimise drift.
 2. **Commit** — stage only the relevant files; write a clear message
 3. **Push** — `git push origin <branch>`
-4. **PR** — open on GitHub; Vercel preview deploys automatically
+4. **PR** — open on GitHub; `deploy-web.yml` publishes a Pages preview automatically
 5. **CI gates** — all three checks must pass (Lint, Test, Build)
 6. **Merge** — squash or merge commit; delete the branch
 
@@ -546,7 +548,7 @@ git push --force-with-lease origin <branch>   # safe force — aborts if the rem
 Rebase early and often; a branch that tracks `main` closely rarely conflicts. Never plain
 `--force` a shared branch — always `--force-with-lease`.
 
-**Monitoring:** CI results, Vercel deploys, and edge-function runs all post
+**Monitoring:** CI results, Pages deploys, and edge-function runs all post
 to `#build` in Slack. Check `#build` to confirm a change landed correctly
 without needing to prompt Coach.
 

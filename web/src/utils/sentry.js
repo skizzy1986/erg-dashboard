@@ -6,8 +6,9 @@ import * as Sentry from '@sentry/react';
 // Supabase keys. Returns true when Sentry was initialised, false when skipped.
 //
 // Note: the Sentry ingest host must also be present in the `connect-src` CSP
-// directive in web/vercel.json, or every envelope is blocked before it leaves
-// the browser. The org is EU-region, so that host is *.ingest.de.sentry.io.
+// directive in web/public/_headers, or every envelope is blocked before it
+// leaves the browser. The org is EU-region, so that host is
+// *.ingest.de.sentry.io.
 
 // Only attach `sentry-trace`/`baggage` headers to our own backend. Without this
 // the browser SDK propagates tracing headers to every outbound request, which
@@ -28,8 +29,8 @@ export function initSentry() {
 
   Sentry.init({
     dsn,
-    // VITE_SENTRY_ENVIRONMENT is injected from Vercel's VERCEL_ENV at build
-    // time (see vite.config.js) so preview and production are distinguishable.
+    // VITE_SENTRY_ENVIRONMENT is injected by the deploy workflow at build time
+    // (see vite.config.js) so preview and production are distinguishable.
     // MODE is the fallback, which keeps local dev and CI reporting as they did.
     environment:
       import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,

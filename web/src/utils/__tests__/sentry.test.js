@@ -47,8 +47,8 @@ describe('initSentry', () => {
     expect(cfg.tracesSampleRate).toBe(0.1);
   });
 
-  // vite build sets MODE=production for every build, Vercel target included, so
-  // without the injected override a preview deploy files under `production`.
+  // vite build sets MODE=production for every build, preview deploys included,
+  // so without the injected override a preview deploy files under `production`.
   it('prefers the injected environment over MODE', () => {
     vi.stubEnv('VITE_SENTRY_DSN', 'https://k@o1.ingest.de.sentry.io/1');
     vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'preview');

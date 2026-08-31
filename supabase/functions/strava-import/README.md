@@ -144,7 +144,7 @@ Supabase dashboard → Edge Functions → Secrets.
 | `STRAVA_CLIENT_ID` | Strava API application id |
 | `STRAVA_CLIENT_SECRET` | Strava API application secret |
 | `STRAVA_OAUTH_CALLBACK_URL` | The public URL of `strava-oauth-callback`. Must match the **Authorization Callback Domain** registered on the Strava app, and is the `redirect_uri` sent to Strava |
-| `STRAVA_APP_REDIRECT_URL` | Where the callback 302s the browser afterwards, e.g. `https://erg-dashboard-eight.vercel.app/`. Always this value, never anything from the request |
+| `STRAVA_APP_REDIRECT_URL` | Where the callback 302s the browser afterwards, e.g. `https://erg-dashboard.pages.dev/`. Always this value, never anything from the request |
 | `STRAVA_BACKFILL_FROM` | `2026-06-14` (Scott's Gate 2 decision) |
 | `STRAVA_CRON_SECRET` | `x-cron-secret` for `strava-import`. **Distinct from the vitals `CRON_SECRET`** so a leak of one cannot be replayed against the other |
 | `SUPABASE_URL` | Auto-injected |

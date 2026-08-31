@@ -1,0 +1,113 @@
+name: Deploy — Web
+
+# Cloudflare Pages deploy, replacing the Vercel GitHub App (#deployment-vercel-removal).
+# Vercel deployed from its own integration and never waited for CI; this waits,
+# because the build it uploads is the same one the gates just judged.
+#
+# Path filtering is job-level (`changes` job + `if:`), matching ci-web.yml — but
+# for the opposite reason. This is NOT a required check, so a skipped run is
+# simply nothing to redeploy: a docs-only PR does not need a new bundle.
+#
+# Production is `main`. Every other branch gets a preview deployment at a branch
+# alias URL, which is what replaces Vercel's per-PR preview.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  changes:
+    name: Detect web changes
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'web/**'
+              - '.github/workflows/deploy-web.yml'
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    permissions:
+      contents: read
+      # wrangler-action opens a GitHub Deployment so the URL shows on the PR.
+      deployments: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          # Both Sentry strings were previously derived from VERCEL_* vars inside
+          # vite.config.js. Nothing outside Vercel sets those, so they are set
+          # here instead — explicitly, which is also easier to read.
+          #
+          # The release MUST match the string @sentry/vite-plugin uploads
+          # artifacts under, or Sentry serves minified frames without erroring.
+          # Both sides read this one env var, which is what keeps them identical.
+          VITE_SENTRY_RELEASE: splitiq@${{ github.sha }}
+          # `vite build` sets MODE=production for every build, so MODE alone
+          # cannot tell a preview from production and preview errors would file
+          # under `production`.
+          VITE_SENTRY_ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+          # Present together these switch on hidden source maps and upload them.
+          # Absent — on a fork PR, where secrets do not resolve — the plugin is
+          # omitted entirely and the build still succeeds.
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_URL: https://de.sentry.io
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Deploy
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # --branch is passed explicitly rather than left to wrangler's git
+          # inference: on a pull_request event the runner is on a detached-HEAD
+          # merge commit, so the branch it would infer is not the PR's branch.
+          # Pages decides production-vs-preview from this value against the
+          # project's configured production branch.
+          command: >-
+            pages deploy dist
+            --project-name=erg-dashboard
+            --branch=${{ github.head_ref || github.ref_name }}
+          workingDirectory: web
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summarise
+        if: success()
+        run: |
+          {
+            echo "### Cloudflare Pages"
+            echo ""
+            echo "- Deployment: ${{ steps.deploy.outputs.deployment-url }}"
+            echo "- Branch alias: ${{ steps.deploy.outputs.pages-deployment-alias-url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

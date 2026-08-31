@@ -1,0 +1,15 @@
+# Cloudflare Pages response headers. This file is the ONLY place the CSP lives,
+# so treat it the way web/vercel.json was treated before the move: a change here
+# is a security change. Vite copies public/ verbatim into dist/, and the PWA
+# globPatterns match only extensioned assets, so this is served but never
+# precached by the service worker.
+#
+# connect-src MUST keep https://*.ingest.de.sentry.io. The org is EU-region; drop
+# that host and the browser blocks every Sentry envelope before it leaves the
+# page — silently, DSN or no DSN. See CLAUDE.md § Observability.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()

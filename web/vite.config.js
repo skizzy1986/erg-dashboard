@@ -16,28 +16,27 @@ const substituteGround = {
 };
 
 // Upload source maps to Sentry only on release builds that carry an auth token
-// (Vercel production). Without the token the plugin is omitted and local and CI
-// builds are untouched.
+// (the deploy workflow supplies one). Without the token the plugin is omitted
+// and local and CI builds are untouched.
 const uploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 // The release name must be IDENTICAL on both sides — the string the SDK reports
 // at runtime and the string the artifacts are uploaded under. If they diverge,
-// Sentry silently serves minified frames instead of failing loudly. Vite only
-// exposes VITE_*-prefixed vars to client code, so Vercel's commit SHA is read
-// here and injected via `define` below.
-const sentryRelease =
-  process.env.VITE_SENTRY_RELEASE ||
-  (process.env.VERCEL_GIT_COMMIT_SHA
-    ? `splitiq@${process.env.VERCEL_GIT_COMMIT_SHA}`
-    : undefined);
+// Sentry silently serves minified frames instead of failing loudly. Reading the
+// one env var on both sides is what keeps them identical. Vite only exposes
+// VITE_*-prefixed vars to client code, so it is injected via `define` below.
+//
+// The deploy workflow sets it to splitiq@<commit sha>. It used to be derived
+// here from VERCEL_GIT_COMMIT_SHA; nothing outside Vercel sets that, so the
+// value is now passed in explicitly by whatever is doing the building.
+const sentryRelease = process.env.VITE_SENTRY_RELEASE || undefined;
 
-// `vite build` sets MODE=production for every build, Vercel target included, so
-// MODE alone cannot tell a preview deploy from a production one and preview
-// errors would file under `production`. VERCEL_ENV is the only signal that
-// distinguishes them. Same injection route as the release: read here, passed
-// through `define`, because Vite only exposes VITE_*-prefixed vars to the client.
-const sentryEnvironment =
-  process.env.VITE_SENTRY_ENVIRONMENT || process.env.VERCEL_ENV || undefined;
+// `vite build` sets MODE=production for every build, preview deploys included,
+// so MODE alone cannot tell a preview from production and preview errors would
+// file under `production`. Same injection route as the release: read here,
+// passed through `define`, because Vite only exposes VITE_*-prefixed vars to
+// the client. Unset locally and in CI, where MODE is the right answer.
+const sentryEnvironment = process.env.VITE_SENTRY_ENVIRONMENT || undefined;
 
 // The org is EU-region. @sentry/vite-plugin defaults to sentry.io and will not
 // find splitiq-29 without this.

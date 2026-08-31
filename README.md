@@ -7,7 +7,7 @@ fully personalised app.
 [![CI — Web](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-web.yml/badge.svg)](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-web.yml)
 [![CI — Android](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-android.yml/badge.svg)](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-android.yml)
 
-**v1.3.0** · React 19 + Supabase + Capacitor Android · Deployed on Vercel
+**v1.3.0** · React 19 + Supabase + Capacitor Android · Deployed on Cloudflare Pages
 
 ---
 
@@ -53,7 +53,7 @@ Recovery, Strength, Session Log, Coach. PWA installable on iOS/web.
 | Charts | Recharts |
 | Backend | Supabase (Postgres, Auth, Edge Functions on Deno) |
 | Mobile | Capacitor 8 → Android APK; PWA for iOS/web |
-| Hosting | Vercel (auto-deploy on push) |
+| Hosting | Cloudflare Pages (deployed from GitHub Actions on push) |
 | Bluetooth | `@capgo/capacitor-bluetooth-low-energy` → Concept2 PM5 |
 | AI | Anthropic API (streaming) via Supabase Edge Function proxy |
 | Testing | Vitest + React Testing Library |
@@ -124,12 +124,12 @@ Runtime errors go to Sentry (org `splitiq-29`, **EU region**, project
 `erg-dashboard`). Locally it is off by default: `initSentry()` no-ops unless
 `VITE_SENTRY_DSN` is set, so dev and CI stay silent.
 
-Production configuration lives in the Vercel dashboard, not the repo:
-`VITE_SENTRY_DSN` at runtime, plus `SENTRY_ORG` / `SENTRY_PROJECT` /
-`SENTRY_URL=https://de.sentry.io` / `SENTRY_AUTH_TOKEN` at build time to upload
-source maps. Because the org is EU-region, the ingest host
+Production configuration lives in GitHub Actions repository secrets, not the
+repo: `VITE_SENTRY_DSN` at runtime, plus `SENTRY_ORG` / `SENTRY_PROJECT` /
+`SENTRY_AUTH_TOKEN` at build time to upload source maps (`SENTRY_URL` is set in
+the workflow). Because the org is EU-region, the ingest host
 (`*.ingest.de.sentry.io`) must stay in the `connect-src` CSP directive in
-`web/vercel.json` — without it the browser blocks every event.
+`web/public/_headers` — without it the browser blocks every event.
 
 ### Local dev
 
@@ -169,6 +169,8 @@ erg-dashboard/
 │   │   ├── services/         pm5Bluetooth.js (BLE abstraction)
 │   │   ├── App.jsx           shell/router (~515 lines, formerly erg-dashboard.jsx)
 │   │   └── main.jsx          auth gate (Supabase email/password)
+│   ├── public/
+│   │   └── _headers          CSP + security headers, served by Cloudflare Pages
 │   ├── android/              Capacitor Android project
 │   ├── capacitor.config.json
 │   └── vite.config.js        includes Vitest config + PWA manifest
@@ -178,6 +180,7 @@ erg-dashboard/
 └── .github/
     └── workflows/
         ├── ci-web.yml        lint → test → build
+        ├── deploy-web.yml    build → deploy to Cloudflare Pages
         └── ci-android.yml    build web → sync Capacitor → build APK
 ```
 
@@ -202,7 +205,7 @@ with Gradle. The APK is uploaded as a build artifact (retained 14 days).
 
 - **Branch protection on `main`:** direct pushes blocked; all changes go
   through PRs with passing CI.
-- **Vercel:** auto-deploys on push to main; preview URLs on every PR.
+- **Cloudflare Pages** (`deploy-web.yml`): production on push to main; a branch-alias preview URL on every PR. Not a required check.
 - **Dependabot:** weekly grouped PRs for npm and GitHub Actions updates.
 - **Pre-commit (Husky + lint-staged):** ESLint + Prettier run automatically on
   staged `.js`/`.jsx` files before every local commit.

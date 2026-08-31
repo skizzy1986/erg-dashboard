@@ -13,7 +13,8 @@ name: Dependabot auto-merge
 # Caveat: the merge is performed with GITHUB_TOKEN, so the resulting push to
 # main does not trigger push-to-main workflows (CI, CodeQL, e2e, Lighthouse,
 # doctrine-sha-guard). All of them also run on the PR and/or on schedule, and
-# Vercel deploys via its own GitHub App, so nothing load-bearing is skipped.
+# Cloudflare Pages deploys from deploy-web.yml, which is not a required check,
+# so nothing load-bearing is skipped.
 
 on: pull_request
 

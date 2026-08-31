@@ -25,7 +25,7 @@ agents were retired (git history is their archive; see the migration PR).
    canonical pipeline definition; `/feature` is an alias), with three human gates.
    There is no orchestrator agent — the skill prompt orchestrates from the main
    conversation, which is what lets it stop and wait at each gate.
-5. **Delivery** — PR + both judges' verdicts + confirm Vercel goes READY.
+5. **Delivery** — PR + both judges' verdicts + confirm the Pages deploy succeeds.
 
 ## Tool discipline is prompt-level now (know the trade)
 
@@ -59,7 +59,7 @@ they stay pristine and re-installable from upstream.
 
 ## Notes for this repo
 
-- The app is plain JS/JSX (no TypeScript), Supabase + Vercel; see `CLAUDE.md`.
+- The app is plain JS/JSX (no TypeScript), Supabase + Cloudflare Pages; see `CLAUDE.md`.
 - Backups exist (daily in-DB + weekly off-site); confirm a fresh snapshot before
   any destructive migration.
 - This supersedes the Drive-file work-order loop and the `work_orders` table for
