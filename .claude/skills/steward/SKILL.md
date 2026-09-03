@@ -37,6 +37,8 @@ PR etiquette does not.
 | `check:colours` is a per-file, per-hex allowlist that **also fails on stale entries** (`web/scripts/check-colour-literals.mjs:204`). Tokenising an allowlisted hex without deleting its `ALLOWED` entry fails like a new violation. | Re-add the hex or hunt a phantom violation instead of deleting the entry. |
 | `check:design-sync` bundles **four independent assertions** (`web/scripts/check-design-sync-entry.mjs`): `componentSrcMap` paths resolve, the `.design-sync/entry.jsx` barrel bundles, contrast ratios in `conventions.md` recompute, every `.design-sync/` file has one owner. | Assume one cause. The message names which. |
 | `check:zones` matches phrasing, not only numbers (`web/scripts/check-zone-bands.mjs`). Bands stated without restating the CP they derive from fail **even when correct**. | "Fix" correct numbers instead of restating the CP. |
+| **A CANCELLED check-run is not a failure, and `gh pr checks` renders it as `fail`.** Read the run's cancellation reason before diagnosing anything: *"Canceling since a higher priority waiting request for `<group>` exists"* means a concurrency collision, not a broken build. Re-run the cancelled run to clear it. | Debug a green build for as long as it takes to notice nothing failed. This cost real time on PR #329, 2026-08-28. |
+| The collision that produced those on #329 is **fixed** (#330). `ci-android.yml` used to push on the `claude/**`/`feature/**`/`fix/**` prefixes as well as `main`, while grouping on `github.head_ref \|\| github.ref_name` (`ci-android.yml:27`) — on a PR from one of those branches the two resolve to the same string, so the `pull_request` run cancelled the `push` run for the same SHA. It now pushes on `main` only (`ci-android.yml:21-24`), like every other workflow here. | Reintroduce it. The bug is the **pair**: a `push` glob over a working-branch prefix plus a concurrency group keyed on `head_ref \|\| ref_name`. Neither alone does it. |
 | **CI runs UTC only.** Verified 2026-08-26: the suite failed under `Australia/Sydney` and `Australia/Adelaide`, passed under Perth, Brisbane, UTC. | Trust a green Test job on date, roster or schedule arithmetic. Reproduce under `TZ=Australia/Sydney` first. |
 | **Visual baselines** regenerate only via `workflow_dispatch` with `update_baselines: true`, on the branch that moved the pixels (`e2e-web.yml`). The commit job refuses `main` and empty sets, and without `VISUAL_BASELINE_PAT` the PNGs land but Visual never re-runs. | Hand-commit PNGs, or regenerate to hide a real regression. |
 
@@ -155,3 +157,7 @@ GET /repos/skizzy1986/erg-dashboard/rulesets/18063518
 That distinction is the point of this revision: the previous two attestations here cited the
 ruleset *page* and were both wrong. Re-run the command rather than trusting the timestamp —
 the ruleset is edited outside this repo, so nothing in git can tell you it moved.
+
+`ci-android.yml` trigger and concurrency re-read on 2026-08-28 at `3bd2337` while fixing #330,
+alongside the `on:` block of every other workflow in `.github/workflows/`: `ci-android.yml` was the
+only one pushing on anything but `main`, and so the only one that could collide with itself.
