@@ -45,6 +45,25 @@ Testing Library. Full briefing: `CLAUDE.md`.
 - Read back every write. Destructive changes require Scott's explicit approval.
 - Deeper patterns: `.claude/skills/supabase-patterns.md`.
 
+## Library documentation — Context7 first
+
+The Context7 MCP connector is live in every session. **Never answer a library
+question from memory, and never reach for WebSearch first.** Look it up:
+
+1. `resolve-library-id` (`libraryName`, `query`) → a `/org/repo` id
+2. `query-docs` (`libraryId`, `query`, optional `tokens`) → the docs
+
+This binds on any API surface, config key, or version-specific behaviour in
+React, Vite, Vitest, `@supabase/supabase-js`, `@testing-library/react`,
+Recharts, `@tanstack/react-query`, ESLint and Prettier. Fall back to WebSearch
+only when `resolve-library-id` returns nothing, or for tooling unlikely to be
+indexed (Husky, lint-staged, mathjs, vite-plugin-pwa).
+
+**Name the source for every library claim you make** — "Context7" or the URL —
+so a reader can tell a looked-up fact from a remembered one. An unsourced API
+claim is a guess, and this repo has already shipped bugs from confident guesses
+about library behaviour.
+
 ## Quality gates
 
 - `npm run build`, `npm test`, `npm run lint`, `npm run format:check` must pass.

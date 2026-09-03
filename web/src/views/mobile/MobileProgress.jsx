@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MobileAnalytics from './MobileAnalytics.jsx';
 import MobileSessionLog from './MobileSessionLog.jsx';
 import MobileStrength from './MobileStrength.jsx';
+import StravaConnectPanel from '../../components/StravaConnectPanel.jsx';
 import { THEME } from '../../constants/theme.js';
 import { alpha } from '../../utils/themeCss.js';
 import { FONT } from '../../constants/type.js';
@@ -74,6 +75,10 @@ export default function MobileProgress() {
         })}
       </div>
       {active.render()}
+      {/* Progress is where Scott reviews whether the log is complete, so the
+          import's health belongs at the foot of it. Deliberately NOT a sixth
+          destination — DESTINATIONS is the fixed five from DESIGN_BRIEF.md §2.2. */}
+      <StravaConnectPanel compact />
     </div>
   );
 }

@@ -349,6 +349,7 @@ Every PR is gated by three GitHub Actions jobs that must pass before merge:
 | `Test & Coverage` | All Vitest tests pass; coverage meets the ratcheting thresholds in `web/vite.config.js` (`test.coverage.thresholds` — the **only** source of truth for the numbers), raised as extractions add tests |
 | `Build` | `npm run build` exits 0 (runs only after Test passes) |
 | `Zone bands` | Every rowing zone band published in any tracked `.md` recomputes against `derivePaceZones()` (`npm run check:zones`). **Path-filtered on `**/*.md`, not `web/**`** — the earlier version lived in the design-sync guard and so never fired on `coach/` or the repo-root `CLAUDE.md`, which is how the same wrong AT ceiling reached three documents (#266, #268, #275). |
+| `Context7 rule` | Every `.claude/skills/*/SKILL.md` is still reached by the Context7-first rule — directly, by inheriting `erg-context.md`, by delegating to a covered skill, or by a reasoned exemption (`npm run check:context7`). **Path-filtered on `.claude/skills/**` + `CLAUDE.md`, not `web/**`**, for the same reason `Zone bands` is: a guard scoped to `web/**` never fires on the files it protects. It cannot check that an agent obeyed the rule — MCP calls are invisible to a runner — only that the instruction still exists. |
 
 Coverage thresholds live in `web/vite.config.js` (`test.coverage.thresholds`) and
 **ratchet upward**. Scope is explicit — `coverage.all` + `include: ['src/**']`
@@ -478,6 +479,27 @@ library documentation. Use it before WebSearch for any library in the stack.
 **Fall back to WebSearch when:** `resolve-library-id` returns no results, or the
 library is a tooling utility unlikely to be indexed (Husky, lint-staged,
 vite-plugin-pwa).
+
+**Where this is enforced.** The rule is not left to habit. The canonical wording
+lives once in `.claude/skills/erg-context.md` (*Library documentation — Context7
+first*), which is prepended verbatim to **every** pipeline subagent spawn — so
+`/orchestrate`, `/feature`, `/research` and `/refactor` all inherit it without
+repeating it. `/daily` and `/audit` spawn no erg-context agents, so each states
+the rule itself at the point it bites (sizing a task; naming a root cause).
+`/orchestrate` additionally makes it a review criterion: the `Code Reviewer`
+stage flags any library API the diff relies on that was asserted from memory.
+**Name the source for every library claim** — an unsourced API claim is a guess.
+
+**The mechanical half.** `npm run check:context7`
+(`web/scripts/check-context7.mjs`, its own `Context7 rule` workflow) fails if any
+tracked `SKILL.md` stops being reached by the rule, if the canonical block or its
+two tool names vanish from `erg-context.md`, or if this `### Context7` heading is
+removed. Coverage is transitive, so the wording still lives in exactly one place;
+a new skill that carries the rule by no route fails the check on arrival. The
+exemption list is in the script and a **stale** entry fails too — the same
+discipline `check:colours` applies to its allowlist. What it cannot do is verify
+a lookup happened: MCP calls are invisible to a CI runner. It guards the
+instruction, not the obedience.
 
 ### Supabase (coaching data model)
 
