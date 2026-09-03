@@ -5,10 +5,22 @@ name: CI — Android
 # so as a required check it strands the PR on "Expected — waiting for status",
 # whereas a job skipped by an `if:` reports "skipped", which branch protection
 # counts as passing. zone-bands.yml was converted for the same reason.
+#
+# `push` is scoped to main — the same as every other workflow here — because a
+# push glob over the branch prefixes we actually work on (claude/**, feature/**,
+# fix/**) collided with `pull_request` in the concurrency group below: on a PR
+# from one of those branches `github.head_ref` and `github.ref_name` resolve to
+# the SAME string, so the pull_request run cancelled the push run for the same
+# commit. That left CANCELLED check-runs on the head SHA under `Build Debug APK`
+# (required) and `Build Web Assets`, which `gh pr checks` renders as "fail" — a
+# red PR with nothing failing (PR #329, runs 33142558605 / 33142584769, 31s apart
+# on 41b3b62, 2026-08-28; #330). Pre-merge cover is unchanged: the pull_request
+# event still builds every PR, and it was the surviving run all along. Do not
+# re-add the prefix globs without also making the concurrency group event-aware.
 
 on:
   push:
-    branches: [main, 'claude/**', 'feature/**', 'fix/**']
+    branches: [main]
   pull_request:
 
 concurrency:

@@ -18,7 +18,7 @@ TrainingPeaks, Ergzone) with a unified, fully personalised training system.
 |------------|--------------------------------|--------------------------------------|
 | UI         | React 19 + Vite                | Frontend single-page app             |
 | Charts     | Recharts                       | Data visualisation                   |
-| Math       | mathjs                         | Linear regression for aerobic trend  |
+| Math       | plain JS (`utils/stats.js`)     | Least-squares aerobic trend (mathjs removed, #54) |
 | Backend    | Supabase                       | Postgres DB, Auth, Edge Functions    |
 | Hosting    | Vercel                         | Auto-deploy on git push              |
 | Testing    | Vitest + React Testing Library | Unit and component tests             |
@@ -296,9 +296,10 @@ the OPTIONS in the edge logs. This silently killed the Coach tab (#301).
 The bundle gate has **two** budgets, because they answer different questions
 (`web/scripts/check-bundle-size.mjs:36-37`). **Entry** — the entry chunk plus its
 transitive *static* imports and their CSS — is what a first paint costs, and is the
-tight ratchet: **134.7 KB against 150 KB**, 15.3 KB spare. **Total** — every emitted
-asset, lazy ones included — is a loose ceiling: **425.5 KB against 450 KB** (— both
-measured 2026-08-28). The entry set is read from `dist/.vite/manifest.json`
+tight ratchet: **134.9 KB against 150 KB**, 15.1 KB spare. **Total** — every emitted
+asset, lazy ones included — is a loose ceiling: **373.5 KB against 400 KB** (— both
+measured 2026-09-03, after #329 removed mathjs; total was ratcheted 450 → 400 as that
+PR's ~52 KB landed). The entry set is read from `dist/.vite/manifest.json`
 (`build.manifest` in `web/vite.config.js`), the only source that tells a static import
 from a dynamic one; the walk is in `scripts/entry-graph.mjs` and is unit-tested,
 because a walk that wrongly followed `dynamicImports` would report the total as the
@@ -320,9 +321,14 @@ anything can render, so the client cannot be deferred. Note `createClient` pulls
 means dropping to `auth-js` + `postgrest-js` directly, which is its own job.
 
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
-at first paint, so it lands in the entry, where there is 15.3 KB. It is now a
+at first paint, so it lands in the entry, where there is 15.1 KB. It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
 `npm run size` enforces both budgets inside the **Build** job.
+
+**Never quote a bundle figure from this file — re-measure it.** These numbers drift, and
+a stale one has already mis-scoped work here (the doc said ~360 KB with ~40 KB spare when
+the truth was 395.7 KB with 4.3 KB, #319). `npm run build && npm run size` prints both
+current figures, and the same run regenerates `web/dist/bundle-size.json`.
 
 Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
@@ -489,7 +495,7 @@ library documentation. Use it before WebSearch for any library in the stack.
 `@testing-library/react`, Recharts, `@tanstack/react-query`, ESLint, Prettier.
 
 **Fall back to WebSearch when:** `resolve-library-id` returns no results, or the
-library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
+library is a tooling utility unlikely to be indexed (Husky, lint-staged,
 vite-plugin-pwa).
 
 **Where this is enforced.** The rule is not left to habit. The canonical wording

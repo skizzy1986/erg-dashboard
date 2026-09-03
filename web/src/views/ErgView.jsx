@@ -8,7 +8,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { std, mean } from 'mathjs';
+import { mean, sampleStdDev } from '../utils/stats.js';
 import ErgTooltip from '../components/ErgTooltip.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import PaceTrendChart from '../components/PaceTrendChart.jsx';
@@ -122,7 +122,7 @@ const ergTrend = [
   },
 ];
 
-// ── BAROMETER REGRESSION (mathjs) ─────────────────────────────
+// ── BAROMETER REGRESSION (least-squares) ──────────────────────
 function analyzeBarometer(points) {
   // Fit the CLEAN anchor points only (exclude flagged setup artifacts).
   const actual = points.filter((p) => p.type === 'actual' && !p.setupArtifact);
@@ -150,7 +150,7 @@ function analyzeBarometer(points) {
   const residSd = n > 2 ? Math.sqrt(ssRes / (n - 2)) : 0; // residual std error = the noise floor
   // Plateau read: mean + spread of the clean anchors = the honest "current level"
   const currentLevel = Math.round(my);
-  const spread = +std(ys).toFixed(1);
+  const spread = +sampleStdDev(ys).toFixed(1);
   // Interpret honestly: a slope only means something if the fit (R²) supports
   // it. Low R² with a tight spread = plateau, not a trend.
   let verdict;
@@ -665,7 +665,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
           {HR130_PROJECTION.note}
         </div>
 
-        {/* mathjs regression diagnostic */}
+        {/* regression diagnostic */}
         {HR130_ANALYSIS && (
           <div
             style={{
@@ -772,8 +772,8 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 marginTop: 6,
               }}
             >
-              Computed (mathjs least-squares) on the 4 clean HR130 anchors; the
-              6/8 reading is excluded as a drag/strap setup artifact. We don't
+              Computed (least-squares) on the 4 clean HR130 anchors; the 6/8
+              reading is excluded as a drag/strap setup artifact. We don't
               extrapolate the slope forward — early gains decelerate, so a
               linear projection would overstate. Real forward signal = the
               end-of-base 5k.

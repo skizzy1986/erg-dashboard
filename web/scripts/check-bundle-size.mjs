@@ -24,18 +24,25 @@
 //
 // Both budgets are RATCHETS — lower them as the bundle shrinks, never raise
 // one without a deliberate, stated reason.
+//
+// Do not quote a size figure from memory or from a doc — it drifts. Run
+// `npm run build && npm run size`, or read dist/bundle-size.json, which this
+// script regenerates on every run.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import { entryFilesFrom, isCountedAsset } from './entry-graph.mjs';
 
-// Measured 2026-08-28 on the #331 split: entry 134.7 KB, total 425.5 KB.
-// Entry gets ~15 KB of headroom — tight, because that is the number that
-// matters and a lost split shows up in it immediately (recharts alone is
-// 90 KB). Total gets ~25 KB, and is expected to FALL by ~52 KB once #329
-// lands mathjs removal; ratchet it down then rather than banking the slack.
+// Measured 2026-09-03, after #329 landed mathjs removal: entry 134.9 KB,
+// total 373.5 KB. Entry gets ~15 KB of headroom — tight, because that is the
+// number that matters and a lost split shows up in it immediately (recharts
+// alone is 90 KB). Total gets ~26 KB.
+//
+// Total was 450 while main still carried mathjs. #329 removed ~52 KB, so it is
+// ratcheted to 400 here rather than banking the slack, per the note this
+// replaces.
 const MAX_ENTRY_GZIP_KB = 150;
-const MAX_TOTAL_GZIP_KB = 450;
+const MAX_TOTAL_GZIP_KB = 400;
 
 const DIST = join(process.cwd(), 'dist');
 const ASSET_DIR = join(DIST, 'assets');
