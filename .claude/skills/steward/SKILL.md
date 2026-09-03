@@ -66,26 +66,46 @@ Green is at its most misleading here.
 
 1. Report what **ran**, not what was green. Name any job that reported `skipped`.
 2. If a fact here is contradicted by the file it cites, **say so, and offer to open an issue** — do not work around it silently. You are this file's staleness sensor.
-3. Name a **required** check by name when you say a PR is blocked. Nine are required — see *What protects `main`* — so "CI is red" and "this cannot merge" are different claims. Use the **check-run name**, which is the job's `name:`, not the workflow's: the ruleset binds to `Zone bands match derivePaceZones`, and nothing reports under `Zone bands`.
+3. Name a **required** check by name when you say a PR is blocked. Ten are required — see *What protects `main`*, and read the ruleset rather than trusting that number — so "CI is red" and "this cannot merge" are different claims. Use the **check-run name**, which is the job's `name:`, not the workflow's: the ruleset binds to `Zone bands match derivePaceZones`, and nothing reports under `Zone bands`.
 
 ## What protects `main`
 
-Read from the `main` ruleset — Rulesets, **not** classic branch protection, which is
-unconfigured (— confirmed by Scott 2026-08-28 from the ruleset page itself; required set expanded
-from seven to nine later the same day). Active, targeting the default branch, with
-an **empty bypass list**, so it applies to everyone including the repo owner. No agent can
-read this: the GitHub MCP server exposes no branch-protection tool and raw API access is
-blocked from agent sessions. Re-confirm with Scott rather than inferring it from a doc.
+**Read it yourself — do not trust the table below, this file included.**
+
+```bash
+gh api repos/skizzy1986/erg-dashboard/rulesets/18063518 \
+  --jq '{updated_at, bypass: .bypass_actors, required: [.rules[]
+    | select(.type=="required_status_checks")
+    | .parameters.required_status_checks[].context]}'
+```
+
+Rulesets, **not** classic branch protection: `GET /branches/main/protection` returns 404.
+Active, targeting the default branch, `bypass_actors: []`, so it applies to everyone
+including the repo owner.
+
+**This section was wrong for three PRs, and the reason it survived is a warning about
+the whole file.** It claimed seven required checks (#316), then nine (#321) — each with a
+dated attestation citing "the ruleset page as Scott showed it". Neither was ever true: the
+ruleset had required exactly `Lint & Format`, `Test & Coverage`, `Build` since 2026-06-24
+and had not been edited since. What protected the error was a line *in this file* asserting
+that no agent could read the ruleset because raw API access is blocked from agent sessions.
+That is false in a local session — the command above works — and it told every agent not to
+look, so two concurrent sessions corroborated the assumption instead of the source
+(`CLAUDE.md`'s CI table was the only doc that matched reality). The six missing checks plus
+`Context7 rule reaches every workflow` were actually added on 2026-08-28 at 12:22 +08:00,
+which is when the table below first became true. **When this file tells you a capability is
+unavailable, test the capability before believing it: that instruction is itself the thing
+most likely to be stale.**
 
 | | |
 |---|---|
-| Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`, `Zone bands match derivePaceZones`, `Build Debug APK`** — those nine, and nothing else. |
+| Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`, `Zone bands match derivePaceZones`, `Build Debug APK`, `Context7 rule reaches every workflow`** — those ten, and nothing else. `CodeQL` is emitted by the GitHub Advanced Security app and is a **different check-run** from `codeql.yml`'s job `Analyze (JavaScript/TypeScript)`; the ruleset binds the former. |
 | Advisory — red does **not** block merge | `Lighthouse`, `Playwright Smoke`, `Playwright Visual`. Still fix them; just do not report them as blocking. |
 | Reports but is not required | `Build Web Assets`, `Seer Code Review`, `Vercel Preview Comments`, `Analyze (JavaScript/TypeScript)`, `Label by changed paths`, `add-to-project`, `Flag steward skill staleness`, `Enable auto-merge`, and every `Detect …` filter job. Red here does not block either — but see the `Build Web Assets` trap below. |
 | Also enforced | a PR before merging · branches up to date before merging · force pushes blocked **on `main` only**, so `--force-with-lease` on your own feature branch is fine |
 | Not enforced | linear history. Squash with `(#N)` is convention, not a gate. |
 
-**A required check can be satisfied by `skipped`** (`ci-web.yml:3-7`), so all nine can be
+**A required check can be satisfied by `skipped`** (`ci-web.yml:3-7`), so all ten can be
 green having run nothing — see *When every check is green*. That applies hardest to
 `Deno Tests`: it is required, but `ci-functions.yml` tests only the two `vitals-import*`
 functions, so on a `coach-chat` change it **runs, passes, and verifies nothing** (#312).
@@ -110,17 +130,33 @@ a matched path passes and the next one hangs. Both now gate a `changes` job and 
 `skipped` instead (#316, #317). Confirmed twice on 2026-08-28: PR #319, a docs-only change,
 reported `skipped` for `Build Debug APK` and `Build Web Assets` rather than nothing.
 
-`CLAUDE.md:328` still says **three** gated jobs and its table omits six of the nine; the
-`Zone bands` row it does carry is now correctly a gate (#311).
+`Context7 rule reaches every workflow` reached requirability the same way, by the same
+deliberate choice: it is its own workflow rather than a sixth step in `Lint & Format`,
+because `ci-web.yml`'s `changes` job filters on `web/**` (`ci-web.yml:33-36`) and the files
+it guards live in `.claude/skills/**` and the repo-root `CLAUDE.md` (#325). Verified running
+— not skipping — on that PR.
+
+`CLAUDE.md`'s CI table still opens by saying **three** gated jobs, and lists fewer rows than
+the required set; the `Zone bands` row it does carry is now correctly a gate (#311).
 
 ## Verified against
 
 `21370e8` on 2026-08-26, against `.github/workflows/{ci-web,ci-functions,ci-android,e2e-web,zone-bands,dependabot-auto-merge,dependabot-maintenance}.yml`,
 `web/scripts/check-{colour-literals,design-sync-entry,zone-bands,bundle-size}.mjs`, `web/vite.config.js`.
 
-*What protects `main`* re-verified on 2026-08-28 at `5479e21`, against `ci-android.yml` as
-converted by #317 and against the ruleset page as Scott showed it after adding the two checks.
-If one of those has changed since, treat the lines citing it as unverified and re-check that row.
+*What protects `main`* re-verified on 2026-08-28 at `6ac5188`, against `ci-android.yml` as
+converted by #317, `.github/workflows/context7-rule.yml` as added by #325, and — for the
+required set — **the ruleset API itself**, not a screenshot and not a person's recollection:
+
+```
+GET /repos/skizzy1986/erg-dashboard/rulesets/18063518
+  → updated_at 2026-08-28T12:22:08.154+08:00, bypass_actors [], enforcement active
+  → 10 required contexts, as listed above
+```
+
+That distinction is the point of this revision: the previous two attestations here cited the
+ruleset *page* and were both wrong. Re-run the command rather than trusting the timestamp —
+the ruleset is edited outside this repo, so nothing in git can tell you it moved.
 
 `ci-android.yml` trigger and concurrency re-read on 2026-08-28 at `3bd2337` while fixing #330,
 alongside the `on:` block of every other workflow in `.github/workflows/`: `ci-android.yml` was the
