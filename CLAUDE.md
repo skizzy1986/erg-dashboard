@@ -293,24 +293,42 @@ request headers and is unaffected, but **every hand-rolled edge-function
 never sends the request — a bare `TypeError: Failed to fetch` on the client with only
 the OPTIONS in the edge logs. This silently killed the Coach tab (#301).
 
-Session Replay is deliberately **not** enabled. The byte argument for that no longer
-holds: dropping mathjs (#54) cut **52 KB** gzipped, and the build now sits at **343.7 KB**
-against the 400 KB budget in `web/scripts/check-bundle-size.mjs` — **56.3 KB** of headroom,
-enough that Replay’s ~35-50 KB would now fit. Keeping it off is therefore a live choice
-to re-make, not a constraint. `npm run size` enforces the budget inside the **Build** job.
+The bundle gate has **two** budgets, because they answer different questions
+(`web/scripts/check-bundle-size.mjs:36-37`). **Entry** — the entry chunk plus its
+transitive *static* imports and their CSS — is what a first paint costs, and is the
+tight ratchet: **134.9 KB against 150 KB**, 15.1 KB spare. **Total** — every emitted
+asset, lazy ones included — is a loose ceiling: **373.5 KB against 400 KB** (— both
+measured 2026-09-03, after #329 removed mathjs; total was ratcheted 450 → 400 as that
+PR's ~52 KB landed). The entry set is read from `dist/.vite/manifest.json`
+(`build.manifest` in `web/vite.config.js`), the only source that tells a static import
+from a dynamic one; the walk is in `scripts/entry-graph.mjs` and is unit-tested,
+because a walk that wrongly followed `dynamicImports` would report the total as the
+entry and pass.
+
+**Total is expected to sit above its pre-split figure, and that is not a regression.**
+Splitting trades a much smaller entry for a slightly larger total — per-chunk preamble
+plus shared code landing in more than one chunk. Gating on total alone, which this
+script did until #331, made the check actively hostile to the code-splitting it kept
+asking for: the split measured here cut the entry 395.4 → 134.7 KB (−66%) while adding
+26.3 KB to the total. That bind was not theoretical: main sat at 399.2 KB of its
+400 KB total budget — 0.8 KB spare — so the next commit of any size would have failed. Judge a PR on the **entry** row.
+
+Both shells and all fourteen desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
+recharts (90.7 KB, shared by seven files) is out of first paint entirely. What remains
+in the entry is React, react-query and `@supabase/supabase-js` — auth is needed before
+anything can render, so the client cannot be deferred. Note `createClient` pulls in
+`RealtimeClient` unconditionally and nothing in `src/` uses realtime; reclaiming it
+means dropping to `auth-js` + `postgrest-js` directly, which is its own job.
+
+Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
+at first paint, so it lands in the entry, where there is 15.1 KB. It is now a
+lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
+`npm run size` enforces both budgets inside the **Build** job.
 
 **Never quote a bundle figure from this file — re-measure it.** These numbers drift, and
 a stale one has already mis-scoped work here (the doc said ~360 KB with ~40 KB spare when
-the truth was 395.7 KB with 4.3 KB, #319). `npm run build && npm run size` prints the
-current total, and the same run regenerates `web/dist/bundle-size.json`.
-
-Two properties of that gate are load-bearing. It sums **every emitted asset** — total bytes
-shipped, not the initial chunk — so **code-splitting raises this number**, not lowers it:
-splitting the 13 desktop tabs behind `React.lazy` was measured at 364.4 KB total (+20.7 KB
-in chunk overhead and duplicated shared code) even though it cut the entry chunk from
-339.7 KB to 202.5 KB. Splitting is a first-paint optimisation and a real one, but it is not
-a lever for this budget; removing a dependency is. Nothing in `App.jsx` is lazy-loaded today,
-so every import still ships on first paint.
+the truth was 395.7 KB with 4.3 KB, #319). `npm run build && npm run size` prints both
+current figures, and the same run regenerates `web/dist/bundle-size.json`.
 
 Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
