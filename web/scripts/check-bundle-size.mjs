@@ -4,10 +4,17 @@
 // as code moves around during the refactor. No external deps: reads dist/ and
 // gzips each asset with the built-in zlib.
 //
-// The budget is a RATCHET — lower MAX_GZIP_KB as the bundle shrinks (e.g. when
-// the monolith is finally code-split), never raise it without a deliberate
-// reason. Current build sits at ~360 KB gzipped; budget set with modest
-// headroom so a real regression trips it but normal noise does not.
+// The budget is a RATCHET — lower MAX_GZIP_KB as the bundle shrinks, never raise
+// it without a deliberate reason.
+//
+// This sums EVERY emitted asset, i.e. total bytes shipped — not the initial
+// chunk. Code-splitting therefore makes this number go UP (chunk overhead +
+// shared code duplicated across chunks) even as it makes first paint faster.
+// Splitting is not a lever for this gate; dropping a dependency is.
+//
+// Do not quote a size figure from memory or from a doc — it drifts. Run
+// `npm run build && npm run size`, or read dist/bundle-size.json, which this
+// script regenerates on every run.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';

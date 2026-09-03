@@ -18,7 +18,7 @@ TrainingPeaks, Ergzone) with a unified, fully personalised training system.
 |------------|--------------------------------|--------------------------------------|
 | UI         | React 19 + Vite                | Frontend single-page app             |
 | Charts     | Recharts                       | Data visualisation                   |
-| Math       | mathjs                         | Linear regression for aerobic trend  |
+| Math       | plain JS (`utils/stats.js`)     | Least-squares aerobic trend (mathjs removed, #54) |
 | Backend    | Supabase                       | Postgres DB, Auth, Edge Functions    |
 | Hosting    | Vercel                         | Auto-deploy on git push              |
 | Testing    | Vitest + React Testing Library | Unit and component tests             |
@@ -293,12 +293,24 @@ request headers and is unaffected, but **every hand-rolled edge-function
 never sends the request — a bare `TypeError: Failed to fetch` on the client with only
 the OPTIONS in the edge logs. This silently killed the Coach tab (#301).
 
-Session Replay is deliberately **not** enabled — it costs ~35-50 KB gzip, and there
-is nothing like that much room. The build sits at **395.7 KB against the 400 KB budget**
-in `web/scripts/check-bundle-size.mjs`, leaving **4.3 KB** of headroom (— measured
-2026-08-28). That is an order of magnitude less than Replay needs, so enabling it is a
-code-splitting job rather than a config flag: nothing in `App.jsx` is lazy-loaded, so
-every import ships on first paint. `npm run size` enforces this inside the **Build** job.
+Session Replay is deliberately **not** enabled. The byte argument for that no longer
+holds: dropping mathjs (#54) cut **52 KB** gzipped, and the build now sits at **343.7 KB**
+against the 400 KB budget in `web/scripts/check-bundle-size.mjs` — **56.3 KB** of headroom,
+enough that Replay’s ~35-50 KB would now fit. Keeping it off is therefore a live choice
+to re-make, not a constraint. `npm run size` enforces the budget inside the **Build** job.
+
+**Never quote a bundle figure from this file — re-measure it.** These numbers drift, and
+a stale one has already mis-scoped work here (the doc said ~360 KB with ~40 KB spare when
+the truth was 395.7 KB with 4.3 KB, #319). `npm run build && npm run size` prints the
+current total, and the same run regenerates `web/dist/bundle-size.json`.
+
+Two properties of that gate are load-bearing. It sums **every emitted asset** — total bytes
+shipped, not the initial chunk — so **code-splitting raises this number**, not lowers it:
+splitting the 13 desktop tabs behind `React.lazy` was measured at 364.4 KB total (+20.7 KB
+in chunk overhead and duplicated shared code) even though it cut the entry chunk from
+339.7 KB to 202.5 KB. Splitting is a first-paint optimisation and a real one, but it is not
+a lever for this budget; removing a dependency is. Nothing in `App.jsx` is lazy-loaded today,
+so every import still ships on first paint.
 
 Env vars are documented in `web/.env.example`. Runtime (`VITE_SENTRY_DSN`) and
 build-time (`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_URL`/`SENTRY_AUTH_TOKEN`) are set in
@@ -465,7 +477,7 @@ library documentation. Use it before WebSearch for any library in the stack.
 `@testing-library/react`, Recharts, `@tanstack/react-query`, ESLint, Prettier.
 
 **Fall back to WebSearch when:** `resolve-library-id` returns no results, or the
-library is a tooling utility unlikely to be indexed (Husky, lint-staged, mathjs,
+library is a tooling utility unlikely to be indexed (Husky, lint-staged,
 vite-plugin-pwa).
 
 **Where this is enforced.** The rule is not left to habit. The canonical wording
