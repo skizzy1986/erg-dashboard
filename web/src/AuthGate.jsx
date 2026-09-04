@@ -1,15 +1,20 @@
-import { useState, useEffect } from 'react';
-import App from './App.jsx';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from './supabaseClient.js';
 import { usePWAInstall } from './hooks/usePWAInstall.js';
 import { useIsMobile } from './hooks/useIsMobile.js';
 import { useSplashGate } from './hooks/useSplashGate.js';
 import { useInitialDataReady } from './hooks/useInitialDataReady.js';
 import SplashScreen from './components/mobile/SplashScreen.jsx';
-import MobileApp from './views/mobile/MobileApp.jsx';
 import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
 import { FONT } from './constants/type.js';
+
+// A device renders one shell, never both. Statically importing the pair put
+// the desktop dashboard's thirteen tabs and the whole mobile app in the same
+// first-paint chunk, so every phone downloaded a dashboard it cannot reach
+// and every desktop downloaded a phone app it cannot reach.
+const App = lazy(() => import('./App.jsx'));
+const MobileApp = lazy(() => import('./views/mobile/MobileApp.jsx'));
 
 // ── THEME TOKENS (match the dashboard) ───────────────────────────
 // ── LOGIN SCREEN ─────────────────────────────────────────────────
@@ -157,6 +162,28 @@ function Login() {
   );
 }
 
+// ── LOADING PANE ─────────────────────────────────────────────────
+// Used twice: while the session is unresolved, and while a shell chunk is in
+// flight. One definition so the two cannot drift apart.
+function LoadingPane() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: THEME.bg,
+        color: THEME.muted,
+        fontFamily: FONT.sans,
+        fontSize: 12,
+      }}
+    >
+      Loading…
+    </div>
+  );
+}
+
 // ── SIGN-OUT BUTTON (floating, top-right) ────────────────────────
 function SignOutButton() {
   return (
@@ -248,29 +275,21 @@ export default function AuthGate() {
 
   let body;
   if (session === undefined) {
-    body = showSplash ? null : (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: THEME.bg,
-          color: THEME.muted,
-          fontFamily: FONT.sans,
-          fontSize: 12,
-        }}
-      >
-        Loading…
-      </div>
-    );
+    body = showSplash ? null : <LoadingPane />;
   } else if (!session) {
     body = showSplash ? null : <Login />;
   } else {
     body = (
       <>
         <SignOutButton />
-        {isMobile ? <MobileApp /> : <App />}
+        {/* The shell chunk is fetched here rather than at first paint. On a
+            phone the splash is already covering this window; once it has
+            dismissed at its ceiling — or on desktop, where it never shows —
+            fall back to the same pane the unresolved branch uses, so a slow
+            chunk reads as loading rather than as a blank screen. */}
+        <Suspense fallback={showSplash ? null : <LoadingPane />}>
+          {isMobile ? <MobileApp /> : <App />}
+        </Suspense>
       </>
     );
   }

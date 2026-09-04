@@ -110,6 +110,9 @@ vi.mock('../views/ErgLiveView.jsx', () => ({
 vi.mock('../views/CoachView.jsx', () => ({
   default: () => <div>CoachView-stub</div>,
 }));
+vi.mock('../views/SettingsView.jsx', () => ({
+  default: () => <div>SettingsView-stub</div>,
+}));
 vi.mock('../views/ErgView.jsx', () => ({
   default: () => <div>ErgView-stub</div>,
 }));
@@ -226,6 +229,7 @@ const NAV = [
   ['LOG', 'LogView-stub'],
   ['JOURNAL', 'JournalView-stub'],
   ['COACH', 'CoachView-stub'],
+  ['SETTINGS', 'SettingsView-stub'],
 ];
 
 describe('App', () => {
@@ -241,9 +245,11 @@ describe('App', () => {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
 
+    // Every tab is lazy (#331), so its content arrives when the chunk
+    // resolves rather than in the click’s own tick — findBy, not getBy.
     for (const [label, marker] of NAV) {
       fireEvent.click(screen.getByRole('button', { name: label }));
-      expect(screen.getByText(marker)).toBeInTheDocument();
+      expect(await screen.findByText(marker)).toBeInTheDocument();
     }
   }, 30000);
 
@@ -315,11 +321,13 @@ describe('App', () => {
     expect(screen.getByTestId('overview-total')).toHaveTextContent('2');
 
     fireEvent.click(screen.getByRole('button', { name: 'CALENDAR' }));
-    expect(screen.getByTestId('calendar-counted')).toHaveTextContent('2');
+    expect(await screen.findByTestId('calendar-counted')).toHaveTextContent(
+      '2'
+    );
     expect(screen.getByTestId('calendar-cancelled')).toHaveTextContent('1');
 
     fireEvent.click(screen.getByRole('button', { name: 'LOG' }));
-    expect(screen.getByTestId('logview-shown')).toHaveTextContent('3');
+    expect(await screen.findByTestId('logview-shown')).toHaveTextContent('3');
   }, 30000);
 
   // The boundary isolates a broken tab, which is right — but it used to do so
@@ -334,7 +342,10 @@ describe('App', () => {
     journalThrows = true;
     fireEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
 
-    expect(screen.getByText(/isolated to protect/i)).toBeInTheDocument();
+    // The throw now happens on the far side of a Suspense boundary. The
+    // ErrorBoundary sits OUTSIDE that Suspense precisely so it still
+    // catches this and still reports it.
+    expect(await screen.findByText(/isolated to protect/i)).toBeInTheDocument();
     expect(captureErrorMock).toHaveBeenCalledTimes(1);
     const [error, context] = captureErrorMock.mock.calls[0];
     expect(error.message).toBe('journal blew up');

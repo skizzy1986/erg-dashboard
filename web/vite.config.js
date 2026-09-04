@@ -120,7 +120,13 @@ export default defineConfig({
   ...(Object.keys(sentryDefine).length ? { define: sentryDefine } : {}),
   // 'hidden' emits source maps for Sentry upload without referencing them from
   // the shipped bundles, so production source stays out of the browser.
-  build: { sourcemap: uploadSourceMaps ? 'hidden' : false },
+  //
+  // `manifest` emits dist/.vite/manifest.json, which is how
+  // scripts/check-bundle-size.mjs tells the entry chunk from the lazy ones. It
+  // is the only source that distinguishes a STATIC import (ships on first
+  // paint) from a DYNAMIC one (does not) — filenames cannot, and guessing
+  // would make the budget a fiction. Build metadata only; nothing imports it.
+  build: { sourcemap: uploadSourceMaps ? 'hidden' : false, manifest: true },
   test: {
     globals: true,
     environment: 'jsdom',
