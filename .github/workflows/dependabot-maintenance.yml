@@ -10,6 +10,15 @@ name: Dependabot maintenance
 # complete. (gh pr update-branch would NOT work here: a GITHUB_TOKEN push never
 # retriggers the required checks, so auto-merge would stall forever.)
 #
+# The comment is posted with a GitHub App installation token, not GITHUB_TOKEN:
+# Dependabot only obeys commands from actors with push access and refuses
+# github-actions[bot] ("Sorry, only users with push access can use that
+# command." — #349, #351). Setup: a GitHub App installed on this repo only, with
+# Repository permissions Contents: write + Pull requests: write; its Client ID
+# in the MAINTENANCE_APP_CLIENT_ID repo variable and a private key in the
+# MAINTENANCE_APP_PRIVATE_KEY secret. Without them the job fails loudly rather
+# than silently no-oping as it did before.
+#
 # stall-alert opens/updates a tracking issue for Dependabot PRs open >3 days —
 # usually a failing check or a major bump awaiting manual review.
 
@@ -35,7 +44,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 4,8,12,16 * * 1'
     steps:
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.MAINTENANCE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Comment "@dependabot rebase" on behind PRs
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh pr list --author 'app/dependabot' --state open \
             --json number,mergeStateStatus \
