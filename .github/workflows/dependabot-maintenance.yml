@@ -10,6 +10,15 @@ name: Dependabot maintenance
 # complete. (gh pr update-branch would NOT work here: a GITHUB_TOKEN push never
 # retriggers the required checks, so auto-merge would stall forever.)
 #
+# The comment is posted with VISUAL_BASELINE_PAT, not GITHUB_TOKEN: Dependabot
+# only obeys commands from actors with push access and refuses
+# github-actions[bot] ("Sorry, only users with push access can use that
+# command." — #349, #351). That PAT is fine-grained, this repo only, and acts
+# as the owner; for this job it needs Pull requests: read+write on top of the
+# Contents: read+write e2e-web.yml uses it for. There is deliberately no
+# GITHUB_TOKEN fallback: without the secret the job fails loudly rather than
+# silently no-oping as it did before.
+#
 # stall-alert opens/updates a tracking issue for Dependabot PRs open >3 days —
 # usually a failing check or a major bump awaiting manual review.
 
@@ -36,6 +45,11 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 4,8,12,16 * * 1'
     steps:
       - name: Comment "@dependabot rebase" on behind PRs
+        env:
+          GH_TOKEN: ${{ secrets.VISUAL_BASELINE_PAT }}
+        # Explicit bash turns on pipefail; the implicit default does not, so a
+        # failed `gh pr list` (no token, 403) would exit 0 through the pipe.
+        shell: bash
         run: |
           gh pr list --author 'app/dependabot' --state open \
             --json number,mergeStateStatus \

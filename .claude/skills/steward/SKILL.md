@@ -59,7 +59,7 @@ Green is at its most misleading here.
 
 | Fact | Without it you would |
 |---|---|
-| On a **Dependabot** PR never use `gh pr update-branch` — a `GITHUB_TOKEN` push never re-triggers required checks, so auto-merge stalls forever (`dependabot-maintenance.yml:8-11`). Comment `@dependabot rebase`. Actions is also barred from approving here; the attempt broke the 2026-07-02 run on PR #124 (`dependabot-auto-merge.yml:7-9`). | Permanently stall an armed auto-merge. |
+| On a **Dependabot** PR never use `gh pr update-branch` — a `GITHUB_TOKEN` push never re-triggers required checks, so auto-merge stalls forever (`dependabot-maintenance.yml:8-11`). Comment `@dependabot rebase` — **from an actor with push access**: Dependabot refuses the command from `github-actions[bot]`, which is why `rebase-behind` posts it with the owner's fine-grained PAT, not `GITHUB_TOKEN` (`dependabot-maintenance.yml:13-20`, #351; until then the job had been a no-op). An agent's own `GITHUB_TOKEN` comment will be refused the same way. Actions is also barred from approving here; the attempt broke the 2026-07-02 run on PR #124 (`dependabot-auto-merge.yml:7-9`). | Permanently stall an armed auto-merge. |
 | Colour hexes, box metrics and type stay in **separate PRs** — see `DESIGN.md`. | Fix a `check:colours` failure and tidy the padding on the same line. |
 | The recurring defect here is **automation that exits 0 while doing nothing**: ESLint silently skipping `.jsx` (`9800b58`), two hooks inert behind exit 0 for months (`d2d0bd4`), the token seam dropping 67 tints (`8ad2637`). | Accept green as proof. Read the step log for a non-zero item count, not the exit status. |
 
