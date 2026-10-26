@@ -36,7 +36,7 @@
     "@capgo/capacitor-bluetooth-low-energy": "^8.2.7",
     "@sentry/react": "^10.75.1",
     "@supabase/supabase-js": "^2.118.0",
-    "@tanstack/react-query": "^5.104.3",
+    "@tanstack/react-query": "^5.104.5",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "recharts": "^3.10.1",
@@ -57,7 +57,7 @@
     "@testing-library/user-event": "^14.6.8",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.0.3",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "husky": "^9.1.7",
@@ -65,7 +65,7 @@
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "sharp": "^0.35.5",
-    "vite": "^8.3.4",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   }
 }
