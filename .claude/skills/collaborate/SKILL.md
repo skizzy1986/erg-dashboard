@@ -26,7 +26,9 @@ architecture, the quality bar — still applies to any code you write.
 0. **He has his own ways of working — offer, don't impose.** This skill exists to make
    working *in Scott's repo* easy and to make his output easy for Scott to use. It is
    not a process he has to adopt. If he prefers his own approach, help him with that and
-   just keep the hard rules below. Treat every session as a **learning environment**:
+   just keep the hard rules below. Don't prescribe which models, agents or tools he
+   uses; he may do most of his thinking in Claude chat and come here only to run or
+   build things, and that's fine. Treat every session as a **learning environment**:
    curiosity and questions over correctness, mistakes are cheap on a local branch, and
    there's no deadline.
 1. **Plain words, one step at a time.** Before running a command, say in one sentence

@@ -1,70 +1,67 @@
 # Start here — no GitHub experience needed
 
-Hi! Scott has invited you to explore the **SplitIQ squat tool**: a 3D coaching model of
-the high-bar back squat. You don't need to know GitHub or how software teams work. An AI
-agent (**Claude Code**) does the technical steps for you and explains them as it goes.
-This page gets you from nothing to the tool running on your computer.
+Hi! Scott has invited you to explore the **SplitIQ squat tool**, a 3D coaching model of
+the high-bar back squat, and to try out your own ideas. You don't need to know GitHub or
+how software teams work, and there's no single "right" way to do this. Use whatever
+tools, AI models and habits suit you. This page suggests an easy route.
 
-You can't break anything. You only have **read access**: nothing you do on your computer
-can change Scott's project. Everything you try happens on your own copy.
-
----
-
-## The five steps
-
-### 1. Make a GitHub account (5 min)
-GitHub is the website where the project's code lives, a bit like Google Drive for code.
-Sign up free at <https://github.com/signup>, then **send Scott your username**.
-
-### 2. Accept Scott's invitation (1 min)
-Scott adds you to the project, and GitHub emails you an invitation. Click **Accept**.
-If the email doesn't arrive, open
-<https://github.com/skizzy1986/erg-dashboard/invitations> while you're logged in.
-
-### 3. Install Claude Code (10 min)
-Claude Code is Claude working directly on your computer: it can run commands, read and
-edit files, and use GitHub for you. It needs a Claude subscription that includes Claude
-Code. Install it from <https://claude.ai/download> (it's in the Claude desktop app), or
-follow the guide at <https://code.claude.com/docs>.
-
-### 4. Paste the setup prompt (15–20 min, mostly waiting)
-Open Claude Code in an empty folder where you want the project to live, for example
-`Documents/splitiq`. Paste **Prompt 1** from [`PROMPTS.md`](PROMPTS.md). Claude will:
-1. install a few free tools (Git, Node.js, and the GitHub command-line tool) if you
-   don't have them;
-2. log you in to GitHub (a browser window opens; click **Authorize**);
-3. download the project and start the squat tool.
-
-Approve each step when Claude asks. If anything fails, tell Claude what you see, and it
-will sort it out.
-
-### 5. Open the tool
-Claude will tell you when it's running. Open <http://localhost:5173/squat> in your
-browser, drag the depth slider, and spin the model around.
+You can't break anything. You only have **read access**, so nothing you do can change
+Scott's project.
 
 ---
 
-## After that
+## Step 1: get access (5 minutes)
 
-Open Claude Code **inside the project folder** (`erg-dashboard`) and type
-**`/collaborate`**. That switches Claude into *collaborator mode*: it knows the project,
-Scott's ground rules, and how to share your ideas with him in a form he can use straight
-away. Then try the prompts in [`PROMPTS.md`](PROMPTS.md): a guided tour, "how does this
-work?", turning an idea into a post for Scott, building a prototype, and sketching a new
-movement.
+1. **Make a GitHub account.** GitHub is the website where the project's code lives, a
+   bit like Google Drive for code. Sign up free at <https://github.com/signup>, then
+   **send Scott your username**.
+2. **Accept the invitation.** Scott adds you, and GitHub emails you an invitation: click
+   **Accept**. If the email doesn't arrive, open
+   <https://github.com/skizzy1986/erg-dashboard/invitations> while you're logged in.
+3. **Have a play.** The tool is live at <https://erg-dashboard-eight.vercel.app/squat>.
+   Drag the depth slider, spin the model and open the guide.
 
-You have your own way of doing things, so use as much or as little of this as you like.
+## Step 2: pick how you'd like to work
+
+| | **Chat** (start here) | **Claude Code** (when you're ready) |
+|---|---|---|
+| What it is | Claude in your browser or the Claude app, as you already use it | Claude working directly on your computer: it runs the project, edits code and handles GitHub for you |
+| Good for | Understanding how it works, talking through ideas, sketching new movements, drafting posts for Scott | Running the tool on your own machine, building prototypes, sharing code |
+| Setup | Nothing to install | About 20 minutes, and Claude does most of it |
+
+### Working in chat
+1. In Claude, create a **Project** (for example "SplitIQ squat"). Paste the **Project
+   instructions** from [`PROMPTS.md`](PROMPTS.md#chat) into its instructions. That
+   gives every chat in the project the background and Scott's ground rules.
+2. Give the project the code, so Claude can read it. Either connect the GitHub
+   repository with Claude's GitHub integration (`skizzy1986/erg-dashboard`), or copy
+   the files you're curious about from GitHub into the chat. Start with
+   `docs/onboarding/README.md`.
+3. Chat. There are starter prompts in [`PROMPTS.md`](PROMPTS.md#chat): a tour, "how
+   does this work?", "I've had an idea", and "sketch a new movement".
+4. When you have something to share, ask Claude to draft it as a post and paste it into
+   **Discussions** (see below).
+
+### Trying Claude Code (whenever you fancy it)
+Chat can read and explain the code, but it can't run the tool on your computer or change
+it. When you want to build something and see it working, Claude Code is the easy next
+step: it installs what's needed, downloads the project and starts it for you. Install it
+from <https://claude.ai/download> (it needs a Claude plan that includes Claude Code),
+open it in an empty folder, and paste the **setup prompt** from
+[`PROMPTS.md`](PROMPTS.md#claude-code). Afterwards, type **`/collaborate`** inside the
+project folder, and Claude will pick up the project's ground rules for you.
 
 ## How you and Scott talk
 
-| You want to… | Where | Claude can… |
-|---|---|---|
-| Suggest an idea, however rough | **Discussions → 💡 Ideas** | draft it and post it with your OK |
-| Show something you built | **Discussions → 🙌 Show and tell** | put your code online in your own copy (a "fork") and post the link |
-| Ask a question | **Discussions → 🙏 Q&A** | write it up |
-| Get your code into the real product | a **pull request** from your fork | prepare it (only if you and Scott both want it) |
+Discussions live at <https://github.com/skizzy1986/erg-dashboard/discussions>. Post
+there in your browser, or have Claude Code post for you.
 
-Discussions live at <https://github.com/skizzy1986/erg-dashboard/discussions>.
+| You want to… | Where |
+|---|---|
+| Suggest an idea, however rough | **💡 Ideas** (there's a form) |
+| Show something you built | **🙌 Show and tell** |
+| Ask a question | **🙏 Q&A** |
+| Get your code into the real product | a **pull request** from your own copy (only if you and Scott both want it) |
 
 ## Words you'll hear (and what they mean)
 
@@ -72,10 +69,10 @@ Discussions live at <https://github.com/skizzy1986/erg-dashboard/discussions>.
 |---|---|
 | **Repository (repo)** | The project folder, with its full history, on GitHub. |
 | **Clone** | Download a copy of the repo to your computer. |
-| **Branch** | A separate line of changes, so you can experiment without touching the main version. Yours will be called `explore/something`. |
-| **Commit** | A saved snapshot of your changes, with a note saying what changed. |
-| **Fork** | Your own online copy of the repo, under your account. It's where your experiments go when you want to show them. |
-| **Pull request (PR)** | A proposal: "here are my changes, would you like them in the real project?" Scott reviews and decides. |
+| **Branch** | A separate line of changes, so you can experiment without touching the main version. |
+| **Commit** | A saved snapshot of changes, with a note saying what changed. |
+| **Fork** | Your own online copy of the repo, under your account. |
+| **Pull request (PR)** | A proposal: "here are my changes, would you like them?" Scott reviews and decides. |
 | **CI** | Automatic checks (tests, style, build) that run on every proposal. |
 | **Discussion** | A forum thread on GitHub. It's where ideas and questions go. |
 | **`main`** | The official version of the project. You never change it directly. |
@@ -89,9 +86,9 @@ Discussions live at <https://github.com/skizzy1986/erg-dashboard/discussions>.
   but ask before publishing.
 - The 3D anatomy data comes from BodyParts3D under a "share-alike" licence. If you
   publish it, or a 3D model made from it, credit BodyParts3D and use the same licence.
-  Claude knows the details.
-- The numbers in the model are **modelled estimates**, not measurements. Keep that label
-  on anything you build.
-- If you're unsure, ask in Q&A, or just ask Claude.
+- The numbers in the model are **modelled estimates**, not measurements. Keep that
+  label on anything you build.
+- Please keep Scott's personal training notes (in `coach/` and parts of `CLAUDE.md`)
+  private.
 
 Welcome aboard, and have fun!
