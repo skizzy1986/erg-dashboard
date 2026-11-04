@@ -1,0 +1,165 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { captureError } from '../../utils/sentry.js';
+import { loadSceneModule } from '../../anatomy/scene/loadScene.js';
+import { scenePalette } from '../../anatomy/utils/sceneColours.js';
+import { sceneStyle } from '../../anatomy/constants/sceneStyle.js';
+
+const isOffline = () =>
+  typeof navigator !== 'undefined' && navigator.onLine === false;
+
+/**
+ * Owns the 3D scene's lifecycle: fetch the three.js chunk, build the scene
+ * into the container, then keep it in step with the view, theme and motion
+ * preference — without ever rebuilding for those.
+ *
+ * status: idle → loading (the chunk) → building → ready (first frame drawn),
+ * or error (errorKind 'load' | 'build'), or contextlost. `retry` rebuilds.
+ *
+ * StrictMode-safe: every build is paired with its own dispose, and a build
+ * that resolves after its effect was torn down disposes itself.
+ */
+export function useAnatomyScene({
+  containerRef,
+  manifest,
+  buffer,
+  ready,
+  view,
+  themeName,
+  reducedMotion,
+  coarsePointer = false,
+  loadScene = loadSceneModule,
+}) {
+  const [state, setState] = useState({ status: 'idle', errorKind: null });
+  const [attempt, setAttempt] = useState(0);
+  const [controller, setController] = useState(null);
+  // Read at build time only; later changes go through the setters below.
+  const latest = useRef({ view, themeName, reducedMotion });
+  useEffect(() => {
+    latest.current = { view, themeName, reducedMotion };
+  });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!ready || !manifest || !buffer || !container) {
+      // Functional and idempotent: an effect re-run while idle must not
+      // schedule another render.
+      setState((prev) =>
+        prev.status === 'idle' ? prev : { status: 'idle', errorKind: null }
+      );
+      return undefined;
+    }
+    let cancelled = false;
+    let ctl = null;
+    let timer = 0;
+    setState({ status: 'loading', errorKind: null });
+
+    loadScene().then(
+      (mod) => {
+        if (cancelled) return;
+        setState({ status: 'building', errorKind: null });
+        // A tick so "Building 3D model" paints before the synchronous build.
+        timer = setTimeout(() => {
+          if (cancelled) return;
+          const { view: v, themeName: t, reducedMotion: rm } = latest.current;
+          try {
+            ctl = mod.createAnatomyScene({
+              container,
+              manifest,
+              buffer,
+              palette: scenePalette(t),
+              style: sceneStyle(t),
+              reducedMotion: rm,
+              coarsePointer,
+              onFirstFrame: () => {
+                if (!cancelled) setState({ status: 'ready', errorKind: null });
+              },
+              onContextLost: () => {
+                if (!cancelled)
+                  setState({ status: 'contextlost', errorKind: 'contextlost' });
+              },
+              onContextRestored: () => {
+                if (!cancelled) setAttempt((n) => n + 1);
+              },
+            });
+            ctl.setDepth(v.s);
+            ctl.setLayers(v.layers);
+            setController(ctl);
+          } catch (error) {
+            captureError(error, {
+              where: 'useAnatomyScene',
+              stage: 'build',
+              attempt,
+            });
+            ctl?.dispose();
+            ctl = null;
+            setState({ status: 'error', errorKind: 'build' });
+          }
+        }, 0);
+      },
+      (error) => {
+        if (cancelled) return;
+        // Offline, a failed chunk fetch is the expected first-visit state
+        // (the UI says so), not a defect, so it is not reported. Online it
+        // is a real failure.
+        if (!isOffline()) {
+          captureError(error, {
+            where: 'useAnatomyScene',
+            stage: 'import',
+            attempt,
+          });
+        }
+        setState({ status: 'error', errorKind: 'load' });
+      }
+    );
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      ctl?.dispose();
+      setController(null);
+    };
+  }, [
+    containerRef,
+    manifest,
+    buffer,
+    ready,
+    coarsePointer,
+    loadScene,
+    attempt,
+  ]);
+
+  useEffect(() => {
+    controller?.setDepth(view.s);
+  }, [controller, view.s]);
+
+  useEffect(() => {
+    controller?.setLayers(view.layers);
+  }, [controller, view.layers]);
+
+  useEffect(() => {
+    controller?.setPalette(scenePalette(themeName), sceneStyle(themeName));
+  }, [controller, themeName]);
+
+  useEffect(() => {
+    controller?.setReducedMotion(reducedMotion);
+  }, [controller, reducedMotion]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  // Stable across renders, and safe to call before the scene exists.
+  const ctlRef = useRef(null);
+  useEffect(() => {
+    ctlRef.current = controller;
+  }, [controller]);
+  const camera = useMemo(
+    () => ({
+      reset: () => ctlRef.current?.camera.reset(),
+      preset: (name) => ctlRef.current?.camera.preset(name),
+      orbit: (dAz, dPol) => ctlRef.current?.camera.orbit(dAz, dPol),
+      zoom: (f) => ctlRef.current?.camera.zoom(f),
+    }),
+    []
+  );
+
+  return { ...state, retry, camera };
+}

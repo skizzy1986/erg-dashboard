@@ -103,22 +103,112 @@ export function reachableFiles(manifest, roots, { stopAt = [] } = {}) {
 }
 
 /**
- * Files only the squat tool can reach: everything reachable from its root,
- * minus anything the dashboard (the entry, walked without entering the squat
- * root) can also reach. Shared code — React, the entry chunk, the tokens
- * module — is the dashboard's, so the squat budget measures only what the tool
- * itself added.
+ * Files reachable through `viaKey` and by no other route from the entry:
+ * everything reachable from it, minus anything the entries reach when walked
+ * without entering it. Shared code stays with whoever else reaches it.
+ *
+ * @param {Record<string, object>} manifest
+ * @param {string} viaKey manifest key of the root module
+ * @param {string} [what] how to name the key in the error
+ * @returns {string[]} dist-relative paths
+ */
+export function onlyReachableVia(manifest, viaKey, what = 'Root') {
+  if (!manifest[viaKey]) {
+    throw new Error(`${what} ${viaKey} is not in the manifest.`);
+  }
+  const entries = Object.keys(manifest).filter((key) => manifest[key]?.isEntry);
+  const others = reachableFiles(manifest, entries, { stopAt: [viaKey] });
+  const via = reachableFiles(manifest, [viaKey]);
+  return [...via].filter((f) => !others.has(f));
+}
+
+/**
+ * Files only the squat tool can reach. Shared code — React, the entry chunk,
+ * the tokens module — is the dashboard's, so the squat budget measures only
+ * what the tool itself added.
  *
  * @param {Record<string, object>} manifest
  * @param {string} squatKey manifest key of the tool's root module
  * @returns {string[]} dist-relative paths
  */
-export function squatOnlyFiles(manifest, squatKey) {
-  if (!manifest[squatKey]) {
-    throw new Error(`Squat root ${squatKey} is not in the manifest.`);
+export const squatOnlyFiles = (manifest, squatKey) =>
+  onlyReachableVia(manifest, squatKey, 'Squat root');
+
+/** The URLs Workbox wrote into sw.js's precache list ({url:"…",revision}). */
+export const precacheUrls = (sw) =>
+  [...(sw ?? '').matchAll(/url:"([^"]+)"/g)].map((m) => m[1]);
+
+/**
+ * Whether sw.js still answers navigations with index.html. The squat chunks
+ * left the precache; the page that loads them must not have.
+ */
+export const servesIndexNavigation = (sw) =>
+  /NavigationRoute\([^()]*createHandlerBoundToURL\("index\.html"\)\)/.test(
+    sw ?? ''
+  );
+
+const base = (f) => (f.startsWith('assets/') ? f.slice('assets/'.length) : f);
+
+// ── The squat split's structural invariants ─────────────────────────
+// Each returns a list of problems (empty = holds). Each guards a failure no
+// byte budget would notice: three.js on a first paint can fit under a generous
+// ceiling, and a mislabelled chunk changes nothing's size.
+
+/**
+ * `viaKey`'s own files must be on none of the boot graphs' first paints.
+ * @returns {string[]} problems; empty when the invariant holds
+ */
+export function firstPaintLeaks(manifest, viaKey, bootKeys) {
+  const only = new Set(onlyReachableVia(manifest, viaKey).map(base));
+  const problems = [];
+  if (!only.size) {
+    problems.push(
+      `Nothing is reachable only through ${viaKey} — the 3D chunk was merged into something else, or renamed.`
+    );
   }
-  const entries = Object.keys(manifest).filter((key) => manifest[key]?.isEntry);
-  const dashboard = reachableFiles(manifest, entries, { stopAt: [squatKey] });
-  const squat = reachableFiles(manifest, [squatKey]);
-  return [...squat].filter((f) => !dashboard.has(f));
+  for (const boot of bootKeys) {
+    const leaked = entryFilesFrom(manifest, { bootKeys: [boot] })
+      .map(base)
+      .filter((f) => only.has(f));
+    if (leaked.length) {
+      problems.push(
+        `The 3D chunk is on ${boot}'s first paint: ${leaked.join(', ')}. Import it only through loadScene.js.`
+      );
+    }
+  }
+  return problems;
 }
+
+/**
+ * The squat-only JS (from the graph) and the prefixed JS (from the file
+ * names) must be the same set: Workbox and the Android build trust the name.
+ */
+export function prefixMismatch(squatOnly, assetNames, prefixed) {
+  const graph = squatOnly
+    .map(base)
+    .filter((f) => f.endsWith('.js'))
+    .sort();
+  const named = assetNames.filter((f) => prefixed.test(f)).sort();
+  if (graph.join('\n') === named.join('\n')) return [];
+  return [
+    `The squat-only JS and the squat-* JS differ.\n  squat-only: ${graph.join(', ')}\n  squat-*:    ${named.join(', ')}\n  Fix scripts/squatChunks.mjs — Workbox and the Android build select by the prefix.`,
+  ];
+}
+
+/** No squat file may be in the precache list. */
+export function precachedSquat(urls) {
+  const hits = urls.filter((u) => /(^|\/)assets\/squat-/.test(u));
+  return hits.length
+    ? [
+        `sw.js precaches squat files: ${hits.join(', ')}. They belong in globIgnores.`,
+      ]
+    : [];
+}
+
+/** The service worker must still serve index.html for navigations. */
+export const navigationProblems = (sw) =>
+  servesIndexNavigation(sw)
+    ? []
+    : [
+        'sw.js no longer answers navigations with index.html — check navigateFallback in vite.config.js.',
+      ];

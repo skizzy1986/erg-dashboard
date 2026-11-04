@@ -1,7 +1,14 @@
 import {
   entryFilesFrom,
+  firstPaintLeaks,
   isCountedAsset,
+  navigationProblems,
+  onlyReachableVia,
+  precachedSquat,
+  prefixMismatch,
+  precacheUrls,
   reachableFiles,
+  servesIndexNavigation,
   squatOnlyFiles,
 } from '../entry-graph.mjs';
 
@@ -227,5 +234,211 @@ describe('squat-only classification', () => {
       'assets/a.js',
       'assets/x.js',
     ]);
+  });
+});
+
+// The squat tool lazily loads its scene, and the scene chunk statically
+// imports back into the tool's chunk for the code they share.
+const WITH_SCENE = {
+  ...TWO_PRODUCTS,
+  'src/squat/SquatApp.jsx': {
+    ...TWO_PRODUCTS['src/squat/SquatApp.jsx'],
+    dynamicImports: ['src/anatomy/scene/createAnatomyScene.js'],
+  },
+  'src/anatomy/scene/createAnatomyScene.js': {
+    file: 'assets/squat-createAnatomyScene-z.js',
+    isDynamicEntry: true,
+    imports: ['src/squat/SquatApp.jsx', '_three-y.js'],
+  },
+  '_three-y.js': { file: 'assets/squat-three-y.js' },
+};
+const SCENE = 'src/anatomy/scene/createAnatomyScene.js';
+
+describe('onlyReachableVia (the 3D chunk)', () => {
+  it('is the scene and three only — not the tool chunk it imports', () => {
+    expect(onlyReachableVia(WITH_SCENE, SCENE).sort()).toEqual([
+      'assets/squat-createAnatomyScene-z.js',
+      'assets/squat-three-y.js',
+    ]);
+  });
+
+  it('is a subset of the squat-only files', () => {
+    const squat = new Set(squatOnlyFiles(WITH_SCENE, 'src/squat/SquatApp.jsx'));
+    for (const f of onlyReachableVia(WITH_SCENE, SCENE)) {
+      expect(squat.has(f)).toBe(true);
+    }
+  });
+
+  it('stays out of both first-paint graphs', () => {
+    const scene = onlyReachableVia(WITH_SCENE, SCENE);
+    for (const boot of ['src/AuthGate.jsx', 'src/squat/SquatApp.jsx']) {
+      const first = entryFilesFrom(WITH_SCENE, { bootKeys: [boot] });
+      expect(first.filter((f) => scene.includes(f))).toEqual([]);
+    }
+  });
+
+  it('names the missing key', () => {
+    expect(() =>
+      onlyReachableVia(WITH_SCENE, 'src/gone.js', 'Scene root')
+    ).toThrow(/Scene root src\/gone.js/);
+  });
+});
+
+describe('service worker inspection', () => {
+  const SW =
+    'e.precacheAndRoute([{url:"index.html",revision:"1"},{url:"assets/index-a.js",revision:null}],{});' +
+    'e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html")));';
+
+  it('lists the precache URLs', () => {
+    expect(precacheUrls(SW)).toEqual(['index.html', 'assets/index-a.js']);
+  });
+
+  it('reads an empty or absent sw.js as no precache entries', () => {
+    expect(precacheUrls('')).toEqual([]);
+    expect(precacheUrls(undefined)).toEqual([]);
+    expect(precacheUrls('self.skipWaiting();')).toEqual([]);
+  });
+
+  it('finds the index.html navigation handler, minified or not', () => {
+    expect(servesIndexNavigation(SW)).toBe(true);
+    expect(
+      servesIndexNavigation(
+        'new s.NavigationRoute(s.createHandlerBoundToURL("index.html"))'
+      )
+    ).toBe(true);
+    expect(
+      servesIndexNavigation(SW.replace('index.html")))', 'other.html")))'))
+    ).toBe(false);
+    expect(servesIndexNavigation('')).toBe(false);
+  });
+});
+
+describe('squat split invariants', () => {
+  const BOOTS = ['src/AuthGate.jsx', 'src/squat/SquatApp.jsx'];
+
+  describe('firstPaintLeaks', () => {
+    it('passes when the scene is reachable only lazily', () => {
+      expect(firstPaintLeaks(WITH_SCENE, SCENE, BOOTS)).toEqual([]);
+    });
+
+    it('fails when the tool statically imports the scene', () => {
+      const leaky = {
+        ...WITH_SCENE,
+        'src/squat/SquatApp.jsx': {
+          ...WITH_SCENE['src/squat/SquatApp.jsx'],
+          imports: [...WITH_SCENE['src/squat/SquatApp.jsx'].imports, SCENE],
+        },
+      };
+      const problems = firstPaintLeaks(leaky, SCENE, BOOTS);
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatch(/src\/squat\/SquatApp.jsx's first paint/);
+      expect(problems[0]).toMatch(/squat-createAnatomyScene-z\.js/);
+      expect(problems[0]).toMatch(/squat-three-y\.js/);
+    });
+
+    it('fails when the entry statically imports the scene', () => {
+      const leaky = {
+        ...WITH_SCENE,
+        'index.html': {
+          ...WITH_SCENE['index.html'],
+          imports: [...(WITH_SCENE['index.html'].imports ?? []), SCENE],
+        },
+      };
+      const problems = firstPaintLeaks(leaky, SCENE, BOOTS);
+      // On both first paints: every boot graph walks the entry.
+      expect(problems).toHaveLength(2);
+      expect(problems[0]).toMatch(/src\/AuthGate.jsx's first paint/);
+    });
+
+    it('fails when the scene chunk is folded into a shared one', () => {
+      const merged = {
+        ...WITH_SCENE,
+        [SCENE]: { file: 'assets/tokens-t.js', imports: [] },
+      };
+      expect(firstPaintLeaks(merged, SCENE, BOOTS)[0]).toMatch(
+        /Nothing is reachable only through/
+      );
+    });
+
+    it('throws on a missing scene root', () => {
+      expect(() => firstPaintLeaks(WITH_SCENE, 'src/gone.js', BOOTS)).toThrow(
+        /src\/gone.js/
+      );
+    });
+  });
+
+  describe('prefixMismatch', () => {
+    const SQUAT_JS = /^squat-.*\.js$/;
+    const graph = ['assets/squat-a.js', 'assets/squat-b.js', 'assets/x.bin'];
+
+    it('passes when the graph and the names agree', () => {
+      expect(
+        prefixMismatch(
+          graph,
+          ['squat-b.js', 'squat-a.js', 'index.js'],
+          SQUAT_JS
+        )
+      ).toEqual([]);
+    });
+
+    it('fails on a squat-only chunk without the prefix', () => {
+      const [msg] = prefixMismatch(
+        [...graph, 'assets/three-c.js'],
+        ['squat-a.js', 'squat-b.js', 'three-c.js'],
+        SQUAT_JS
+      );
+      expect(msg).toMatch(/differ/);
+      expect(msg).toMatch(/three-c\.js/);
+    });
+
+    it('fails on a prefixed chunk the dashboard also reaches', () => {
+      expect(
+        prefixMismatch(
+          graph,
+          ['squat-a.js', 'squat-b.js', 'squat-shared.js'],
+          SQUAT_JS
+        )
+      ).toHaveLength(1);
+    });
+  });
+
+  describe('precachedSquat', () => {
+    it('passes with no squat URL in the precache', () => {
+      expect(precachedSquat(['index.html', 'assets/index-a.js'])).toEqual([]);
+      expect(precachedSquat([])).toEqual([]);
+    });
+
+    it('fails on a precached squat chunk or data file', () => {
+      const [msg] = precachedSquat([
+        'index.html',
+        'assets/squat-SquatApp-a.js',
+        'assets/squat-anatomy-b.bin',
+      ]);
+      expect(msg).toMatch(/squat-SquatApp-a\.js, assets\/squat-anatomy-b\.bin/);
+    });
+
+    it('does not mistake a non-asset path for one', () => {
+      expect(precachedSquat(['icons/squat-icon.png'])).toEqual([]);
+    });
+  });
+
+  describe('navigationProblems', () => {
+    it('passes when index.html serves navigations', () => {
+      expect(
+        navigationProblems(
+          'r(new s.NavigationRoute(s.createHandlerBoundToURL("index.html")))'
+        )
+      ).toEqual([]);
+    });
+
+    it('fails when the handler is missing or points elsewhere', () => {
+      expect(navigationProblems('')).toHaveLength(1);
+      expect(navigationProblems(undefined)).toHaveLength(1);
+      expect(
+        navigationProblems(
+          'new s.NavigationRoute(s.createHandlerBoundToURL("offline.html"))'
+        )
+      ).toHaveLength(1);
+    });
   });
 });

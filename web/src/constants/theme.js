@@ -31,4 +31,9 @@ export const THEME = {
   textStrong: 'var(--color-text-strong)',
   modelled: 'var(--color-modelled)',
   measured: 'var(--color-measured)',
+  anatomyMuscle: 'var(--color-anatomy-muscle)',
+  anatomyTendon: 'var(--color-anatomy-tendon)',
+  anatomyBone: 'var(--color-anatomy-bone)',
+  anatomyShadow: 'var(--color-anatomy-shadow)',
+  anatomyBar: 'var(--color-anatomy-bar)',
 };

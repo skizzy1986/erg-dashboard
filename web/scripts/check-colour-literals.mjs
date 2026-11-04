@@ -156,11 +156,12 @@ const ALPHA_CONCAT = /\+ *['"][0-9a-fA-F]{2}['"]/g;
 const CAMEL_VAR = /var\(--color-[a-z0-9-]*[A-Z]/g;
 
 // three.js takes colours as 0xRRGGBB number literals, which the # pattern
-// above cannot see. The squat tool is the only three.js surface, and its scene
-// colours must come from tokens like everything else (PR2 adds them), so a hex
-// number under web/src/squat/ is rejected outright.
+// above cannot see. The 3D scene (web/src/anatomy/) and the squat tool around
+// it are the only three.js surfaces, and their colours come from the anatomy*
+// tokens like everything else, so a hex number under either is rejected.
 const HEX_NUMBER = /\b0x[0-9a-fA-F]{6}\b/g;
-const isSquat = (p) => p.startsWith('web/src/squat/');
+const isSquat = (p) =>
+  p.startsWith('web/src/squat/') || p.startsWith('web/src/anatomy/');
 
 const failures = [];
 const seen = new Map();

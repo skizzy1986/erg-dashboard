@@ -26,6 +26,9 @@ export const GROUNDS = {
   measuredChip: [['surface'], ['measured', '0d'], ['measured', '14']],
   // RichText's inline code chip.
   codeChip: [['surface'], ['text', '0f']],
+  // The stage's "Modelled, not measured" chip: opaque surface over the
+  // moving model, so the canvas beneath never becomes its ground.
+  stageChip: [['surface']],
 };
 
 // WCAG 1.4.3: 4.5:1 for normal text, 3:1 for large (≥ 24 px, or ≥ 18.66 px
@@ -57,4 +60,14 @@ export const PAIRS = [
   { fg: 'textSubtle', ground: 'stageEdge', where: 'stage micro label' },
   { fg: 'text', ground: 'surfaceAlt', where: 'capability notice heading' },
   { fg: 'text', ground: 'surface', where: 'load error 13 px' },
+  // 3D stage overlay and the controls cards under it.
+  {
+    fg: 'modelled',
+    ground: 'stageChip',
+    where: '"Modelled, not measured" 11 px',
+  },
+  { fg: 'text', ground: 'surfaceAlt', where: '3D scene error 13 px' },
+  { fg: 'text', ground: 'surface', where: 'depth readout, layer switches' },
+  { fg: 'textSubtle', ground: 'surface', where: 'camera key legend 12 px' },
+  { fg: 'surface', ground: 'accent', where: 'pressed phase chip, direction' },
 ];

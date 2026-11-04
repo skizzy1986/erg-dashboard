@@ -34,3 +34,30 @@ describe('squat provenance tokens', () => {
     expect(DARK.modelled).not.toBe(DARK.measured);
   });
 });
+
+describe('3D scene tokens', () => {
+  const KEYS = [
+    'anatomyMuscle',
+    'anatomyTendon',
+    'anatomyBone',
+    'anatomyShadow',
+    'anatomyBar',
+  ];
+
+  it.each(KEYS)('%s is a pointer with a value on both themes', (k) => {
+    expect(THEME[k]).toMatch(/^var\(--color-anatomy-[a-z]+\)$/);
+    expect(LIGHT[k]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(DARK[k]).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  it('keeps tendon visibly lighter than muscle, so the blend reads', () => {
+    for (const p of [LIGHT, DARK]) {
+      expect(ratio(p.anatomyTendon, p.anatomyMuscle)).toBeGreaterThan(3);
+    }
+  });
+
+  it('keeps the dark scene on the source page colours', () => {
+    expect(DARK.anatomyMuscle).toBe('#a52529');
+    expect(DARK.anatomyTendon).toBe('#d5dbe0');
+  });
+});

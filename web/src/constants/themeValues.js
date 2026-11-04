@@ -33,6 +33,14 @@ export const DARK = {
   // computed versus one a sensor recorded. Additive — no existing key moved.
   modelled: '#f2b45a',
   measured: '#86a8ff',
+  // The squat tool's 3D scene (PR2). Not text inks: these paint geometry, so
+  // they are named for what they colour, not for a movement — a second
+  // exercise reuses them. Dark muscle and tendon are the source page's own.
+  anatomyMuscle: '#a52529',
+  anatomyTendon: '#d5dbe0',
+  anatomyBone: '#e6dccb',
+  anatomyShadow: '#000004',
+  anatomyBar: '#9aa3b5',
 };
 
 // The light palette. Values are conventions.md's, which is design-owned and
@@ -77,6 +85,12 @@ export const LIGHT = {
   // Squat-tool provenance inks; both clear AA (4.5) on surface and field.
   modelled: '#8a5300',
   measured: '#2a55c4',
+  // 3D scene; a touch deeper than dark so the model holds on a light stage.
+  anatomyMuscle: '#b3363a',
+  anatomyTendon: '#b4bcc6',
+  anatomyBone: '#c9bca3',
+  anatomyShadow: '#2a3350',
+  anatomyBar: '#5d667a',
 };
 
 // The palette the document boots on. Light is primary (#251); dark is retained

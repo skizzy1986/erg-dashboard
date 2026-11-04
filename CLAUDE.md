@@ -54,6 +54,11 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
                     constants/ (guide prose, form check, metrics, sources),
                     utils/, hooks/, components/, workers/ (gzip decode),
                     assets/ (extracted CC BY-SA anatomy data + LICENSE.md)
+    anatomy/        Movement-neutral 3D model runtime (used by /squat):
+                    utils/ (pure posing + colour + camera maths, fixture-tested
+                    against the source page — docs/squat/SKINNING.md),
+                    constants/sceneStyle.js, scene/ (the ONLY code that imports
+                    three.js; loaded lazily via scene/loadScene.js — ESLint enforces)
     App.jsx         Entry shell/router (~447 lines) — the former erg-dashboard.jsx monolith
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
     RouteRoot.jsx   Picks the product: /squat → squat/SquatApp, else AuthGate (both lazy)
@@ -339,11 +344,23 @@ means dropping to `auth-js` + `postgrest-js` directly, which is its own job.
 per product (`web/scripts/check-bundle-size.mjs`): **ENTRY** walks main plus `AuthGate`'s
 static graph (a *boot key* — lazy, but nothing paints without it); **TOTAL** is every asset
 except the files only `/squat` can reach. **SQUAT_ENTRY** (main + `SquatApp`'s static graph)
-and **SQUAT_TOTAL** (squat-only files) are gated separately, and **SQUAT_DATA** caps the
+and **SQUAT_TOTAL** (squat-only files, minus the 3D chunk) are gated separately,
+**SQUAT_3D** (files reachable only through `anatomy/scene/createAnatomyScene.js`: three.js
++ the scene) has its own line, and **SQUAT_DATA** caps the
 anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
-file over Workbox's 2 MiB ceiling. Measured 2026-11-04 after the squat PR1 fix round:
-entry 146.4 / 150, total 385.1 / 400, squat entry 108.0 / 117, squat total 19.3 / 21 KB,
+file over Workbox's 2 MiB ceiling. Measured 2026-11-04 after squat PR2a (three.js r187 in): **entry 146.6 / 150,
+total 385.4 / 400, squat entry 112.7 / 117, squat total 24.0 / 26, squat 3D 138.0 / 145 KB**,
 data 2.20 MB. `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
+
+**Squat-only JS is `squat-` prefixed, never precached, and cached at runtime instead** — a
+reversal of PR1, where the tool's (then small) JS chunks were precached. `chunkFileNames`
+in `web/vite.config.js` names a chunk `squat-*` only when every module in it is under
+`src/squat/`, `src/anatomy/` or `three`; Workbox's `globIgnores` skips `assets/squat-*.js`
+and a `CacheFirst` `squat-code` rule caches them on first use; the Android build strips
+`dist/assets/squat-*`. **Dashboard installs no longer download them.** `npm run size`
+asserts the split stays true: the 3D chunk is on neither first paint, the squat-only JS
+set equals the `squat-*` set, `sw.js` precaches no `assets/squat-` file, and it still
+serves `index.html` for navigations.
 
 **The dashboard entry grew because of `/squat`, and that is an approved trade-off, not
 noise.** Measured on `main` at `a52987f` it was **144.5 KB**; squat PR1 took it to
@@ -351,12 +368,13 @@ noise.** Measured on `main` at `a52987f` it was **144.5 KB**; squat PR1 took it 
 per-chunk preamble and the shared code it now re-imports) plus `RouteRoot` itself. The
 fix round added **+0.3 KB** more (→ 146.4): `RouteRoot` resolves the squat theme
 (`utils/squatTheme.js`) so the loading ground does not flash light, and canonicalises
-`/squat/` → `/squat`. The dashboard pays ~1.9 KB of its 150 KB entry for the second
-product; that leaves 3.6 KB spare, so the next entry-growing change should look at the
-`RealtimeClient` reclaim above first.
+`/squat/` → `/squat`. PR2a added **+0.2 KB** (→ 146.6): `RouteRoot`'s first-visit offline
+message when the tool's chunk cannot be fetched. The dashboard pays ~2.1 KB of its 150 KB
+entry for the second product; that leaves 3.4 KB spare, so the next entry-growing change
+should look at the `RealtimeClient` reclaim above first.
 
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
-at first paint, so it lands in the entry, where there is 3.6 KB spare (2026-11-04). It is now a
+at first paint, so it lands in the entry, where there is 3.4 KB spare (2026-11-04). It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
 `npm run size` enforces every budget inside the **Build** job.
 

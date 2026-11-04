@@ -9,7 +9,15 @@ import { THEME } from './constants/theme.js';
 // dashboard — and, load-bearing, never imports supabaseClient.js, whose
 // createClient() runs at module top. The Android app is the dashboard only.
 const AuthGate = lazy(() => import('./AuthGate.jsx'));
-const SquatApp = lazy(() => import('./squat/SquatApp.jsx'));
+// A first visit with no network cannot fetch the tool's chunk (it is not
+// precached). Offline, say so in place of a blank ground; online, the
+// rejection is a real failure and goes on to the Sentry boundary in main.jsx.
+const SquatApp = lazy(() =>
+  import('./squat/SquatApp.jsx').catch((error) => {
+    if (navigator.onLine === false) return { default: SquatOffline };
+    throw error;
+  })
+);
 
 const onSquat = () =>
   !Capacitor.isNativePlatform() && isSquatPath(window.location.pathname);
@@ -30,7 +38,7 @@ else {
 
 // The loading ground. On /squat it takes the tool's theme before the tool's
 // chunk arrives, or a dark-mode visitor sees the light ground flash first.
-function Ground({ theme }) {
+function Ground({ theme, children }) {
   return (
     <div
       data-testid="route-ground"
@@ -40,7 +48,19 @@ function Ground({ theme }) {
         background: THEME.bg,
         ...(theme ? { colorScheme: theme } : {}),
       }}
-    />
+    >
+      {children}
+    </div>
+  );
+}
+
+function SquatOffline() {
+  return (
+    <Ground theme={initialSquatTheme()}>
+      <p role="alert" style={{ margin: 0, padding: 24, color: THEME.text }}>
+        The squat tool needs a connection the first time. Reconnect and reload.
+      </p>
+    </Ground>
   );
 }
 
