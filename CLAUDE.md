@@ -108,8 +108,9 @@ it as `var(--color-*)` custom properties at `:root` and emits `DARK` only under
 `[data-theme='dark']`, for a surface that opts in. `web/src/constants/theme.js` is a
 pointer table of `var(--color-*)` strings with no hexes in it, so `color: THEME.accent`
 follows whichever theme the document declares. `themeValues.js` is the only file allowed
-to write a palette hex down. The remaining off-palette literals in `StrengthLogger.jsx` and
-`ErgLiveView.jsx` are pinned by `npm run check:colours`, and that list can only shrink.
+to write a palette hex down. The remaining off-palette literals (mostly `StrengthLogger.jsx`,
+plus a few `#666` fallbacks) are pinned per file and per hex by `npm run check:colours`'s
+allowlist, and that list can only shrink.
 
 **The property boundary** keeps three workstreams from colliding in the same lines:
 colour hexes belong to **#183**, `padding`/`margin`/`gap`/`borderRadius` to **S6**, and

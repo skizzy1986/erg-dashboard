@@ -41,8 +41,8 @@ disagree, `conventions.md` is newer.
 properties at `:root` and emits `DARK` only under `[data-theme='dark']`, for a surface
 that opts in. `web/src/constants/theme.js` is a pointer table of `var(--color-*)`
 strings with no hexes in it. `themeValues.js` is the only file allowed to write a
-palette hex down. The few off-palette literals left in `StrengthLogger.jsx` and
-`ErgLiveView.jsx` are pinned by `npm run check:colours`.
+palette hex down. The few off-palette literals left (mostly `StrengthLogger.jsx`, plus
+a few `#666` fallbacks) are pinned per file and per hex by `npm run check:colours`.
 
 ## The squat tool — a public surface
 
