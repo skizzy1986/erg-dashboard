@@ -78,6 +78,8 @@ supabase/
   functions/        Edge Functions (vitals-import, vitals-import-api,
                     vitals-sync, coach-chat)
 docs/squat/         Squat tool provenance, data format, reference values
+pipeline/squat-anatomy/  The Python pipeline that generates /squat's anatomy data (own
+                    README/CLAUDE.md; STLs fetched, not committed; see its ARCHIVE.md)
 NOTICE.md           Third-party terms (BodyParts3D CC BY-SA, OpenSim models)
 LICENSE             Proprietary — all rights reserved, except NOTICE.md files
 coach/

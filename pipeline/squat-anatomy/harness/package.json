@@ -1,0 +1,6 @@
+{
+  "name": "squat-harness",
+  "private": true,
+  "description": "Headless render and evaluation scripts for dist/squat.html. Uses the globally installed Playwright + Chromium (preinstalled in Claude Code cloud sessions); only three.js r128 is installed here.",
+  "dependencies": { "three": "0.128.0" }
+}

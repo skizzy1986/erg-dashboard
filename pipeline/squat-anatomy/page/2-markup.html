@@ -1,0 +1,200 @@
+<div id="stage">
+  <canvas id="c" tabindex="0" aria-label="3D model of a lifter performing a high-bar back squat. Drag to rotate, pinch or scroll to zoom, arrow keys to orbit."></canvas>
+  <div id="status">Loading anatomy…</div>
+
+  <section class="panel card compact" aria-label="Live metrics">
+    <h1>High-bar back squat</h1>
+    <p class="sub">Reference rep: 85 kg lifter, 100 kg bar (about 80–85% 1RM), touch-and-go. Tap a muscle for what it is doing in this phase.</p>
+    <div class="phase" aria-live="polite"><i id="dot"></i><b id="phase">Brace</b><span class="tm num" id="clock">0.00 s</span><span class="mode" id="mode">Bracing. Muscles hold position (isometric).</span></div>
+    <div class="sect">Angles</div>
+    <dl class="g">
+      <div><dt>Knee flexion</dt><dd id="r-knee">0<small>°</small></dd></div>
+      <div><dt>Hip flexion</dt><dd id="r-hip">0<small>°</small></dd></div>
+      <div><dt>Trunk lean</dt><dd id="r-lean">0<small>°</small></dd></div>
+      <div class="x-more"><dt>Ankle dorsiflexion</dt><dd id="r-ankle">0<small>°</small></dd></div>
+      <div class="x-more"><dt>Lumbar flexion</dt><dd id="r-lumbar">0<small>°</small></dd></div>
+      <div class="x-more"><dt>Hip vs knee</dt><dd id="r-depth">0<small>cm</small></dd></div>
+    </dl>
+    <div class="sect x-more">Net joint moments <span>N·m (per kg)</span></div>
+    <dl class="g x-more">
+      <div><dt>Hip extension</dt><dd id="r-mhip">0</dd></div>
+      <div><dt>Knee extension</dt><dd id="r-mknee">0</dd></div>
+      <div><dt>Ankle plantarflexion</dt><dd id="r-mank">0</dd></div>
+      <div><dt>L5/S1 (whole trunk)</dt><dd id="r-mlum">0</dd></div>
+    </dl>
+    <div class="sect x-more">Bar and balance</div>
+    <dl class="g x-more">
+      <div><dt>Bar speed</dt><dd id="r-vel">0<small>m/s</small></dd></div>
+      <div><dt>Ground force</dt><dd id="r-grf">1.00<small>× wt</small></dd></div>
+      <div class="x-more"><dt>Centre of pressure</dt><dd id="r-cop">0<small>% foot</small></dd></div>
+    </dl>
+    <p class="foot"><span class="x-more" id="r-bar">The bar is directly over midfoot.</span> <button class="linkbtn" id="more" type="button" aria-expanded="false">All readouts</button> <button class="linkbtn" id="guide-open" type="button">Coaching guide</button></p>
+  </section>
+
+  <aside class="panel form" id="form" aria-label="Form check">
+    <header><h2>Form check</h2><span class="score" id="score">9 of 9 on target</span><button id="form-tog" type="button" aria-expanded="true" aria-label="Collapse form check">–</button></header>
+    <div class="src-toggle" role="group" aria-label="Values shown">
+      <button class="b" type="button" id="src-model" aria-pressed="true">Model rep</button><button class="b" type="button" id="src-meas" aria-pressed="false">Measured rep</button>
+    </div>
+    <ol id="checks"></ol>
+  </aside>
+
+  <aside class="panel legend" id="legend" hidden>Estimated muscle activation<div class="ramp"></div><div><span>Rest</span><span>Maximal</span></div></aside>
+
+  <section class="panel tl" aria-label="Rep timeline">
+    <div class="tl-top">
+      <button class="b" id="play" type="button">Pause</button>
+      <div class="tabs" role="tablist" aria-label="Graph">
+        <button class="b" role="tab" type="button" data-tab="angles" aria-selected="true">Joint angles</button>
+        <button class="b" role="tab" type="button" data-tab="moments" aria-selected="false">Joint moments</button>
+        <button class="b" role="tab" type="button" data-tab="force" aria-selected="false">Force and speed</button>
+        <button class="b" role="tab" type="button" data-tab="act" aria-selected="false">Activation</button>
+        <button class="b" role="tab" type="button" data-tab="len" aria-selected="false">Muscle length</button>
+      </div>
+      <button class="b guide-btn" id="guide-open2" type="button">Coaching guide</button>
+      <span class="spacer"></span>
+      <div class="grp" role="group" aria-label="Camera">
+        <button class="b" type="button" data-view="side">Side</button><button class="b" type="button" data-view="front">Front</button><button class="b" type="button" data-view="back">Back</button><button class="b" type="button" data-view="three">¾</button>
+      </div>
+      <div class="grp" role="group" aria-label="Layers">
+        <button class="b" type="button" id="t-skel" aria-pressed="true">Skeleton</button><button class="b" type="button" id="t-mus" aria-pressed="true">Muscles</button><button class="b" type="button" id="t-heat" aria-pressed="false">Activation map</button><button class="b" type="button" id="t-path" aria-pressed="true">Bar path</button>
+      </div>
+    </div>
+    <div class="tl-body">
+      <div class="chart" id="chart" tabindex="0" role="slider" aria-label="Rep time. Drag or use arrow keys to move through the rep." aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" aria-valuetext="0.00 s">
+        <svg id="svg" aria-hidden="true"></svg>
+        <div class="ttip" id="ttip"></div>
+      </div>
+      <div class="leg" id="leg"></div>
+    </div>
+    <div class="tl-bot">
+      <div class="events" id="events"></div>
+      <label class="r" for="speed">Speed<input id="speed" type="range" min="0.1" max="1.5" step="0.05" value="1"></label>
+      <label class="r" for="opac">Muscle opacity<input id="opac" type="range" min="0.15" max="1" step="0.05" value="1"></label>
+    </div>
+  </section>
+
+  <div class="panel tip" id="tip" role="status" aria-live="polite"></div>
+
+  <section class="panel sheet" id="guide" hidden aria-label="Coaching guide">
+    <header><h2>Coaching guide</h2><button class="b" id="guide-close" type="button">Close</button></header>
+    <nav role="tablist" aria-label="Guide sections">
+      <button class="b" role="tab" type="button" data-pane="p-phases" aria-selected="true">Phases</button>
+      <button class="b" role="tab" type="button" data-pane="p-metrics" aria-selected="false">Metrics and targets</button>
+      <button class="b" role="tab" type="button" data-pane="p-measured" aria-selected="false">Measured rep</button>
+      <button class="b" role="tab" type="button" data-pane="p-method" aria-selected="false">Method and limits</button>
+      <button class="b" role="tab" type="button" data-pane="p-sources" aria-selected="false">Sources</button>
+    </nav>
+
+    <div class="pane" id="p-phases">
+      <p>The same depth means different work on the way down and the way up. Each phase below gives what the muscles are doing, what this reference rep shows, what to look for, and the common faults with their cues. Select a heading to jump the model to that phase.</p>
+
+      <div class="ph-card" data-p="0">
+        <h3><button class="linkbtn goto" type="button" data-goto="0.3">Setup and brace</button></h3>
+        <div class="facts"><span>Contraction <b>isometric</b></span><span>Shoulder external rotation <b data-k="er"></b></span><span>Elbow flexion <b data-k="elbow"></b></span><span>Grip <b data-k="grip"></b></span></div>
+        <p>The bar sits on the upper trapezius, above the spine of the shoulder blade. The shoulder blades are pulled back and down to make a muscular shelf, the elbows point down under or slightly behind the bar, and the wrists stay straight with the bar in the heel of the hand. A full breath into the abdomen, held against a braced trunk wall, raises intra-abdominal pressure before the descent starts.</p>
+        <div class="cols">
+          <div><h4>Look for</h4><ul><li>Bar level and centred on the shelf</li><li>Wrists straight, knuckles up</li><li>Elbows pointing at the floor</li><li>Whole foot loaded, toes out about 20°</li></ul></div>
+          <div><h4>Faults and cues</h4><ul><li>Soft upper back: “pull the bar into your traps”, “bend the bar”</li><li>Bar hanging on bent wrists: “bar in the heel of the hand”</li><li>Elbows flaring back because the grip is narrower than shoulder mobility allows: widen the grip</li><li>No brace: “breathe into the belt, then descend”</li></ul></div>
+        </div>
+      </div>
+
+      <div class="ph-card" data-p="1">
+        <h3><button class="linkbtn goto" type="button" data-goto="1.6">Lowering (eccentric)</button></h3>
+        <div class="facts"><span>Duration <b data-k="ecc"></b></span><span>Peak bar speed <b data-k="vecc"></b></span><span>Ground force <b data-k="fecc"></b></span></div>
+        <p>Hips and knees break together and the bar travels straight down over midfoot. The prime movers lengthen while they work, so they brake the load (eccentric action). A muscle needs fewer active motor units to hold a given force while lengthening than while shortening, so estimated activation on the way down sits well below the drive at the same depth. The descent opens with a brief unweighting and finishes with a braking phase as the lifter slows the bar into the bottom.</p>
+        <p>Length change from standing to the bottom position in this model: <span data-k="lens"></span>. Rectus femoris crosses both hip and knee, so it stays close to its standing length.</p>
+        <div class="cols">
+          <div><h4>Look for</h4><ul><li>Knees tracking over the second and third toes</li><li>Shin and trunk inclining together</li><li>Vertical bar path</li><li>Even speed into the bottom, with no free fall</li></ul></div>
+          <div><h4>Faults and cues</h4><ul><li>Hips shoot back first: “knees and hips together”, “sit between your heels”</li><li>Knees cave in: “spread the floor”, “knees over toes”</li><li>Weight drifts to the toes: “whole foot”, “heels down”</li><li>Dropping fast and bouncing off soft tissue: “own the descent, two counts down”</li></ul></div>
+        </div>
+      </div>
+
+      <div class="ph-card" data-p="2">
+        <h3><button class="linkbtn goto" type="button" data-goto="bottom">The bottom (transition)</button></h3>
+        <div class="facts"><span>Transition <b data-k="trans"></b></span><span>Ground force peak <b data-k="fpk"></b></span><span>Depth <b data-k="depthtxt"></b></span><span>Lumbar curve <b data-k="lord"></b></span></div>
+        <p>The bar stops and reverses. Ground force peaks here because the system first decelerates and then accelerates upward, so the joint moments in the hole exceed the static values shown in most textbooks. The prime movers are at their longest and switch from lengthening to shortening through a brief near-isometric period, and stretched tendons and connective tissue return some of the energy stored during braking (the stretch-shortening cycle). Tension has to stay on: a relaxed bottom position, or a long pause, gives most of that stored energy away.</p>
+        <div class="cols">
+          <div><h4>Look for</h4><ul><li>Depth reached with the lower-back curve still present</li><li>Knees still over the toes, heels down</li><li>Chest and upper back still set against the bar</li></ul></div>
+          <div><h4>Faults and cues</h4><ul><li>Relaxing in the hole: “stay tight and rebound, don’t rest”</li><li>Pelvis tucks under at the bottom: brace harder, stop just above the point where it tucks, check ankle dorsiflexion</li><li>Upper back rounds: “elbows down, chest up into the bar”</li></ul></div>
+        </div>
+      </div>
+
+      <div class="ph-card" data-p="3">
+        <h3><button class="linkbtn goto" type="button" data-goto="2.45">Drive (concentric) and the sticking region</button></h3>
+        <div class="facts"><span>Duration <b data-k="con"></b></span><span>Mean bar speed <b data-k="mcv"></b></span><span>Peak <b data-k="vpk"></b></span><span>Sticking region <b data-k="sticktxt"></b></span></div>
+        <p>The prime movers now shorten (concentric action). Activation is highest just after the reversal, and motor units fire faster in this phase than when lowering the same load. The first few centimetres are helped by the stretch-shortening rebound. Then comes the sticking region: in heavy reps, bar speed dips between roughly 8 and 22 cm above the bottom as knee-extensor leverage worsens and the rebound fades. Glute activity rises into this zone while rectus femoris and vastus lateralis activity falls. Once through it, bar speed climbs again.</p>
+        <div class="cols">
+          <div><h4>Look for</h4><ul><li>Hips and shoulders rising at the same rate, so trunk angle holds through the sticking region</li><li>Vertical bar path</li><li>Knees staying out</li></ul></div>
+          <div><h4>Faults and cues</h4><ul><li>Hips rise first and the chest drops (good-morning squat): “drive your upper back into the bar”, “chest and hips up together”</li><li>Knees cave on the way up: “knees out”</li><li>Bar drifts forward: “push through midfoot”</li></ul></div>
+        </div>
+      </div>
+
+      <div class="ph-card" data-p="4">
+        <h3><button class="linkbtn goto" type="button" data-goto="3.3">Lockout</button></h3>
+        <div class="facts"><span>Ground force <b data-k="flock"></b></span><span>Contraction <b>concentric, then isometric</b></span></div>
+        <p>Hips and knees finish extending together. The bar is decelerating here, so ground force drops below system weight and the last few centimetres ride on momentum. Stand tall without leaning back, then breathe and re-brace before the next rep.</p>
+        <div class="cols">
+          <div><h4>Look for</h4><ul><li>Hips and knees locking out together</li><li>Neutral lower back at the top</li></ul></div>
+          <div><h4>Faults and cues</h4><ul><li>Leaning back to finish: “stand tall, ribs down”</li><li>Losing the brace between reps: “breathe and brace every rep”</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-metrics" hidden>
+      <p>Values are from the reference rep at the bottom position unless the row says otherwise. Targets come from published squat studies and the back squat assessment of Myer et al. (2014). Where no study gives a number, the row says the target is a coaching standard.</p>
+      <div class="tbl"><table id="mtable"><thead><tr><th>Metric</th><th>Model</th><th>Reference or target</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="pane" id="p-measured" hidden>
+      <h3>Compare a measured rep</h3>
+      <p>Load a recording to overlay it on the reference rep. The file is read in this browser only and is not uploaded anywhere.</p>
+      <div class="drop" id="drop"><p><b>Drop a file here</b> or <label class="linkbtn" for="file">choose a file</label></p><input id="file" type="file" accept=".mot,.sto,.csv,.txt" hidden><p class="note">OpenCap or OpenSim joint angles (.mot), or a CSV with a time column plus joint angles or bar velocity</p></div>
+      <div id="meas-out"><p class="note">No measured rep loaded.</p></div>
+      <h4>What each file gives you</h4>
+      <ul>
+        <li><b>OpenCap or OpenSim .mot</b> (columns such as <code>knee_angle_r</code>, <code>hip_flexion_r</code>, <code>ankle_angle_r</code>, <code>lumbar_extension</code>). The deepest rep is split into lowering, bottom and drive from knee flexion. Each phase is time-scaled onto the reference rep so the curves line up, and the measured angles feed the depth, ankle and lumbar checks.</li>
+        <li><b>Bar velocity CSV</b> (columns <code>time</code> and <code>velocity</code> in m/s, as exported by most velocity trackers). Gives lowering time, mean concentric velocity, peak velocity and a load estimate from the full-squat velocity table.</li>
+      </ul>
+      <p class="note">OpenCap’s free two-phone setup produces .mot files directly. Its published lab validation set (squats with motion capture, force plates and EMG) can be downloaded from SimTK.</p>
+    </div>
+
+    <div class="pane" id="p-method" hidden>
+      <h3>What is modelled</h3>
+      <p><b>Anatomy.</b> Every bone and muscle is an anatomical surface from BodyParts3D, scaled to a 1.78 m lifter. Leg muscles follow the paths of the Rajagopal full-body OpenSim model with the Lai et al. deep-flexion update, so they stretch, shorten and wrap with the motion. Trunk muscles bend with the lumbar spine. The left side mirrors the right.</p>
+      <p><b>Upper back, arms and grip.</b> The shoulder blades are retracted about 12°. The arm pose was solved under joint limits in ISB conventions (Wu et al. 2005): shoulder external rotation <span data-k="er"></span> (the top of the normal range), elevation <span data-k="elev"></span>, elbow flexion <span data-k="elbow"></span>, and wrists within <span data-k="wrist"></span> of neutral. The hands are about <span data-k="grip"></span> apart in a full grip, thumb around the bar. The deltoid and pectoralis major were re-shaped from their rest anatomy with dual-quaternion skinning so they follow the 115° humeral rotation without collapsing.</p>
+      <p><b>Path and balance.</b> The feet are fixed with heels 32 cm apart and toes out 20°. Knee and ankle angles are prescribed. At every depth the trunk is rotated about the hips so the bar stays directly over midfoot, which makes the bar path vertical. The centre of pressure then follows the combined centre of mass of lifter and bar, moving from <span data-k="cop0"></span> to <span data-k="cop1"></span> of foot length from the heel.</p>
+      <p><b>Timed rep.</b> The rep timing is shaped on published barbell data: a <span data-k="ecc"></span> controlled descent, a touch-and-go reversal, and a drive at <span data-k="mcv"></span> mean velocity, which the full-squat velocity table places at about 80–85% of 1RM. It includes a mild sticking region where the literature locates it. It is a reference rep, not a recording.</p>
+      <p><b>Kinetics.</b> Net joint moments come from body and bar weight using de Leva (1996) segment parameters for an 85 kg lifter with a 100 kg bar, scaled at each instant by the vertical acceleration of the combined centre of mass. Segment angular accelerations and horizontal forces are left out; they are small in a controlled rep but not in a bouncy one. Hip, knee and ankle moments are per leg. L5/S1 carries the whole trunk. The floor can push each foot inward and twist it, the way lifters “spread the floor”, within friction limits.</p>
+      <p><b>Muscle activation.</b> Estimated, not measured. Each leg and trunk muscle scales with the joint moment it works against, calibrated to published surface EMG from loaded back squats (Contreras et al. 2015, Caterisano et al. 2002, Hammond et al. 2016, van den Tillaar et al. 2019). A contraction-mode factor then separates the phases: lengthening muscles need about 0.62 of the activation they need when shortening at the same moment, near-isometric muscles about 0.8–0.95, and both phases meet at the reversal. Shoulder, arm and neck values are typical holding levels scaled by the bar’s effective weight.</p>
+      <p><b>Muscle length.</b> Musculotendon path length relative to standing, from the model’s muscle paths. Tendons stretch, so fibre behaviour can differ from the whole unit, most of all in the calf muscles. Short deep hip rotators are not reported because their paths are too short to measure reliably.</p>
+      <h3>What would make it measured</h3>
+      <ul><li>Motion capture, either markers or OpenCap video, for joint angles</li><li>Force plates for ground force and centre of pressure</li><li>A linear position transducer or velocity tracker for bar speed</li><li>Surface EMG for activation, normalised to maximal contractions</li></ul>
+      <h3>Limits</h3>
+      <ul><li>One body size and one rep. Proportions change trunk lean and knee travel.</li><li>No skin or fat layer. Muscles can pass through each other where soft tissue would compress in reality.</li><li>The head stays fixed to the trunk, so the gaze drops as the trunk leans.</li><li>Fast or bouncy reps add inertial terms this model leaves out.</li></ul>
+    </div>
+
+    <div class="pane" id="p-sources" hidden>
+      <ul id="sources">
+        <li>Wretenberg P, Feng Y, Arborelius UP (1996). High- and low-bar squatting techniques during weight-training. <i>Med Sci Sports Exerc</i> 28(2):218–224. <a href="https://pubmed.ncbi.nlm.nih.gov/8775157" target="_blank" rel="noopener">PubMed</a></li>
+        <li>Sánchez-Medina L, Pallarés JG, Pérez CE, Morán-Navarro R, González-Badillo JJ (2017). Estimation of relative load from bar velocity in the full back squat exercise. <i>Sports Med Int Open</i> 1:E80–E88. <a href="https://www.thieme-connect.de/products/ejournals/pdf/10.1055/s-0043-102933.pdf" target="_blank" rel="noopener">PDF</a></li>
+        <li>A kinematic analysis of the sticking region in full back squats (2014). <i>ISBS Conference Proceedings Archive</i>. <a href="https://ojs.ub.uni-konstanz.de/cpa/article/view/6649" target="_blank" rel="noopener">Article</a></li>
+        <li>Kinematics and muscle activation around the sticking region in free-weight barbell back squats (2015). <i>Kinesiologia Slovenica</i> 21(1):15–25. <a href="https://www.sponet.de/Record/4037610" target="_blank" rel="noopener">Record</a></li>
+        <li>Glassbrook DJ (2019). The high-bar and low-bar back squat: a biomechanical analysis. AUT thesis. <a href="https://openrepository.aut.ac.nz/items/dfd50d9d-184a-470b-a677-0039c63c55bd" target="_blank" rel="noopener">Repository</a>. Glassbrook DJ, Helms ER, Brown SR, Storey AG (2017). A review of the biomechanical differences between the high-bar and low-bar back-squat. <i>J Strength Cond Res</i> 31(9):2618–2634. <a href="https://pubmed.ncbi.nlm.nih.gov/28570490/" target="_blank" rel="noopener">PubMed</a></li>
+        <li>Myer GD, Kushner AM, Brent JL, et al. (2014). The back squat: a proposed assessment of functional deficits and technical factors that limit performance. <i>Strength Cond J</i> 36(6):4–27. <a href="https://pubmed.ncbi.nlm.nih.gov/25506270/" target="_blank" rel="noopener">PubMed</a></li>
+        <li>McKean MR, Dunn PK, Burkett BJ (2010). The lumbar and sacrum movement pattern during the back squat exercise. <i>J Strength Cond Res</i> 24(10):2731–2741. <a href="https://research.usc.edu.au/esploro/outputs/journalArticle/The-Lumbar-and-Sacrum-Movement-Pattern/99449802702621" target="_blank" rel="noopener">Record</a></li>
+        <li>Orantes-Gonzalez E, Heredia-Jimenez J, Lindley SB, Richards J, Chapman G (2023). Motor unit behaviour during the concentric and eccentric phases of a squat task performed at different speeds. <i>Sports Biomechanics</i>. <a href="https://knowledge.lancashire.ac.uk/id/eprint/47042/" target="_blank" rel="noopener">Record</a></li>
+        <li>Enoka RM (1996). Eccentric contractions require unique activation strategies by the nervous system. <i>J Appl Physiol</i> 81(6):2339–2346.</li>
+        <li>de Leva P (1996). Adjustments to Zatsiorsky-Seluyanov’s segment inertia parameters. <i>J Biomech</i> 29(9):1223–1230.</li>
+        <li>Wu G, et al. (2005). ISB recommendation on definitions of joint coordinate systems of various joints, part II: shoulder, elbow, wrist and hand. <i>J Biomech</i> 38(5):981–992.</li>
+        <li>Rajagopal A, et al. (2016), Lai AKM, et al. (2017) and Uhlrich SD, et al. (2022) musculoskeletal models via opensim-models. Uhlrich SD, et al. (2023). OpenCap: human movement dynamics from smartphone videos. <i>PLOS Comput Biol</i>. <a href="https://simtk.org/projects/opencap" target="_blank" rel="noopener">SimTK project and data</a></li>
+        <li>EMG calibration: Contreras et al. 2015, Caterisano et al. 2002, Hammond et al. 2016, van den Tillaar et al. 2019.</li>
+        <li>Scherpereel K, et al. (2023). A human lower-limb biomechanics and wearable sensors dataset during cyclic and non-cyclic activities. <i>Sci Data</i> 10:924. <a href="https://doi.org/10.1038/s41597-023-02840-6" target="_blank" rel="noopener">Article</a></li>
+        <li>Anatomy: BodyParts3D © The Database Center for Life Science, licensed CC BY-SA 2.1 JP. <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener">BodyParts3D</a>. This page’s derived geometry is shared under the same terms.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+<script id="squat-manifest" type="application/json">{}</script>
+<script id="squat-data" type="application/octet-stream"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

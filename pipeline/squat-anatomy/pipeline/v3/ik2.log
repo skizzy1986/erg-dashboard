@@ -1,0 +1,17 @@
+0 cost 6.8091 {'dev': np.float64(10.6), 'fl': np.float64(-20.2), 'elev': np.float64(45.1), 'er': np.float64(90.3), 'plane': np.float64(-35.1), 'elbow': np.float64(95.3)}
+1 cost 6.8316 {'dev': np.float64(10.6), 'fl': np.float64(-20.2), 'elev': np.float64(45.1), 'er': np.float64(90.3), 'plane': np.float64(-35.1), 'elbow': np.float64(95.2)}
+2 cost 1.8527 {'dev': np.float64(8.1), 'fl': np.float64(-20.1), 'elev': np.float64(41.2), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(111.3)}
+3 cost 1.8420 {'dev': np.float64(8.1), 'fl': np.float64(-20.1), 'elev': np.float64(41.2), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(110.9)}
+4 cost 6.8314 {'dev': np.float64(10.6), 'fl': np.float64(-20.2), 'elev': np.float64(45.1), 'er': np.float64(90.3), 'plane': np.float64(-35.1), 'elbow': np.float64(95.2)}
+5 cost 1.8768 {'dev': np.float64(8.0), 'fl': np.float64(-20.0), 'elev': np.float64(41.3), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(109.8)}
+6 cost 2.1152 {'dev': np.float64(8.1), 'fl': np.float64(-20.0), 'elev': np.float64(41.0), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(110.0)}
+7 cost 4.2234 {'dev': np.float64(-8.2), 'fl': np.float64(-7.3), 'elev': np.float64(53.1), 'er': np.float64(90.0), 'plane': np.float64(-34.9), 'elbow': np.float64(84.4)}
+8 cost 3.1473 {'dev': np.float64(1.8), 'fl': np.float64(-19.9), 'elev': np.float64(41.8), 'er': np.float64(90.0), 'plane': np.float64(-33.3), 'elbow': np.float64(110.1)}
+9 cost 2.4813 {'dev': np.float64(8.3), 'fl': np.float64(-2.6), 'elev': np.float64(52.0), 'er': np.float64(90.1), 'plane': np.float64(-35.0), 'elbow': np.float64(86.3)}
+10 cost 1.8421 {'dev': np.float64(8.1), 'fl': np.float64(-20.1), 'elev': np.float64(41.2), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(111.0)}
+11 cost 2.0049 {'dev': np.float64(8.1), 'fl': np.float64(-20.0), 'elev': np.float64(41.0), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(110.0)}
+BEST cost 1.8420 {'pen': np.float64(0.0405), 'snug': np.float64(0.5223), 'wrist': np.float64(0.0012), 'limits': np.float64(0.0007), 'elbow_down': 0, 'reg': np.float64(1.2773)}
+angles: {'dev': np.float64(8.1), 'fl': np.float64(-20.1), 'elev': np.float64(41.2), 'er': np.float64(90.0), 'plane': np.float64(-35.0), 'elbow': np.float64(110.9)}
+GH rotvec deg [  2.8  40.8 -31.9]  elbow/pron/wf/wd [-26.   16.5   5.7 -16.6]
+min gaps mm: [np.float64(32.4), np.float64(7.5), np.float64(5.1), np.float64(9.2), np.float64(22.6), np.float64(7.9), np.float64(5.8), np.float64(4.9), np.float64(5.7), np.float64(5.6), np.float64(5.5), np.float64(5.6), np.float64(7.7), np.float64(11.4), np.float64(10.5)]
+grip MC3 z = 0.505 (was 0.356)  time 364s
