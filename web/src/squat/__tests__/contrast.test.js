@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DARK, LIGHT } from '../../constants/themeValues.js';
 import { GROUNDS, PAIRS } from '../constants/contrastPairs.js';
@@ -29,11 +29,11 @@ const ratio = (fgRgb, bgRgb) => {
 };
 
 function sources(dir) {
-  return readdirSync(dir).flatMap((name) => {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory())
-      return name === '__tests__' ? [] : sources(p);
-    return /\.(js|jsx)$/.test(name) ? [[p, readFileSync(p, 'utf8')]] : [];
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const p = join(dir, entry.name);
+    if (entry.isDirectory())
+      return entry.name === '__tests__' ? [] : sources(p);
+    return /\.(js|jsx)$/.test(entry.name) ? [[p, readFileSync(p, 'utf8')]] : [];
   });
 }
 

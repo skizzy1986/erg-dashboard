@@ -33,7 +33,7 @@ const manifest = JSON.parse(
 // A buffer the real manifest's offsets fit inside.
 const BUFFER = new ArrayBuffer(3450003);
 const CAPS = { webgl: true, decompression: true, worker: true };
-const URLS = { manifestUrl: '/m.json', dataUrl: '/a.bin' };
+const URLS = { manifestUrl: '/m.json' };
 
 const okFetch = () =>
   vi
@@ -57,10 +57,7 @@ describe('useAnatomyData', () => {
     expect(result.current.stage).toBe('fetching');
     await waitFor(() => expect(mocks.workers).toHaveLength(1));
     expect(result.current.summary.kv.mcv).toBe('0.61 m/s');
-    expect(lastWorker().postMessage).toHaveBeenCalledWith({
-      url: expect.stringMatching(/^http.*\/a\.bin$/),
-      expectedBytes: 2202168,
-    });
+    expect(lastWorker().postMessage).toHaveBeenCalledWith({ type: 'start' });
 
     send({ type: 'progress', loaded: 1_100_000, total: 2_200_000 });
     expect(result.current).toMatchObject({

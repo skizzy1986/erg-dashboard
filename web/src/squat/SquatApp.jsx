@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import manifestUrl from './assets/squat-manifest.json?url';
-import dataUrl from './assets/squat-anatomy.bin?url';
 import { THEME } from '../constants/theme.js';
 import { DARK, LIGHT } from '../constants/themeValues.js';
 import { FONT } from '../constants/type.js';
@@ -225,7 +224,7 @@ export default function SquatApp() {
   const { preference, resolved, setPreference } = useSquatTheme();
   const capabilities = useCapabilities();
   const [hash, setHash] = useSquatHashState();
-  const data = useAnatomyData({ manifestUrl, dataUrl, capabilities });
+  const data = useAnatomyData({ manifestUrl, capabilities });
   usePageMeta(resolved);
 
   const openGuide = (pane) => setHash({ guide: pane });

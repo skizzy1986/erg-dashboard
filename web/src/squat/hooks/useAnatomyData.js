@@ -22,8 +22,6 @@ const INITIAL = {
 const isOffline = () =>
   typeof navigator !== 'undefined' && navigator.onLine === false;
 
-const absolute = (url) => new URL(url, document.baseURI).href;
-
 /**
  * Loads the tool's data in two steps. The manifest (~100 KB of JSON) comes
  * first and carries every number the guide and form check print, so those are
@@ -36,7 +34,6 @@ const absolute = (url) => new URL(url, document.baseURI).href;
  */
 export function useAnatomyData({
   manifestUrl,
-  dataUrl,
   capabilities,
   createWorker = createAnatomyWorker,
 }) {
@@ -117,10 +114,7 @@ export function useAnatomyData({
         release();
         fail(new Error(event?.message || 'Anatomy worker failed'), 'worker');
       };
-      worker.postMessage({
-        url: absolute(dataUrl),
-        expectedBytes: DATA_ASSET.bin.bytes,
-      });
+      worker.postMessage({ type: 'start' });
     })();
 
     return () => {
@@ -128,7 +122,7 @@ export function useAnatomyData({
       controller.abort();
       release();
     };
-  }, [manifestUrl, dataUrl, canDecode, createWorker, attempt]);
+  }, [manifestUrl, canDecode, createWorker, attempt]);
 
   const retry = useCallback(() => {
     setState(INITIAL);
