@@ -58,10 +58,22 @@ architecture, the quality bar — still applies to any code you write.
   Scott's personal training details (in `CLAUDE.md`, `coach/`) in anything you post.
 - **Honesty labels stay.** The model's values are *modelled*; activation is *estimated,
   not EMG*. Never present a modelled number as measured.
-- **Licences:** the code is proprietary (root `LICENSE`) — prototypes stay in his fork
-  and are shared with Scott only, never published or deployed elsewhere. The anatomy
-  geometry is CC BY-SA (BodyParts3D, `NOTICE.md`). Never add data from the OpenCap lab
-  dataset to the repo (`docs/squat/LAB_DATA.md` explains why).
+- **Licences — check `PERMISSIONS.md` first.** The code is proprietary (root `LICENSE`)
+  except where `PERMISSIONS.md` grants a named person more.
+  - **If the collaborator is named there (e.g. Paul):** follow that grant. He may reuse,
+    modify and **publish** the work in his own projects, publicly if he likes, for
+    personal, non-commercial purposes. Help him do that properly. Commercial use needs
+    Scott's OK first, so flag it if a project looks commercial.
+  - **If he isn't named there:** prototypes stay in his fork and are shared with Scott
+    only. Don't publish or deploy them elsewhere.
+  - **Always:** third-party terms in `NOTICE.md` still apply. When anything containing
+    or derived from the anatomy data (`squat-anatomy.bin` / `squat-manifest.json`) is
+    published, credit BodyParts3D © DBCLS and release that data under CC BY-SA 2.1 JP.
+    Keep open-source library licence notices (three.js and others).
+  - **Never add OpenCap data** to the repo or his published projects
+    (`docs/squat/LAB_DATA.md` explains why).
+  - **Never publish Scott's personal training material** (`coach/`, the personal parts
+    of `CLAUDE.md`).
 
 ## What to ignore in `CLAUDE.md`
 

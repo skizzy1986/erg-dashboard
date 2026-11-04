@@ -15,11 +15,13 @@ This guide gets you from zero to a running prototype of the **SplitIQ squat tool
 ideas should go.
 
 > **Terms, in plain words.** The code is proprietary — all rights reserved (root
-> [`LICENSE`](../../LICENSE)). You're welcome to read it, run it, and prototype on a
-> fork to explore ideas with Scott. Please don't publish, redistribute or deploy it
-> elsewhere without asking. The anatomy geometry is a separately licensed
-> **CC BY-SA 2.1 JP** asset (BodyParts3D) — see [`NOTICE.md`](../../NOTICE.md).
-> If you need something more formal, talk to Scott.
+> [`LICENSE`](../../LICENSE)) — except where Scott has given written permission in
+> [`PERMISSIONS.md`](../../PERMISSIONS.md). **If you're named there, that file is your
+> licence** (for example, Paul may reuse and publish this work in his own personal,
+> non-commercial projects). Everyone else: read, run and prototype on a fork to explore
+> ideas with Scott, but please don't publish, redistribute or deploy it without asking.
+> Either way, the anatomy geometry is separately licensed **CC BY-SA 2.1 JP**
+> (BodyParts3D). Credit it and share alike — see [`NOTICE.md`](../../NOTICE.md).
 
 ---
 

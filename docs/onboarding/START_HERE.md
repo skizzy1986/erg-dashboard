@@ -82,8 +82,14 @@ Discussions live at <https://github.com/skizzy1986/erg-dashboard/discussions>.
 
 ## Ground rules (short version)
 
-- The code belongs to Scott (all rights reserved). Explore, learn and prototype freely,
-  but please don't publish it, share it publicly or deploy it anywhere.
+- **What you can do with it** is written down in [`PERMISSIONS.md`](../../PERMISSIONS.md).
+  If Scott has named you there, you can reuse the code and assets in your own projects
+  and publish them, as long as they're personal and non-commercial. Ask Scott before
+  making money from anything. If you're not named there, explore and prototype freely,
+  but ask before publishing.
+- The 3D anatomy data comes from BodyParts3D under a "share-alike" licence. If you
+  publish it, or a 3D model made from it, credit BodyParts3D and use the same licence.
+  Claude knows the details.
 - The numbers in the model are **modelled estimates**, not measurements. Keep that label
   on anything you build.
 - If you're unsure, ask in Q&A, or just ask Claude.
