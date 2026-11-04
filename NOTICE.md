@@ -1,8 +1,10 @@
 # Third-party notices
 
 The code in this repository is proprietary and covered by the root
-[`LICENSE`](LICENSE). The files below are not: they are third-party material,
-or derived from it, and carry their own terms.
+[`LICENSE`](LICENSE), plus any written permissions recorded in
+[`PERMISSIONS.md`](PERMISSIONS.md). The files below are not: they are third-party
+material, or derived from it, and carry their own terms. Those terms apply whatever
+`PERMISSIONS.md` allows.
 
 ## BodyParts3D — CC BY-SA 2.1 JP
 
