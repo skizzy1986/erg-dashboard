@@ -78,7 +78,9 @@ export default function LoadStatus({ stage, loaded, total, error, onRetry }) {
           fontSize: 13,
           fontWeight: 600,
           lineHeight: 1.5,
-          color: stage === 'error' ? THEME.critical : THEME.textSubtle,
+          // The error reads in full-strength ink, not critical: dark critical
+          // on the stage's surfaceAlt is 4.49:1, just short of AA.
+          color: stage === 'error' ? THEME.text : THEME.textSubtle,
           ...(stage === 'fetching'
             ? { fontVariantNumeric: 'tabular-nums' }
             : {}),

@@ -335,12 +335,22 @@ static graph (a *boot key* — lazy, but nothing paints without it); **TOTAL** i
 except the files only `/squat` can reach. **SQUAT_ENTRY** (main + `SquatApp`'s static graph)
 and **SQUAT_TOTAL** (squat-only files) are gated separately, and **SQUAT_DATA** caps the
 anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
-file over Workbox's 2 MiB ceiling. Measured 2026-11-04 on squat PR1: entry 146.1 / 150,
-total 384.8 / 400, squat entry 107.2 / 117, squat total 18.8 / 21 KB, data 2.20 MB.
-`/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
+file over Workbox's 2 MiB ceiling. Measured 2026-11-04 after the squat PR1 fix round:
+entry 146.4 / 150, total 385.1 / 400, squat entry 108.0 / 117, squat total 19.3 / 21 KB,
+data 2.20 MB. `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
+
+**The dashboard entry grew because of `/squat`, and that is an approved trade-off, not
+noise.** Measured on `main` at `a52987f` it was **144.5 KB**; squat PR1 took it to
+**146.1 KB (+1.6 KB)**, because lazy-loading `AuthGate` adds a chunk boundary (its
+per-chunk preamble and the shared code it now re-imports) plus `RouteRoot` itself. The
+fix round added **+0.3 KB** more (→ 146.4): `RouteRoot` resolves the squat theme
+(`utils/squatTheme.js`) so the loading ground does not flash light, and canonicalises
+`/squat/` → `/squat`. The dashboard pays ~1.9 KB of its 150 KB entry for the second
+product; that leaves 3.6 KB spare, so the next entry-growing change should look at the
+`RealtimeClient` reclaim above first.
 
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
-at first paint, so it lands in the entry, where there is 15.1 KB. It is now a
+at first paint, so it lands in the entry, where there is 3.6 KB spare (2026-11-04). It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
 `npm run size` enforces every budget inside the **Build** job.
 

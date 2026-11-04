@@ -247,3 +247,24 @@ describe('data asset', () => {
     expect(licence).toContain('CC BY-SA 2.1 JP');
   });
 });
+
+// The Knee-flexion row's "why" makes a claim about the data ("slightly deeper
+// than the study mean"), so the data is pinned beside it. If the model is
+// re-run and the bottom knee angle moves, this fails before the prose lies.
+describe('knee flexion text agrees with the modelled rep', () => {
+  const i = METRICS_TABLE.findIndex((r) => r.metric === 'Knee flexion');
+  const row = METRICS_TABLE[i];
+  const modelled = summariseRep(manifest.meta).metrics[i];
+
+  it('pins the modelled bottom knee flexion', () => {
+    expect(modelled).toBe('131°');
+  });
+
+  it('is deeper than the 124 ± 7° study mean, but within one SD', () => {
+    expect(row.target[0]).toMatch(/about 124 ± 7°/);
+    expect(row.why).toMatch(/slightly deeper than the study mean/);
+    const deg = Number.parseInt(modelled, 10);
+    expect(deg).toBeGreaterThan(124);
+    expect(deg).toBeLessThanOrEqual(124 + 7);
+  });
+});

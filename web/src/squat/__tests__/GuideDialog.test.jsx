@@ -107,6 +107,16 @@ describe('GuideDialog', () => {
     );
   });
 
+  it('makes the page behind it inert while open, and restores it', async () => {
+    const user = userEvent.setup();
+    const opener = await open(user);
+    expect(opener).toHaveAttribute('inert');
+    expect(screen.getByRole('dialog').closest('[inert]')).toBeNull();
+    await user.keyboard('{Escape}');
+    expect(opener).not.toHaveAttribute('inert');
+    expect(opener).toHaveFocus();
+  });
+
   it('closes on Escape and returns focus to the opener', async () => {
     const user = userEvent.setup();
     const opener = await open(user);

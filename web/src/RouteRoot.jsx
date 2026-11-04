@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { isSquatPath } from './utils/squatRoute.js';
+import { canonicalSquatUrl, isSquatPath } from './utils/squatRoute.js';
+import { initialSquatTheme } from './utils/squatTheme.js';
 import { THEME } from './constants/theme.js';
 
 // Two products share one bundle: the signed-in dashboard and the public squat
@@ -19,15 +20,37 @@ const onSquat = () =>
 // A failure here is not swallowed: the lazy() above requests the same module
 // on render and its rejection reaches the Sentry error boundary in main.jsx.
 if (!onSquat()) import('./AuthGate.jsx').catch(() => {});
+else {
+  // Module evaluation runs before the load event, which is when registerSW.js
+  // resolves './sw.js' against the document URL — so this must happen here.
+  const canonical = canonicalSquatUrl(window.location);
+  if (canonical)
+    window.history.replaceState(window.history.state, '', canonical);
+}
 
-function Ground() {
-  return <div style={{ minHeight: '100vh', background: THEME.bg }} />;
+// The loading ground. On /squat it takes the tool's theme before the tool's
+// chunk arrives, or a dark-mode visitor sees the light ground flash first.
+function Ground({ theme }) {
+  return (
+    <div
+      data-testid="route-ground"
+      data-theme={theme}
+      style={{
+        minHeight: '100vh',
+        background: THEME.bg,
+        ...(theme ? { colorScheme: theme } : {}),
+      }}
+    />
+  );
 }
 
 export default function RouteRoot() {
+  const squat = onSquat();
   return (
-    <Suspense fallback={<Ground />}>
-      {onSquat() ? <SquatApp /> : <AuthGate />}
+    <Suspense
+      fallback={<Ground theme={squat ? initialSquatTheme() : undefined} />}
+    >
+      {squat ? <SquatApp /> : <AuthGate />}
     </Suspense>
   );
 }

@@ -13,7 +13,7 @@ import { METRICS_TABLE } from '../constants/metricsTable.js';
 import { METHOD } from '../constants/method.js';
 import { REFERENCES } from '../constants/references.js';
 import RichText from './RichText.jsx';
-import { bodyText, chip, microLabel, mono, srOnly } from './ui.js';
+import { bodyText, chip, microLabel, mono, srOnly, touchLink } from './ui.js';
 
 const h3 = {
   margin: `0 0 ${SPACE.sm}px`,
@@ -99,7 +99,7 @@ export function PhasesPane({ kv, wide }) {
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
-                      color: THEME.muted,
+                      color: THEME.textSubtle,
                     }}
                   >
                     {label}
@@ -213,7 +213,7 @@ export function MetricsPane({ kv, metrics, wide }) {
                       display: 'block',
                       fontWeight: 500,
                       fontSize: 12,
-                      color: THEME.muted,
+                      color: THEME.textSubtle,
                       marginTop: 2,
                     }}
                   >
@@ -265,7 +265,7 @@ export function MetricsPane({ kv, metrics, wide }) {
                   margin: `2px 0 ${SPACE.sm}px`,
                   fontSize: 12,
                   lineHeight: 1.5,
-                  color: THEME.muted,
+                  color: THEME.textSubtle,
                 }}
               >
                 {row.why}
@@ -328,7 +328,7 @@ export function MeasuredPane() {
       >
         <span style={chip(THEME.measured)}>Coming soon</span>
         <p style={{ ...bodyText, color: THEME.text }}>{p.comingSoon}</p>
-        <p style={{ ...bodyText, fontSize: 13, color: THEME.muted }}>
+        <p style={{ ...bodyText, fontSize: 13, color: THEME.textSubtle }}>
           {p.accepts}
         </p>
       </div>
@@ -342,7 +342,9 @@ export function MeasuredPane() {
           ))}
         </ul>
       </div>
-      <p style={{ ...bodyText, fontSize: 13, color: THEME.muted }}>{p.note}</p>
+      <p style={{ ...bodyText, fontSize: 13, color: THEME.textSubtle }}>
+        {p.note}
+      </p>
     </div>
   );
 }
@@ -376,7 +378,7 @@ export function MethodPane({ kv }) {
   );
 }
 
-export function SourcesPane() {
+export function SourcesPane({ wide }) {
   return (
     <ol
       style={{
@@ -400,7 +402,11 @@ export function SourcesPane() {
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: THEME.accent, fontWeight: 600 }}
+                style={{
+                  color: THEME.accent,
+                  fontWeight: 600,
+                  ...(wide ? {} : { ...touchLink, minWidth: 44 }),
+                }}
               >
                 {l.label}
                 <span style={srOnly}> (opens in a new tab)</span>
@@ -413,7 +419,7 @@ export function SourcesPane() {
                 display: 'block',
                 fontFamily: FONT.sans,
                 fontSize: 12,
-                color: THEME.muted,
+                color: THEME.textSubtle,
                 marginTop: 2,
               }}
             >

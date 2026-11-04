@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  DARK_QUERY,
+  THEME_KEY,
+  THEME_PREFS,
+  readThemePref,
+  resolveTheme,
+  safeStorage,
+} from '../../utils/squatTheme.js';
 
-export const THEME_KEY = 'splitiq.theme';
-export const THEME_PREFS = ['system', 'light', 'dark'];
-const DARK_QUERY = '(prefers-color-scheme: dark)';
-
-function readPref() {
-  try {
-    const v = window.localStorage.getItem(THEME_KEY);
-    return THEME_PREFS.includes(v) ? v : 'system';
-  } catch {
-    // Storage blocked (private mode, sandboxed iframe): follow the OS.
-    return 'system';
-  }
-}
+export { THEME_KEY, THEME_PREFS };
 
 const darkQuery = () =>
   typeof window.matchMedia === 'function'
@@ -22,9 +18,12 @@ const darkQuery = () =>
 // The tool's light/dark choice. Defaults to the OS preference; an explicit
 // choice persists. The caller puts `resolved` on the tool root as data-theme —
 // the palette is emitted at :root (light) and under [data-theme='dark'], so
-// that one attribute switches every THEME token beneath it.
+// that one attribute switches every THEME token beneath it. RouteRoot resolves
+// the same way (utils/squatTheme.js) so the loading ground matches.
 export function useSquatTheme() {
-  const [preference, setPreferenceState] = useState(readPref);
+  const [preference, setPreferenceState] = useState(() =>
+    readThemePref(safeStorage(window))
+  );
   const [systemDark, setSystemDark] = useState(
     () => darkQuery()?.matches ?? false
   );
@@ -48,7 +47,9 @@ export function useSquatTheme() {
     }
   }, []);
 
-  const resolved =
-    preference === 'system' ? (systemDark ? 'dark' : 'light') : preference;
-  return { preference, resolved, setPreference };
+  return {
+    preference,
+    resolved: resolveTheme(preference, systemDark),
+    setPreference,
+  };
 }

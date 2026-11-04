@@ -44,14 +44,14 @@ export default function FormCheck({ summary, kv, unavailable }) {
           margin: `0 0 ${SPACE.md}px`,
           fontSize: 12,
           lineHeight: 1.5,
-          color: THEME.muted,
+          color: THEME.textSubtle,
         }}
       >
         The modelled reference rep scored against published targets — not a
         measurement of you.{' '}
         {summary && (
           <span style={{ ...mono, color: THEME.positive }}>
-            {n} of {n} on target
+            {n} of {n} targets met by the reference rep
           </span>
         )}
       </p>
@@ -119,7 +119,7 @@ export default function FormCheck({ summary, kv, unavailable }) {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  On target
+                  Matches target
                 </span>
               </div>
               <div
@@ -142,7 +142,7 @@ export default function FormCheck({ summary, kv, unavailable }) {
                 style={{
                   fontSize: 12,
                   lineHeight: 1.5,
-                  color: THEME.muted,
+                  color: THEME.textSubtle,
                   marginTop: 2,
                 }}
               >

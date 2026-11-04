@@ -20,9 +20,11 @@ import GuideDialog from './components/GuideDialog.jsx';
 import AttributionFooter from './components/AttributionFooter.jsx';
 import {
   card,
+  linkButton,
   microLabel,
   primaryButton,
   secondaryButton,
+  touchLink,
 } from './components/ui.js';
 
 export const PAGE_TITLE = 'High-bar squat — SplitIQ';
@@ -149,7 +151,7 @@ function PhaseStrip({ onOpen, wide }) {
         <button
           type="button"
           onClick={() => onOpen('phases')}
-          style={{ ...secondaryButton, minHeight: 36, padding: '6px 12px' }}
+          style={{ ...secondaryButton, padding: '6px 12px' }}
         >
           Cues and faults
         </button>
@@ -205,7 +207,7 @@ function PhaseStrip({ onOpen, wide }) {
                   margin: `${SPACE.xs}px 0 0`,
                   fontSize: 12,
                   lineHeight: 1.5,
-                  color: THEME.muted,
+                  color: THEME.textSubtle,
                 }}
               >
                 {ph.mode}
@@ -340,9 +342,12 @@ export default function SquatApp() {
             padding: SPACE.md,
             borderRadius: RADIUS.sm,
             border: `1px solid ${THEME.divider}`,
+            // On a surface, not the page ground: accent on bg is 3.2:1 in
+            // light, short of AA for this 12 px link (contrastPairs.js).
+            background: THEME.surface,
             fontSize: 12,
             lineHeight: 1.55,
-            color: THEME.muted,
+            color: THEME.textSubtle,
           }}
         >
           Every value on this page comes from a modelled reference rep, not a
@@ -351,15 +356,7 @@ export default function SquatApp() {
           <button
             type="button"
             onClick={() => openGuide('method')}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              font: 'inherit',
-              color: THEME.accent,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-            }}
+            style={{ ...linkButton, ...touchLink }}
           >
             Method and limits
           </button>

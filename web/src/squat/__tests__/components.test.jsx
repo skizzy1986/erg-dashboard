@@ -100,7 +100,9 @@ describe('FormCheck', () => {
       screen.getByRole('heading', { name: 'Form check' })
     ).toBeInTheDocument();
     expect(screen.getByText('Reference ideal — modelled')).toBeInTheDocument();
-    expect(screen.getByText('10 of 10 on target')).toBeInTheDocument();
+    expect(
+      screen.getByText('10 of 10 targets met by the reference rep')
+    ).toBeInTheDocument();
     expect(screen.getByText(/not a measurement of you/)).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(10);
     expect(
@@ -113,7 +115,7 @@ describe('FormCheck', () => {
   it('shows placeholders before the model arrives, and says when it cannot', () => {
     const { rerender } = render(<FormCheck summary={null} />);
     expect(screen.getAllByText('Loading model value…')).toHaveLength(10);
-    expect(screen.queryByText(/on target$/)).toBeNull();
+    expect(screen.queryByText(/targets met by the reference rep$/)).toBeNull();
     rerender(<FormCheck summary={null} unavailable />);
     expect(screen.getAllByText('Model value unavailable')).toHaveLength(10);
   });
@@ -152,13 +154,34 @@ describe('SquatHeader', () => {
     expect(onThemeChange).toHaveBeenCalledWith('dark');
   });
 
-  it('shortens the link on a phone', () => {
-    render(<SquatHeader preference="dark" onThemeChange={() => {}} compact />);
-    expect(screen.getByRole('link').textContent).toMatch(/^SplitIQ/);
-    expect(screen.getByRole('button', { name: 'Dark' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
+  it('keeps the link whole on a phone and folds the theme into one button', async () => {
+    const onThemeChange = vi.fn();
+    const { rerender } = render(
+      <SquatHeader preference="system" onThemeChange={onThemeChange} compact />
     );
+    expect(screen.getByRole('link').textContent).toMatch(/^Open SplitIQ/);
+    expect(screen.queryByRole('group', { name: 'Theme' })).toBeNull();
+    const button = screen.getByRole('button', {
+      name: 'Theme: Auto. Switch to Light',
+    });
+    expect(button.style.width).toBe('44px');
+    expect(button.style.height).toBe('44px');
+    await userEvent.click(button);
+    expect(onThemeChange).toHaveBeenLastCalledWith('light');
+    rerender(
+      <SquatHeader preference="light" onThemeChange={onThemeChange} compact />
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Theme: Light. Switch to Dark' })
+    );
+    expect(onThemeChange).toHaveBeenLastCalledWith('dark');
+    rerender(
+      <SquatHeader preference="dark" onThemeChange={onThemeChange} compact />
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Theme: Dark. Switch to Auto' })
+    );
+    expect(onThemeChange).toHaveBeenLastCalledWith('system');
   });
 });
 

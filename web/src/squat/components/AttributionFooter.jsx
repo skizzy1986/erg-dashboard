@@ -1,7 +1,7 @@
 import { THEME } from '../../constants/theme.js';
 import { SPACE } from '../../constants/tokens.js';
 import { ATTRIBUTION } from '../constants/attribution.js';
-import { linkButton } from './ui.js';
+import { linkButton, touchLink } from './ui.js';
 
 // CC BY-SA requires the credit wherever the anatomy is shown, so this renders
 // on every state of the page — loading, failed, unsupported and ready alike.
@@ -27,14 +27,14 @@ export default function AttributionFooter({ onSources, compact }) {
           boxSizing: 'border-box',
           fontSize: 12,
           lineHeight: 1.6,
-          color: THEME.muted,
+          color: THEME.textSubtle,
         }}
       >
         <a
           href={ATTRIBUTION.anatomyUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: 'inherit' }}
+          style={{ ...touchLink, color: 'inherit' }}
         >
           {ATTRIBUTION.anatomy}
         </a>
@@ -44,7 +44,7 @@ export default function AttributionFooter({ onSources, compact }) {
         <button
           type="button"
           onClick={onSources}
-          style={{ ...linkButton, fontSize: 12 }}
+          style={{ ...linkButton, ...touchLink, fontSize: 12 }}
         >
           {ATTRIBUTION.sources}
         </button>

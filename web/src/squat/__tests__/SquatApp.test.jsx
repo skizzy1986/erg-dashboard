@@ -52,7 +52,9 @@ describe('SquatApp', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(container.firstChild).toHaveAttribute('data-theme', 'light');
     await waitFor(() =>
-      expect(screen.getByText('10 of 10 on target')).toBeInTheDocument()
+      expect(
+        screen.getByText('10 of 10 targets met by the reference rep')
+      ).toBeInTheDocument()
     );
     expect(window.__squat).toBeUndefined();
     unmount();
@@ -108,7 +110,9 @@ describe('SquatApp', () => {
   it('switches to dark on the tool root and the document ground', async () => {
     const user = userEvent.setup();
     const { container } = render(<SquatApp />);
-    await user.click(screen.getByRole('button', { name: 'Dark' }));
+    // Phone layout (no matchMedia): one cycling button, Auto → Light → Dark.
+    await user.click(screen.getByRole('button', { name: /Switch to Light/ }));
+    await user.click(screen.getByRole('button', { name: /Switch to Dark/ }));
     expect(container.firstChild).toHaveAttribute('data-theme', 'dark');
     expect(document.body.style.backgroundColor).toBe('rgb(8, 8, 13)');
   });
@@ -120,7 +124,9 @@ describe('SquatApp', () => {
       screen.getByRole('note', { name: '3D view unavailable' })
     ).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText('10 of 10 on target')).toBeInTheDocument()
+      expect(
+        screen.getByText('10 of 10 targets met by the reference rep')
+      ).toBeInTheDocument()
     );
     expect(mocks.workers).toHaveLength(0);
     expect(
@@ -156,7 +162,9 @@ describe('SquatApp', () => {
         screen.getByRole('link', { name: /Open SplitIQ/ })
       ).toBeInTheDocument();
       await waitFor(() =>
-        expect(screen.getByText('10 of 10 on target')).toBeInTheDocument()
+        expect(
+          screen.getByText('10 of 10 targets met by the reference rep')
+        ).toBeInTheDocument()
       );
       await user.click(
         screen.getByRole('button', { name: 'Metrics and targets' })

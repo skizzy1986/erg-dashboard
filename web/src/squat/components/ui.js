@@ -19,7 +19,7 @@ export const microLabel = {
   letterSpacing: 2,
   lineHeight: TYPE.micro.lineHeight,
   textTransform: 'uppercase',
-  color: THEME.muted,
+  color: THEME.textSubtle,
 };
 
 const buttonBase = {
@@ -46,6 +46,15 @@ export const secondaryButton = {
   background: 'transparent',
   color: THEME.text,
   border: `1px solid ${THEME.border}`,
+};
+
+// A text link that is still a 44 px target (WCAG 2.5.5): inline-flex keeps it
+// in the sentence while its box grows to the touch minimum.
+export const touchLink = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  minHeight: 44,
+  verticalAlign: 'middle',
 };
 
 export const linkButton = {

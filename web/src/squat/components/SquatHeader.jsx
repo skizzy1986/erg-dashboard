@@ -9,6 +9,132 @@ const OPTIONS = [
   { id: 'dark', label: 'Dark', title: 'Dark theme' },
 ];
 
+// 20 px glyphs on a 24 grid, drawn in currentColor so they take the ink.
+const ICON_PATHS = {
+  system: (
+    <>
+      <circle cx="12" cy="12" r="8" fill="none" strokeWidth="2" />
+      <path d="M12 4a8 8 0 0 1 0 16z" stroke="none" fill="currentColor" />
+    </>
+  ),
+  light: (
+    <>
+      <circle cx="12" cy="12" r="4" fill="none" strokeWidth="2" />
+      <path
+        d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+        fill="none"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </>
+  ),
+  dark: (
+    <path
+      d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"
+      fill="none"
+      strokeWidth="2"
+      strokeLinejoin="round"
+    />
+  ),
+};
+
+function ThemeIcon({ id }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      {ICON_PATHS[id]}
+    </svg>
+  );
+}
+
+// On a phone the three-way segmented control cost ~140 px the wordmark and the
+// "Open SplitIQ" link needed, so it collapses to one 44 px button that steps
+// Auto → Light → Dark and names both the current and the next state.
+function ThemeCycleButton({ preference, onThemeChange }) {
+  const i = Math.max(
+    0,
+    OPTIONS.findIndex((o) => o.id === preference)
+  );
+  const current = OPTIONS[i];
+  const next = OPTIONS[(i + 1) % OPTIONS.length];
+  return (
+    <button
+      type="button"
+      onClick={() => onThemeChange(next.id)}
+      aria-label={`Theme: ${current.label}. Switch to ${next.label}`}
+      title={`Theme: ${current.label}`}
+      style={{
+        width: 44,
+        height: 44,
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 0,
+        border: `1px solid ${THEME.border}`,
+        borderRadius: RADIUS.sm,
+        background: THEME.field,
+        color: THEME.text,
+        cursor: 'pointer',
+      }}
+    >
+      <ThemeIcon id={current.id} />
+    </button>
+  );
+}
+
+function ThemeSegmented({ preference, onThemeChange }) {
+  return (
+    <div
+      role="group"
+      aria-label="Theme"
+      style={{
+        display: 'inline-flex',
+        padding: 2,
+        gap: 2,
+        background: THEME.field,
+        border: `1px solid ${THEME.border}`,
+        borderRadius: RADIUS.sm + 2,
+      }}
+    >
+      {OPTIONS.map((o) => {
+        const on = preference === o.id;
+        return (
+          <button
+            key={o.id}
+            type="button"
+            aria-pressed={on}
+            title={o.title}
+            onClick={() => onThemeChange(o.id)}
+            style={{
+              fontFamily: FONT.sans,
+              fontSize: 12,
+              fontWeight: 700,
+              minHeight: 44,
+              minWidth: 52,
+              padding: `0 ${SPACE.sm}px`,
+              border: 'none',
+              borderRadius: RADIUS.sm,
+              cursor: 'pointer',
+              background: on ? THEME.surface : 'transparent',
+              color: on ? THEME.text : THEME.textSubtle,
+              boxShadow: on ? `0 1px 2px ${alpha(THEME.text, '26')}` : 'none',
+            }}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Wordmark({ size = 15 }) {
   // The SPLITIQ treatment the sign-in screen uses: bold caps, tracked, in the
   // positive ink.
@@ -47,8 +173,8 @@ export default function SquatHeader({ preference, onThemeChange, compact }) {
           margin: '0 auto',
           display: 'flex',
           alignItems: 'center',
-          gap: SPACE.md,
-          padding: `${SPACE.sm}px ${compact ? SPACE.lg : SPACE.xl}px`,
+          gap: compact ? SPACE.sm : SPACE.md,
+          padding: `${SPACE.xs}px ${compact ? SPACE.lg : SPACE.xl}px`,
           minHeight: 56,
           boxSizing: 'border-box',
         }}
@@ -57,11 +183,13 @@ export default function SquatHeader({ preference, onThemeChange, compact }) {
           style={{
             display: 'flex',
             alignItems: 'baseline',
-            gap: SPACE.sm,
+            gap: compact ? SPACE.xs : SPACE.sm,
             minWidth: 0,
+            flex: 1,
+            whiteSpace: 'nowrap',
           }}
         >
-          <Wordmark />
+          <Wordmark size={compact ? 13 : 15} />
           <span aria-hidden="true" style={{ color: THEME.border }}>
             /
           </span>
@@ -71,56 +199,22 @@ export default function SquatHeader({ preference, onThemeChange, compact }) {
               fontSize: 14,
               fontWeight: 600,
               color: THEME.text,
-              whiteSpace: 'nowrap',
             }}
           >
             Squat
           </span>
         </div>
-        <span style={{ flex: 1 }} />
-        <div
-          role="group"
-          aria-label="Theme"
-          style={{
-            display: 'inline-flex',
-            padding: 2,
-            gap: 2,
-            background: THEME.field,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: RADIUS.sm + 2,
-          }}
-        >
-          {OPTIONS.map((o) => {
-            const on = preference === o.id;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                aria-pressed={on}
-                title={o.title}
-                onClick={() => onThemeChange(o.id)}
-                style={{
-                  fontFamily: FONT.sans,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  minHeight: 36,
-                  minWidth: compact ? 44 : 52,
-                  padding: `0 ${SPACE.sm}px`,
-                  border: 'none',
-                  borderRadius: RADIUS.sm,
-                  cursor: 'pointer',
-                  background: on ? THEME.surface : 'transparent',
-                  color: on ? THEME.text : THEME.muted,
-                  boxShadow: on
-                    ? `0 1px 2px ${alpha(THEME.text, '26')}`
-                    : 'none',
-                }}
-              >
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
+        {compact ? (
+          <ThemeCycleButton
+            preference={preference}
+            onThemeChange={onThemeChange}
+          />
+        ) : (
+          <ThemeSegmented
+            preference={preference}
+            onThemeChange={onThemeChange}
+          />
+        )}
         <a
           href="/"
           style={{
@@ -130,12 +224,14 @@ export default function SquatHeader({ preference, onThemeChange, compact }) {
             color: THEME.accent,
             textDecoration: 'none',
             whiteSpace: 'nowrap',
+            flexShrink: 0,
             minHeight: 44,
+            minWidth: 44,
             display: 'inline-flex',
             alignItems: 'center',
           }}
         >
-          {compact ? 'SplitIQ' : 'Open SplitIQ'}
+          Open SplitIQ
           <span aria-hidden="true">&nbsp;→</span>
         </a>
       </div>

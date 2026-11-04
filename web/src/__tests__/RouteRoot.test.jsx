@@ -58,10 +58,26 @@ describe('RouteRoot', () => {
     expect(mocks.supabaseImported).not.toHaveBeenCalled();
   });
 
-  it('treats /squat/ the same', async () => {
-    await renderAt('/squat/');
+  it('treats /squat/ the same and canonicalises it in place', async () => {
+    window.history.replaceState(null, '', '/squat/#guide=metrics');
+    await renderAt('/squat/#guide=metrics');
+    expect(window.location.pathname).toBe('/squat');
+    expect(window.location.hash).toBe('#guide=metrics');
     expect(await screen.findByText('High-bar back squat')).toBeInTheDocument();
     expect(mocks.supabaseImported).not.toHaveBeenCalled();
+  });
+
+  it('paints the loading ground in the stored squat theme', async () => {
+    window.localStorage.setItem('splitiq.theme', 'dark');
+    try {
+      await renderAt('/squat');
+      const ground = screen.getByTestId('route-ground');
+      expect(ground).toHaveAttribute('data-theme', 'dark');
+      expect(ground.style.colorScheme).toBe('dark');
+      await screen.findByText('High-bar back squat');
+    } finally {
+      window.localStorage.clear();
+    }
   });
 
   it('renders AuthGate at / and starts loading it at module scope', async () => {
@@ -74,5 +90,17 @@ describe('RouteRoot', () => {
     await renderAt('/squat', { native: true });
     expect(await screen.findByText('AuthGate-stub')).toBeInTheDocument();
     expect(screen.queryByText('High-bar back squat')).toBeNull();
+  });
+  it('leaves the dashboard ground unthemed', async () => {
+    window.localStorage.setItem('splitiq.theme', 'dark');
+    try {
+      await renderAt('/');
+      expect(screen.getByTestId('route-ground')).not.toHaveAttribute(
+        'data-theme'
+      );
+      await screen.findByText('AuthGate-stub');
+    } finally {
+      window.localStorage.clear();
+    }
   });
 });

@@ -1,4 +1,26 @@
-import { formatSquatHash, isSquatPath, parseSquatHash } from '../squatRoute.js';
+import {
+  canonicalSquatUrl,
+  formatSquatHash,
+  isSquatPath,
+  parseSquatHash,
+} from '../squatRoute.js';
+
+describe('canonicalSquatUrl', () => {
+  it('drops the trailing slash and keeps query and hash', () => {
+    expect(
+      canonicalSquatUrl({
+        pathname: '/squat/',
+        search: '?a=1',
+        hash: '#paused',
+      })
+    ).toBe('/squat?a=1#paused');
+    expect(canonicalSquatUrl({ pathname: '/squat/' })).toBe('/squat');
+  });
+  it('leaves every other path alone', () => {
+    expect(canonicalSquatUrl({ pathname: '/squat' })).toBeNull();
+    expect(canonicalSquatUrl({ pathname: '/' })).toBeNull();
+  });
+});
 
 describe('isSquatPath', () => {
   it('matches /squat with and without the trailing slash', () => {

@@ -75,6 +75,8 @@ describe('useAnatomyData', () => {
     await waitFor(() => expect(result.current.stage).toBe('ready'));
     expect(result.current.buffer).toBe(BUFFER);
     expect(mocks.captureError).not.toHaveBeenCalled();
+    // Released as soon as it delivered, not held until unmount.
+    expect(lastWorker().terminate).toHaveBeenCalledTimes(1);
   });
 
   it('reports a download failure, then recovers on retry', async () => {
@@ -84,6 +86,7 @@ describe('useAnatomyData', () => {
     await waitFor(() => expect(mocks.workers).toHaveLength(1));
     send({ type: 'error', message: 'HTTP 500' });
     expect(result.current.stage).toBe('error');
+    expect(lastWorker().terminate).toHaveBeenCalledTimes(1);
     expect(result.current.error).toBe(FAILED_MESSAGE);
     expect(mocks.captureError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'HTTP 500' }),
@@ -117,6 +120,7 @@ describe('useAnatomyData', () => {
     act(() => lastWorker().onerror({ message: 'boom', preventDefault }));
     expect(preventDefault).toHaveBeenCalled();
     expect(result.current.stage).toBe('error');
+    expect(lastWorker().terminate).toHaveBeenCalledTimes(1);
     expect(mocks.captureError.mock.calls[0][1].stage).toBe('worker');
   });
 
@@ -169,5 +173,27 @@ describe('useAnatomyData', () => {
     expect(w.terminate).toHaveBeenCalled();
     w.onmessage({ data: { type: 'decoding' } });
     expect(result.current.stage).toBe('fetching');
+  });
+
+  it('aborts an in-flight manifest fetch on unmount, without reporting it', async () => {
+    let signal;
+    globalThis.fetch = vi.fn((_url, init) => {
+      signal = init.signal;
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () =>
+          reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+        );
+      });
+    });
+    const { unmount } = renderHook(() =>
+      useAnatomyData({ ...URLS, capabilities: CAPS })
+    );
+    await waitFor(() => expect(signal).toBeDefined());
+    expect(signal.aborted).toBe(false);
+    unmount();
+    expect(signal.aborted).toBe(true);
+    await Promise.resolve();
+    expect(mocks.captureError).not.toHaveBeenCalled();
+    expect(mocks.workers).toHaveLength(0);
   });
 });

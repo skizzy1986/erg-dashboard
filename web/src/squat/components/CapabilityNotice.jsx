@@ -54,7 +54,12 @@ export default function CapabilityNotice({ capabilities }) {
         </p>
       ))}
       <p
-        style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: THEME.muted }}
+        style={{
+          margin: 0,
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: THEME.textSubtle,
+        }}
       >
         The coaching guide, form check and targets all still work.
       </p>

@@ -49,6 +49,13 @@ export function useAnatomyData({
   useEffect(() => {
     let cancelled = false;
     let worker = null;
+    const controller = new window.AbortController();
+    // A worker has one job; once it reports done or fails it is let go rather
+    // than held until unmount.
+    const release = () => {
+      worker?.terminate();
+      worker = null;
+    };
     const patch = (p) => {
       if (!cancelled) setState((s) => ({ ...s, ...p }));
     };
@@ -64,12 +71,14 @@ export function useAnatomyData({
     (async () => {
       let manifest;
       try {
-        const res = await fetch(manifestUrl);
+        const res = await fetch(manifestUrl, { signal: controller.signal });
         if (!res.ok) throw new Error(`Manifest HTTP ${res.status}`);
         manifest = await res.json();
         validateManifest(manifest);
         patch({ manifest, summary: summariseRep(manifest.meta) });
       } catch (error) {
+        // An abort is the effect's own cleanup, not a failure to report.
+        if (error?.name === 'AbortError') return;
         fail(error, 'manifest');
         return;
       }
@@ -86,6 +95,7 @@ export function useAnatomyData({
         } else if (data.type === 'decoding') {
           patch({ stage: 'decoding' });
         } else if (data.type === 'done') {
+          release();
           patch({ stage: 'building' });
           // A tick so "Building model" paints before the synchronous check.
           setTimeout(() => {
@@ -98,11 +108,13 @@ export function useAnatomyData({
             }
           }, 0);
         } else if (data.type === 'error') {
+          release();
           fail(new Error(data.message), 'download');
         }
       };
       worker.onerror = (event) => {
         event?.preventDefault?.();
+        release();
         fail(new Error(event?.message || 'Anatomy worker failed'), 'worker');
       };
       worker.postMessage({
@@ -113,7 +125,8 @@ export function useAnatomyData({
 
     return () => {
       cancelled = true;
-      worker?.terminate();
+      controller.abort();
+      release();
     };
   }, [manifestUrl, dataUrl, canDecode, createWorker, attempt]);
 

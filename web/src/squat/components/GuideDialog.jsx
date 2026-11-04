@@ -37,18 +37,27 @@ export default function GuideDialog({
   metrics,
   wide,
 }) {
+  const rootRef = useRef(null);
   const dialogRef = useRef(null);
   const bodyRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
     const opener = document.activeElement;
+    // Everything beside the dialog goes inert while it is open: out of the tab
+    // order, unclickable, and hidden from assistive tech — aria-modal alone is
+    // honoured unevenly by screen readers.
+    const siblings = [
+      ...(rootRef.current?.parentElement?.children ?? []),
+    ].filter((el) => el !== rootRef.current && !el.hasAttribute('inert'));
+    siblings.forEach((el) => el.setAttribute('inert', ''));
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     dialogRef.current
       ?.querySelector('[role="tab"][aria-selected="true"]')
       ?.focus();
     return () => {
+      siblings.forEach((el) => el.removeAttribute('inert'));
       document.body.style.overflow = prevOverflow;
       if (opener && opener.isConnected && typeof opener.focus === 'function') {
         opener.focus();
@@ -109,6 +118,7 @@ export default function GuideDialog({
 
   return (
     <div
+      ref={rootRef}
       style={{
         position: 'fixed',
         inset: 0,
@@ -213,7 +223,7 @@ export default function GuideDialog({
                   border: 'none',
                   borderBottom: `2px solid ${on ? THEME.accent : 'transparent'}`,
                   marginBottom: -1,
-                  color: on ? THEME.text : THEME.muted,
+                  color: on ? THEME.text : THEME.textSubtle,
                   cursor: 'pointer',
                 }}
               >
