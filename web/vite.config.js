@@ -67,7 +67,24 @@ export default defineConfig({
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // The squat tool's data (2.2 MB anatomy stream + its manifest) is not
+        // precached: every installed dashboard would download it on update for
+        // a page most of them never open. The extensions already sit outside
+        // globPatterns; the ignore makes that a decision, not an accident.
+        // It is cached on first use instead (runtime rule below).
+        globIgnores: ['**/squat-*.{json,bin}'],
         runtimeCaching: [
+          {
+            // Content-hashed and immutable, so cache-first is safe, and a
+            // second visit — or an offline one — opens without the download.
+            urlPattern: /\/assets\/squat-(anatomy|manifest)-.*\.(bin|json)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'squat-data',
+              expiration: { maxEntries: 4 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           {
             urlPattern: /supabase\.co\/rest/,
             handler: 'NetworkFirst',
@@ -154,11 +171,14 @@ export default defineConfig({
       //  - constants/**: pure data tables — no logic to cover; counting them
       //    only distorts the denominator.
       //  - test-setup.js: the test harness itself.
+      //  - squat/assets/**: the squat tool's extracted data and its licence —
+      //    no code (the .bin and .md are not even parseable as JS).
       exclude: [
         'src/StrengthLogger.jsx',
         'src/main.jsx',
         'src/constants/**',
         'src/test-setup.js',
+        'src/squat/assets/**',
       ],
       // Baseline measured 2026-06-29 after making scope explicit (was passing
       // by accident at ~74% because only test-imported files counted). These

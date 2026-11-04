@@ -52,8 +52,28 @@ const lines = [
     current.total,
     current.budgetKb,
     baseline?.total,
-    'everything emitted'
+    'everything the dashboard can reach'
   ),
+  // The squat tool's rows, when this build has them. A baseline from before
+  // the tool reads undefined, which row() already renders as no delta.
+  ...(current.squatEntry === undefined
+    ? []
+    : [
+        row(
+          'Squat entry',
+          current.squatEntry,
+          current.squatEntryBudgetKb,
+          baseline?.squatEntry,
+          'first paint of /squat'
+        ),
+        row(
+          'Squat total',
+          current.squatTotal,
+          current.squatTotalBudgetKb,
+          baseline?.squatTotal,
+          'files only /squat reaches'
+        ),
+      ]),
 ];
 
 if (!baseline) {

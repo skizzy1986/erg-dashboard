@@ -99,6 +99,12 @@ jobs:
         with:
           name: web-dist
           path: web/dist/
+      # The public squat tool is web-only: the APK opens the dashboard and
+      # never routes to /squat, so its 2.2 MB data would ship as dead weight.
+      # Its JS chunks stay (they are small and referenced by the manifest).
+      - name: Drop web-only squat data
+        run: rm -f dist/assets/squat-anatomy-* dist/assets/squat-manifest-*
+        working-directory: web
       - name: Sync Capacitor assets
         run: npx cap sync android
         working-directory: web

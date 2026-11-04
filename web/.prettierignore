@@ -2,3 +2,8 @@
 # .design-sync/ownership.json). They are committed verbatim so the repo copy
 # matches the project copy; reformatting them silently breaks that.
 .design-sync/
+
+# The squat tool's extracted data. squat-manifest.json is pinned by sha256 in
+# src/squat/constants/dataAsset.js; reformatting it changes the hash (and
+# triples its size) without changing a value. See docs/squat/PROVENANCE.md.
+src/squat/assets/

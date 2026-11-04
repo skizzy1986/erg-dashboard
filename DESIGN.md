@@ -40,6 +40,22 @@ disagree, `conventions.md` is newer.
 role-named, `var(--color-*)` system described in the handoff has not shipped.
 **Do not assume light until the flip lands.**
 
+## The squat tool — a public surface
+
+`/squat` (`web/src/squat/`) is SplitIQ's first page for people who are not Scott:
+coaches and athletes, signed out, on a phone as often as a desk. It reuses the system
+rather than forking it — `THEME` pointers, `FONT.sans` (Archivo) for language and
+`FONT.mono` (IBM Plex Mono) for every measurement, the `SPACE`/`RADIUS`/`LAYER` scales
+and the SPLITIQ wordmark treatment from the sign-in screen. It has its own light/dark/auto
+switch (OS preference by default, stored in `localStorage['splitiq.theme']`), applied as
+`data-theme` on the tool root. One breakpoint: desktop grid at ≥ 761 px, phone stack below.
+
+Two **additive** tokens serve it, in both palettes: `modelled` (a value the model
+computed — the "Reference ideal — modelled" chip) and `measured` (a value a sensor
+recorded — the importer, later). Both clear AA on `surface`, `raised` and `field`.
+No existing value moved. Scene colours for the 3D view land with it (PR2).
+`check:colours` also rejects three.js `0xRRGGBB` literals under `web/src/squat/`.
+
 ## The platform split — mobile does the doing, desktop does the understanding
 
 Decided 2026-08-24, and it decides what gets built where. Sessions are logged

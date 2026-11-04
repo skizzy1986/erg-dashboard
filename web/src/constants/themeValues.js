@@ -29,6 +29,10 @@ export const DARK = {
   divider: '#3e3e5a',
   neutralAccent: '#888888',
   textStrong: '#ffffff',
+  // Provenance inks for the squat tool (squat tool, PR1): a value the model
+  // computed versus one a sensor recorded. Additive — no existing key moved.
+  modelled: '#f2b45a',
+  measured: '#86a8ff',
 };
 
 // The light palette. Values are conventions.md's, which is design-owned and
@@ -70,6 +74,9 @@ export const LIGHT = {
   divider: '#e4e7ef',
   neutralAccent: '#4a4f63',
   textStrong: '#1c1e2a',
+  // Squat-tool provenance inks; both clear AA (4.5) on surface and field.
+  modelled: '#8a5300',
+  measured: '#2a55c4',
 };
 
 // The palette the document boots on. Light is primary (#251); dark is retained
