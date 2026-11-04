@@ -32,7 +32,11 @@
 //   SQUAT_ENTRY           what /squat costs to paint: main + SquatApp's
 //                         static graph.
 //   SQUAT_TOTAL           the files only the squat tool reaches (its chunk,
-//                         its worker), so shared code is not double-charged.
+//                         its worker), so shared code is not double-charged —
+//                         minus SQUAT_3D, which has its own line.
+//   SQUAT_3D              three.js and the anatomy scene: the files reachable
+//                         only through the scene's lazy import. Fetched after
+//                         the anatomy data, never on either first paint.
 //   SQUAT_DATA            the anatomy stream itself (already gzip, so measured
 //                         raw), plus a check that nothing the service worker
 //                         precaches exceeds Workbox's 2 MiB per-file ceiling —
@@ -49,9 +53,16 @@ import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import {
   entryFilesFrom,
+  firstPaintLeaks,
   isCountedAsset,
+  navigationProblems,
+  onlyReachableVia,
+  precacheUrls,
+  precachedSquat,
+  prefixMismatch,
   squatOnlyFiles,
 } from './entry-graph.mjs';
+import { SQUAT_JS } from './squatChunks.mjs';
 
 // Measured 2026-09-03, after #329 landed mathjs removal: entry 134.9 KB,
 // total 373.5 KB. Entry gets ~15 KB of headroom — tight, because that is the
@@ -71,8 +82,19 @@ const MAX_TOTAL_GZIP_KB = 400;
 //
 // The dashboard's entry moved 144.5 -> 146.1 KB on the same change: RouteRoot
 // plus the AuthGate chunk boundary it introduced. Still inside 150.
+//
+// PR2a (#382) re-measured 2026-11-04 with three.js in. SQUAT_TOTAL now
+// excludes the 3D chunk and carries the new depth/camera controls and hooks:
+// measured 23.6 KB, ceiling +10% (26); 24.0 KB after the Gate-3 fixes (the
+// controls now render, disabled, from first paint). SQUAT_ENTRY 112.7 KB, still
+// inside 117. The dashboard entry measured 146.6 KB (+0.2): RouteRoot's
+// first-visit offline fallback.
 const MAX_SQUAT_ENTRY_GZIP_KB = 117;
-const MAX_SQUAT_TOTAL_GZIP_KB = 21;
+const MAX_SQUAT_TOTAL_GZIP_KB = 26;
+// three.js (r187, tree-shaken) + OrbitControls + the anatomy scene and posing
+// maths. Measured 2026-11-04 at 138.0 KB; ~5% headroom, because a
+// three.js bump is the likeliest way this grows and should be noticed.
+const MAX_SQUAT_3D_GZIP_KB = 145;
 // The stream measured 2,202,168 bytes; 2.3 MB keeps a re-run of the pipeline
 // from quietly doubling every first visit.
 const MAX_SQUAT_DATA_BYTES = 2_300_000;
@@ -81,6 +103,7 @@ const MAX_PRECACHE_FILE_BYTES = 2 * 1024 * 1024;
 // main.jsx renders RouteRoot, which lazy-loads one product or the other.
 const DASHBOARD_BOOT = 'src/AuthGate.jsx';
 const SQUAT_ROOT = 'src/squat/SquatApp.jsx';
+const SCENE_ROOT = 'src/anatomy/scene/createAnatomyScene.js';
 const SQUAT_DATA = /^squat-anatomy-.*\.bin$/;
 
 const DIST = join(process.cwd(), 'dist');
@@ -145,26 +168,35 @@ function firstPaint(manifest, bootKey) {
   return files.map(toRow).sort((a, b) => b.gzip - a.gzip);
 }
 
-// Workbox writes its precache list into sw.js as {url:"…",revision:…}.
-function precachedFiles() {
-  let sw;
+function readSw() {
   try {
-    sw = readFileSync(join(DIST, 'sw.js'), 'utf8');
+    return readFileSync(join(DIST, 'sw.js'), 'utf8');
   } catch {
     die('dist/sw.js not found — the precache check needs the PWA build.');
   }
-  const urls = [...sw.matchAll(/url:"([^"]+)"/g)].map((m) => m[1]);
+}
+const sw = readSw();
+
+// Workbox writes its precache list into sw.js as {url:"…",revision:…}.
+function precachedFiles() {
+  const urls = precacheUrls(sw);
   if (!urls.length) die('No precache entries found in dist/sw.js.');
   return urls;
 }
 
 const manifest = readManifest();
+const assetName = (f) =>
+  f.startsWith('assets/') ? f.slice('assets/'.length) : f;
 let squatFiles;
+let sceneFiles;
 try {
   squatFiles = new Set(
-    squatOnlyFiles(manifest, SQUAT_ROOT)
+    squatOnlyFiles(manifest, SQUAT_ROOT).filter(isCountedAsset).map(assetName)
+  );
+  sceneFiles = new Set(
+    onlyReachableVia(manifest, SCENE_ROOT, 'Scene root')
       .filter(isCountedAsset)
-      .map((f) => (f.startsWith('assets/') ? f.slice('assets/'.length) : f))
+      .map(assetName)
   );
 } catch (error) {
   die(error.message);
@@ -173,7 +205,10 @@ const everything = allAssets();
 // The dashboard's total: nothing moved, nothing exempted — only the files no
 // dashboard path can reach are carved out, and they are gated below instead.
 const assets = everything.filter((a) => !squatFiles.has(a.file));
-const squatAssets = everything.filter((a) => squatFiles.has(a.file));
+const squatAssets = everything.filter(
+  (a) => squatFiles.has(a.file) && !sceneFiles.has(a.file)
+);
+const scene3dAssets = everything.filter((a) => sceneFiles.has(a.file));
 const entry = firstPaint(manifest, DASHBOARD_BOOT);
 const squatEntry = firstPaint(manifest, SQUAT_ROOT);
 const sum = (list) => list.reduce((n, a) => n + a.gzip, 0);
@@ -181,6 +216,27 @@ const totalBytes = sum(assets);
 const entryBytes = sum(entry);
 const squatEntryBytes = sum(squatEntry);
 const squatTotalBytes = sum(squatAssets);
+const squat3dBytes = sum(scene3dAssets);
+
+// ── Structural invariants of the squat split (entry-graph.mjs) ────
+// Each fails silently if broken: three.js on a first paint costs ~140 KB
+// with every budget still green if the ceiling happened to fit; a squat chunk
+// without the prefix is precached into every dashboard install; a prefixed
+// shared chunk is never precached, so the dashboard breaks offline.
+const invariants = [];
+try {
+  invariants.push(
+    ...firstPaintLeaks(manifest, SCENE_ROOT, [DASHBOARD_BOOT, SQUAT_ROOT]),
+    ...prefixMismatch(
+      squatOnlyFiles(manifest, SQUAT_ROOT),
+      readdirSync(ASSET_DIR),
+      SQUAT_JS
+    ),
+    ...navigationProblems(sw)
+  );
+} catch (error) {
+  die(error.message);
+}
 
 const dataFiles = readdirSync(ASSET_DIR).filter((f) => SQUAT_DATA.test(f));
 if (dataFiles.length !== 1) {
@@ -197,6 +253,7 @@ const precache = precachedFiles()
   .map((url) => ({ url, bytes: statSync(join(DIST, url)).size }))
   .sort((a, b) => b.bytes - a.bytes);
 const largestPrecached = precache[0];
+invariants.push(...precachedSquat(precache.map((p) => p.url)));
 
 // Machine-readable summary for CI reporting (report-bundle-size.mjs diffs it
 // against the main-branch baseline). `budgetKb`/`total`/`assets` keep their
@@ -219,6 +276,9 @@ writeFileSync(
       squatTotalBudgetKb: MAX_SQUAT_TOTAL_GZIP_KB,
       squatTotal: squatTotalBytes,
       squatAssets,
+      squat3dBudgetKb: MAX_SQUAT_3D_GZIP_KB,
+      squat3d: squat3dBytes,
+      squat3dAssets: scene3dAssets,
       squatData,
       precacheLargest: largestPrecached,
       precacheFileBudgetBytes: MAX_PRECACHE_FILE_BYTES,
@@ -247,12 +307,18 @@ console.log('\nSquat tool (gzipped):');
 for (const a of squatAssets) {
   console.log(`  · ${kb(a.gzip).padStart(10)}  ${a.file}`);
 }
+for (const a of scene3dAssets) {
+  console.log(`  ◦ ${kb(a.gzip).padStart(10)}  ${a.file}  (3D)`);
+}
 console.log(`    ${'─'.repeat(10)}`);
 console.log(
   `    ${kb(squatEntryBytes).padStart(10)}  squat entry  (budget ${MAX_SQUAT_ENTRY_GZIP_KB} KB) — first paint of /squat`
 );
 console.log(
-  `    ${kb(squatTotalBytes).padStart(10)}  squat total  (budget ${MAX_SQUAT_TOTAL_GZIP_KB} KB) — files only /squat reaches`
+  `    ${kb(squatTotalBytes).padStart(10)}  squat total  (budget ${MAX_SQUAT_TOTAL_GZIP_KB} KB) — files only /squat reaches, 3D excluded`
+);
+console.log(
+  `    ${kb(squat3dBytes).padStart(10)}  squat 3D     (budget ${MAX_SQUAT_3D_GZIP_KB} KB) — three.js + scene, lazy after the data`
 );
 const mbs = (b) => `${(b / 1e6).toFixed(2)} MB`;
 console.log(
@@ -288,6 +354,12 @@ for (const [label, bytes, budgetKb, advice] of [
     MAX_SQUAT_TOTAL_GZIP_KB,
     'Trim the tool, or raise MAX_SQUAT_TOTAL_GZIP_KB deliberately with the new figure.',
   ],
+  [
+    'Squat 3D',
+    squat3dBytes,
+    MAX_SQUAT_3D_GZIP_KB,
+    'three.js or the scene grew — check for a non-tree-shaken import (three/addons barrel, `import *`).',
+  ],
 ]) {
   if (bytes > budgetKb * 1024) {
     failures.push(
@@ -307,6 +379,8 @@ for (const p of precache.filter((f) => f.bytes > MAX_PRECACHE_FILE_BYTES)) {
   );
 }
 
+failures.push(...invariants.map((m) => `✖ ${m}`));
+
 if (failures.length) {
   console.error(`\n${failures.join('\n')}`);
   process.exit(1);
@@ -317,5 +391,6 @@ console.log(
   `\n✓ Within budget (entry ${spare(MAX_ENTRY_GZIP_KB, entryBytes)} KB spare, ` +
     `total ${spare(MAX_TOTAL_GZIP_KB, totalBytes)} KB spare, ` +
     `squat entry ${spare(MAX_SQUAT_ENTRY_GZIP_KB, squatEntryBytes)} KB spare, ` +
-    `squat total ${spare(MAX_SQUAT_TOTAL_GZIP_KB, squatTotalBytes)} KB spare).`
+    `squat total ${spare(MAX_SQUAT_TOTAL_GZIP_KB, squatTotalBytes)} KB spare, ` +
+    `squat 3D ${spare(MAX_SQUAT_3D_GZIP_KB, squat3dBytes)} KB spare).`
 );

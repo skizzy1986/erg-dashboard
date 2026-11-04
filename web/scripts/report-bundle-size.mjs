@@ -74,6 +74,18 @@ const lines = [
           'files only /squat reaches'
         ),
       ]),
+  // three.js + the anatomy scene, lazy after the anatomy data.
+  ...(current.squat3d === undefined
+    ? []
+    : [
+        row(
+          'Squat 3D',
+          current.squat3d,
+          current.squat3dBudgetKb,
+          baseline?.squat3d,
+          'three.js + scene, lazy'
+        ),
+      ]),
 ];
 
 if (!baseline) {

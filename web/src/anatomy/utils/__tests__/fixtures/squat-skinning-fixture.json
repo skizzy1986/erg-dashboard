@@ -1,0 +1,287 @@
+{
+  "description": "Reference world-space positions produced by the published squat page's own posing functions (frameAt, curvesAt, evalBind, updateCurveSet, updateLBS), evaluated in headless Chromium with three.js r128. Use to unit-test a re-implementation of the runtime posing maths.",
+  "data_version": {
+    "note": "The repo data files this fixture was generated against. The page blob is the same 3,450,003 decompressed bytes (SKINNING.md section 9.7); if web/src/squat/constants/dataAsset.js changes, regenerate this fixture from the new data before trusting the posing tests.",
+    "bin_sha256": "92437fba2129bc54231aafcaacb462e9f95627f18ffce801c76e8b4b047fe3d1",
+    "bin_raw_bytes": 3450003,
+    "manifest_sha256": "c2e7acdc6f6d8ffc687144ac90ab59c9b09bef917ccd639422e6f55ff1a1152a"
+  },
+  "source": {
+    "page": "dist/squat.html",
+    "sha256": "02e1d13325fd0902be1751b6410bfc54295acc310bd3e88d6f7d1ab2f6021749",
+    "manifest_bytes_embedded": 100785,
+    "blob_bytes_decompressed": 3450003,
+    "three": "r128"
+  },
+  "units": "metres; +x anterior (lifter faces +x), +y up, +z lifter's right",
+  "depth_rule": "NS = 41; f = S*(NS-1); i0 = min(NS-2, floor(f)); i1 = i0+1; t = f - i0. S=1 therefore uses i0=39, t=1.",
+  "precision": "cm and lb positions come from the page's Float32Array buffers; bone positions are double maths on Float32 stored vertices. All values rounded to 6 dp. A faithful port matches to about 5e-7 m; 1e-5 m is a safe test tolerance.",
+  "tolerance_m": 0.00001,
+  "verification": {
+    "independent_reimplementation_max_error_m": 4.93e-7,
+    "all_cm_vertices_at_S_0.3125_max_error_m": 1.15e-7,
+    "all_lb_vertices_at_S_0.3125_max_error_m": 1.16e-7,
+    "note": "A NumPy re-implementation of the formulas in SKINNING.md, written from the manifest and blob alone, reproduces the page to these errors."
+  },
+  "vertex_inputs": {
+    "cm": {
+      "0": {
+        "c1": 0,
+        "c2": 1,
+        "w": 191,
+        "s1": 7794,
+        "s2": 6885,
+        "l1": [20, 499, 1621],
+        "l2": [0, 1132, 2447],
+        "mid": 0,
+        "muscle": "Gluteus maximus"
+      },
+      "1000": {
+        "c1": 1,
+        "c2": 0,
+        "w": 255,
+        "s1": 974,
+        "s2": 3144,
+        "l1": [0, 388, -652],
+        "l2": [0, 471, -1849],
+        "mid": 0,
+        "muscle": "Gluteus maximus"
+      },
+      "10000": {
+        "c1": 20,
+        "c2": 20,
+        "w": 255,
+        "s1": 2834,
+        "s2": 2834,
+        "l1": [0, 450, -486],
+        "l2": [0, 450, -486],
+        "mid": 14,
+        "muscle": "Adductor brevis"
+      },
+      "21393": {
+        "c1": 53,
+        "c2": 53,
+        "w": 255,
+        "s1": 0,
+        "s2": 0,
+        "l1": [-1383, 257, 40],
+        "l2": [-1383, 257, 40],
+        "mid": 42,
+        "muscle": "Popliteus"
+      }
+    },
+    "lb": {
+      "0": {
+        "i0": 5,
+        "w": 0,
+        "frame0": "L1",
+        "frame1": "thorax",
+        "rest": [0.053553, 1.250627, 0.085177],
+        "muscle": "Rectus abdominis"
+      },
+      "7758": {
+        "i0": 4,
+        "w": 134,
+        "frame0": "L2",
+        "frame1": "L1",
+        "rest": [-0.122593, 1.171322, 0.072925],
+        "muscle": "Latissimus dorsi"
+      }
+    },
+    "bone_femur_r": {
+      "0": {
+        "stored": [-0.00857, -0.442209, 0.034126],
+        "frame": "femur_r",
+        "mirror": true
+      }
+    }
+  },
+  "samples": {
+    "0": {
+      "i0": 0,
+      "i1": 1,
+      "t": 0,
+      "cm": {
+        "0": [-0.082168, 0.878092, 0.140411],
+        "1000": [-0.087978, 0.946337, 0.045092],
+        "10000": [-0.024057, 0.787994, 0.088204],
+        "21393": [-0.065795, 0.397852, 0.114319]
+      },
+      "cm_left": {
+        "1000": [-0.087978, 0.946337, -0.045092]
+      },
+      "lb": {
+        "0": [0.130233, 1.187782, 0.084626],
+        "7758": [-0.055415, 1.134384, 0.072374]
+      },
+      "bone_femur_r": {
+        "0": [-0.084005, 0.455775, 0.158244]
+      },
+      "frame_femur_r_matrix4_elements_column_major": [
+        0.964935, -0.061635, 0.255149, 0, 0.088927, 0.991319, -0.096841, 0,
+        -0.246965, 0.116135, 0.96204, 0, -0.027984, 0.889654, 0.084776, 1
+      ]
+    },
+    "1": {
+      "i0": 39,
+      "i1": 40,
+      "t": 1,
+      "cm": {
+        "0": [-0.293136, 0.362535, 0.164908],
+        "1000": [-0.33907, 0.446841, 0.046678],
+        "10000": [-0.207075, 0.383044, 0.107982],
+        "21393": [0.070819, 0.356256, 0.216479]
+      },
+      "cm_left": {
+        "1000": [-0.33907, 0.446841, -0.046678]
+      },
+      "lb": {
+        "0": [-0.047476, 0.576969, 0.084626],
+        "7758": [-0.235821, 0.620886, 0.072374]
+      },
+      "bone_femur_r": {
+        "0": [0.093978, 0.419467, 0.285885]
+      },
+      "frame_femur_r_matrix4_elements_column_major": [
+        0.013324, 0.957627, -0.287702, 0, -0.918085, -0.10228, -0.38296, 0,
+        -0.396159, 0.269238, 0.87782, 0, -0.298373, 0.373257, 0.084114, 1
+      ]
+    },
+    "0.3125": {
+      "i0": 12,
+      "i1": 13,
+      "t": 0.5,
+      "cm": {
+        "0": [-0.173787, 0.811755, 0.14589],
+        "1000": [-0.183844, 0.90962, 0.045945],
+        "10000": [-0.089521, 0.750837, 0.100694],
+        "21393": [-0.001709, 0.390553, 0.168571]
+      },
+      "cm_left": {
+        "1000": [-0.183844, 0.90962, -0.045945]
+      },
+      "lb": {
+        "0": [0.07152, 1.10978, 0.084626],
+        "7758": [-0.120673, 1.090103, 0.072374]
+      },
+      "bone_femur_r": {
+        "0": [-0.003931, 0.443547, 0.224983]
+      },
+      "frame_femur_r_matrix4_elements_column_major": [
+        0.891605, 0.391481, 0.227559, 0, -0.335259, 0.90852, -0.249386, 0,
+        -0.304372, 0.146063, 0.941288, 0, -0.134157, 0.843673, 0.08453, 1
+      ]
+    },
+    "0.5": {
+      "i0": 20,
+      "i1": 21,
+      "t": 0,
+      "cm": {
+        "0": [-0.224677, 0.725674, 0.151676],
+        "1000": [-0.244275, 0.833106, 0.046301],
+        "10000": [-0.133702, 0.686611, 0.105661],
+        "21393": [0.029334, 0.378996, 0.193359]
+      },
+      "cm_left": {
+        "1000": [-0.244275, 0.833106, -0.046301]
+      },
+      "lb": {
+        "0": [0.029921, 1.004856, 0.084626],
+        "7758": [-0.163283, 1.008109, 0.072374]
+      },
+      "bone_femur_r": {
+        "0": [0.037709, 0.430689, 0.256434]
+      },
+      "frame_femur_r_matrix4_elements_column_major": [
+        0.75648, 0.639722, 0.135993, 0, -0.577763, 0.751113, -0.319404, 0,
+        -0.306476, 0.163051, 0.93781, 0, -0.200842, 0.762755, 0.084352, 1
+      ]
+    }
+  },
+  "extra_sample_note": "S = 0.3125 (f = 12.5, t = 0.5) is not one of the requested depths. It is included because 0, 0.5 and 1 all land exactly on stored samples (t = 0 or 1), so they do not exercise interpolation between samples.",
+  "trace_cm_vertex_0": {
+    "0.3125": {
+      "S": 0.3125,
+      "vertex": 0,
+      "w": 191,
+      "weight_curve1": 0.74902,
+      "bindings": [
+        {
+          "curve": 0,
+          "n": 25,
+          "K": 3,
+          "nseg": 8,
+          "s": 7794,
+          "u": 15.588,
+          "j": 15,
+          "frac": 0.588,
+          "point": [-0.176203, 0.804499, 0.111975],
+          "quat_xyzw": [-0.055887, 0.127159, 0.50713, -0.850604],
+          "sig_at_S": 0.9406,
+          "offset_curve_frame_m": [0.0004, 0.009387, 0.030494],
+          "posed": [-0.176382, 0.809682, 0.14346]
+        },
+        {
+          "curve": 1,
+          "n": 25,
+          "K": 3,
+          "nseg": 8,
+          "s": 6885,
+          "u": 13.77,
+          "j": 13,
+          "frac": 0.77,
+          "point": [-0.178993, 0.801054, 0.108021],
+          "quat_xyzw": [0.033092, 0.086297, 0.500705, -0.86067],
+          "sig_at_S": 0.9252,
+          "offset_curve_frame_m": [0, 0.020947, 0.045279],
+          "posed": [-0.166045, 0.817944, 0.153144]
+        }
+      ],
+      "blended": [-0.173787, 0.811755, 0.14589]
+    },
+    "0.5": {
+      "S": 0.5,
+      "vertex": 0,
+      "w": 191,
+      "weight_curve1": 0.74902,
+      "bindings": [
+        {
+          "curve": 0,
+          "n": 25,
+          "K": 3,
+          "nseg": 8,
+          "s": 7794,
+          "u": 15.588,
+          "j": 15,
+          "frac": 0.588,
+          "point": [-0.228576, 0.717706, 0.11883],
+          "quat_xyzw": [-0.064051, 0.069982, 0.435544, -0.895155],
+          "sig_at_S": 0.9055,
+          "offset_curve_frame_m": [0.0004, 0.009037, 0.029356],
+          "posed": [-0.226682, 0.721348, 0.149272]
+        },
+        {
+          "curve": 1,
+          "n": 25,
+          "K": 3,
+          "nseg": 8,
+          "s": 6885,
+          "u": 13.77,
+          "j": 13,
+          "frac": 0.77,
+          "point": [-0.23075, 0.720547, 0.116017],
+          "quat_xyzw": [0.040031, 0.071728, 0.443968, -0.89227],
+          "sig_at_S": 0.8904,
+          "offset_curve_frame_m": [0, 0.020159, 0.043576],
+          "posed": [-0.218692, 0.738583, 0.158849]
+        }
+      ],
+      "blended": [-0.224677, 0.725674, 0.151676]
+    }
+  },
+  "trace_note": "Step-by-step evaluation of cm vertex 0 (c1=0, c2=1, w=191, so both curves are used with weight 191/255 on curve 1). 'point' and 'quat_xyzw' are the curve sample interpolated at fractional index u (after the depth interpolation done by curvesAt); 'offset_curve_frame_m' is (lx*LQ, ly*LQ*sig, lz*LQ*sig) before rotation; 'posed' is evalBind's result; 'blended' is the final vertex.",
+  "requirements_met": {
+    "cm_c1_ne_c2": "cm vertex 0 (c1=0, c2=1) and cm vertex 1000 (c1=1, c2=0, but w=255 so curve 2 is ignored)",
+    "cm_w_lt_255": "cm vertex 0 (w=191)"
+  }
+}

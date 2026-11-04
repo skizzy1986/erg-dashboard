@@ -1,7 +1,7 @@
 import { THEME } from '../../constants/theme.js';
 import { FONT } from '../../constants/type.js';
 import { RADIUS, SPACE } from '../../constants/tokens.js';
-import { mono, primaryButton } from './ui.js';
+import { mono, primaryButton, srOnly } from './ui.js';
 
 const mb = (bytes) => (bytes / 1e6).toFixed(1);
 
@@ -13,8 +13,12 @@ export function statusText({ stage, loaded, total, error }) {
       return 'Unpacking';
     case 'building':
       return 'Building model';
+    case 'engine':
+      return 'Loading 3D engine';
+    case 'scene':
+      return 'Building 3D model';
     case 'ready':
-      return 'Model loaded — 3D view coming next';
+      return '3D model ready';
     case 'error':
       return error;
     default:
@@ -22,22 +26,45 @@ export function statusText({ stage, loaded, total, error }) {
   }
 }
 
-// The data's progress, as one live region. The bar is decorative over the
-// text, which already says the same thing in words a screen reader can use.
-export default function LoadStatus({ stage, loaded, total, error, onRetry }) {
+// The data's progress, then the 3D engine's, as one live region. The bar is
+// decorative over the text, which already says the same thing in words a
+// screen reader can use. Once the model is drawn the region stays in the
+// document, visually hidden, so "3D model ready" is still announced.
+export default function LoadStatus({
+  stage,
+  loaded,
+  total,
+  error,
+  onRetry,
+  hidden = false,
+}) {
   const pct =
     stage === 'fetching'
       ? Math.min(100, Math.round((loaded / total) * 100) || 0)
       : stage === 'error'
         ? 0
         : 100;
-  const busy =
-    stage === 'fetching' || stage === 'decoding' || stage === 'building';
+  const busy = ['fetching', 'decoding', 'building', 'engine', 'scene'].includes(
+    stage
+  );
+  if (hidden) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="load-status"
+        style={srOnly}
+      >
+        {statusText({ stage, loaded, total, error })}
+      </div>
+    );
+  }
   return (
     <div
       role="status"
       aria-live="polite"
       aria-busy={busy}
+      data-testid="load-status"
       style={{
         width: '100%',
         maxWidth: 340,

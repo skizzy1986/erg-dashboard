@@ -35,10 +35,21 @@ describe('LoadStatus', () => {
   it.each([
     ['decoding', 'Unpacking'],
     ['building', 'Building model'],
-    ['ready', 'Model loaded — 3D view coming next'],
+    ['engine', 'Loading 3D engine'],
+    ['scene', 'Building 3D model'],
+    ['ready', '3D model ready'],
   ])('names the %s stage', (stage, label) => {
     render(<LoadStatus stage={stage} loaded={0} total={1} />);
     expect(screen.getByRole('status').textContent).toBe(label);
+  });
+
+  it('stays announced but visually hidden once the model is drawn', () => {
+    render(<LoadStatus stage="ready" loaded={0} total={1} hidden />);
+    const status = screen.getByTestId('load-status');
+    expect(status).toHaveAttribute('role', 'status');
+    expect(status.textContent).toBe('3D model ready');
+    expect(status.style.position).toBe('absolute');
+    expect(screen.queryByTestId('load-bar')).toBeNull();
   });
 
   it('shows the error with a working Retry', async () => {

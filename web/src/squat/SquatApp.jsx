@@ -1,19 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import manifestUrl from './assets/squat-manifest.json?url';
 import { THEME } from '../constants/theme.js';
 import { DARK, LIGHT } from '../constants/themeValues.js';
 import { FONT } from '../constants/type.js';
 import { RADIUS, SPACE } from '../constants/tokens.js';
-import { alpha } from '../utils/themeCss.js';
 import { PHASES } from './constants/phases.js';
 import { useAnatomyData } from './hooks/useAnatomyData.js';
 import { useCapabilities } from './hooks/useCapabilities.js';
 import { useMediaQuery } from './hooks/useMediaQuery.js';
 import { useSquatHashState } from './hooks/useSquatHashState.js';
 import { useSquatTheme } from './hooks/useSquatTheme.js';
+import { useAnatomyViewState } from './hooks/useAnatomyViewState.js';
+import { useAnatomyScene } from './hooks/useAnatomyScene.js';
+import { loadSceneModule } from '../anatomy/scene/loadScene.js';
 import SquatHeader from './components/SquatHeader.jsx';
-import LoadStatus from './components/LoadStatus.jsx';
-import CapabilityNotice from './components/CapabilityNotice.jsx';
+import SquatStage from './components/SquatStage.jsx';
+import DepthControls from './components/DepthControls.jsx';
+import CameraControls from './components/CameraControls.jsx';
+import ViewOptions from './components/ViewOptions.jsx';
 import FormCheck from './components/FormCheck.jsx';
 import GuideDialog from './components/GuideDialog.jsx';
 import AttributionFooter from './components/AttributionFooter.jsx';
@@ -32,6 +36,12 @@ export const PAGE_DESCRIPTION =
 
 // The source page's phone breakpoint (max-width: 760px).
 const WIDE_QUERY = '(min-width: 761px)';
+// Touch-first devices skip the shadow map: the cheapest frame wins there.
+const COARSE_QUERY = '(pointer: coarse)';
+// The same query hooks/usePrefersReducedMotion.js reads, through the tool's
+// own useMediaQuery: importing the dashboard hook here split it into a shared
+// chunk on the dashboard's first paint (+0.3 KB of entry, measured).
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 function usePageMeta(resolved) {
   useEffect(() => {
@@ -69,59 +79,6 @@ function usePageMeta(resolved) {
       if (tc && prevTc != null) tc.setAttribute('content', prevTc);
     };
   }, [resolved]);
-}
-
-function Stage({ capabilities, data, wide }) {
-  const blocked = !capabilities.webgl || data.stage === 'unsupported';
-  return (
-    <section
-      aria-label="3D model"
-      style={{
-        ...card,
-        position: 'relative',
-        minHeight: wide ? 520 : 'min(58vh, 460px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: SPACE.xl,
-        overflow: 'hidden',
-        background: `radial-gradient(120% 90% at 50% 0%, ${THEME.surface} 0%, ${THEME.surfaceAlt} 60%, ${alpha(THEME.accent, '12')} 100%)`,
-      }}
-    >
-      <span
-        style={{
-          ...microLabel,
-          position: 'absolute',
-          top: SPACE.md,
-          left: SPACE.lg,
-        }}
-      >
-        3D model
-      </span>
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          left: '8%',
-          right: '8%',
-          bottom: '14%',
-          height: 1,
-          background: `linear-gradient(90deg, transparent, ${THEME.border}, transparent)`,
-        }}
-      />
-      {blocked ? (
-        <CapabilityNotice capabilities={capabilities} />
-      ) : (
-        <LoadStatus
-          stage={data.stage}
-          loaded={data.loaded}
-          total={data.total}
-          error={data.error}
-          onRetry={data.retry}
-        />
-      )}
-    </section>
-  );
 }
 
 function PhaseStrip({ onOpen, wide }) {
@@ -219,13 +176,37 @@ function PhaseStrip({ onOpen, wide }) {
   );
 }
 
-export default function SquatApp() {
+// `loadScene` is the seam to the three.js chunk; tests pass a fake scene.
+export default function SquatApp({ loadScene = loadSceneModule } = {}) {
   const wide = useMediaQuery(WIDE_QUERY);
   const { preference, resolved, setPreference } = useSquatTheme();
   const capabilities = useCapabilities();
   const [hash, setHash] = useSquatHashState();
   const data = useAnatomyData({ manifestUrl, capabilities });
   usePageMeta(resolved);
+  const coarsePointer = useMediaQuery(COARSE_QUERY);
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
+  const view = useAnatomyViewState(data.manifest?.meta.S.length ?? null);
+  const hostRef = useRef(null);
+  // From the capabilities alone, so it is known at the first paint: waiting
+  // for data.stage === 'unsupported' would remove the controls after they
+  // had been laid out.
+  const sceneBlocked = !(
+    capabilities.webgl &&
+    capabilities.decompression &&
+    capabilities.worker
+  );
+  const scene = useAnatomyScene({
+    containerRef: hostRef,
+    manifest: data.manifest,
+    buffer: data.buffer,
+    ready: data.stage === 'ready' && capabilities.webgl,
+    view,
+    themeName: resolved,
+    reducedMotion,
+    coarsePointer,
+    loadScene,
+  });
 
   const openGuide = (pane) => setHash({ guide: pane });
   const closeGuide = () => setHash({ guide: null });
@@ -325,7 +306,39 @@ export default function SquatApp() {
               : { display: 'flex', flexDirection: 'column', gap: SPACE.lg }
           }
         >
-          <Stage capabilities={capabilities} data={data} wide={wide} />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SPACE.md,
+              minWidth: 0,
+            }}
+          >
+            <SquatStage
+              capabilities={capabilities}
+              data={data}
+              scene={scene}
+              hostRef={hostRef}
+              wide={wide}
+            />
+            <DepthControls view={view} />
+            {/* Rendered from the first paint, disabled until the model is
+                drawn, so nothing below them moves when it is. Where the 3D
+                view cannot exist at all they are left out from the start. */}
+            {!sceneBlocked && (
+              <>
+                <CameraControls
+                  camera={scene.camera}
+                  disabled={scene.status !== 'ready'}
+                />
+                <ViewOptions
+                  layers={view.layers}
+                  onLayer={view.setLayer}
+                  disabled={scene.status !== 'ready'}
+                />
+              </>
+            )}
+          </div>
           <FormCheck
             summary={summary}
             kv={summary?.kv}

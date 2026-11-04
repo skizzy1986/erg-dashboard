@@ -103,9 +103,41 @@ export default [
     },
   },
   {
+    // three.js is ~130 KB gzipped and belongs in one lazily loaded chunk. Only
+    // the scene folder may import it; anywhere else it would be one stray
+    // import away from the squat tool's first paint — or the dashboard's.
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/anatomy/scene/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'three',
+              message:
+                'Import three.js only under src/anatomy/scene/ (loaded lazily via loadScene.js).',
+            },
+          ],
+          patterns: [
+            {
+              group: ['three/*'],
+              message:
+                'Import three.js only under src/anatomy/scene/ (loaded lazily via loadScene.js).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // The squat tool's tests read its committed data files from disk and
     // drive browser events jsdom provides beyond the app-wide list above.
-    files: ['src/squat/__tests__/**/*.{js,jsx}'],
+    // The anatomy posing tests read the same files.
+    files: [
+      'src/squat/__tests__/**/*.{js,jsx}',
+      'src/anatomy/**/__tests__/**/*.{js,jsx}',
+    ],
     languageOptions: {
       globals: {
         process: 'readonly',
