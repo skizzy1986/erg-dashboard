@@ -4,6 +4,13 @@
 > so Claude can work effectively without needing background explanations.
 > Think of it as a briefing document for a new team member.
 
+> **Working for someone other than Scott?** If the person in this session is an invited
+> collaborator (read-only access, working in their own clone), use the **`/collaborate`**
+> skill (`.claude/skills/collaborate/SKILL.md`). Its rules override the parts of this file
+> written for Scott's own sessions (Supabase writes, worktrees, running the full
+> pipeline). Never push to `skizzy1986/erg-dashboard`. Their onboarding starts at
+> `docs/onboarding/START_HERE.md`.
+
 ## What This App Is
 
 A personal coaching dashboard for rowing (erg), strength, and cycling training.
@@ -458,6 +465,7 @@ approval gates. It never advances without explicit go-ahead.
 /research <topic>        →  research only (Trend Researcher)
 /daily                   →  today's 30-min task list (read-only, no pipeline)
 /audit [period]          →  rank Sentry issues, verify against code, file GitHub Issues
+/collaborate [mode]      →  collaborator mode for invited read-only contributors (not Scott)
 ```
 
 ### The canonical chain (stage → Agency agent)

@@ -1,5 +1,10 @@
 # Welcome — onboarding for collaborators
 
+> **New to GitHub or software development?** Start with
+> [`START_HERE.md`](START_HERE.md) instead. It's five plain-English steps, and Claude Code
+> does the technical parts. Then use the copy-paste prompts in [`PROMPTS.md`](PROMPTS.md)
+> and the `/collaborate` mode. This page is the deeper technical guide for later.
+
 You have **read access** to this repository. That means you can clone it, read
 everything, open Discussions and issues, comment, and propose changes as pull
 requests **from your own fork**. You cannot push to this repository; Scott reviews
