@@ -66,6 +66,10 @@ async function openAuthed(page, context) {
   await installAppFixtures(context, { now: FIXED_TIME });
   await page.clock.setFixedTime(FIXED_TIME);
   await page.goto('/');
+  // AuthGate is lazy behind RouteRoot (#383), so straight after goto there is
+  // no splash YET and the count-0 check below would pass before it mounts —
+  // the baseline then captures the splash. Let the shell's chunks land first.
+  await page.waitForLoadState('networkidle');
   // The mobile splash overlays the tab tree, and toBeVisible() ignores
   // occlusion, so every mobile baseline would capture the splash instead.
   // The timeout must beat the default 5000ms — that is exactly the splash
