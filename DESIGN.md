@@ -29,16 +29,20 @@ already; see the reconciliation note in `NOTES.md`.
 
 ## Where the state actually is
 
-The app is **dark today**. Light is the target, not the present tense.
+The app is **light by default**. The flip shipped in #287.
 
 **Dark is retained as a second theme, not deleted.** `HANDOFF.md` §1 says dark is
 "dropped"; the design project's own `conventions.md`, revised 2026-08-22, overturns that
 in review — the erg room is dark at 5am and the live screen wants it. Light is primary and
 new work is designed on the light ground, but the dark values stay. Where the two
 disagree, `conventions.md` is newer.
-`web/src/constants/theme.js` holds 23 colour-named hex tokens; the light,
-role-named, `var(--color-*)` system described in the handoff has not shipped.
-**Do not assume light until the flip lands.**
+`web/src/constants/themeValues.js` holds the `LIGHT` and `DARK` palettes and sets
+`DEFAULT_THEME = LIGHT`. `web/src/main.jsx` emits it as `var(--color-*)` custom
+properties at `:root` and emits `DARK` only under `[data-theme='dark']`, for a surface
+that opts in. `web/src/constants/theme.js` is a pointer table of `var(--color-*)`
+strings with no hexes in it. `themeValues.js` is the only file allowed to write a
+palette hex down. The few off-palette literals left in `StrengthLogger.jsx` and
+`ErgLiveView.jsx` are pinned by `npm run check:colours`.
 
 ## The squat tool — a public surface
 

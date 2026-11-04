@@ -101,10 +101,15 @@ Authority order: `web/.design-sync/HANDOFF.md` (normative — the light redesign
 `DESIGN_BRIEF.md` (prescriptive — IA and scales) > `conventions.md` (descriptive — how it
 looks today, and what the design agent is prompted with).
 
-**The app is dark today. Light is the target — and dark is kept as a second theme, not
-deleted** (the erg room is dark at 5am). `web/src/constants/theme.js` still holds 23
-colour-named hex tokens; the light, role-named `var(--color-*)` system is specified but has
-not shipped. Do not assume light until the flip lands.
+**The app is light by default; dark is kept as a second theme, not deleted** (the erg room
+is dark at 5am). The light flip shipped in #287. `web/src/constants/themeValues.js` holds
+the `LIGHT` and `DARK` palettes and sets `DEFAULT_THEME = LIGHT`; `web/src/main.jsx` emits
+it as `var(--color-*)` custom properties at `:root` and emits `DARK` only under
+`[data-theme='dark']`, for a surface that opts in. `web/src/constants/theme.js` is a
+pointer table of `var(--color-*)` strings with no hexes in it, so `color: THEME.accent`
+follows whichever theme the document declares. `themeValues.js` is the only file allowed
+to write a palette hex down. The remaining off-palette literals in `StrengthLogger.jsx` and
+`ErgLiveView.jsx` are pinned by `npm run check:colours`, and that list can only shrink.
 
 **The property boundary** keeps three workstreams from colliding in the same lines:
 colour hexes belong to **#183**, `padding`/`margin`/`gap`/`borderRadius` to **S6**, and
