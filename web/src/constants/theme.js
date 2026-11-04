@@ -29,4 +29,6 @@ export const THEME = {
   divider: 'var(--color-divider)',
   neutralAccent: 'var(--color-neutral-accent)',
   textStrong: 'var(--color-text-strong)',
+  modelled: 'var(--color-modelled)',
+  measured: 'var(--color-measured)',
 };

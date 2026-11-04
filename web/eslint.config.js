@@ -81,6 +81,41 @@ export default [
     },
   },
   {
+    // The public squat tool streams and gunzips its data in a worker, so it
+    // touches browser APIs the dashboard never needed. Scoped to its subtree
+    // rather than widened for the whole app.
+    files: ['src/squat/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        globalThis: 'readonly',
+        Worker: 'readonly',
+        Response: 'readonly',
+        ReadableStream: 'readonly',
+        DecompressionStream: 'readonly',
+        CompressionStream: 'readonly',
+        Int8Array: 'readonly',
+        Int16Array: 'readonly',
+        Uint16Array: 'readonly',
+        Uint32Array: 'readonly',
+        Float32Array: 'readonly',
+      },
+    },
+  },
+  {
+    // The squat tool's tests read its committed data files from disk and
+    // drive browser events jsdom provides beyond the app-wide list above.
+    files: ['src/squat/__tests__/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        TextEncoder: 'readonly',
+        Storage: 'readonly',
+        HashChangeEvent: 'readonly',
+      },
+    },
+  },
+  {
     files: ['src/**/__tests__/**/*.{js,jsx}', 'src/**/*.test.{js,jsx}'],
     languageOptions: {
       globals: {
@@ -110,6 +145,7 @@ export default [
       globals: {
         console: 'readonly',
         process: 'readonly',
+        Buffer: 'readonly',
       },
     },
   },

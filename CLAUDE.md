@@ -50,9 +50,14 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
     views/          Extracted dashboard tabs (desktop + mobile)
       mobile/       Mobile tab views
       program/      ProgramView split-out pieces (#77)
+    squat/          Public squat tool at /squat (web only, no auth, not in the APK):
+                    constants/ (guide prose, form check, metrics, sources),
+                    utils/, hooks/, components/, workers/ (gzip decode),
+                    assets/ (extracted CC BY-SA anatomy data + LICENSE.md)
     App.jsx         Entry shell/router (~447 lines) — the former erg-dashboard.jsx monolith
     StrengthLogger.jsx Large component, not yet extracted (~1,665 lines)
-    main.jsx        Auth gate (Supabase email/password login)
+    RouteRoot.jsx   Picks the product: /squat → squat/SquatApp, else AuthGate (both lazy)
+    main.jsx        Bootstrap (Sentry, react-query, theme vars) → RouteRoot
   .design-sync/   The design surface — HANDOFF.md (normative light redesign),
                   DESIGN_BRIEF.md, CLAUDE.md (design-session briefing),
                   conventions.md (agent prompt header), NOTES.md, and the
@@ -60,6 +65,9 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
 supabase/
   functions/        Edge Functions (vitals-import, vitals-import-api,
                     vitals-sync, coach-chat)
+docs/squat/         Squat tool provenance, data format, reference values
+NOTICE.md           Third-party terms (BodyParts3D CC BY-SA, OpenSim models)
+LICENSE             Proprietary — all rights reserved, except NOTICE.md files
 coach/
   PROJECT_MANAGEMENT_ANALYSIS.md  PM/workflow analysis (2026-06-29)
   work-orders/      DEPRECATED — historical specs; tracking is now GitHub Issues
@@ -320,10 +328,21 @@ anything can render, so the client cannot be deferred. Note `createClient` pulls
 `RealtimeClient` unconditionally and nothing in `src/` uses realtime; reclaiming it
 means dropping to `auth-js` + `postgrest-js` directly, which is its own job.
 
+**Two products share the entry since the squat tool (`/squat`).** `main.jsx` renders
+`RouteRoot`, which lazy-loads `AuthGate` or `squat/SquatApp`, so the budgets are scoped
+per product (`web/scripts/check-bundle-size.mjs`): **ENTRY** walks main plus `AuthGate`'s
+static graph (a *boot key* — lazy, but nothing paints without it); **TOTAL** is every asset
+except the files only `/squat` can reach. **SQUAT_ENTRY** (main + `SquatApp`'s static graph)
+and **SQUAT_TOTAL** (squat-only files) are gated separately, and **SQUAT_DATA** caps the
+anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
+file over Workbox's 2 MiB ceiling. Measured 2026-11-04 on squat PR1: entry 146.1 / 150,
+total 384.8 / 400, squat entry 107.2 / 117, squat total 18.8 / 21 KB, data 2.20 MB.
+`/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
+
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
 at first paint, so it lands in the entry, where there is 15.1 KB. It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
-`npm run size` enforces both budgets inside the **Build** job.
+`npm run size` enforces every budget inside the **Build** job.
 
 **Never quote a bundle figure from this file — re-measure it.** These numbers drift, and
 a stale one has already mis-scoped work here (the doc said ~360 KB with ~40 KB spare when

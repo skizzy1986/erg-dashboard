@@ -155,6 +155,13 @@ const ALPHA_CONCAT = /\+ *['"][0-9a-fA-F]{2}['"]/g;
 // resolved to nothing and both declarations were dropped.
 const CAMEL_VAR = /var\(--color-[a-z0-9-]*[A-Z]/g;
 
+// three.js takes colours as 0xRRGGBB number literals, which the # pattern
+// above cannot see. The squat tool is the only three.js surface, and its scene
+// colours must come from tokens like everything else (PR2 adds them), so a hex
+// number under web/src/squat/ is rejected outright.
+const HEX_NUMBER = /\b0x[0-9a-fA-F]{6}\b/g;
+const isSquat = (p) => p.startsWith('web/src/squat/');
+
 const failures = [];
 const seen = new Map();
 let checked = 0;
@@ -182,6 +189,14 @@ for (const rel of scanned) {
         `${rel}:${i + 1}  ${m}… — custom properties are kebab-case; this names ` +
           'no property, so the declaration is dropped'
       );
+    }
+    if (isSquat(rel)) {
+      for (const m of line.match(HEX_NUMBER) ?? []) {
+        failures.push(
+          `${rel}:${i + 1}  ${m} — a three.js colour literal is pinned to one ` +
+            'theme; read it from a THEME token'
+        );
+      }
     }
     for (const hex of line.match(HEX) ?? []) {
       checked += 1;
