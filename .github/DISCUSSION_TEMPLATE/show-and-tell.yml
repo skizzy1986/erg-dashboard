@@ -1,0 +1,26 @@
+title: '[Prototype] '
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you built
+      description: One paragraph, plus screenshots or a short clip.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Fork / branch link
+      placeholder: https://github.com/<you>/erg-dashboard/tree/<branch>
+    validations:
+      required: true
+  - type: textarea
+    id: learned
+    attributes:
+      label: What you learned
+      description: What worked, what didn't, and anything in the code or docs that surprised you or slowed you down.
+  - type: textarea
+    id: next
+    attributes:
+      label: What it would take to ship
+      description: Tests, design review, data or licensing questions, and how big a PR it would be.

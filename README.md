@@ -9,6 +9,11 @@ fully personalised app.
 
 **v1.3.0** · React 19 + Supabase + Capacitor Android · Deployed on Vercel
 
+> **New collaborator?** Start at [`docs/onboarding/START_HERE.md`](docs/onboarding/START_HERE.md)
+> (no GitHub experience needed). From there, run the public squat tool with no secrets,
+> learn how it's built with Claude Code's `/collaborate` mode, and share ideas in
+> [Discussions](https://github.com/skizzy1986/erg-dashboard/discussions/categories/ideas).
+
 ---
 
 ## What This Is

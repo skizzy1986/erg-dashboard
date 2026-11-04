@@ -1,0 +1,61 @@
+title: '[Idea] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks — rough ideas are welcome. Good ones get promoted to issues on the Split IQ board.
+        New here? Start with [docs/onboarding](https://github.com/skizzy1986/erg-dashboard/tree/main/docs/onboarding).
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Squat tool (/squat)
+        - New movement
+        - 3D model / anatomy runtime
+        - Coaching content or science
+        - Data (lab data, importers, calibration)
+        - Erg dashboard
+        - Tooling / workflow
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What's missing, awkward or possible? Who notices it?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would you build or change? Sketches, links and references are welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Who is it for?
+      multiple: true
+      options:
+        - Coaches
+        - Athletes / lifters
+        - General fitness public
+        - Scott (personal training)
+        - Developers
+  - type: dropdown
+    id: size
+    attributes:
+      label: Rough size
+      options:
+        - Small (a day or less)
+        - Medium (a few days)
+        - Large (a slice of an epic)
+        - Not sure
+  - type: input
+    id: prototype
+    attributes:
+      label: Prototype link (optional)
+      description: A fork branch, preview URL or video.
