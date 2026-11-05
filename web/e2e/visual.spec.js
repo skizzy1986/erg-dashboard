@@ -48,7 +48,12 @@
 //     sh -c "npm ci && npm run test:visual:update"
 
 import { test, expect } from '@playwright/test';
-import { installAppFixtures, stubSupabase, seedSession } from './fixtures.js';
+import {
+  installAppFixtures,
+  stubSupabase,
+  seedSession,
+  clickAndSettle,
+} from './fixtures.js';
 
 // Monday 15 June 2026, midday UTC — mid-week, mid-month, and far enough from
 // either midnight that no timezone rounding can flip the calendar day.
@@ -85,26 +90,23 @@ async function openAuthed(page, context) {
 async function switchTo(page, button) {
   const root = page.locator('#root');
   const before = await root.innerHTML();
-  await button.click();
+  // Every tab is behind React.lazy with `fallback={null}` (App.jsx:402), so a
+  // changed #root does NOT prove the new tab rendered. #root innerHTML length
+  // at each stage of a PROGRAM switch:
+  //
+  //   before click 42989 -> nav highlighted 43219 -> chunk loaded 73883
+  //
+  // Screenshotting at the middle stage captures the outgoing tab plus a
+  // highlighted nav button — a 17%-of-pixels diff against the baseline. This
+  // used to wait on waitForLoadState('networkidle'), which resolves at once
+  // here (the state was already reached in openAuthed), so the race decided
+  // the result: identical code passed and failed three minutes apart on
+  // 2026-11-05. clickAndSettle waits for the chunk the click actually
+  // requested. The visual project keeps retries:0 so a race cannot hide.
+  await clickAndSettle(page, button);
   await expect
     .poll(async () => (await root.innerHTML()) !== before, { timeout: 10_000 })
     .toBe(true);
-  // Every tab is behind React.lazy with `fallback={null}` (App.jsx:402), so the
-  // poll above does NOT prove the new tab rendered. Measured on this branch,
-  // #root innerHTML length at each stage of a PROGRAM switch:
-  //
-  //   before click 42989 -> poll satisfied 43219 -> chunk loaded 73883
-  //
-  // The ~230 chars that satisfy the poll are the nav button's own active
-  // styling; the tab's ~30 KB of markup has not arrived. Screenshotting there
-  // captures the outgoing tab plus a highlighted nav button — a 17%-of-pixels
-  // diff against the baseline, not antialiasing noise. It is timing-dependent,
-  // so it passes often enough to read as a flake; the visual project sets
-  // retries:0 precisely so that cannot be papered over.
-  //
-  // Supabase is stubbed from the route handler, so the chunk is the only
-  // request left in flight. Same remedy as smoke.spec.js, same reason.
-  await page.waitForLoadState('networkidle');
 }
 
 test.describe('desktop shell', () => {

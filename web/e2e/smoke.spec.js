@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { installAppFixtures } from './fixtures.js';
+import { installAppFixtures, clickAndSettle } from './fixtures.js';
 import { DEFAULT_THEME } from '../src/constants/themeValues.js';
 
 // Derived from the palette, not typed. This assertion used to carry a literal
@@ -69,15 +69,14 @@ test.describe('dashboard smoke', () => {
         exact: true,
       });
       await expect(navButton).toBeVisible();
-      await navButton.click();
 
       // Every view is a lazy chunk (#331), so the click only STARTS a fetch.
       // Both assertions below are absence-checks, and an absence-check passes
       // trivially against a view that has not mounted yet — without this wait
-      // the whole suite would go green while proving nothing. Supabase is
-      // stubbed and fulfilled from the route handler, so the only outstanding
-      // request at this point is the chunk itself.
-      await page.waitForLoadState('networkidle');
+      // the whole suite would go green while proving nothing.
+      // waitForLoadState('networkidle') was a no-op here (the state is reached
+      // once per document, at load), so wait for the click's own requests.
+      await clickAndSettle(page, navButton);
 
       // The active tab button is highlighted with the accent border colour.
       await expect(navButton).toHaveCSS('border-top-color', ACCENT_RGB);
