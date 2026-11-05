@@ -1,4 +1,16 @@
-import { entryFilesFrom, isCountedAsset } from '../entry-graph.mjs';
+import {
+  entryFilesFrom,
+  firstPaintLeaks,
+  isCountedAsset,
+  navigationProblems,
+  onlyReachableVia,
+  precachedSquat,
+  prefixMismatch,
+  precacheUrls,
+  reachableFiles,
+  servesIndexNavigation,
+  squatOnlyFiles,
+} from '../entry-graph.mjs';
 
 // A trimmed but structurally faithful copy of a real dist/.vite/manifest.json
 // from this app after the #331 split: one HTML entry, a static shared chunk,
@@ -93,5 +105,340 @@ describe('entryFilesFrom', () => {
     expect(isCountedAsset('index-ghi.css')).toBe(true);
     expect(isCountedAsset('archivo-var-jkl.woff2')).toBe(false);
     expect(isCountedAsset('icon-192.png')).toBe(false);
+  });
+});
+
+// The shape this app's manifest takes since /squat landed: main.jsx renders
+// RouteRoot, which lazy-loads one product or the other. AuthGate statically
+// pulls supabase; SquatApp pulls a shared tokens chunk and lists its worker
+// and data files under `assets`.
+const TWO_PRODUCTS = {
+  'index.html': {
+    file: 'assets/index-a.js',
+    isEntry: true,
+    dynamicImports: ['src/AuthGate.jsx', 'src/squat/SquatApp.jsx'],
+    css: ['assets/index-a.css'],
+  },
+  'src/AuthGate.jsx': {
+    file: 'assets/AuthGate-b.js',
+    isDynamicEntry: true,
+    imports: ['index.html', '_supabase-c.js', '_tokens-t.js'],
+    dynamicImports: ['src/App.jsx'],
+  },
+  '_supabase-c.js': { file: 'assets/supabase-c.js' },
+  '_tokens-t.js': { file: 'assets/tokens-t.js' },
+  'src/App.jsx': {
+    file: 'assets/App-d.js',
+    isDynamicEntry: true,
+    imports: ['index.html'],
+  },
+  'src/squat/SquatApp.jsx': {
+    file: 'assets/SquatApp-e.js',
+    isDynamicEntry: true,
+    imports: ['index.html', '_tokens-t.js'],
+    assets: [
+      'assets/anatomyDecode.worker-f.js',
+      'assets/squat-anatomy-g.bin',
+      'assets/squat-manifest-h.json',
+    ],
+  },
+};
+
+describe('entryFilesFrom with bootKeys', () => {
+  it('adds the boot chunk and its static graph to first paint', () => {
+    expect(
+      entryFilesFrom(TWO_PRODUCTS, { bootKeys: ['src/AuthGate.jsx'] })
+    ).toEqual([
+      'assets/index-a.js',
+      'assets/index-a.css',
+      'assets/AuthGate-b.js',
+      'assets/supabase-c.js',
+      'assets/tokens-t.js',
+    ]);
+  });
+
+  it("does not follow a boot chunk's own dynamic imports", () => {
+    const files = entryFilesFrom(TWO_PRODUCTS, {
+      bootKeys: ['src/AuthGate.jsx'],
+    });
+    expect(files).not.toContain('assets/App-d.js');
+    expect(files).not.toContain('assets/SquatApp-e.js');
+  });
+
+  it('gives /squat a first paint with no supabase in it', () => {
+    const files = entryFilesFrom(TWO_PRODUCTS, {
+      bootKeys: ['src/squat/SquatApp.jsx'],
+    });
+    expect(files).toContain('assets/SquatApp-e.js');
+    expect(files).toContain('assets/tokens-t.js');
+    expect(files).not.toContain('assets/supabase-c.js');
+    expect(files).not.toContain('assets/AuthGate-b.js');
+  });
+
+  it('behaves exactly as before with no boot keys', () => {
+    expect(entryFilesFrom(TWO_PRODUCTS)).toEqual([
+      'assets/index-a.js',
+      'assets/index-a.css',
+    ]);
+  });
+
+  // A renamed AuthGate must fail loudly, not shrink the entry by its size.
+  it('throws on a boot key the manifest does not have', () => {
+    expect(() =>
+      entryFilesFrom(TWO_PRODUCTS, { bootKeys: ['src/Gone.jsx'] })
+    ).toThrow(/Boot key src\/Gone.jsx/);
+  });
+});
+
+describe('squat-only classification', () => {
+  it('walks static, dynamic and asset edges, stopping where told', () => {
+    const all = reachableFiles(TWO_PRODUCTS, ['index.html']);
+    expect(all.has('assets/App-d.js')).toBe(true);
+    expect(all.has('assets/anatomyDecode.worker-f.js')).toBe(true);
+    const dash = reachableFiles(TWO_PRODUCTS, ['index.html'], {
+      stopAt: ['src/squat/SquatApp.jsx'],
+    });
+    expect(dash.has('assets/SquatApp-e.js')).toBe(false);
+    expect(dash.has('assets/tokens-t.js')).toBe(true);
+  });
+
+  it('charges the tool only for what the dashboard cannot reach', () => {
+    expect(
+      squatOnlyFiles(TWO_PRODUCTS, 'src/squat/SquatApp.jsx').sort()
+    ).toEqual(
+      [
+        'assets/SquatApp-e.js',
+        'assets/anatomyDecode.worker-f.js',
+        'assets/squat-anatomy-g.bin',
+        'assets/squat-manifest-h.json',
+      ].sort()
+    );
+  });
+
+  it('throws when the squat root is missing', () => {
+    expect(() => squatOnlyFiles(TWO_PRODUCTS, 'src/nope.jsx')).toThrow(
+      /Squat root/
+    );
+  });
+
+  it('terminates on cycles and tolerates dangling keys', () => {
+    const cyclic = {
+      'index.html': {
+        file: 'assets/a.js',
+        isEntry: true,
+        imports: ['x', 'gone'],
+      },
+      x: { file: 'assets/x.js', dynamicImports: ['index.html'] },
+    };
+    expect([...reachableFiles(cyclic, ['index.html'])]).toEqual([
+      'assets/a.js',
+      'assets/x.js',
+    ]);
+  });
+});
+
+// The squat tool lazily loads its scene, and the scene chunk statically
+// imports back into the tool's chunk for the code they share.
+const WITH_SCENE = {
+  ...TWO_PRODUCTS,
+  'src/squat/SquatApp.jsx': {
+    ...TWO_PRODUCTS['src/squat/SquatApp.jsx'],
+    dynamicImports: ['src/anatomy/scene/createAnatomyScene.js'],
+  },
+  'src/anatomy/scene/createAnatomyScene.js': {
+    file: 'assets/squat-createAnatomyScene-z.js',
+    isDynamicEntry: true,
+    imports: ['src/squat/SquatApp.jsx', '_three-y.js'],
+  },
+  '_three-y.js': { file: 'assets/squat-three-y.js' },
+};
+const SCENE = 'src/anatomy/scene/createAnatomyScene.js';
+
+describe('onlyReachableVia (the 3D chunk)', () => {
+  it('is the scene and three only — not the tool chunk it imports', () => {
+    expect(onlyReachableVia(WITH_SCENE, SCENE).sort()).toEqual([
+      'assets/squat-createAnatomyScene-z.js',
+      'assets/squat-three-y.js',
+    ]);
+  });
+
+  it('is a subset of the squat-only files', () => {
+    const squat = new Set(squatOnlyFiles(WITH_SCENE, 'src/squat/SquatApp.jsx'));
+    for (const f of onlyReachableVia(WITH_SCENE, SCENE)) {
+      expect(squat.has(f)).toBe(true);
+    }
+  });
+
+  it('stays out of both first-paint graphs', () => {
+    const scene = onlyReachableVia(WITH_SCENE, SCENE);
+    for (const boot of ['src/AuthGate.jsx', 'src/squat/SquatApp.jsx']) {
+      const first = entryFilesFrom(WITH_SCENE, { bootKeys: [boot] });
+      expect(first.filter((f) => scene.includes(f))).toEqual([]);
+    }
+  });
+
+  it('names the missing key', () => {
+    expect(() =>
+      onlyReachableVia(WITH_SCENE, 'src/gone.js', 'Scene root')
+    ).toThrow(/Scene root src\/gone.js/);
+  });
+});
+
+describe('service worker inspection', () => {
+  const SW =
+    'e.precacheAndRoute([{url:"index.html",revision:"1"},{url:"assets/index-a.js",revision:null}],{});' +
+    'e.registerRoute(new e.NavigationRoute(e.createHandlerBoundToURL("index.html")));';
+
+  it('lists the precache URLs', () => {
+    expect(precacheUrls(SW)).toEqual(['index.html', 'assets/index-a.js']);
+  });
+
+  it('reads an empty or absent sw.js as no precache entries', () => {
+    expect(precacheUrls('')).toEqual([]);
+    expect(precacheUrls(undefined)).toEqual([]);
+    expect(precacheUrls('self.skipWaiting();')).toEqual([]);
+  });
+
+  it('finds the index.html navigation handler, minified or not', () => {
+    expect(servesIndexNavigation(SW)).toBe(true);
+    expect(
+      servesIndexNavigation(
+        'new s.NavigationRoute(s.createHandlerBoundToURL("index.html"))'
+      )
+    ).toBe(true);
+    expect(
+      servesIndexNavigation(SW.replace('index.html")))', 'other.html")))'))
+    ).toBe(false);
+    expect(servesIndexNavigation('')).toBe(false);
+  });
+});
+
+describe('squat split invariants', () => {
+  const BOOTS = ['src/AuthGate.jsx', 'src/squat/SquatApp.jsx'];
+
+  describe('firstPaintLeaks', () => {
+    it('passes when the scene is reachable only lazily', () => {
+      expect(firstPaintLeaks(WITH_SCENE, SCENE, BOOTS)).toEqual([]);
+    });
+
+    it('fails when the tool statically imports the scene', () => {
+      const leaky = {
+        ...WITH_SCENE,
+        'src/squat/SquatApp.jsx': {
+          ...WITH_SCENE['src/squat/SquatApp.jsx'],
+          imports: [...WITH_SCENE['src/squat/SquatApp.jsx'].imports, SCENE],
+        },
+      };
+      const problems = firstPaintLeaks(leaky, SCENE, BOOTS);
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatch(/src\/squat\/SquatApp.jsx's first paint/);
+      expect(problems[0]).toMatch(/squat-createAnatomyScene-z\.js/);
+      expect(problems[0]).toMatch(/squat-three-y\.js/);
+    });
+
+    it('fails when the entry statically imports the scene', () => {
+      const leaky = {
+        ...WITH_SCENE,
+        'index.html': {
+          ...WITH_SCENE['index.html'],
+          imports: [...(WITH_SCENE['index.html'].imports ?? []), SCENE],
+        },
+      };
+      const problems = firstPaintLeaks(leaky, SCENE, BOOTS);
+      // On both first paints: every boot graph walks the entry.
+      expect(problems).toHaveLength(2);
+      expect(problems[0]).toMatch(/src\/AuthGate.jsx's first paint/);
+    });
+
+    it('fails when the scene chunk is folded into a shared one', () => {
+      const merged = {
+        ...WITH_SCENE,
+        [SCENE]: { file: 'assets/tokens-t.js', imports: [] },
+      };
+      expect(firstPaintLeaks(merged, SCENE, BOOTS)[0]).toMatch(
+        /Nothing is reachable only through/
+      );
+    });
+
+    it('throws on a missing scene root', () => {
+      expect(() => firstPaintLeaks(WITH_SCENE, 'src/gone.js', BOOTS)).toThrow(
+        /src\/gone.js/
+      );
+    });
+  });
+
+  describe('prefixMismatch', () => {
+    const SQUAT_JS = /^squat-.*\.js$/;
+    const graph = ['assets/squat-a.js', 'assets/squat-b.js', 'assets/x.bin'];
+
+    it('passes when the graph and the names agree', () => {
+      expect(
+        prefixMismatch(
+          graph,
+          ['squat-b.js', 'squat-a.js', 'index.js'],
+          SQUAT_JS
+        )
+      ).toEqual([]);
+    });
+
+    it('fails on a squat-only chunk without the prefix', () => {
+      const [msg] = prefixMismatch(
+        [...graph, 'assets/three-c.js'],
+        ['squat-a.js', 'squat-b.js', 'three-c.js'],
+        SQUAT_JS
+      );
+      expect(msg).toMatch(/differ/);
+      expect(msg).toMatch(/three-c\.js/);
+    });
+
+    it('fails on a prefixed chunk the dashboard also reaches', () => {
+      expect(
+        prefixMismatch(
+          graph,
+          ['squat-a.js', 'squat-b.js', 'squat-shared.js'],
+          SQUAT_JS
+        )
+      ).toHaveLength(1);
+    });
+  });
+
+  describe('precachedSquat', () => {
+    it('passes with no squat URL in the precache', () => {
+      expect(precachedSquat(['index.html', 'assets/index-a.js'])).toEqual([]);
+      expect(precachedSquat([])).toEqual([]);
+    });
+
+    it('fails on a precached squat chunk or data file', () => {
+      const [msg] = precachedSquat([
+        'index.html',
+        'assets/squat-SquatApp-a.js',
+        'assets/squat-anatomy-b.bin',
+      ]);
+      expect(msg).toMatch(/squat-SquatApp-a\.js, assets\/squat-anatomy-b\.bin/);
+    });
+
+    it('does not mistake a non-asset path for one', () => {
+      expect(precachedSquat(['icons/squat-icon.png'])).toEqual([]);
+    });
+  });
+
+  describe('navigationProblems', () => {
+    it('passes when index.html serves navigations', () => {
+      expect(
+        navigationProblems(
+          'r(new s.NavigationRoute(s.createHandlerBoundToURL("index.html")))'
+        )
+      ).toEqual([]);
+    });
+
+    it('fails when the handler is missing or points elsewhere', () => {
+      expect(navigationProblems('')).toHaveLength(1);
+      expect(navigationProblems(undefined)).toHaveLength(1);
+      expect(
+        navigationProblems(
+          'new s.NavigationRoute(s.createHandlerBoundToURL("offline.html"))'
+        )
+      ).toHaveLength(1);
+    });
   });
 });

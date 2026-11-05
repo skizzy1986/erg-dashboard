@@ -30,6 +30,15 @@ describe('cssVars', () => {
     expect(wrong).toMatch(/--color-(\w+):\s*var\(--color-\1\)/);
   });
 
+  it('kebab-cases the multi-word anatomy tokens', () => {
+    // A camelCase property here would name nothing and the scene chips would
+    // paint unstyled — same failure as --color-accentAlt.
+    const out = cssVars(DARK);
+    expect(out).toContain('--color-anatomy-muscle: #a52529;');
+    expect(out).toContain('--color-anatomy-shadow: #000004;');
+    expect(cssVarName('anatomyBar')).toBe('--color-anatomy-bar');
+  });
+
   it('opens with a :root block', () => {
     const out = cssVars(DARK);
     expect(out.startsWith(':root {')).toBe(true);

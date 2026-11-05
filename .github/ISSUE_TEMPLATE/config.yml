@@ -3,3 +3,6 @@ contact_links:
   - name: 📖 How work flows here
     url: https://github.com/skizzy1986/erg-dashboard/blob/main/WORKFLOW.md
     about: Read WORKFLOW.md first — every change is an Issue → branch → PR → CI → main.
+  - name: 💡 Have an idea? Start a Discussion
+    url: https://github.com/skizzy1986/erg-dashboard/discussions/categories/ideas
+    about: Ideas and prototypes go to Discussions (Ideas / Show and tell); good ones get promoted to issues. New collaborators, see docs/onboarding.

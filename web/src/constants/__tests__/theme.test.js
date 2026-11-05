@@ -28,12 +28,19 @@ const EXPECTED_KEYS = [
   'divider',
   'neutralAccent',
   'textStrong',
+  'modelled',
+  'measured',
+  'anatomyMuscle',
+  'anatomyTendon',
+  'anatomyBone',
+  'anatomyShadow',
+  'anatomyBar',
 ];
 
 describe('THEME', () => {
-  it('has exactly the 24 expected keys (no more, no fewer)', () => {
+  it('has exactly the 31 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(THEME);
-    expect(keys).toHaveLength(24);
+    expect(keys).toHaveLength(31);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -49,9 +56,9 @@ describe('THEME', () => {
 });
 
 describe('DARK — the palette values THEME resolves to', () => {
-  it('has exactly the 24 expected keys (no more, no fewer)', () => {
+  it('has exactly the 31 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(DARK);
-    expect(keys).toHaveLength(24);
+    expect(keys).toHaveLength(31);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -86,6 +93,13 @@ describe('DARK — the palette values THEME resolves to', () => {
     expect(DARK.divider).toBe('#3e3e5a');
     expect(DARK.neutralAccent).toBe('#888888');
     expect(DARK.textStrong).toBe('#ffffff');
+    expect(DARK.modelled).toBe('#f2b45a');
+    expect(DARK.measured).toBe('#86a8ff');
+    expect(DARK.anatomyMuscle).toBe('#a52529');
+    expect(DARK.anatomyTendon).toBe('#d5dbe0');
+    expect(DARK.anatomyBone).toBe('#e6dccb');
+    expect(DARK.anatomyShadow).toBe('#000004');
+    expect(DARK.anatomyBar).toBe('#9aa3b5');
   });
 });
 

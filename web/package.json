@@ -34,13 +34,14 @@
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/network": "^8.0.0",
     "@capgo/capacitor-bluetooth-low-energy": "^8.2.7",
-    "@sentry/react": "^10.75.1",
+    "@sentry/react": "^11.10.0",
     "@supabase/supabase-js": "^2.118.0",
     "@tanstack/react-query": "^5.105.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "recharts": "^3.10.1",
-    "vite-plugin-pwa": "^1.3.0"
+    "three": "0.187.0",
+    "vite-plugin-pwa": "^2.0.0"
   },
   "overrides": {
     "eslint-plugin-react": {
@@ -48,10 +49,11 @@
     }
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@capacitor/cli": "^8.6.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
-    "@sentry/vite-plugin": "^5.4.1",
+    "@sentry/vite-plugin": "^11.10.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

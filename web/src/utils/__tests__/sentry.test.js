@@ -30,7 +30,31 @@ describe('initSentry', () => {
     const cfg = Sentry.init.mock.calls[0][0];
     expect(cfg.dsn).toBe('https://k@o1.ingest.de.sentry.io/1');
     expect(cfg.release).toBe('splitiq@1.3.0');
-    expect(cfg.sendDefaultPii).toBe(false);
+  });
+
+  // v11 dropped sendDefaultPii (now silently ignored) and defaults to sending
+  // cookies, user IP and all request/response bodies. Pin the restrictive
+  // config so a future cleanup cannot quietly widen what leaves the browser.
+  it('keeps data collection at the v10 restrictive default', () => {
+    vi.stubEnv('VITE_SENTRY_DSN', 'https://k@o1.ingest.de.sentry.io/1');
+    initSentry();
+
+    const cfg = Sentry.init.mock.calls[0][0];
+    expect(cfg).not.toHaveProperty('sendDefaultPii');
+    expect(cfg.dataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      httpBodies: [],
+      databaseQueryData: false,
+      queues: false,
+      genAI: { inputs: false, outputs: false },
+      graphQL: { document: false, variables: false },
+    });
+    for (const dir of ['request', 'response']) {
+      expect(cfg.dataCollection.httpHeaders[dir].deny).toEqual(
+        expect.arrayContaining(['forwarded', '-ip', 'remote-', 'via', '-user'])
+      );
+    }
   });
 
   // tracesSampleRate alone does nothing: browserTracing is not one of the

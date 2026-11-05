@@ -3,6 +3,12 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { DEFAULT_THEME } from './src/constants/themeValues.js';
+import {
+  SQUAT_CHUNK_NAME,
+  SQUAT_CODE_ROUTE,
+  SQUAT_GLOB_IGNORES,
+  squatChunkFileNames,
+} from './scripts/squatChunks.mjs';
 
 // The ground was written down in five places — index.html twice, two PWA
 // manifests and the Android launch theme — each with a "keep in sync" comment
@@ -43,6 +49,12 @@ const sentryEnvironment =
 // find splitiq-29 without this.
 const sentryUrl = process.env.SENTRY_URL || 'https://de.sentry.io';
 
+// The squat tool's own JS — its React chunk, the anatomy scene, three.js and
+// the decode worker — is named squat-*, so the service worker can leave it out
+// of the precache by name and the Android build can strip it with one glob.
+// The rules live in scripts/squatChunks.mjs, where they are unit-tested;
+// check-bundle-size.mjs asserts the build obeyed them.
+
 // Each key is present only when its value exists. `define` is a literal text
 // substitution that also applies under Vitest, where a defined key would defeat
 // the vi.stubEnv() the sentry tests rely on.
@@ -67,7 +79,29 @@ export default defineConfig({
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // The squat tool's data (2.2 MB anatomy stream + its manifest) is not
+        // precached: every installed dashboard would download it on update for
+        // a page most of them never open. The extensions already sit outside
+        // globPatterns; the ignore makes that a decision, not an accident.
+        // It is cached on first use instead (runtime rule below).
+        //
+        // The tool's JS is excluded the same way (#382 PR2): with three.js it
+        // is ~150 KB gzip that every installed dashboard would fetch on each
+        // update. It is cached on first use (squat-code rule below).
+        globIgnores: SQUAT_GLOB_IGNORES,
         runtimeCaching: [
+          {
+            // Content-hashed and immutable, so cache-first is safe, and a
+            // second visit — or an offline one — opens without the download.
+            urlPattern: /\/assets\/squat-(anatomy|manifest)-.*\.(bin|json)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'squat-data',
+              expiration: { maxEntries: 4 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          SQUAT_CODE_ROUTE,
           {
             urlPattern: /supabase\.co\/rest/,
             handler: 'NetworkFirst',
@@ -126,7 +160,22 @@ export default defineConfig({
   // is the only source that distinguishes a STATIC import (ships on first
   // paint) from a DYNAMIC one (does not) — filenames cannot, and guessing
   // would make the budget a fiction. Build metadata only; nothing imports it.
-  build: { sourcemap: uploadSourceMaps ? 'hidden' : false, manifest: true },
+  build: {
+    sourcemap: uploadSourceMaps ? 'hidden' : false,
+    manifest: true,
+    rolldownOptions: { output: { chunkFileNames: squatChunkFileNames } },
+  },
+  // The anatomy decode worker is only ever started by /squat, so EVERY worker
+  // this build emits gets the squat- prefix. A future dashboard worker would
+  // be named squat-* too — left out of the precache and stripped from the
+  // APK by ci-android.yml. `npm run size` catches it: its prefix invariant
+  // fails when a squat-* file is reachable from the dashboard. Give such a
+  // worker its own naming before adding it.
+  worker: {
+    rolldownOptions: {
+      output: { entryFileNames: SQUAT_CHUNK_NAME },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
@@ -154,11 +203,22 @@ export default defineConfig({
       //  - constants/**: pure data tables — no logic to cover; counting them
       //    only distorts the denominator.
       //  - test-setup.js: the test harness itself.
+      //  - squat/assets/**: the squat tool's extracted data and its licence —
+      //    no code (the .bin and .md are not even parseable as JS).
+      //  - anatomy/scene/**: needs a real WebGL context, which jsdom has not;
+      //    exercised by e2e/squat.spec.js. All of its maths lives in the
+      //    fully tested anatomy/utils, and its lifecycle is driven through
+      //    the loadScene seam in the hook tests.
       exclude: [
         'src/StrengthLogger.jsx',
         'src/main.jsx',
         'src/constants/**',
         'src/test-setup.js',
+        'src/squat/assets/**',
+        'src/anatomy/scene/**',
+        // Test data, not code: all:true would otherwise count the posing
+        // fixture (a .json under src/) as 0%-covered source.
+        'src/**/__tests__/fixtures/**',
       ],
       // Baseline measured 2026-06-29 after making scope explicit (was passing
       // by accident at ~74% because only test-imported files counted). These
@@ -172,9 +232,12 @@ export default defineConfig({
         // MobileToday, MobileApp and tsbBand tests; ~4 points headroom for
         // denominator drift, same margin as the 2026-08-22 ratchet which read
         // lines 84.31 / functions 79.33 / branches 76.31 and set 80/75/72).
-        lines: 85,
-        functions: 79,
-        branches: 76,
+        // Ratcheted 2026-11-04 (squat PR2a, #382): measured lines 93.16 /
+        // functions 88.95 / branches 84.12, set ~4–5 points under, same
+        // margin as the ratchets above.
+        lines: 88,
+        functions: 84,
+        branches: 80,
         // Commercial-baseline gate (80/80/70) for new/extracted code, applied
         // per-file as it lands. The global floor above ratchets toward this as
         // the monolith is decomposed and its exclusions fall away.
@@ -299,6 +362,10 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        // The 3D model's posing, colour and camera maths — pure functions,
+        // fixture-tested against the source page. Measured 2026-11-04: lines
+        // 99.69 / functions 100 / branches 96.73.
+        'src/anatomy/utils/**': { lines: 95, functions: 95, branches: 90 },
         // Extracted from main.jsx so the boot decision is testable. main.jsx
         // itself stays excluded — it is bootstrap only now.
         'src/AuthGate.jsx': { lines: 80, functions: 80, branches: 70 },

@@ -89,7 +89,7 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
-      - uses: gradle/actions/setup-gradle@v6.4.0
+      - uses: gradle/actions/setup-gradle@v6.4.1
         with:
           cache-provider: basic
       - name: Install web dependencies
@@ -99,6 +99,17 @@ jobs:
         with:
           name: web-dist
           path: web/dist/
+      # The public squat tool is web-only: the APK opens the dashboard and
+      # never routes to /squat. Its data (2.2 MB) and its JS — the tool chunk,
+      # the decode worker and the three.js scene (~140 KB gzip) — would ship
+      # as dead weight. vite.config.js names every squat-only file squat-*,
+      # and check-bundle-size.mjs fails the web build if that ever stops being
+      # true, so one glob is the whole strip. RouteRoot's lazy import names
+      # the tool chunk but never runs natively, and the service worker does
+      # not precache any of them (globIgnores), so nothing fetches them.
+      - name: Drop web-only squat chunks and data
+        run: rm -f dist/assets/squat-*
+        working-directory: web
       - name: Sync Capacitor assets
         run: npx cap sync android
         working-directory: web

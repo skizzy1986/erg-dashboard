@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { BluetoothLowEnergy } from '@capgo/capacitor-bluetooth-low-energy';
-import AuthGate from './AuthGate.jsx';
+import RouteRoot from './RouteRoot.jsx';
 import { createNotificationChannels } from './utils/notifications.js';
 import { initSentry } from './utils/sentry.js';
 import {
@@ -64,7 +64,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       fallback={({ resetError }) => <ErrorFallback resetError={resetError} />}
     >
       <QueryClientProvider client={queryClient}>
-        <AuthGate />
+        <RouteRoot />
       </QueryClientProvider>
     </Sentry.ErrorBoundary>
   </React.StrictMode>

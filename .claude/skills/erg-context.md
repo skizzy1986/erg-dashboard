@@ -8,7 +8,7 @@
 ## Project
 
 Personal coaching dashboard for rowing (erg), strength, and cycling training.
-Solo user: Scott. React 18 + Vite SPA under `web/` (Capacitor monorepo layout),
+Solo user: Scott. React 19 + Vite SPA under `web/` (Capacitor monorepo layout),
 Supabase (Postgres + Auth + Edge Functions), Vercel hosting, Vitest + React
 Testing Library. Full briefing: `CLAUDE.md`.
 
@@ -19,7 +19,7 @@ Testing Library. Full briefing: `CLAUDE.md`.
 - `web/src/hooks/` — React hooks; Supabase calls live here
 - `web/src/components/` — reusable JSX, props in, no direct Supabase calls
 - `web/src/views/` — tab-level JSX, composes components
-- `web/src/App.jsx` — entry shell/router (~515 lines); targeted edits only
+- `web/src/App.jsx` — entry shell/router (~519 lines); targeted edits only
 
 ## Code style (non-negotiable)
 
