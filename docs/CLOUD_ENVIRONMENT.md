@@ -14,9 +14,38 @@ One repository: `skizzy1986/erg-dashboard`. Because there is only one, the repo'
 
 ## Setup script
 
+**This is the whole script. Paste it entire** — it has two independent parts, and on
+2026-11-05 editing one of them out took the other with it, leaving a container with no Deno
+and no trust flag. The trust block is explained under *Project permissions*; it lives last
+because it must not be able to affect the Deno install above it.
+
 ```bash
 curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y
+
+trust_root=""
+if t="$(git rev-parse --show-toplevel 2>/dev/null)"; then trust_root="$t"; fi
+if [ -z "$trust_root" ]; then
+  for d in /home/user/*/; do
+    [ -f "${d}.claude/settings.json" ] && trust_root="${d%/}"
+  done
+fi
+if [ -n "$trust_root" ] && [ -f "$trust_root/.claude/settings.json" ]; then
+  node -e 'const f="/root/.claude.json",fs=require("fs"),root=process.argv[1];
+const d=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8").replace(/^\uFEFF/,"")):{};
+(d.projects??={})[root]??={};
+d.projects[root].hasTrustDialogAccepted=true;
+fs.writeFileSync(f,JSON.stringify(d,null,2));' "$trust_root"
+  echo "trust-flag: trusted $trust_root"
+else
+  echo "trust-flag: WARNING no checkout with .claude/settings.json found; permissions and hooks will be ignored" >&2
+fi
 ```
+
+Confirm both halves took, in a new session: `deno --version` prints 2.x, and
+`claude doctor` does not print `Ignoring 36 permissions.allow entries`. The script's own
+output is at `/root/.claude/environment-manager/setup-script-output`; **that file not
+existing at all means the script did not run** — on 2026-11-05 its absence, together with a
+missing `deno`, was how an emptied setup script was found.
 
 **Why Deno.** The edge-function tests must run the way `.github/workflows/ci-functions.yml`
 runs them: Deno v2.x, working directory `supabase/functions`.
