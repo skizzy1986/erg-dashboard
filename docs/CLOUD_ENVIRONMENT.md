@@ -171,28 +171,45 @@ gate. A `SessionStart` hook cannot do it — hooks are themselves gated by trust
 that would grant trust is the one trust is blocking:
 
 ```bash
-root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-if [ ! -f "$root/.claude/settings.json" ]; then
-  echo "trust-flag: '$root' has no .claude/settings.json — not the checkout; fix the setup script" >&2
-  exit 1
+trust_root=""
+if t="$(git rev-parse --show-toplevel 2>/dev/null)"; then trust_root="$t"; fi
+if [ -z "$trust_root" ]; then
+  for d in /home/user/*/; do
+    [ -f "${d}.claude/settings.json" ] && trust_root="${d%/}"
+  done
 fi
-node -e 'const f="/root/.claude.json",fs=require("fs"),root=process.argv[1];
+if [ -n "$trust_root" ] && [ -f "$trust_root/.claude/settings.json" ]; then
+  node -e 'const f="/root/.claude.json",fs=require("fs"),root=process.argv[1];
 const d=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8").replace(/^﻿/,"")):{};
 (d.projects??={})[root]??={};
 d.projects[root].hasTrustDialogAccepted=true;
-fs.writeFileSync(f,JSON.stringify(d,null,2));' "$root"
-echo "trust-flag: trusted $root"
+fs.writeFileSync(f,JSON.stringify(d,null,2));' "$trust_root"
+  echo "trust-flag: trusted $trust_root"
+else
+  echo "trust-flag: WARNING no checkout with .claude/settings.json found; permissions and hooks will be ignored" >&2
+fi
 ```
+
+**Put this block at the END of the setup script**, after the Deno install, and note that it
+never exits non-zero — a trust flag that cannot be set must not take the rest of the
+environment down with it.
+
+**The setup script's working directory is `/home/user`, not the checkout** (measured
+2026-11-05, the hard way: a first version of this block derived the root from `pwd` and
+failed the whole setup script with `trust-flag: '/home/user' has no .claude/settings.json`).
+The `cd supabase/functions` lines under **Setup script** are how a *session* runs the Deno
+tests, not setup-script content, and reading them as the latter is what produced the wrong
+assumption. So the block does not trust `pwd`: it takes `git rev-parse --show-toplevel` when
+that resolves, and otherwise finds the one directory under `/home/user` holding
+`.claude/settings.json`. Tested from `/home/user`, from the repo root and from `/tmp` —
+all three resolve to `/home/user/erg-dashboard`, exit 0.
 
 **Trust is keyed on the exact directory and is not inherited** (measured 2026-11-05:
 trusting `/home/user` leaves the warning in place; trusting `/home/user/erg-dashboard`
 clears it). The path is therefore derived rather than written literally — a hardcoded
 `/home/user/erg-dashboard` is correct in today's containers and fails silently the day the
 platform changes the checkout path, which is the same defect `test-hooks.sh` carried for
-months (#398). The guard clause exists so that failure is loud: no `.claude/settings.json`
-under the resolved root means the script stops instead of trusting the wrong directory.
-Tested from the repo root, from `web/` (git resolves the toplevel either way) and from
-`/tmp`, which exits 1 and writes nothing.
+months (#398).
 
 Because trust is per-directory, a **git worktree is not covered** by trusting the main
 clone — each `.claude/worktrees/<name>` is its own key. That only bites a local session;
