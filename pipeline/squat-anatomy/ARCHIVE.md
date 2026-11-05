@@ -23,7 +23,7 @@ The original zips are kept, unmodified, as assets on the GitHub Release
 | `squat-anatomy-v3.zip` | `24c9cdb3837cc5ddc26b748853067ba3ee5bd48106111843cd5d180ca8478677` | The full v3 project, as committed here plus the STLs and `dist/squat.html` (sha256 `02e1d133…6021749`, the page `/squat`'s data was extracted from). |
 | `squat-anatomy-preserve.zip` | `3de2e8095681ffe31fb02298248ebf589141ff739cc936bbce0781a26caaad71` | Files that existed only in the chat's cloud working folder (details below). |
 
-Check a download with `sha256sum <file>` against the table.
+Check a download with `sha256sum <file>` against the table. The same zips are mirrored in Scott's Drive (`SplitIQ/archives/`); [`docs/STORAGE.md`](../../docs/STORAGE.md) maps everything kept outside git.
 
 ### What's in the preserve bundle
 - **`v1/squat_v1.html`:** the v1 page (sha256 `009481f5…`). It's the source of 62 of the
