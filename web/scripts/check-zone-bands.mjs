@@ -4,8 +4,8 @@
 // whenever the rowing_cp anchor is revalidated. Anything written into prose is a
 // snapshot, and snapshots do not recompute themselves.
 //
-// This is not hypothetical. The same wrong AT ceiling of 205 W — the CP anchor
-// restated as the band's top, where CP sits a line above in every one of them —
+// This is not hypothetical. The same wrong AT ceiling — the CP anchor restated
+// as the band's top, where CP sits a line above in every one of them —
 // reached three separate documents:
 //
 //   CLAUDE.md                        fixed in #266
@@ -40,21 +40,23 @@ try {
     encoding: 'utf8',
   })
     .split('\n')
-    .filter(Boolean);
+    .filter(Boolean)
+    //  A tracked file deleted in the working tree (not yet staged) is still listed.
+    .filter((rel) => existsSync(join(repoRoot, rel)));
 } catch (e) {
   console.error(`check:zones: could not list tracked markdown — ${e.message}`);
   process.exit(1);
 }
 
-// Markdown emphasis lands inside the numbers (`AT **164–185** W`) and the bands
+// Markdown emphasis lands inside the numbers (`AT **160–180** W`) and the bands
 // wrap across lines in at least one document, so normalise before matching:
 // drop emphasis and backticks, collapse all whitespace to single spaces.
 const normalise = (s) => s.replace(/[*`]/g, '').replace(/\s+/g, ' ');
 
 // Three real phrasings have to match, so anchor on UT2 and read the next three
 // ranges in order rather than assuming where the labels sit:
-//   "UT2 113-144 / UT1 144-164 / AT 164-185 W"   labels interleaved
-//   "UT2 / UT1 / AT - ... 113-144 / 144-164 / 164-185 W"   labels grouped
+//   "UT2 110-140 / UT1 140-160 / AT 160-180 W"   labels interleaved
+//   "UT2 / UT1 / AT - ... 110-140 / 140-160 / 160-180 W"   labels grouped
 //  The separator class must be [\\s\\S], not [^0-9]: the labels themselves contain
 //  digits ("UT1", "UT2"), so a no-digits class cannot step over them and the
 //  interleaved phrasing never matches. That bug made this guard find 1 band of 3.
@@ -66,8 +68,14 @@ const BAND = new RegExp(
   'g'
 );
 
+//  Canary: the doctrine file must keep at least one worked band. It is the
+//  document agents read for zone maths, and a guard that only ever finds zero
+//  bands proves nothing — it would pass on a repo with every band deleted.
+const CANARY = '.claude/skills/training-science.md';
+
 const failures = [];
 let checked = 0;
+let canaryChecked = 0;
 
 for (const rel of files) {
   const text = normalise(readFileSync(join(repoRoot, rel), 'utf8'));
@@ -80,11 +88,15 @@ for (const rel of files) {
     //  Derive against the CP the document itself quotes, so a doc written for a
     //  different anchor is not reported as wrong when it is merely historical.
     //  Both approximation signs count. The design-side mirrors are committed
-    //  verbatim and write "CP ≈ 205W"; a tilde-only class reads that as quoting
+    //  verbatim and write "CP ≈ <n>W"; a tilde-only class reads that as quoting
     //  no CP at all and fails a document whose bands are in fact correct — and
     //  the mirror cannot be hand-edited to suit the guard.
+    //  Read the CP from before the band's LAST "UT2" label, not the match start:
+    //  the lazy prefix can begin at an earlier UT2 (a line of zone percentages,
+    //  say) and step over the "CP ~200 W" that introduces the band itself.
+    const bandStart = m.index + m[0].lastIndexOf('UT2');
     const cpMatch = text
-      .slice(0, m.index)
+      .slice(0, bandStart)
       .match(/[~≈]\s?(\d{2,4})\s?W(?![^ ]*\/)/g);
     const cp = cpMatch
       ? Number(cpMatch[cpMatch.length - 1].match(/\d+/)[0])
@@ -97,6 +109,7 @@ for (const rel of files) {
     }
 
     checked += 1;
+    if (rel === CANARY) canaryChecked += 1;
     const zones = derivePaceZones(cp);
     const claimed = m.slice(1, 7).map(Number);
 
@@ -111,6 +124,18 @@ for (const rel of files) {
       }
     });
   }
+}
+
+if (checked === 0) {
+  failures.push(
+    'no published bands found — the guard would be vacuous. Keep the labelled ' +
+      'worked example ("CP ~200 W (example only): UT2 … / UT1 … / AT … W").'
+  );
+} else if (canaryChecked === 0) {
+  failures.push(
+    `${CANARY} publishes no checkable UT2/UT1/AT band — it must keep the ` +
+      'labelled worked example so this guard is never vacuous.'
+  );
 }
 
 if (failures.length) {

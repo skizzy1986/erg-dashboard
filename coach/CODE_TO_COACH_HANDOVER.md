@@ -12,15 +12,17 @@ Reconciled `CLAUDE.md` (repo root) to current reality and opened it as a PR. Fac
 were verified read-only against the live DB (`swdrueaserjzhuxnzmeu`) before writing —
 not taken from the handover text alone. Changes:
 
-- **Model** reverted from polarised → **pure base + strength** (bike is complementary
-  Z1/Z2 only; 2 Upper + 2 Lower per week; Lowers ≥3 days apart).
-- **CP anchor** ~190W → **~205W provisional (rowing)** + zones UT2 113–144 /
-  UT1 144–164 / AT **164–185** W. Revalidate via rested 1-min + 4-min.
-  *(Corrected 2026-08-24: this originally read `AT 164–205 W`, restating the CP
-  anchor as the band's ceiling. `derivePaceZones(205)` yields 164–185. The same
-  error reached repo `CLAUDE.md` and `.design-sync/CLAUDE.md`, fixed in #266 and
-  #268; the design-sync copies are now checked against the code by
-  `npm run check:design-sync`.)*
+- **Model** recorded as the current training model, now the live
+  `anchors.training_model` row (its reasoning is in `coach_log` decisions).
+- **CP anchor** recorded as the live `anchors.rowing_cp` row, quoted with its status;
+  the value itself is not kept in git. Zones are fractions of CP from
+  `derivePaceZones(cp)`. Worked example — CP ~200 W (example only): UT2 110–140 /
+  UT1 140–160 / AT 160–180 W. Revalidate via rested 1-min + 4-min.
+  *(Corrected 2026-08-24: this originally restated the CP anchor as the AT band's
+  ceiling. The same error reached repo `CLAUDE.md` and `.design-sync/CLAUDE.md`,
+  fixed in #266 and #268; published bands are now checked against the code by
+  `npm run check:zones`. Real values were removed from this file in the athlete-data
+  cleanup — read them live.)*
 - **Supabase Schema** section rewritten to the real **13 tables / 22 migrations**
   (the whole strength subsystem), with corrected `sessions` columns (`date` is text
   `M/D/YY` unpadded, targets live in `label` + `coach_note`), corrected `vitals`, the
@@ -55,8 +57,8 @@ Claude Code auto-loads it every session; keep it correct and neither side drifts
 - **Keeping in sync**:
   - *Schema change* → flows through Code: `apply_migration` (named) **and** update the
     *Supabase Schema* section in the **same** change. Never let the DB and the doc diverge.
-  - *Model / anchor change* (CP, zones, base-vs-polarised, strength split) → update the
-    *Training Science Domain* section.
+  - *Model / anchor change* (CP, zones, training model, strength split) → supersede the
+    `anchors` row; the *Training Science Domain* section names keys, never values.
   - *Integration change* → update *Integration Roadmap* / *MCP Servers*.
 - **Bridge discipline persists**: Scott authorises consequential/destructive/schema
   changes; review structure before material writes; **read back every write**. Honour

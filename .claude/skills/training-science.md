@@ -11,10 +11,24 @@ description: >
 
 - **Name**: Scott
 - **Primary sport**: Indoor rowing (Concept2 erg) + supporting strength + cycling
-- **Current phase**: Base — building aerobic foundation before higher intensity
-- **MHR**: 170 bpm
-- **CP estimate**: ~190W (critical power test pending 1 Jul)
-- **Key race target**: 2000m erg (the "2k" — the standard rowing benchmark)
+
+Every personal value lives in the Supabase `anchors` table, not in git. Read it
+live and quote each value with its status (`provisional` | `unvalidated` |
+`confirmed`):
+
+| Anchor key | What it holds |
+|---|---|
+| `rowing_cp` | Rowing critical power (W) — every rowing zone derives from it |
+| `bike_ftp` | Bike functional threshold power (W) |
+| `hr_max_working` | Working max heart rate (bpm) — every HR zone derives from it |
+| `drag_factor` | Standard erg drag factor |
+| `current_phase` / `current_block` | Where the athlete is in the plan |
+| `training_model` | The current intensity model, in words |
+| `season_goal` | The target the season is built around |
+| `athlete_profile` | Short non-numeric background |
+| `niggle:<slug>` | One row per active injury; `note` carries the guardrail |
+
+No row → say the value is unavailable. Never fall back to a remembered number.
 
 ## Training Load Model (Banister / Coggan)
 
@@ -34,15 +48,28 @@ Rises quickly after hard training, drops quickly during recovery.
 
 The EMA formula: `new = prev * (1 - 1/days) + todayTSS * (1/days)`
 
-## Heart Rate Zones (based on MHR = 170)
+## Heart Rate Zones (fractions of `hr_max_working`)
 
-| Zone | Name | % MHR | BPM Range | Purpose |
-|------|------|--------|-----------|---------|
-| Z1   | UT2  | <60%   | <102      | Active recovery |
-| Z2   | UT1  | 60–75% | 102–128   | Aerobic base (primary zone) |
-| Z3   | AT   | 75–85% | 128–145   | Aerobic threshold |
-| Z4   | TR   | 85–92% | 145–156   | Lactate threshold |
-| Z5   | AN   | >92%   | >156      | Anaerobic / VO₂max |
+The bands are percentages of the live `hr_max_working` anchor. The app computes
+the bpm at render time with `deriveHrBands(mhr)` from the `pctLow`/`pctHigh`
+fractions on `HR_ZONES` (`web/src/constants/trainingConfig.js`); with no anchor it
+shows "—" rather than guessing.
+
+| Zone | Name | % of `hr_max_working` | Purpose |
+|------|------|-----------------------|---------|
+| UT2  | Aerobic base | < 70 % | Long, conversational aerobic work |
+| UT1  | Aerobic development | 70–80 % | Upper aerobic, sustainable 45–60 min |
+| AT   | Threshold | 80–87 % | Lactate threshold |
+| TR   | VO₂ / transport | 87–92 % | VO₂max intervals |
+| AN   | Anaerobic | > 92 % | Race pace |
+
+Worked example only (MHR 180, not the athlete's): UT1 = 126–144 bpm.
+
+## Rowing Power Zones (fractions of `rowing_cp`)
+
+`derivePaceZones(cp)` returns the watt bands: UT2 55–70 %, UT1 70–80 %, AT
+80–90 % of CP. Worked example — CP ~200 W (example only): UT2 110–140 / UT1 140–160 / AT 160–180 W.
+`npm run check:zones` recomputes this line against the code and requires it to exist.
 
 ## Readiness Algorithm (current implementation)
 
@@ -74,13 +101,13 @@ Returns slope (W/day), R² (confidence), and a verdict (rising/plateaued).
 **Annual structure**: Base → Build → Competition → Transition
 
 **Microcycle**: alternating weeks
-- Home week = loading (full training roster)
-- FIFO week = deload (reduced volume, maintain intensity)
-The roster alternates starting from a fixed anchor date.
+- Loading week (full training volume)
+- Deload week (reduced volume, maintain intensity)
+The alternation starts from a fixed anchor date.
 
-**Training intensity distribution (Seiler polarized model)**:
-- ~80% Z2 aerobic (UT1) — the majority of all sessions
-- ~20% hard (AT/TR/AN) — threshold intervals, VO₂max, race-pace work
+**Training intensity distribution**: set by the live `anchors.training_model` row
+(its `valid_from` dates the change); the reasoning sits in `coach_log` decisions.
+Do not restate the model here — code and prose cite the anchor.
 
 **Strength philosophy**: Supports rowing, not primary. Lower body (squat, deadlift,
 Romanian deadlift, leg press) and upper pull (rows, pullups) are priority.

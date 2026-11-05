@@ -52,11 +52,13 @@ Terms that appear on screen. Get these wrong and the design is wrong.
   are +10 / −10 / −30.
 - **sRPE** — how hard a session felt, 1–10. Subjective, and the only thing the athlete
   types after a session.
-- **CP** — critical power, the wattage sustainable more or less indefinitely. ~205W,
-  provisional. Every rowing zone derives from it.
-- **UT2 / UT1 / AT** — aerobic training bands off CP: 113–144 / 144–164 / 164–185 W.
-  Almost all rowing volume is UT1/UT2; there is no programmed threshold work right now.
-- **Microcycle** — one week's pattern. **Home weeks** load, **FIFO weeks** deload.
+- **CP** — critical power, the wattage sustainable more or less indefinitely. Every
+  rowing zone derives from it. Use CP ~200 W (example only — the live value is the
+  `rowing_cp` anchor) in any design sample.
+- **UT2 / UT1 / AT** — aerobic training bands off CP (`derivePaceZones(cp)`); at the
+  example CP: 110–140 / 140–160 / 160–180 W. The current intensity model is the live
+  `training_model` anchor — never write the real numbers into a design.
+- **Microcycle** — one week's pattern. Loading weeks alternate with deload weeks.
 - **Readiness** — a derived morning score from RHR, HRV and sleep against personal
   baselines. Returns *null* when RHR is missing — that is a real state and needs a design.
 

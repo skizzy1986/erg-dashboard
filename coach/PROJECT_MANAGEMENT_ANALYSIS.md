@@ -87,7 +87,7 @@ The WO convention's selling point was "source of truth = front-matter + git log,
 no index to drift" (`coach/work-orders/WORK_ORDERS.md`). At just **five** work
 orders it has already collided:
 - **Two `WO-004`s:** `WO-004-ci-process.md` and `WO-004-strength-templates.md`
-  (both `status: done`) share one ID.
+  (the latter since deleted; both `status: done`) share one ID.
 - **Three `WO-005`s** for one feature (Google Health API): a `draft` in
   `work-orders/`, plus `coach/WO-005-session-handoff.md` and
   `coach/WO-005-cowork-deploy-handover.md` sitting loose in `coach/`.

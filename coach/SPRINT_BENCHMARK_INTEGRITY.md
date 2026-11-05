@@ -18,7 +18,7 @@
 |---|---|---|---|
 | T1 — Fix live erg capture | [#174](https://github.com/skizzy1986/erg-dashboard/issues/174) | ✅ **DONE** | PR #173 |
 | T2 — Benchmark due/overdue indicator | [#175](https://github.com/skizzy1986/erg-dashboard/issues/175) | ✅ **DONE** | PRs #189, #190 |
-| T3 — Reconcile CP 190 → live anchor | [#176](https://github.com/skizzy1986/erg-dashboard/issues/176) | open | — |
+| T3 — Reconcile legacy CP constant → live anchor | [#176](https://github.com/skizzy1986/erg-dashboard/issues/176) | open | — |
 | T4 — Confidence Migration panel | [#177](https://github.com/skizzy1986/erg-dashboard/issues/177) | open | — |
 | T5 — Pre-benchmark checklist | [#178](https://github.com/skizzy1986/erg-dashboard/issues/178) | open | — |
 | T6 — Live-wire ergTrend / deriveTargets | [#179](https://github.com/skizzy1986/erg-dashboard/issues/179) | open | — |
@@ -42,8 +42,8 @@ line. Their state moves too — check the issues, not this list.
 
 - **The benchmarks slipped entirely.** The CP retest (session 61, 7/5) was
   **cancelled**, never rescheduled. No 5k benchmark session exists in the DB.
-  The `anchors` table is untouched since 2026-07-01: `rowing_cp` still 205 W
-  provisional, `bike_ftp` still unvalidated, `current_block` still names the
+  The `anchors` table is untouched since 2026-07-01: `rowing_cp` still on its
+  provisional value, `bike_ftp` still unvalidated, `current_block` still names the
   July 8–21 block. A month of benchmark cadence was lost silently — exactly
   the failure mode T2 below is designed to catch.
 - **The repo moved.** The App.jsx milestone landed (`erg-dashboard.jsx`
@@ -70,9 +70,9 @@ scheduling, and stale at the point of display:
   benchmark rowed against the live view is silently lost.
 - **Scheduling:** no code flags a due/overdue benchmark — which is how the CP
   retest vanished in July without a trace.
-- **Display:** `trainingConfig.js:148` still hardcodes `cpEstimate: 190`
-  against the live 205 provisional anchor, and `trainingConfig.js:326`
-  derives a static `PACE_ZONES` export from that stale 190. The
+- **Display:** `trainingConfig.js:148` still hardcodes a legacy `cpEstimate`
+  constant against the live provisional `rowing_cp` anchor, and `trainingConfig.js:326`
+  derives a static `PACE_ZONES` export from that stale constant. The
   PENDING→MEASURED panel (`logs.js:454`, `JournalView.jsx:284`) still shows
   June text; `ergTrend` (`ErgView.jsx:29`) is still a hardcoded array.
 
@@ -190,7 +190,7 @@ the in-flight split.
 
 ---
 
-### T3 — Reconcile displayed CP (190) with live anchor (205)
+### T3 — Reconcile displayed CP (legacy constant) with the live `rowing_cp` anchor
 
 **Size: S — Week 2** · Issue [#176](https://github.com/skizzy1986/erg-dashboard/issues/176) · open
 
@@ -201,16 +201,16 @@ stale hardcoded estimate while a newer provisional number exists in the DB.
 **Acceptance criteria:**
 
 1. Static copy that currently contradicts the live anchor
-   (`CRITICAL_POWER.cpEstimate = 190` at `trainingConfig.js:148`, the static
+   (the legacy `CRITICAL_POWER.cpEstimate` constant at `trainingConfig.js:148`, the static
    `PACE_ZONES = derivePaceZones(CRITICAL_POWER.cpEstimate)` export at
-   `trainingConfig.js:326` and its consumers, the `CALIBRATION_STATUS` "190W
-   (untested)" row, `FTP_TEST`'s past-dated copy) is updated, made
+   `trainingConfig.js:326` and its consumers, the `CALIBRATION_STATUS` legacy-CP
+   "(untested)" row, `FTP_TEST`'s past-dated copy) is updated, made
    live-anchor-driven, or explicitly marked historical/superseded.
 2. Given `useAnchors` is loading or unreachable, affected copy shows a neutral
-   "unavailable" state — never a silent fallback to 190.
+   "unavailable" state — never a silent fallback to the legacy constant.
 3. No new hardcoded numeric CP value is introduced — per the 2026-07-02 Coach
    decision, CP is read live from `anchors`.
-4. Zero remaining instances of "190" presented as a current CP number in the
+4. Zero remaining instances of the legacy constant presented as a current CP number in the
    affected files (kept historical references explicitly labeled).
 
 **Edge cases:** React Query pending vs genuinely null anchor read differently;
@@ -375,7 +375,7 @@ separate product decision).
 |---|---|---|---|---|
 | 1 (Aug 18–24) | T1 — Fix live capture bug | M | none | ✅ done (#174) |
 | 1 (Aug 18–24) | T2 — Overdue/upcoming benchmark indicator | M | none | ✅ done (#175) |
-| 2 (Aug 25–31) | T3 — Reconcile 190 vs live 205 display | S | none | open (#176) |
+| 2 (Aug 25–31) | T3 — Reconcile legacy constant vs live `rowing_cp` display | S | none | open (#176) |
 | 2 (Aug 25–31) | T4 — Refresh Confidence Migration panel | M | T3 | open (#177) |
 | 2/3 boundary | T5 — Pre-benchmark prep checklist | S | T2 ✅ | open (#178) |
 | 3 (Sep 1–7) | T6 — Live-wire ergTrend / HR130 / deriveTargets | L (splittable) | none | open (#179) |
@@ -390,7 +390,7 @@ benchmark data starts flowing, with T8 last.
 
 **Both week-1 tasks are now done, which unblocks T5.** The remaining blocker on
 T7/T8 is not code: it is that a benchmark still has to be *scheduled and
-performed*. As of 2026-08-21 `anchors.rowing_cp` is still 205 W provisional,
+performed*. As of 2026-08-21 `anchors.rowing_cp` is still provisional,
 untouched since 07-01, and no CP retest or 5k is on the calendar. T2 now
 surfaces all three as overdue — which is the sprint working as designed, and
 also a standing prompt for the Coach-lane decision below.
@@ -414,7 +414,7 @@ also a standing prompt for the Coach-lane decision below.
   ISO date)
 - `web/src/hooks/useOfflineQueue.js` — queue drain re-inserts the same shape
 - `web/src/hooks/useAnchors.js` — live anchor read (no write path, by design)
-- `web/src/constants/trainingConfig.js:148` — stale `cpEstimate: 190`;
+- `web/src/constants/trainingConfig.js:148` — stale legacy `cpEstimate` constant;
   `:326` — static `PACE_ZONES` derived from it; `:44-206` —
   `CALIBRATION_STATUS`, `POWER_DURATION` (actualW always null), `FTP_TEST`
 - `web/src/views/ErgView.jsx:29` (hardcoded ergTrend), `:222-223` (live CP),

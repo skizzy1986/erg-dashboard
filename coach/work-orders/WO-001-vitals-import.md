@@ -5,7 +5,7 @@ status: done
 author: coach
 created: 2026-06-22
 targets: [supabase-migration, edge-function, cron]
-schedule: "0 3 * * *"   # 03:00 UTC ~= 11:00 Perth, after the morning health sync
+schedule: "0 3 * * *"   # 03:00 UTC ~= 11:00 athlete-local (UTC+8), after the morning health sync
 notify: "#build"         # posts result on success/failure; activates once WO-002 sets the webhook
 reversible: true
 depends_on: []           # external prereq: sheet published to web as CSV (Bridge) — see Scope. Notify uses WO-002's webhook (best-effort; skipped if unset)
@@ -20,7 +20,7 @@ acceptance:
 # WO-001 · Vitals daily import
 
 ## Goal
-Keep `public.vitals` current automatically — including during FIFO swings when Scott is not prompting Coach — by pulling the auto-updated *Health Data Export* sheet daily and upserting recovery metrics (HRV / RHR / sleep / bodyweight). Full mapping rationale and caveats: `VITALS_IMPORT.md`.
+Keep `public.vitals` current automatically — including during stretches when Scott is not prompting Coach — by pulling the auto-updated *Health Data Export* sheet daily and upserting recovery metrics (HRV / RHR / sleep / bodyweight). Full mapping rationale and caveats: `VITALS_IMPORT.md`.
 
 ## Scope
 - **In:** unique constraint, scheduled edge function, cron registration.
@@ -108,7 +108,7 @@ on conflict (user_id, date) do update set
 select cron.schedule('vitals-daily-import', '0 3 * * *',
   $$ select net.http_post(url := '<edge-function-url>', headers := '{...}'::jsonb) $$);
 ```
-03:00 UTC ~= 11:00 Perth, after the ~10:00 Perth sync. Adjust if the sync time drifts.
+03:00 UTC ~= 11:00 athlete-local (UTC+8), after the ~10:00 athlete-local sync. Adjust if the sync time drifts.
 
 ## Notify
 Posts to `#build` via the shared webhook on success and failure (see the function tail). Best-effort: guarded on `SLACK_BUILD_WEBHOOK_URL`, wrapped in try/catch — a Slack outage never fails the import. Activates automatically once WO-002 sets the secret; until then the calls no-op.

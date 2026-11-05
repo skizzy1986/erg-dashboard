@@ -36,9 +36,9 @@ export const StrengthSession = () => (
         srpe: 7,
         prs: 2,
         exercises: [
-          { name: 'Bench Press', weight: '80kg', volume: '2400', e1rm: '95', pr: true },
-          { name: 'Chest-Supported Row', weight: '60kg', volume: '2160', e1rm: '74' },
-          { name: 'Overhead Press', weight: '45kg', volume: '1080', e1rm: '55', pr: true },
+          { name: 'Bench Press', weight: '50kg', volume: '1500', e1rm: '60', pr: true },
+          { name: 'Chest-Supported Row', weight: '40kg', volume: '1200', e1rm: '50' },
+          { name: 'Overhead Press', weight: '30kg', volume: '900', e1rm: '35', pr: true },
         ],
       }}
     />
@@ -52,7 +52,7 @@ export const PlannedSession = () => (
         type: 'Z2 Aerobic',
         _isErg: true,
         status: 'planned',
-        label: 'UT1 45min @ 150-160W',
+        label: 'UT1 45min @ 140-160W',
         date: '6/21',
         duration: '45min',
         distance_m: null,

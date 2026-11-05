@@ -17,7 +17,7 @@ export const ProgrammeWeek = () => (
       rail={{ top: 'TUE', big: '2', bottom: 'wk4' }}
     />
     <WorkoutItem
-      session={{ label: 'Lower 1 - RDL led', slot: 'AM', note: 'RDL 4x6 @ RPE 7. Stop at any hamstring signal.' }}
+      session={{ label: 'Lower 1 - RDL led', slot: 'AM', note: 'RDL 4x6 @ RPE 7. Stop if anything hurts.' }}
       rail={{ top: 'WED', big: '3', bottom: 'wk4' }}
       highlight
     />

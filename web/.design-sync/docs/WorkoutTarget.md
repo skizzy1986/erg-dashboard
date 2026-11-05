@@ -17,7 +17,7 @@ than rendering nothing, so the slot in the layout stays stable.
     label: 'UT1 45min',
     duration: 45,
     srpe: 5,
-    notes: 'Hold 150-160W. Rate 20-22. Stop if the hamstring talks.',
+    notes: 'Hold 140-160W. Rate 20-22. Stop if anything hurts.',
   }}
 />
 ```

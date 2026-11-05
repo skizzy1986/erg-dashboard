@@ -92,8 +92,31 @@ Projects: `erg-dashboard` (the app) and `erg-dashboard-functions` (edge function
 
 CTL = 42-day exponential average of training load (fitness). ATL = 7-day
 average (fatigue). TSB = CTL − ATL (form). sRPE = session effort, 1–10.
-CP = critical power (~205 W rowing, provisional). Deeper domain detail:
-`.claude/skills/training-science.md`.
+CP = critical power, the rowing power sustainable through a long steady effort;
+every rowing zone is a fraction of it (UT2 55–70 %, UT1 70–80 %, AT 80–90 % of CP —
+`derivePaceZones(cp)`). Its current value is **not in git**: it is the live
+`anchors` row `rowing_cp`. Deeper domain detail: `.claude/skills/training-science.md`.
+
+## Live athlete values
+
+Every personal value lives in the Supabase `anchors` table (one live row per key),
+never in a committed file. Keys: `rowing_cp`, `bike_ftp`, `hr_max_working`,
+`drag_factor`, `current_phase`, `current_block`, `training_model`, `season_goal`,
+`athlete_profile`, `niggle:<slug>`, `protein_floor_g`, `fat_floor_g`, `tdee_kcal`,
+`nutrition_targets`, `maintenance_plan`, `deficit_plan`, `health_context`. History
+and reasoning live in `coach_log`; blood pressure in `bp_readings`; daily intake in
+the `vitals` intake columns.
+
+1. **Never write a real value into a committed file** — code, test, doc or fixture.
+   Worked examples use obviously synthetic, labelled values (CP "~200 W (example
+   only)", MHR example 180).
+2. **Always quote a value with its status** (`provisional` | `unvalidated` |
+   `confirmed`).
+3. **Only the main thread reads them**, via the Supabase connector with
+   `select key, value, unit, status, valid_from, note from public.anchors where superseded_at is null order by key;`
+   — each read prompts, and that is intended. A subagent never queries: if its brief
+   lacks a value, it uses the labelled example and flags "needs live `<key>`".
+4. **No row → say so.** Never fall back to a remembered number.
 
 ## READ-ONLY instruction template
 

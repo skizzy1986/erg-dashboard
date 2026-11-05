@@ -16,9 +16,9 @@ export const Sizes = () => (
 
 export const StatusAccents = () => (
   <Row>
-    <LiveMetric label="UT2" value={128} unit="W" accent={THEME.accent} />
-    <LiveMetric label="UT1" value={154} unit="W" accent={THEME.positive} />
-    <LiveMetric label="AT" value={186} unit="W" accent={THEME.caution} />
+    <LiveMetric label="UT2" value={125} unit="W" accent={THEME.accent} />
+    <LiveMetric label="UT1" value={150} unit="W" accent={THEME.positive} />
+    <LiveMetric label="AT" value={170} unit="W" accent={THEME.caution} />
     <LiveMetric label="OVER CP" value={231} unit="W" accent={THEME.warning} />
     <LiveMetric label="REDLINE" value={268} unit="W" accent={THEME.critical} />
   </Row>

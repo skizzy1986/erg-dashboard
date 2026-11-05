@@ -38,7 +38,7 @@ Re-run `node .design-sync/gen-css.mjs` first; it is step one of every sync. Trac
 
 **One caveat that outlives the rename.** The bundle currently in the project was built
 before any of this. Until it is replaced it holds the old dark `conventions.md` and a live,
-stale `PACE_ZONES` frozen at a CP of 190, so a design session loads **wrong pace bands**
+stale `PACE_ZONES` frozen at a legacy CP, so a design session loads **wrong pace bands**
 today. `NOTES.md` is blunt about which half is worse: *"A dead export fails loudly; a
 stale-but-live constant quietly hands out wrong pace bands."*
 

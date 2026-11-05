@@ -55,9 +55,13 @@ architecture, the quality bar — still applies to any code you write.
   `docs/squat/`, `docs/onboarding/`. Don't change the training dashboard, Supabase
   functions, CI workflows, theme hex values, coverage thresholds or the agent library
   unless Scott has asked for it in a Discussion.
-- **No secrets, no personal data.** Don't create `.env` files with real keys, don't use
-  any Supabase, Sentry or Vercel connector against Scott's projects, and don't quote
-  Scott's personal training details (in `CLAUDE.md`, `coach/`) in anything you post.
+- **No secrets.** Don't create `.env` files with real keys, and don't use any Supabase,
+  Sentry or Vercel connector against Scott's projects.
+- **No personal data.** Scott's athlete values (power, heart-rate, health, injury,
+  nutrition, location) are not in the repo; they live in his private database, which
+  you cannot and must not reach. Don't ask for them, guess them, or reconstruct them
+  from git history — older commits still contain some and must be treated as private
+  even though they are technically public. Use only the labelled example values.
 - **Honesty labels stay.** The model's values are *modelled*; activation is *estimated,
   not EMG*. Never present a modelled number as measured.
 - **Licences — check `PERMISSIONS.md` first.** The code is proprietary (root `LICENSE`)
@@ -74,8 +78,9 @@ architecture, the quality bar — still applies to any code you write.
     Keep open-source library licence notices (three.js and others).
   - **Never add OpenCap data** to the repo or his published projects
     (`docs/squat/LAB_DATA.md` explains why).
-  - **Never publish Scott's personal training material** (`coach/`, the personal parts
-    of `CLAUDE.md`).
+  - **Never publish Scott's personal material:** anything from his database, from git
+    history before the cleanup commit, or from the design-owned mirrors listed in
+    `web/.design-sync/NOTES.md` that still carry real values.
 
 ## What to ignore in `CLAUDE.md`
 

@@ -154,8 +154,9 @@ Use `/refactor` to run each extraction step safely.
 
 ## Supabase Schema
 
-**14 tables, 23 migrations** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
-2026-07-01. The core calendar, the strength subsystem (Cowork-built, now in active
+**15 tables** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1): 14 tables and 23
+migrations as of 2026-07-01, plus `bp_readings` (repo migration `013_bp_readings.sql`).
+The core calendar, the strength subsystem (Cowork-built, now in active
 coach use), and the context store (Code↔Coach shared memory, added by #94):
 
 | Table               | Purpose                                                         |
@@ -173,6 +174,7 @@ coach use), and the context store (Code↔Coach shared memory, added by #94):
 | `coach_messages`    | In-app Coach chat rail (see Coaching data model)                     |
 | `backup_snapshots`  | Daily full-DB JSON snapshots (backup cron)                           |
 | `coach_log`         | **Context store** — append-only diary + decision record (Coach's content) |
+| `bp_readings`       | Blood-pressure readings (sys/dia/pulse, context, clean flag) — single-owner RLS |
 | `anchors`           | **Context store** — current calibration + phase state (one live row/key)  |
 
 **`sessions` columns:** `date` (**text `M/D/YY`, unpadded** — the write column),
@@ -191,7 +193,11 @@ completed — `"logged"` is written by the live PM5 Bluetooth save path, `"actua
 **`vitals`:** `date` is a real `date` type; upsert on `(user_id, date)`. RHR/HRV/
 sleep/bodyweight and the Google-Health columns (`steps_count`, `distance_m`,
 `active_minutes`, `calories_kcal`) auto-fill via the vitals-import cron.
-**`readiness` + `soreness` are the only manual inputs** (morning check-in).
+**`readiness` + `soreness` are the only manual check-in inputs** (morning check-in).
+Daily nutrition intake is entered into its own additive columns (migration 014):
+`intake_kcal`, `intake_protein_g`, `intake_carbs_g`, `intake_fat_g`,
+`nutrition_day_type` (`two-a-day` | `training` | `rest`) and `nutrition_note`. The
+vitals-import cron never writes them; burn is `calories_kcal`, weight is `bodyweight_kg`.
 
 **Strength logging convention:** a coach-logged strength session is a
 `strength_workouts` container with `status='completed'`, `origin='coach'`, linked
@@ -217,7 +223,12 @@ legacy `sessions.date` text pattern); RLS single-owner policy like the modern ta
   partial unique index on `(user_id, key) where superseded_at is null` makes "current
   value per key" a one-row read. To update, set `superseded_at = now()` on the old row
   and insert the new one (don't overwrite). Live keys: `rowing_cp`, `bike_ftp`,
-  `current_phase`, `current_block`, `doctrine_sha`.
+  `current_phase`, `current_block`, `doctrine_sha`, `drag_factor`, plus the athlete
+  keys the app reads: `hr_max_working`, `training_model`, `season_goal`,
+  `athlete_profile`, `niggle:<slug>`, `protein_floor_g`, `fat_floor_g`, `tdee_kcal`,
+  `nutrition_targets`, `maintenance_plan`, `deficit_plan` and `health_context` (shown
+  only in the Recovery tab, never sent to the in-app Coach). Values are never written
+  into git — read them live.
 - **`doctrine_sha`** pins the canonical doctrine commit (this file +
   `.claude/skills/training-science.md`). Doctrine *prose stays in git*; only the SHA
   lives in a row, so both tools agree which version is live.
@@ -261,14 +272,15 @@ legacy `sessions.date` text pattern); RLS single-owner policy like the modern ta
   Negative = fatigued. The "form" number.
 - **sRPE** — How hard a session felt on a 1–10 scale (subjective).
 - **CP** (Critical Power) — The highest power you can sustain indefinitely.
-  **~205W provisional (rowing)**; revalidate via rested 1-min + 4-min tests.
-  Rowing zones off this anchor: **UT2 113–144 / UT1 144–164 / AT 164–185 W**.
-- **Current model — pure base + strength** (reverted from polarised on 2026-06-29):
-  rowing is aerobic volume only (UT1/UT2 — no programmed threshold/VO₂); the bike
-  is a complementary Z1/Z2 aerobic carrier, never a programmed intensity source;
-  strength is **2 Upper + 2 Lower per week**, Lowers ≥3 days apart, alternating
-  RDL-led / quad-unilateral to manage the rehab hamstring.
-- **Microcycle** — One week training pattern. Home weeks = loading. FIFO = deload.
+  Live value: `anchors.rowing_cp` — read it live and quote its status. Revalidate
+  via rested 1-min + 4-min tests. Rowing zones are fractions of CP from
+  `derivePaceZones(cp)`: UT2 55–70 % / UT1 70–80 % / AT 80–90 %. Worked example —
+  CP ~200 W (example only): UT2 110–140 / UT1 140–160 / AT 160–180 W.
+- **Training model** — Live in `anchors.training_model` (its `valid_from` dates the
+  change); the reasoning is in `coach_log` decisions. Code that encodes the model
+  cites the anchor, not this file. Active injury guardrails are the live `niggle:*`
+  anchors.
+- **Microcycle** — One week training pattern; loading and deload weeks alternate.
 
 ## Integration Roadmap
 

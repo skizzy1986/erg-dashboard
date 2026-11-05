@@ -146,7 +146,7 @@ while declining is not a deferral but permanent structural closure, and retrofit
 one costs another full sweep. The consistency the no-escape-hatch rule was protecting
 is already gone; ~1,000 loose hex literals are the proof.
 
-### 4.3 `rowing_cp` 205W vs displayed 190 — resolved, but not either way §8.3 predicted
+### 4.3 live `rowing_cp` vs the legacy constant (#176) — resolved, but not either way §8.3 predicted
 
 §8.3 framed this as a binary: a display bug to fix in S2, or a deliberate conservative
 floor that S2 must not "fix". PR #203 did neither. It removed the hardcoded mirror

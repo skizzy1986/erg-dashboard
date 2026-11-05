@@ -1,9 +1,9 @@
 import { PaceTrendChart, derivePaceZones, THEME } from 'splitiq';
 
 // The app reads CP live from the `rowing_cp` anchor (useAnchors) and calls
-// derivePaceZones(cp). 205W is the current anchor — used here so the bands are
-// the real ones rather than an invented table.
-const PACE_ZONES = derivePaceZones(205);
+// derivePaceZones(cp). 200 W is an example CP, not the athlete's — the bands
+// are still computed by the real function rather than an invented table.
+const PACE_ZONES = derivePaceZones(200);
 
 // Newest-first, as the app supplies it — the component reverses internally.
 const SESSIONS = [

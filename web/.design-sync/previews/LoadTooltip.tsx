@@ -18,7 +18,7 @@ export const WithDayNote = () => (
   <Frame>
     <LoadTooltip
       active
-      payload={[{ payload: { date: '7/11', note: 'FIFO deload', ctl: 45, atl: 31, tsb: 14, tss: 42 } }]}
+      payload={[{ payload: { date: '7/11', note: 'deload week', ctl: 45, atl: 31, tsb: 14, tss: 42 } }]}
     />
   </Frame>
 );

@@ -102,7 +102,7 @@ mobile. **A document does not need a top-level tab. It needs a shelf.**
 |---|---|
 | `src/App.jsx:190` | CTL/ATL/TSB from the static `DAILY_TSS` constant, not `useTSSHistory` |
 | `src/App.jsx:204` | `totalErgDist = 55000` — hardcoded |
-| `src/App.jsx:166` | `ftp = 190` — hardcoded |
+| `src/App.jsx:166` | `ftp` — hardcoded legacy constant |
 | `src/App.jsx:85-122` | e1RM history for 8 lifts — hardcoded, passed to `StrengthView` |
 | `trainingConfig.js:261` + `tssData.js:1` | Two copies of `DAILY_TSS`; desktop imports one, mobile the other |
 
@@ -605,7 +605,7 @@ S2 data truth ──────────────────────
 | **S-1** | **Typography split** (§6.1). Self-host a UI sans + a real mono; `fontFamily` tokens; swap the 45 references | **Highest ratio in the brief** | low | — |
 | **S0** | `constants/tokens.js`. Zero call sites changed | Unblocks everything | nil | — |
 | **S1** | `components/ui/*` primitives **with the §5.1 seam**; extend `LiveMetric`; register in design-sync | High | low | S0 |
-| **S2** | **Data truth.** Wire desktop to `useTSSHistory`/`useVitals`/`useStrengthPRs`; collapse duplicate `DAILY_TSS`; resolve or document `rowing_cp` 205 vs displayed 190 (#176) | **Highest** | medium | — |
+| **S2** | **Data truth.** Wire desktop to `useTSSHistory`/`useVitals`/`useStrengthPRs`; collapse duplicate `DAILY_TSS`; resolve or document live `rowing_cp` vs the legacy constant (#176) | **Highest** | medium | — |
 | **S3** | Nav 13→5 + `AppShell` + hash routing. Views keep rendering unchanged, at new addresses | Kills complaint #2 | med-low | S1 |
 | **S4** | Today rebuild; delete `OverviewView.jsx` (1,361 lines) | Kills complaint #1 | **highest** | S0–S3 |
 | **S5** | Mobile adopts shared nav config; `main.jsx:289` → `density` prop | Halves future feature cost | medium | S3, S4 |
@@ -664,7 +664,7 @@ The `muted` contrast fix is therefore #183's, not S6's. S-1 and the TYPE scale t
    primitives in ways their author did not anticipate is a different problem from theming, and the
    token seam does not solve it. That question is open again, and belongs with whoever builds the
    primitives.
-3. **`rowing_cp` 205W vs displayed 190** (#176) — resolved, and not either way this brief predicted.
+3. **Live `rowing_cp` vs the legacy constant** (#176) — resolved, and not either way this brief predicted.
    #203 removed the mirror itself rather than reconciling the two numbers: `CRITICAL_POWER.cpEstimate`
    is gone, the static `PACE_ZONES` table is gone, and `deriveCalibrationStatus()` now resolves from
    the `anchors.rowing_cp` row at render time — or reports the anchor as unavailable instead of

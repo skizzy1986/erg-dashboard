@@ -13,6 +13,11 @@
 > work. The one open item (Google Health API, formerly WO-005) was migrated to
 > GitHub issue #51; its draft/handover files were removed. Do not author new
 > work orders — open an Issue instead.
+>
+> **Removed (2026-11-05):** `WO-004-strength-templates.md` was deleted in the
+> athlete-data cleanup — its template tables carried personal working loads. The
+> templates themselves live in the `templates` / `template_exercises` tables; the
+> file survives only in git history, which is treated as private.
 
 ---
 

@@ -145,11 +145,40 @@ class — any synced export renamed, moved or removed.
 
 Worth keeping in view: the structural break was the cheap half. The bundle that
 shipped to the design project was built *before* #203, so it contains a **live**
-`PACE_ZONES` frozen from the old `CRITICAL_POWER.cpEstimate` of 190 — the stale seed
+`PACE_ZONES` frozen from the old legacy `CRITICAL_POWER.cpEstimate` — the stale seed
 CP that #176 was filed about. A dead export fails loudly; a stale-but-live constant
 quietly hands out wrong pace bands. The guard catches the first kind and cannot catch
 the second. **Until the project is re-synced, that is still what the design agent
 loads.**
+
+## Personal-data exception
+
+Athlete values (CP, FTP, heart rate, body weight, nutrition, health, injury, work
+roster, place) were removed from git in the athlete-data cleanup and now live only in
+Supabase (`anchors`, `coach_log`, `bp_readings`, the `vitals` intake columns). The
+repo-owned and local files here carry key names and labelled examples (CP ~200 W,
+example only).
+
+**The design-owned mirrors below still carry real values, and are the documented
+exception.** They are `owner: design` in `ownership.json`: authored in the design
+project and committed here verbatim as read-only copies. A hand edit here would be
+overwritten by the next mirror and would break the one-way ownership
+`ownership.json` declares, so they cannot be scrubbed from this side.
+
+| Mirror | What it still carries |
+|---|---|
+| `conventions.md` | Current and legacy CP figures, roster (deload-week) wording, sample bpm |
+| `HANDOFF.md` | Legacy CP figure, roster wording, RHR / HRV / sleep sample readings |
+| `PROJECT-CONTEXT.md` | Current CP and a zone ceiling |
+| `splitiq-load.js` | Current and legacy CP figures, roster wording, RHR / HRV / sleep samples |
+| `designs/README.md` | Legacy CP figure, RHR / HRV / sleep sample readings |
+| `designs/*.html` | Real-looking body weight, kcal, bpm, RHR / HRV / sleep, lift loads, roster and injury wording in the artboards |
+
+**The fix is upstream, not here:** correct the text in the claude.ai/design project
+(replace each value with the labelled example or an anchor key name), then run an
+interactive `/design-login` and re-mirror. That step cannot run from a remote agent
+session. Until it happens, treat these files as private: never quote them in a post,
+a collaborator Discussion or a new file.
 
 ## Re-sync risks
 
