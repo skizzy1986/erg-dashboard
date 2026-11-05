@@ -15,6 +15,9 @@ root="$(cd "$here/../.." && pwd)"
 pass=0
 fail=0
 
+# A path that cannot exist in any environment, local or cloud.
+missing="$root/.hook-missing-dir-probe-does-not-exist"
+
 check() { # check <name> <expected-exit> <expected-substring|-> <actual-exit> <output>
   local name="$1" want_exit="$2" want_text="$3" got_exit="$4" got_out="$5"
   if [ "$got_exit" != "$want_exit" ]; then
@@ -43,8 +46,15 @@ run_lint() { # run_lint <project-dir> <stdin-payload>
 }
 
 # ---- warn-uncommitted.sh -----------------------------------------------------
-# The exact path the old hook hardcoded. It must now fail loudly, not exit 0.
-out="$(CLAUDE_PROJECT_DIR=/home/user/erg-dashboard bash "$here/warn-uncommitted.sh" 2>&1)"
+# A project dir that does not exist must fail loudly, not exit 0 — the defect in
+# #295 was a hook that cd-ed to a path off its own sandbox and reported success.
+#
+# The sentinel must be a path that cannot exist ANYWHERE. It used to be the
+# literal /home/user/erg-dashboard the old hook hardcoded, which is exactly the
+# path a cloud session checks the repo out to — there the guard correctly passes,
+# the hook exits 0, and this case fails for a reason that has nothing to do with
+# the behaviour under test. A test against hardcoded paths must not hardcode one.
+out="$(CLAUDE_PROJECT_DIR="$missing" bash "$here/warn-uncommitted.sh" 2>&1)"
 check "warn-uncommitted: missing dir fails loudly" 1 "CLAUDE_PROJECT_DIR unset or not a directory" "$?" "$out"
 
 out="$(env -u CLAUDE_PROJECT_DIR bash "$here/warn-uncommitted.sh" 2>&1)"
@@ -61,7 +71,7 @@ rm -f "$probe"
 check "warn-uncommitted: warns on a dirty tree" 0 "file(s) changed and uncommitted" "$rc" "$out"
 
 # ---- lint-edited-file.sh -----------------------------------------------------
-out="$(run_lint /home/user/erg-dashboard '{}')"
+out="$(run_lint "$missing" '{}')"
 check "lint: missing dir fails loudly" 1 "CLAUDE_PROJECT_DIR unset or not a directory" "$?" "$out"
 
 out="$(run_lint "$root" 'not json at all')"

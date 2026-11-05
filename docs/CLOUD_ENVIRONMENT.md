@@ -14,9 +14,38 @@ One repository: `skizzy1986/erg-dashboard`. Because there is only one, the repo'
 
 ## Setup script
 
+**This is the whole script. Paste it entire** — it has two independent parts, and on
+2026-11-05 editing one of them out took the other with it, leaving a container with no Deno
+and no trust flag. The trust block is explained under *Project permissions*; it lives last
+because it must not be able to affect the Deno install above it.
+
 ```bash
 curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y
+
+trust_root=""
+if t="$(git rev-parse --show-toplevel 2>/dev/null)"; then trust_root="$t"; fi
+if [ -z "$trust_root" ]; then
+  for d in /home/user/*/; do
+    [ -f "${d}.claude/settings.json" ] && trust_root="${d%/}"
+  done
+fi
+if [ -n "$trust_root" ] && [ -f "$trust_root/.claude/settings.json" ]; then
+  node -e 'const f="/root/.claude.json",fs=require("fs"),root=process.argv[1];
+const d=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8").replace(/^\uFEFF/,"")):{};
+(d.projects??={})[root]??={};
+d.projects[root].hasTrustDialogAccepted=true;
+fs.writeFileSync(f,JSON.stringify(d,null,2));' "$trust_root"
+  echo "trust-flag: trusted $trust_root"
+else
+  echo "trust-flag: WARNING no checkout with .claude/settings.json found; permissions and hooks will be ignored" >&2
+fi
 ```
+
+Confirm both halves took, in a new session: `deno --version` prints 2.x, and
+`claude doctor` does not print `Ignoring 36 permissions.allow entries`. The script's own
+output is at `/root/.claude/environment-manager/setup-script-output`; **that file not
+existing at all means the script did not run** — on 2026-11-05 its absence, together with a
+missing `deno`, was how an emptied setup script was found.
 
 **Why Deno.** The edge-function tests must run the way `.github/workflows/ci-functions.yml`
 runs them: Deno v2.x, working directory `supabase/functions`.
@@ -38,6 +67,14 @@ It is version-controlled, it lives in one place, and `ci` never rewrites the loc
 Running it again from the setup script installs twice and lets the two copies drift. The
 hook also prints a warning if `deno` is missing, so a broken setup script shows up at the
 start of the session rather than when a Deno test is first needed.
+
+> **This rationale holds only once the workspace is trusted, measured 2026-11-05.** Until
+> the trust flag is in this setup script, the hook has never run in a cloud session —
+> settings-defined hooks are gated behind workspace trust, which no cloud container grants
+> by default. `web/node_modules` arrives some other way and the `deno` warning never fires.
+> With the flag in place the hook does run, the `npm ci` above is the one that counts, and
+> this note is accurate again. See *Project permissions* for the flag and for the install
+> race it introduces.
 
 ## Network
 
@@ -140,12 +177,136 @@ mostly matters in Accept-edits mode.
   `bash -c '…'`, `git -C . push` or `git -c … push`; those fall through to the mode and
   the other rules. Branch protection on `main` still blocks a direct push.
 
-**Unconfirmed: whether project allow rules apply in cloud sessions.** One-line check: in a
-cloud session in Accept-edits mode, run `npm run check:zones` from `web/`. No prompt means
-they applied. Record the result here when known. The repo's hooks do run in a plain cloud
-session (the SessionStart install and the Stop hook fire). The docs also say that in a
-cloud thread started inside a claude.ai **Project**, the repo's `.claude/settings.json`
-permission rules and hooks do not apply, so this whole file is inert there.
+**Confirmed 2026-11-05: none of this file's rules apply in a cloud session, and neither do
+the hooks, until the workspace is trusted.** The previous version of this section called
+the permission question "unconfirmed" and asserted that "the repo's hooks do run in a plain
+cloud session (the SessionStart install and the Stop hook fire)". Both are wrong. In a
+cloud container `claude doctor` reports:
+
+```
+Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not
+been trusted. Run Claude Code interactively here once and accept the trust dialog, or set
+projects["/home/user/erg-dashboard"].hasTrustDialogAccepted: true in /root/.claude.json.
+```
+
+`/root/.claude.json` ships with `projects: {}` and the container is rebuilt per session, so
+the allowlist is discarded every time. The hooks go with it: a `Write` to a `web/src/*.js`
+file carrying a lint error that `eslint --max-warnings=0` does flag produced **no**
+`PostToolUse` output, and `session-start.sh` never ran. There is no trust dialog to accept
+in a cloud session.
+
+**The fix belongs in the setup script**, which runs before the session and outside the
+gate. A `SessionStart` hook cannot do it — hooks are themselves gated by trust, so the hook
+that would grant trust is the one trust is blocking:
+
+```bash
+trust_root=""
+if t="$(git rev-parse --show-toplevel 2>/dev/null)"; then trust_root="$t"; fi
+if [ -z "$trust_root" ]; then
+  for d in /home/user/*/; do
+    [ -f "${d}.claude/settings.json" ] && trust_root="${d%/}"
+  done
+fi
+if [ -n "$trust_root" ] && [ -f "$trust_root/.claude/settings.json" ]; then
+  node -e 'const f="/root/.claude.json",fs=require("fs"),root=process.argv[1];
+const d=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8").replace(/^﻿/,"")):{};
+(d.projects??={})[root]??={};
+d.projects[root].hasTrustDialogAccepted=true;
+fs.writeFileSync(f,JSON.stringify(d,null,2));' "$trust_root"
+  echo "trust-flag: trusted $trust_root"
+else
+  echo "trust-flag: WARNING no checkout with .claude/settings.json found; permissions and hooks will be ignored" >&2
+fi
+```
+
+**Put this block at the END of the setup script**, after the Deno install, and note that it
+never exits non-zero — a trust flag that cannot be set must not take the rest of the
+environment down with it.
+
+**The setup script's working directory is `/home/user`, not the checkout** (measured
+2026-11-05, the hard way: a first version of this block derived the root from `pwd` and
+failed the whole setup script with `trust-flag: '/home/user' has no .claude/settings.json`).
+The `cd supabase/functions` lines under **Setup script** are how a *session* runs the Deno
+tests, not setup-script content, and reading them as the latter is what produced the wrong
+assumption. So the block does not trust `pwd`: it takes `git rev-parse --show-toplevel` when
+that resolves, and otherwise finds the one directory under `/home/user` holding
+`.claude/settings.json`. Tested from `/home/user`, from the repo root and from `/tmp` —
+all three resolve to `/home/user/erg-dashboard`, exit 0.
+
+**Trust is keyed on the exact directory and is not inherited** (measured 2026-11-05:
+trusting `/home/user` leaves the warning in place; trusting `/home/user/erg-dashboard`
+clears it). The path is therefore derived rather than written literally — a hardcoded
+`/home/user/erg-dashboard` is correct in today's containers and fails silently the day the
+platform changes the checkout path, which is the same defect `test-hooks.sh` carried for
+months (#398).
+
+Because trust is per-directory, a **git worktree is not covered** by trusting the main
+clone — each `.claude/worktrees/<name>` is its own key. That only bites a local session;
+cloud sessions have their own VM and do not use worktrees.
+
+**Status: in the setup script and confirmed live, 2026-11-05.** A session started after the
+paste reported `deno 2.9.8` and a `claude doctor` with no `Ignoring 36 …` line — both halves
+of the script took. Treat that line reappearing as a regression to investigate, not as setup
+still outstanding.
+
+**Hooks execute too, confirmed 2026-11-05 by side effect rather than by output.** A session
+with the flag live showed `web/node_modules` restamped at session start, which only
+`session-start.sh`'s `npm ci --prefix web` does — so `SessionStart` fired.
+
+Note how that was established, because the obvious test does not work. Hook *stdout* — the
+`[HOOK] Bash command about to run …` echo, the lint hook's findings — does not reliably
+reach the agent, so its absence proves nothing: a hook that ran silently and a hook that
+never ran look identical. Two sessions concluded "hooks are not firing" from that absence,
+and after the flag was set a third did the same while the hooks were in fact running. Test a
+hook by what it *changes* — `node_modules` restamped, a `PreToolUse` exit 2 blocking a tool
+call (`block-secret-commit.sh`) — never by what it prints.
+
+Three `claude doctor` warnings are unrelated environment plumbing and predate this work
+(observed 2026-11-05 in a container booted before any of it): config install method
+`unknown`, a broken `claude` at `/root/.local/bin/claude`, and a leftover npm global at
+`/opt/node22/bin/claude`. They are not symptoms of the trust flag.
+
+Verify in a new session with `claude doctor`: the "Ignoring 36 …" line disappears when it
+has taken. Setting the flag mid-session does clear that warning but does **not** activate
+the hooks — trust is read once at startup (measured 2026-11-05: the same `Write` probe
+still produced no hook output after the flag was set).
+
+**Decided 2026-11-05: trust is granted, and the full `npm ci` is wanted.** `session-start.sh`
+runs `npm ci --prefix web`, which has never actually executed here — `web/node_modules` is
+present from the platform's own dependency install or the image, not from the hook (the
+setup-script log contains only the Deno install). Once trust is set the hook fires and the
+install runs every session, deliberately: a lockfile-exact `ci` is the thing the quality
+gates are supposed to run against, and the alternative is trusting an install nobody in this
+repo controls. Do not "optimise" it away. The *Why no `npm ci`* note under **Setup script**
+is therefore correct again from the moment trust is set, and false before it.
+
+**It does not block the session.** The hook declares `{"async": true, "asyncTimeout":
+300000}` (`session-start.sh:9`), so the install runs in the background with a five-minute
+budget and the session is usable immediately.
+
+**That asynchrony is the one real hazard, and it is a race, not a delay.** `npm ci` deletes
+`node_modules` before installing (npm's documented behaviour), so a session whose first
+action is `npm test`, `npm run lint` or `npm run build` can hit the window where the
+platform's modules have been removed and the lockfile install has not finished. The failure
+looks like a broken checkout rather than a race.
+
+**The window is about 24 seconds** (measured 2026-11-05: `web/node_modules` restamped at
+10:51:18, `.bin/eslint` present at 10:51:42, install otherwise clean). That number is the
+reason to leave `"async": true` alone rather than remove it. Dropping it buys a closed
+window at the price of a guaranteed ~25-second block on *every* session start, which is
+close to a wash — and it is not the one-line change it looks like, because a synchronous
+hook is then subject to a hook timeout (`HOOK_TIMEOUT_MS`, and the per-hook `timeout` field
+in `settings.json`) that nobody here has established. Set it too low and `npm ci` is killed
+mid-install, leaving a broken `node_modules` and no async budget to finish under: strictly
+worse than the race. Revisit only if the install gets materially slower, e.g. on a cold npm
+cache.
+
+The operational rule in the meantime: if a gate fails at the very start of a session with
+missing modules, re-run it before diagnosing anything.
+
+The docs also say that in a cloud thread started inside a claude.ai **Project**, the repo's
+`.claude/settings.json` permission rules and hooks do not apply, so this whole file is inert
+there regardless.
 
 ## The Split IQ board from a cloud session
 
@@ -223,7 +384,8 @@ branches named `release-assets/*`.
 ## Rebuild checklist
 
 1. Create the environment with the repository `skizzy1986/erg-dashboard`.
-2. Paste the setup script.
+2. Paste the setup script — **including the trust-flag block** under *Project permissions*,
+   without which none of `.claude/settings.json` applies.
 3. Set network access to Limited and add the hosts above.
 4. Leave environment variables empty, or add only the two `VITE_` values.
 5. Enable the connectors above and disable unrelated ones.
@@ -233,4 +395,5 @@ branches named `release-assets/*`.
    - `deno --version` prints 2.x
    - `web/node_modules` exists
    - the three Deno tests pass
-   - the one-line check under *Project permissions*
+   - `claude doctor` does **not** print `Ignoring 36 permissions.allow entries` — if it
+     does, the trust flag did not take and the allowlist and all four hooks are inert
