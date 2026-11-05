@@ -54,14 +54,14 @@ export const CALIBRATION_STATUS = [
     color: THEME.positive,
     basis: 'Chest strap, fixed DF, drag-independent',
     upgrade:
-      'Log conditions (caffeine/cannabis/heat) for like-for-like — shift HR-power 3–8W',
+      'Log conditions (caffeine, heat, other stimulants) for like-for-like — they shift HR-power by a few watts',
   },
   {
-    metric: 'RHR baseline (58)',
+    metric: 'RHR baseline',
     tier: 1,
     conf: 'Solid',
     color: THEME.positive,
-    basis: '3 consecutive overnight readings',
+    basis: 'Rolling 28-day trimmed mean of overnight readings',
     upgrade: '—',
   },
   {
@@ -69,7 +69,7 @@ export const CALIBRATION_STATUS = [
     tier: 1,
     conf: 'Solid',
     color: THEME.positive,
-    basis: 'PM5 + strap + standardised DF125 + separate warmup',
+    basis: 'PM5 + strap + standardised drag factor + separate warmup',
     upgrade: '—',
   },
   {
@@ -80,15 +80,15 @@ export const CALIBRATION_STATUS = [
     basis:
       'Auto-syncs every erg session. Independent HR/watts + Relative Effort metric',
     upgrade:
-      'Triangulates PM5 data — 6/13 showed HR 130.6 (Strava) vs 134 (C2), watts agreed 149/150',
+      'Triangulates PM5 data — chest-strap HR can differ by a few bpm between sources while watts agree',
   },
   {
-    metric: 'TDEE (~3,140)',
+    metric: 'TDEE',
     tier: 2,
     conf: 'Estimated',
     color: THEME.caution,
-    basis: 'Two methods agree, both estimates',
-    upgrade: 'Intake-vs-weight regression at end of calibration (~Jun 24)',
+    basis: 'Live `tdee_kcal` anchor — read it with its status',
+    upgrade: 'Intake-vs-weight regression over a clean calibration block',
   },
   {
     key: 'load-model',
@@ -108,19 +108,20 @@ export const CALIBRATION_STATUS = [
     upgrade: 'Weekly avg vs weight trend, not daily',
   },
   {
-    metric: 'HR zones (MHR 170)',
+    metric: 'HR zones (working MHR)',
     tier: 2,
     conf: 'Conservative',
     color: THEME.caution,
-    basis: 'Chosen 170 vs observed max 177–187 — deliberate for base',
+    basis:
+      'Live `hr_max_working` anchor, set below observed max — deliberate for base',
     upgrade: 'Revisit before Build 1 — race-pace needs true-max anchoring',
   },
   {
-    metric: 'HRV baseline (30)',
+    metric: 'HRV baseline',
     tier: 3,
     conf: 'Fragile',
     color: THEME.warning,
-    basis: '2 readings, both in a fatigue trough — skewed LOW',
+    basis: 'Sparse overnight coverage — a trough-heavy sample skews it LOW',
     upgrade: 'Rebuild over 10+ days incl. recovered days',
   },
   {
@@ -223,17 +224,20 @@ export const FTP_TEST = {
   protocol:
     '30min continuous at the hardest STEADY pace you can hold the full 30 (not a sprint). CP ≈ 95% of the 30min avg power. This is a Critical Power test in rowing terms. Or 4×8min progressive steps to map HR-power.',
   prereq:
-    'Fresh, well-fuelled, chest strap, DF125, separate warmup, no caffeine/cannabis that morning.',
+    'Fresh, well-fuelled, chest strap, standard drag factor (the live `drag_factor` anchor), separate warmup, no stimulants that morning.',
   unlocks:
     "Real CP → recalibrates load model (TSS/CTL/ATL/TSB), confirms zones, anchors the projection. Later format maxes (1-min, 1k, 5k) map the full power-duration curve and W'.",
 };
 
+// Zone boundaries are fractions of the working max HR — the bpm are derived at
+// render time from the live `hr_max_working` anchor by deriveHrBands().
 export const HR_ZONES = [
   {
     zone: 'UT2',
     name: 'Aerobic Base',
     pct: '< 70%',
-    bpm: '< 119',
+    pctLow: 0,
+    pctHigh: 0.7,
     lactate: '< 2 mmol/L',
     color: THEME.accent,
     desc: 'Long Z2 rows. Conversational. Fat metabolism. Primary base building zone.',
@@ -242,7 +246,8 @@ export const HR_ZONES = [
     zone: 'UT1',
     name: 'Aerobic Dev.',
     pct: '70–80%',
-    bpm: '119–136',
+    pctLow: 0.7,
+    pctHigh: 0.8,
     lactate: '2–3 mmol/L',
     color: THEME.positive,
     desc: 'Upper aerobic. Sustainable for 45–60min. Z2 working target. Keep splits flat within this band.',
@@ -251,7 +256,8 @@ export const HR_ZONES = [
     zone: 'AT',
     name: 'Threshold',
     pct: '80–87%',
-    bpm: '136–148',
+    pctLow: 0.8,
+    pctHigh: 0.87,
     lactate: '3–5 mmol/L',
     color: THEME.caution,
     desc: 'Lactate threshold. Grey zone for base phase — avoid. Threshold reps added in Phase 2.',
@@ -260,7 +266,8 @@ export const HR_ZONES = [
     zone: 'TR',
     name: 'VO₂ / Transport',
     pct: '87–92%',
-    bpm: '148–156',
+    pctLow: 0.87,
+    pctHigh: 0.92,
     lactate: '5–8 mmol/L',
     color: THEME.warning,
     desc: 'VO₂max zone. Short intervals (500m pieces). Phase 3 only.',
@@ -269,14 +276,25 @@ export const HR_ZONES = [
     zone: 'AN',
     name: 'Anaerobic',
     pct: '> 92%',
-    bpm: '> 156',
+    pctLow: 0.92,
+    pctHigh: 1,
     lactate: '> 8 mmol/L',
     color: THEME.critical,
     desc: 'Race pace. 2k test finish. Not trained directly — emerges from race effort.',
   },
 ];
 
-export const EST_MHR = 170; // Working training MHR — conservative calibration. True max may be higher (~177–187 observed) but 170 used as training ceiling for zone discipline during base phase.
+// bpm bands for a working max HR. Pure; null when no usable MHR is supplied, so
+// callers render "—" rather than bands computed off a guessed number.
+export function deriveHrBands(mhr) {
+  const m = Number(mhr);
+  if (mhr == null || !Number.isFinite(m) || m <= 0) return null;
+  return HR_ZONES.map(({ zone, pctLow, pctHigh }) => ({
+    zone,
+    bpmLow: Math.round(m * pctLow),
+    bpmHigh: Math.round(m * pctHigh),
+  }));
+}
 
 export const SRPE_SCALE =
   'Rate each session 1–10 within 30min of finishing: 1–2 very easy · 3–4 easy (UT2 target) · 5–6 moderate (UT1 target) · 7–8 hard (threshold, Phase 2) · 9–10 maximal (race/test only). UT2 sessions scoring 5+ = going too hard. UT1 scoring 7+ = drifting. Trend matters: same session scoring harder week-on-week = fatigue accumulating, flag it.';

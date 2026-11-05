@@ -36,6 +36,9 @@ function thresholdFor(type, cp, ftp) {
 // this project's own coaching notes. Tuning a factor to close it on n=2 would
 // erase the signal rather than measure it.
 export function sessionLoad(session, { cp, ftp } = {}) {
+  // Mobility is logged as a session for consistency tracking, not as load: an
+  // sRPE on a stretch must not move CTL/ATL.
+  if ((session?.type ?? '').toLowerCase() === 'mobility') return 0;
   const minutes = parseDurationMinutes(session?.duration);
   if (!(minutes > 0)) return 0;
   const hours = minutes / 60;

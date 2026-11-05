@@ -5,7 +5,7 @@ import { derivePaceZones } from '../../constants/trainingConfig.js';
 
 // Fixture zones. Derived here rather than imported, because there is no static
 // PACE_ZONES export any more — the app derives bands from the live CP anchor.
-const PACE_ZONES = derivePaceZones(205);
+const PACE_ZONES = derivePaceZones(200); // example CP
 
 describe('PaceTrendChart', () => {
   it('renders without crashing with empty data', () => {

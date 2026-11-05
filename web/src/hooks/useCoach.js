@@ -12,6 +12,8 @@ import {
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
 import { parseDurationMinutes } from '../utils/duration.js';
 import { captureError } from '../utils/sentry.js';
+import { useAnchors } from './useAnchors.js';
+import { formatAnchor } from '../utils/anchorValues.js';
 
 // One microcycle, with room for the two-a-day Wednesday — a training week runs
 // to more than seven rows. The questions this context serves ("how's my
@@ -20,12 +22,57 @@ import { captureError } from '../utils/sentry.js';
 // compresses, costing prompt tokens without changing the answer.
 const RECENT_SESSION_COUNT = 8;
 
-// The local calendar day, not the UTC one. Perth is UTC+8, so
-// toISOString() names yesterday for the whole Perth morning — exactly when
+// The local calendar day, not the UTC one. The athlete is athlete-local (UTC+8),
+// so toISOString() names yesterday for the whole local morning — exactly when
 // readiness is checked and today's session asked about. toLogDate reads local
 // date fields; toISODate converts its M/D/YY back to ISO.
 export function todayISO() {
   return toISODate(toLogDate(new Date()));
+}
+
+// The anchors the Coach is told about, in order. health_context is private to
+// RecoveryView, the JSON plans/targets are UI data, and doctrine_sha is a git
+// pin — none of them belong in the prompt.
+const CONTEXT_ANCHOR_KEYS = [
+  'rowing_cp',
+  'bike_ftp',
+  'hr_max_working',
+  'drag_factor',
+  'current_phase',
+  'current_block',
+  'training_model',
+  'season_goal',
+  'athlete_profile',
+];
+const ANCHOR_TEXT_CAP = 600;
+
+const capText = (s) =>
+  typeof s === 'string' && s.length > ANCHOR_TEXT_CAP
+    ? `${s.slice(0, ANCHOR_TEXT_CAP)}…`
+    : s;
+
+export function buildAnchorsBlock(anchors) {
+  if (!anchors || typeof anchors !== 'object') return [];
+  const lines = [];
+  for (const key of CONTEXT_ANCHOR_KEYS) {
+    const row = anchors[key];
+    if (!row) continue;
+    lines.push(
+      `${key}: ${formatAnchor({ ...row, value: capText(row.value) })}`
+    );
+  }
+  const niggleKeys = Object.keys(anchors)
+    .filter((k) => k.startsWith('niggle:'))
+    .sort();
+  for (const key of niggleKeys) {
+    const row = anchors[key];
+    const note = row.note ? ` — ${capText(row.note)}` : '';
+    lines.push(
+      `${key}: ${formatAnchor({ ...row, value: capText(row.value) })}${note}`
+    );
+  }
+  if (!lines.length) return [];
+  return ['ATHLETE ANCHORS (live; status in brackets):', ...lines];
 }
 
 export function buildTrainingContext(
@@ -35,10 +82,16 @@ export function buildTrainingContext(
   readinessLabel,
   recentSessions,
   todayPlanned,
-  readinessPartial = false
+  readinessPartial = false,
+  anchors = null
 ) {
   const today = todayISO();
-  const lines = [`CURRENT TRAINING DATA (as of ${today}):`];
+  // Anchors first: coach-chat keeps only the first 8000 chars of the context,
+  // so whatever is cut should be the oldest sessions, never the athlete profile.
+  const lines = [
+    ...buildAnchorsBlock(anchors),
+    `CURRENT TRAINING DATA (as of ${today}):`,
+  ];
 
   if (latestLoad) {
     // Boundaries match the dashboard's own bands (App.jsx, MobileAnalytics,
@@ -123,6 +176,7 @@ export function useCoach() {
   const tssQuery = useTSSHistory();
   const vitals = useVitals();
   const sessionsQuery = useSessions();
+  const { anchors } = useAnchors();
 
   const latestLoad = useMemo(() => {
     const series = calcTrainingLoad(tssQuery.data ?? []);
@@ -200,7 +254,8 @@ export function useCoach() {
         vitals.readinessLabel,
         recentSessions,
         todayPlanned,
-        vitals.readiness?.partial ?? false
+        vitals.readiness?.partial ?? false,
+        anchors
       );
 
       const {

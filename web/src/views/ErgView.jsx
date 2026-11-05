@@ -487,10 +487,11 @@ export default function ErgView({ tsbNow, ctlNow }) {
             lineHeight: 1.5,
           }}
         >
-          Z2 watt targets (DF 125, HR ceiling 136): UT1 working sessions
-          143–150W (pacer 143–145W — bumped from 140 after 6/12 showed 151W at
-          HR130), UT2 easy/FIFO 125–135W (pacer 130W). Set pacer on watts; let
-          HR cap at 136. Engine is climbing — re-check targets weekly.
+          Z2 watt targets (fixed DF, HR ceiling = top of UT1): UT1 working
+          sessions 143–150W (pacer 143–145W — bumped from 140 after 6/12 showed
+          151W at HR130), UT2 easy/FIFO 125–135W (pacer 130W). Set pacer on
+          watts; let HR cap at the top of UT1. Engine is climbing — re-check
+          targets weekly.
         </div>
       </div>
 

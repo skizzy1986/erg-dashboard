@@ -36,7 +36,7 @@ beforeEach(() => {
   mockSessions.mockReturnValue({ data: [] });
   mockVitals.mockReturnValue({ readiness: { score: 91, status: 'READY' } });
   mockTss.mockReturnValue({ data: [], isLoading: false });
-  mockAnchors.mockReturnValue({ anchors: {}, cp: 205 });
+  mockAnchors.mockReturnValue({ anchors: {}, cp: 200 });
 });
 
 describe('readiness', () => {
@@ -169,7 +169,7 @@ describe('the phase pill', () => {
         current_phase: { value: 'Base' },
         current_block: { value: 'wk 3/12' },
       },
-      cp: 205,
+      cp: 200,
     });
     render(<MobileToday />);
     expect(screen.getByText('BASE · WK 3/12')).toBeInTheDocument();

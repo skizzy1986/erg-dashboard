@@ -5,7 +5,7 @@ import {
   sessionLoad,
 } from '../trainingLoad.js';
 
-const ANCHORS = { cp: 205, ftp: 250 };
+const ANCHORS = { cp: 200, ftp: 250 }; // example CP/FTP
 
 describe('sessionLoad', () => {
   it('uses sRPE when it exists: an hour at sRPE 7 is 70', () => {
@@ -19,23 +19,23 @@ describe('sessionLoad', () => {
   it('prefers sRPE over watts when a session carries both', () => {
     const both = { duration: '60:00', srpe: 7, type: 'erg', avg_watts: 150 };
     expect(sessionLoad(both, ANCHORS)).toBe(70);
-    expect(sessionLoad({ ...both, srpe: null }, ANCHORS)).toBe(54);
+    expect(sessionLoad({ ...both, srpe: null }, ANCHORS)).toBe(56);
   });
 
   it('falls back to power when sRPE is missing', () => {
-    // (152/205)^2 * 100 = 55.0 for one hour
+    // (152/200)^2 * 100 = 57.8 for one hour
     expect(
       sessionLoad(
         { duration: '60:00', srpe: null, type: 'erg', avg_watts: 152 },
         ANCHORS
       )
-    ).toBe(55);
+    ).toBe(58);
   });
 
   it('puts an hour at threshold at 100 — the sRPE 10 equivalent', () => {
     expect(
       sessionLoad(
-        { duration: '60:00', srpe: null, type: 'erg', avg_watts: 205 },
+        { duration: '60:00', srpe: null, type: 'erg', avg_watts: 200 },
         ANCHORS
       )
     ).toBe(100);
@@ -47,7 +47,7 @@ describe('sessionLoad', () => {
   // ~10x too wide and silently stop firing, so pin the unit here.
   it('emits classic TSS units, not sRPE-hours', () => {
     const hourAtThreshold = sessionLoad(
-      { duration: '60:00', srpe: null, type: 'erg', avg_watts: 205 },
+      { duration: '60:00', srpe: null, type: 'erg', avg_watts: 200 },
       ANCHORS
     );
     const hourAtSrpe10 = sessionLoad({ duration: '60:00', srpe: 10 }, ANCHORS);
@@ -62,13 +62,14 @@ describe('sessionLoad', () => {
     const both = { duration: '60:00', srpe: 7, type: 'erg', avg_watts: 150 };
     const bySrpe = sessionLoad(both, ANCHORS);
     const byPower = sessionLoad({ ...both, srpe: null }, ANCHORS);
-    // ~23% below, and still below — not nudged toward parity by the rescale.
+    // ~20% below at the example CP, and still below — not nudged toward
+    // parity by the rescale.
     expect(byPower / bySrpe).toBeGreaterThan(0.7);
-    expect(byPower / bySrpe).toBeLessThan(0.8);
+    expect(byPower / bySrpe).toBeLessThan(0.85);
   });
 
   it('reads an easy paddle as genuinely easy', () => {
-    // 118 W recovery for 21:13 -> 0.354h * 33.1 = 11.7
+    // 118 W recovery for 21:13 -> 0.354h * 34.8 = 12.3
     expect(
       sessionLoad(
         { duration: '21:13', srpe: null, type: 'erg', avg_watts: 118 },
@@ -82,7 +83,16 @@ describe('sessionLoad', () => {
     expect(sessionLoad({ ...ride, type: 'cycling' }, ANCHORS)).toBe(61);
     expect(sessionLoad({ ...ride, type: 'bike' }, ANCHORS)).toBe(61);
     // Same watts judged against the lower rowing CP would overstate the ride.
-    expect(sessionLoad({ ...ride, type: 'erg' }, ANCHORS)).toBe(91);
+    expect(sessionLoad({ ...ride, type: 'erg' }, ANCHORS)).toBe(96);
+  });
+
+  it('gives mobility sessions zero load, even with an sRPE', () => {
+    expect(sessionLoad({ type: 'mobility', duration: '12min' }, ANCHORS)).toBe(
+      0
+    );
+    expect(
+      sessionLoad({ type: 'Mobility', duration: '30:00', srpe: 4 }, ANCHORS)
+    ).toBe(0);
   });
 
   it('gives strength sessions no power model', () => {

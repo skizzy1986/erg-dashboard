@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { mobilityLog } from '../constants/logs.js';
+import { useMobilitySessions } from '../hooks/useMobilitySessions.js';
 import {
   MOBILITY_ROUTINES,
   MOBILITY_STREAK_NOTE,
@@ -9,6 +9,7 @@ import { alpha } from '../utils/themeCss.js';
 
 export default function MobilityView() {
   const [mobOpen, setMobOpen] = useState(null);
+  const mobility = useMobilitySessions();
 
   return (
     <>
@@ -33,9 +34,9 @@ export default function MobilityView() {
           🧘 MOBILITY — a training pillar
         </div>
         <div style={{ fontSize: 11, color: THEME.textSubtle, lineHeight: 1.6 }}>
-          Not accessory work. With the left hamstring/glute rehab, mobility is
+          Not accessory work. Alongside any active rehab, mobility is
           load-bearing for staying healthy enough to train. The pre-session
-          prime especially — it's rehab activation disguised as a warm-up.
+          prime especially — it's activation disguised as a warm-up.
         </div>
       </div>
 
@@ -247,12 +248,29 @@ export default function MobilityView() {
         {MOBILITY_STREAK_NOTE}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {mobilityLog.map((m, i) => {
-          const r = MOBILITY_ROUTINES.find((x) => x.id === m.type);
+        {mobility.isLoading ? (
+          <div style={{ fontSize: 10, color: THEME.muted }}>
+            Loading mobility sessions…
+          </div>
+        ) : mobility.isError ? (
+          <div style={{ fontSize: 10, color: THEME.muted }}>
+            Mobility log unavailable — couldn&apos;t reach the database
+          </div>
+        ) : mobility.entries.length === 0 ? (
+          <div style={{ fontSize: 10, color: THEME.muted }}>
+            No mobility sessions logged
+          </div>
+        ) : null}
+        {mobility.entries.map((m) => {
+          const label = (m.label ?? '').toLowerCase();
+          const r = MOBILITY_ROUTINES.find(
+            (x) => label.includes(x.id) || label === x.name.toLowerCase()
+          );
           const col = r ? r.color : THEME.neutralAccent;
           return (
             <div
-              key={i}
+              key={m.id ?? `${m.date}-${m.label}`}
+              data-testid="mobility-entry"
               style={{
                 background: THEME.raised,
                 border: `1px solid ${THEME.border}`,
@@ -288,7 +306,8 @@ export default function MobilityView() {
                   </div>
                 </div>
                 <div style={{ fontSize: 10, color: THEME.muted }}>
-                  {m.date} · {m.duration}
+                  {m.date}
+                  {m.duration ? ` · ${m.duration}` : ''}
                 </div>
               </div>
               <div

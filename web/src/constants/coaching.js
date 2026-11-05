@@ -11,7 +11,7 @@ export const ADAPTIVE_RULES = [
     tier: 1,
     rule: 'UT2 should feel sRPE 3–4, UT1 5–6. If an easy session scores higher, effort drifted up.',
     action:
-      'Rein in next easy session — easy days genuinely easy protects the polarized base.',
+      'Rein in next easy session — easy days genuinely easy protects the aerobic base.',
     origin: 'Established 6/12 after repeated feel-good drift to top of band.',
   },
   {
@@ -20,7 +20,8 @@ export const ADAPTIVE_RULES = [
     tier: 1,
     rule: 'Watts rising at stable HR130 = genuine fitness gain.',
     action: 'Nudge UT1 pacer target up (deliberately, not by drifting).',
-    origin: '134→145→151→149W at HR130 over a week (6/8–6/13).',
+    origin:
+      'Observed as a week-on-week rise in watts at the same HR during base.',
   },
   {
     id: 'R3',
@@ -39,7 +40,7 @@ export const ADAPTIVE_RULES = [
     action:
       "Soften or skip the next hard session. Don't stack load on a dropping system.",
     origin:
-      'HRV trough 25 on 6/11 confirmed the pattern; rebounded to 33 with rest.',
+      'An HRV trough with raised RHR confirmed the pattern; both recovered with rest.',
   },
   {
     id: 'R5',
@@ -48,16 +49,18 @@ export const ADAPTIVE_RULES = [
     rule: 'Short sleep is the highest-leverage recovery deficit. Early bedtime is the lever.',
     action:
       'Protect bedtime over everything. Watch for repeated early waking (stress signal).',
-    origin: '5h25m→8h50m turnaround 6/10–6/11 proved bedtime is the lever.',
+    origin:
+      'A short-night → full-night turnaround proved bedtime is the lever.',
   },
   {
     id: 'R6',
     domain: 'Life-stress governor',
     tier: 1,
-    rule: "Family/life stress is real physiological load even though it doesn't show on the erg.",
+    rule: "Life stress is real physiological load even though it doesn't show on the erg.",
     action:
       'When home is heavy, sessions yield without guilt. Structure is default, not obligation.',
-    origin: "Partner's back + mother-in-law illness, ongoing from 6/12.",
+    origin:
+      'Standing principle — recovery capacity is shared with the rest of life.',
   },
   {
     id: 'R7',
@@ -76,7 +79,7 @@ export const ADAPTIVE_RULES = [
     action:
       "'Push' in base = more volume, not intensity. Sharp work waits for Build 1 (Sept+).",
     origin:
-      "Held against 'push it' directive 6/13 — trained cyclist engine doesn't change base physiology.",
+      "Held against a 'push it' directive — prior training background doesn't change base physiology.",
   },
   {
     id: 'R9',
@@ -104,7 +107,7 @@ export const ADAPTIVE_RULES = [
     rule: 'Judge bodyweight & biometrics by weekly trend, never single readings.',
     action: 'Ignore daily scale/HRV noise; act on the multi-day direction.',
     origin:
-      'Established during TDEE calibration; 94.0→95.3 daily swing 6/10–6/11.',
+      'Established during TDEE calibration, when day-to-day scale swings exceeded any real change.',
   },
   {
     id: 'R12',
@@ -112,9 +115,9 @@ export const ADAPTIVE_RULES = [
     tier: 2,
     rule: 'Active niggles get specific management, not training-through.',
     action:
-      'Shoulder: forearm-press cue on planks. Hamstring: physio-led RDL rehab. Flag if erg catch provokes.',
+      "Follow each active niggle's guardrail — see the live niggle anchors (Recovery tab). Flag anything training provokes.",
     origin:
-      'Shoulder twinge 6/10 (resolved via cue), hamstring physio history 6/12.',
+      'Standing principle — professional guidance leads, the plan follows it.',
   },
 ];
 

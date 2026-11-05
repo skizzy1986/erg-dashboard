@@ -51,6 +51,7 @@ let vitalsState = {
   readinessLabel: 'FATIGUED',
 };
 let tssRows = [];
+let anchorsState = {};
 
 vi.mock('../useSessions.js', () => ({
   useSessions: () => ({ data: sessionRows }),
@@ -58,6 +59,10 @@ vi.mock('../useSessions.js', () => ({
 vi.mock('../useVitals.js', () => ({ useVitals: () => vitalsState }));
 vi.mock('../useTSSHistory.js', () => ({
   useTSSHistory: () => ({ data: tssRows }),
+}));
+
+vi.mock('../useAnchors.js', () => ({
+  useAnchors: () => ({ anchors: anchorsState }),
 }));
 
 import { useCoach, todayISO } from '../useCoach.js';
@@ -115,6 +120,7 @@ async function sendAndReadBody(fetchMock) {
 beforeEach(() => {
   sessionRows = [];
   tssRows = [];
+  anchorsState = {};
   vitalsState = { latest: null, readinessScore: 0, readinessLabel: 'FATIGUED' };
   insertErrorFor = () => null;
   deleteError = null;
@@ -132,6 +138,23 @@ afterEach(() => {
 });
 
 describe('useCoach sends the training context', () => {
+  it('leads the context with the live anchors from useAnchors', async () => {
+    anchorsState = {
+      rowing_cp: {
+        key: 'rowing_cp',
+        value: '200',
+        unit: 'W',
+        status: 'provisional',
+      },
+      health_context: { key: 'health_context', value: 'PRIVATE-SENTINEL' },
+    };
+    const fetchMock = stubFetch();
+    const { body } = await sendAndReadBody(fetchMock);
+    expect(body.context.startsWith('ATHLETE ANCHORS')).toBe(true);
+    expect(body.context).toContain('rowing_cp: 200 W (provisional)');
+    expect(body.context).not.toContain('PRIVATE-SENTINEL');
+  });
+
   it('posts a non-empty context string to coach-chat', async () => {
     const fetchMock = stubFetch();
     const { url, body } = await sendAndReadBody(fetchMock);

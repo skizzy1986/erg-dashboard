@@ -195,8 +195,8 @@ describe('buildTrainingContext', () => {
 });
 
 // The header date and the "today's session" match both key off todayISO. It
-// reads LOCAL calendar fields, not toISOString(): Perth is UTC+8, so a UTC
-// day would name yesterday for the whole Perth morning — precisely when
+// reads LOCAL calendar fields, not toISOString(): in a UTC+8 zone a UTC
+// day would name yesterday for the whole local morning — precisely when
 // readiness is checked and today's prescription asked about.
 describe('todayISO', () => {
   const realTZ = globalThis.process.env.TZ;
@@ -207,9 +207,9 @@ describe('todayISO', () => {
   });
 
   it('reports the local day, not the UTC one, when the two differ', () => {
-    globalThis.process.env.TZ = 'Australia/Perth';
+    globalThis.process.env.TZ = 'Asia/Singapore';
     vi.useFakeTimers();
-    // 04:00 Thursday in Perth is still Wednesday in UTC.
+    // 04:00 Saturday at UTC+8 is still Friday in UTC.
     vi.setSystemTime(new Date('2026-08-21T20:00:00Z'));
 
     expect(todayISO()).toBe('2026-08-22');
@@ -217,11 +217,131 @@ describe('todayISO', () => {
   });
 
   it('feeds the context header the local day', () => {
-    globalThis.process.env.TZ = 'Australia/Perth';
+    globalThis.process.env.TZ = 'Asia/Singapore';
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-21T20:00:00Z'));
 
     const result = buildTrainingContext(null, null, 0, 'READY', [], null);
     expect(result).toContain('CURRENT TRAINING DATA (as of 2026-08-22):');
+  });
+});
+
+// Synthetic anchors only — example values, never real ones.
+describe('buildTrainingContext — athlete anchors block', () => {
+  const anchors = {
+    rowing_cp: {
+      key: 'rowing_cp',
+      value: '200',
+      unit: 'W',
+      status: 'provisional',
+    },
+    hr_max_working: {
+      key: 'hr_max_working',
+      value: '180',
+      unit: 'bpm',
+      status: 'unvalidated',
+    },
+    current_phase: {
+      key: 'current_phase',
+      value: 'example-phase',
+      status: null,
+    },
+    'niggle:example-knee': {
+      key: 'niggle:example-knee',
+      value: 'Example status',
+      note: 'Example guardrail',
+      status: 'provisional',
+    },
+    health_context: { key: 'health_context', value: 'PRIVATE-SENTINEL' },
+    nutrition_targets: {
+      key: 'nutrition_targets',
+      value: '{"rest":{}}',
+      unit: 'json',
+    },
+    doctrine_sha: { key: 'doctrine_sha', value: 'deadbeef' },
+  };
+
+  it('emits the anchors block first, with statuses', () => {
+    const result = buildTrainingContext(
+      null,
+      null,
+      0,
+      'READY',
+      [],
+      null,
+      false,
+      anchors
+    );
+    const lines = result.split('\n');
+    expect(lines[0]).toBe('ATHLETE ANCHORS (live; status in brackets):');
+    expect(result).toContain('rowing_cp: 200 W (provisional)');
+    expect(result).toContain('hr_max_working: 180 bpm (unvalidated)');
+    expect(result).toContain('current_phase: example-phase');
+    expect(result).toContain(
+      'niggle:example-knee: Example status (provisional) — Example guardrail'
+    );
+    expect(result.indexOf('ATHLETE ANCHORS')).toBeLessThan(
+      result.indexOf('CURRENT TRAINING DATA')
+    );
+  });
+
+  it('never sends health_context, JSON anchors or doctrine_sha', () => {
+    const result = buildTrainingContext(
+      null,
+      null,
+      0,
+      'READY',
+      [],
+      null,
+      false,
+      anchors
+    );
+    expect(result).not.toContain('PRIVATE-SENTINEL');
+    expect(result).not.toContain('health_context');
+    expect(result).not.toContain('nutrition_targets');
+    expect(result).not.toContain('doctrine_sha');
+  });
+
+  it('truncates long text anchors to 600 chars', () => {
+    const long = 'x'.repeat(900);
+    const result = buildTrainingContext(
+      null,
+      null,
+      0,
+      'READY',
+      [],
+      null,
+      false,
+      {
+        athlete_profile: { key: 'athlete_profile', value: long, unit: 'text' },
+      }
+    );
+    const line = result
+      .split('\n')
+      .find((l) => l.startsWith('athlete_profile:'));
+    expect(line).toBe(`athlete_profile: ${'x'.repeat(600)}…`);
+  });
+
+  it('emits no block when anchors are null or empty', () => {
+    for (const a of [null, {}]) {
+      const result = buildTrainingContext(
+        null,
+        null,
+        0,
+        'READY',
+        [],
+        null,
+        false,
+        a
+      );
+      expect(result).not.toContain('ATHLETE ANCHORS');
+      expect(result.startsWith('CURRENT TRAINING DATA')).toBe(true);
+    }
+  });
+
+  it('a 7-argument call is unchanged', () => {
+    const seven = buildTrainingContext(null, null, 0, 'READY', [], null, false);
+    expect(seven).not.toContain('ATHLETE ANCHORS');
+    expect(seven.startsWith('CURRENT TRAINING DATA')).toBe(true);
   });
 });

@@ -14,10 +14,16 @@ vi.mock('../../hooks/useVitals.js', () => ({
   useVitals: () => useVitalsMock(),
 }));
 
-// CP/FTP labels read the live anchors rather than a hardcoded 190.
+// CP/FTP labels read the live anchors rather than a hardcoded constant.
 const useAnchorsMock = vi.fn();
 vi.mock('../../hooks/useAnchors.js', () => ({
   useAnchors: () => useAnchorsMock(),
+}));
+
+// Intake comes from useNutritionDays (vitals intake columns). Synthetic data.
+const useNutritionDaysMock = vi.fn();
+vi.mock('../../hooks/useNutritionDays.js', () => ({
+  useNutritionDays: () => useNutritionDaysMock(),
 }));
 
 import OverviewView from '../OverviewView.jsx';
@@ -32,7 +38,14 @@ const vitalsRow = {
 
 beforeEach(() => {
   useAnchorsMock.mockReset();
-  useAnchorsMock.mockReturnValue({ cp: 205, ftp: 250, cpAvailable: true });
+  // Example CP — the live value is the rowing_cp anchor.
+  useAnchorsMock.mockReturnValue({ cp: 200, ftp: 250, cpAvailable: true });
+  useNutritionDaysMock.mockReset();
+  useNutritionDaysMock.mockReturnValue({
+    days: [],
+    isLoading: false,
+    isError: false,
+  });
   useVitalsMock.mockReset();
   const personalBaselines = computePersonalBaselines([vitalsRow]);
   useVitalsMock.mockReturnValue({
@@ -121,10 +134,9 @@ describe('OverviewView', () => {
     expect(screen.getByText(/readiness\s+—/)).toBeInTheDocument();
   });
 
-  it('labels load against the live CP/FTP anchors, not a hardcoded 190', () => {
+  it('labels load against the live CP/FTP anchors, not a hardcoded value', () => {
     render(<OverviewView {...baseProps} />);
-    expect(screen.getByText(/Rowing CP 205W/)).toBeInTheDocument();
-    expect(screen.queryByText(/190W/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Rowing CP 200W/)).toBeInTheDocument();
   });
 
   it('says CP is unavailable rather than showing a stale threshold', () => {
@@ -135,7 +147,7 @@ describe('OverviewView', () => {
     });
     render(<OverviewView {...baseProps} />);
     expect(screen.getByText('CP unavailable')).toBeInTheDocument();
-    expect(screen.queryByText(/190W/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/CP \d+W/)).not.toBeInTheDocument();
   });
 
   it('says the training load is unavailable rather than showing a zero', () => {
@@ -189,5 +201,103 @@ describe('OverviewView', () => {
       <OverviewView {...baseProps} loggedSessions={[]} />
     );
     expect(container.textContent.length).toBeGreaterThan(50);
+  });
+
+  describe('nutrition status', () => {
+    const targets = {
+      training: {
+        cal: [2000, 2400],
+        protein: [150, 170],
+        carbs: [200, 260],
+        fat: [60, 80],
+      },
+    };
+    const days = [
+      {
+        date: '2026-01-02',
+        dayType: 'training',
+        cal: 2200,
+        protein: 160,
+        carbs: 230,
+        fat: 70,
+        burn: 2500,
+        weight: null,
+        note: null,
+      },
+      {
+        date: '2026-01-01',
+        dayType: 'training',
+        cal: 1500,
+        protein: 100,
+        carbs: 150,
+        fat: 40,
+        burn: null,
+        weight: null,
+        note: null,
+      },
+    ];
+
+    it('says no intake is logged on a fresh DB', () => {
+      render(<OverviewView {...baseProps} />);
+      expect(screen.getByText('No intake logged')).toBeInTheDocument();
+      expect(screen.getByText('targets anchor not set')).toBeInTheDocument();
+    });
+
+    it('shows loading and error states', () => {
+      useNutritionDaysMock.mockReturnValue({
+        days: [],
+        isLoading: true,
+        isError: false,
+      });
+      const { unmount } = render(<OverviewView {...baseProps} />);
+      expect(screen.getByText(/Loading intake/)).toBeInTheDocument();
+      unmount();
+      useNutritionDaysMock.mockReturnValue({
+        days: [],
+        isLoading: false,
+        isError: true,
+      });
+      render(<OverviewView {...baseProps} />);
+      expect(screen.getByText(/Intake unavailable/)).toBeInTheDocument();
+    });
+
+    it('judges intake against the nutrition_targets anchor', () => {
+      useAnchorsMock.mockReturnValue({
+        cp: 200,
+        ftp: 250,
+        cpAvailable: true,
+        nutritionTargets: targets,
+      });
+      useNutritionDaysMock.mockReturnValue({
+        days,
+        isLoading: false,
+        isError: false,
+      });
+      render(<OverviewView {...baseProps} />);
+      const rows = screen.getAllByTestId('nutrition-day');
+      expect(rows).toHaveLength(2);
+      expect(rows[0]).toHaveTextContent('2000–2400');
+      expect(rows[0]).toHaveTextContent('✅');
+      expect(rows[0]).toHaveTextContent('Intake 2200 − burn ~2500');
+      expect(rows[1]).toHaveTextContent('❌');
+      expect(
+        screen.getByText('vs nutrition_targets anchor')
+      ).toBeInTheDocument();
+    });
+
+    it('shows raw intake without a verdict when no targets anchor is set', () => {
+      useNutritionDaysMock.mockReturnValue({
+        days,
+        isLoading: false,
+        isError: false,
+      });
+      render(<OverviewView {...baseProps} />);
+      const rows = screen.getAllByTestId('nutrition-day');
+      expect(rows[0]).toHaveTextContent('2200');
+      expect(rows[0]).toHaveTextContent('160g');
+      expect(rows[0]).not.toHaveTextContent('✅');
+      expect(rows[1]).not.toHaveTextContent('❌');
+      expect(screen.getByText('targets anchor not set')).toBeInTheDocument();
+    });
   });
 });

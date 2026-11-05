@@ -1,116 +1,42 @@
 import { THEME } from './theme.js';
+// Generic macro framework. The athlete's own numbers (protein/fat floors, TDEE,
+// day-type targets, the maintenance and deficit plans) are live anchors
+// (protein_floor_g, fat_floor_g, tdee_kcal, nutrition_targets, maintenance_plan,
+// deficit_plan) — never written here.
 export const MACRO_TARGETS = [
   {
     macro: 'Protein',
-    target: '~190g',
-    rule: '2g per kg',
+    rule: '~2g per kg',
     color: THEME.critical,
-    note: 'Non-negotiable floor. Protects muscle in a deficit, drives recovery across 9 sessions/week. Hit this first every day.',
+    anchorKey: 'protein_floor_g',
+    note: 'Non-negotiable floor. Protects muscle in a deficit and drives recovery across a high-volume week. Hit this first every day.',
   },
   {
     macro: 'Carbs',
-    target: 'High',
     rule: 'fill remaining',
     color: THEME.accent,
-    note: 'After protein, bias calories here — not fat. Fuels 5 erg + 4 lifting sessions. Low carb + your volume = dead legs.',
+    anchorKey: null,
+    note: 'After protein, bias calories here — not fat. Fuels the erg and lifting volume. Low carb + high volume = dead legs.',
   },
   {
     macro: 'Fat',
-    target: '~75g floor',
-    rule: '0.8g per kg',
+    rule: '~0.8g per kg',
     color: THEME.caution,
+    anchorKey: 'fat_floor_g',
     note: "Don't drop below the floor — matters for hormones. Fill remaining calories after protein and carbs are set.",
   },
 ];
 
-export const MF_PROGRAM = [
-  { day: 'Mon', train: '60min UT1', cal: 3000, p: 200, c: 350, f: 89 },
-  { day: 'Tue', train: '45min + ladder', cal: 3000, p: 200, c: 350, f: 89 },
-  { day: 'Wed', train: 'UT2 + Lower 1', cal: 3200, p: 200, c: 395, f: 89 },
-  { day: 'Thu', train: 'yoga + Upper 2', cal: 2900, p: 200, c: 330, f: 87 },
-  { day: 'Fri', train: '45min + Lower 2', cal: 3200, p: 200, c: 395, f: 89 },
-  { day: 'Sat', train: 'long row', cal: 3200, p: 200, c: 395, f: 89 },
-  { day: 'Sun', train: 'rest / light', cal: 2700, p: 200, c: 280, f: 87 },
-];
-
-export const DEFICIT_PROGRAM = {
-  trigger:
-    'Start ONLY after TDEE confirmed (clean week + stable weight). Not before — a deficit off a wrong maintenance does nothing or cuts too hard.',
-  rate: '~0.25–0.3kg/week (avg ~230–350 cal/day under ~3,030 maintenance)',
-  days: [
-    {
-      day: 'Mon',
-      train: '60min UT1',
-      cal: 2800,
-      p: 210,
-      c: 300,
-      f: 84,
-      cut: '-200',
-    },
-    {
-      day: 'Tue',
-      train: '45min + ladder',
-      cal: 2800,
-      p: 210,
-      c: 300,
-      f: 84,
-      cut: '-200',
-    },
-    {
-      day: 'Wed',
-      train: 'UT2 + Lower',
-      cal: 3100,
-      p: 210,
-      c: 375,
-      f: 87,
-      cut: '-100 (protect lift)',
-    },
-    {
-      day: 'Thu',
-      train: 'yoga + Upper',
-      cal: 2500,
-      p: 210,
-      c: 250,
-      f: 80,
-      cut: '-400 (light day)',
-    },
-    {
-      day: 'Fri',
-      train: '45min + Lower',
-      cal: 3100,
-      p: 210,
-      c: 375,
-      f: 87,
-      cut: '-100 (protect lift)',
-    },
-    {
-      day: 'Sat',
-      train: 'long row',
-      cal: 3000,
-      p: 210,
-      c: 350,
-      f: 84,
-      cut: '-200',
-    },
-    {
-      day: 'Sun',
-      train: 'rest',
-      cal: 2300,
-      p: 210,
-      c: 210,
-      f: 78,
-      cut: '-400 (rest day)',
-    },
-  ],
+// Generic guardrails for any deficit phase. The plan itself (trigger, rate,
+// phase timing, day-by-day numbers) is the `deficit_plan` anchor.
+export const DEFICIT_GUARDRAILS = {
   guardrails: [
-    'POWER@HR130 BAROMETER = the early-warning. ~150W now. Holds/climbs → fat off, fitness intact, continue. Drops 2 sessions running → add ~200 cal back.',
-    'Fasted-AM weight should fall ~0.25–0.4kg/wk. Faster = too aggressive, ease up.',
+    'Aerobic power at a fixed HR is the early-warning barometer. Holds or climbs → fat off, fitness intact, continue. Drops two sessions running → add calories back.',
+    'Fasted-AM weight should fall ~0.25–0.4 kg/wk. Faster = too aggressive, ease up.',
     'HRV/sleep degrading → under-fuelling, back off.',
-    'Squat/lift numbers dropping → deficit too steep.',
-    'Protein 200–220g (HIGHER in deficit — muscle-sparing + satiety). Fat ≥75g (hormones). Cut CARBS on easy days, not protein or fat.',
+    'Lift numbers dropping → deficit too steep.',
+    'Protein at or above the floor (higher in a deficit — muscle-sparing + satiety). Fat at or above its floor. Cut CARBS on easy days, not protein or fat.',
   ],
-  phase:
-    'Run through BASE (now–Aug, forgiving of deficit). PAUSE at Build-1 (Sept) intensity ramp — eat maintenance to fuel hard work. Resume later if needed.',
   note: "Erg advantage: hold absolute watts while dropping fat = better power-to-weight = effectively faster splits. 'Hold the watts' is the whole game.",
 };
 
@@ -120,7 +46,7 @@ export const FUELLING = {
       type: 'Fasted easy row (UT1/UT2)',
       color: THEME.accent,
       guide:
-        'KEEP fasted — at HR130 you burn mostly fat; fasted enhances fat-ox adaptation, exactly what base wants. If ever flat: banana / few dates 20min before. >75min: sip carbs during.',
+        'KEEP fasted — at easy aerobic HR you burn mostly fat; fasted enhances fat-ox adaptation, exactly what base wants. If ever flat: banana / few dates 20min before. >75min: sip carbs during.',
     },
     {
       type: 'Two-a-day (erg AM + lift PM)',
@@ -142,14 +68,14 @@ export const FUELLING = {
     },
   ],
   hydration: [
-    'Loss ~1kg (1L) per hour rowing — confirmed 6/15 (95.7→94.7 post-row). WA heat amplifies it.',
+    'Sweat loss on the erg is often ~1 L per hour, more in heat. Weigh before/after a session to know your own number.',
     'Pre-row: 500ml on waking before a fasted session.',
-    'Post: replace 150% of loss — ~1.5L after a 1kg-loss row. Weigh before/after to know the real number.',
+    'Post: replace ~150% of the measured loss (e.g. ~1.5 L after a 1 kg loss).',
     'Electrolytes not just water — sodium especially, on two-a-days + heat. Plain water without salt just gets peed out.',
     "PM lift in heat: arrive already hydrated from the day, don't try to catch up at 4pm.",
   ],
   protein:
-    'Floor 188g/day non-negotiable — protects muscle through any deficit. Spread across meals (~30–40g/meal), not back-loaded.',
+    'Daily protein floor (the live `protein_floor_g` anchor) is non-negotiable — protects muscle through any deficit. Spread across meals (~30–40g/meal), not back-loaded.',
 };
 
 export const NUTRITION_PRINCIPLES = [
@@ -178,24 +104,3 @@ export const NUTRITION_PRINCIPLES = [
     'Performance guardrail: if watts at a given HR start dropping, ease the deficit. For 2k erg, absolute power matters more than bodyweight — protect the power numbers.',
   ],
 ];
-
-export const NUTRITION_TARGETS = {
-  'two-a-day': {
-    cal: [3000, 3500],
-    protein: [185, 200],
-    carbs: [330, 400],
-    fat: [85, 110],
-  },
-  training: {
-    cal: [2900, 3200],
-    protein: [185, 200],
-    carbs: [310, 370],
-    fat: [80, 100],
-  },
-  rest: {
-    cal: [2400, 2700],
-    protein: [185, 200],
-    carbs: [230, 290],
-    fat: [70, 90],
-  },
-};

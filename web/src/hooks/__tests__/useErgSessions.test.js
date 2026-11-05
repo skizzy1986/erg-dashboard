@@ -31,7 +31,7 @@ function makeWrapper() {
 
 // Both useErgSessions and its useAnchors dependency call supabase.from(); branch
 // by table so the erg-session query and the live-CP anchor query each resolve.
-function mockQuery(data, error = null, cp = 205) {
+function mockQuery(data, error = null, cp = 200) {
   fromMock.mockImplementation((table) => {
     if (table === 'anchors') {
       const chain = {

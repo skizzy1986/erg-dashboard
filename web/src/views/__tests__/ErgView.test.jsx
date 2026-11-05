@@ -33,7 +33,7 @@ beforeEach(() => {
   useErgSessionsMock.mockReset();
   useAnchorsMock.mockReset();
   useAnchorsMock.mockReturnValue({
-    cp: 205,
+    cp: 200,
     cpStatus: 'provisional',
     cpAvailable: true,
   });
@@ -114,7 +114,7 @@ describe('ErgView', () => {
   it('shows the live CP value and status from anchors', () => {
     useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
     const { container } = renderView();
-    expect(container.textContent).toContain('205W');
+    expect(container.textContent).toContain('200W');
     expect(container.textContent).toContain('provisional');
   });
 
@@ -214,7 +214,7 @@ describe('ErgView', () => {
 
     it('shows the live CP in the calibration panel, not a stale constant', () => {
       const { container } = renderView();
-      expect(container.textContent).toContain('CP 205W (provisional)');
+      expect(container.textContent).toContain('CP 200W (provisional)');
       expect(container.textContent).not.toContain('CP/FTP est. 190W');
     });
 

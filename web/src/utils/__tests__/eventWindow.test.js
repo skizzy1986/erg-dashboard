@@ -201,9 +201,9 @@ describe('timezone safety', () => {
   });
 
   it('todayISO reports the local day, not the UTC one, past local midnight', () => {
-    globalThis.process.env.TZ = 'Australia/Perth';
+    globalThis.process.env.TZ = 'Asia/Singapore';
     vi.useFakeTimers();
-    // 2026-08-20T16:30Z is already 2026-08-21 00:30 in Perth (UTC+8).
+    // 2026-08-20T16:30Z is already 2026-08-21 00:30 at UTC+8.
     vi.setSystemTime(new Date('2026-08-20T16:30:00Z'));
     expect(new Date().toISOString().slice(0, 10)).toBe('2026-08-20');
     expect(todayISO()).toBe('2026-08-21');

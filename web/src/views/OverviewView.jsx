@@ -25,11 +25,10 @@ import {
   autoregulate,
 } from '../utils/analysis.js';
 import { HR130_POWER } from '../constants/trainingConfig.js';
-import { NUTRITION_TARGETS } from '../constants/nutrition.js';
 import { PHASE_CONTEXT } from '../constants/schedule.js';
-import { nutritionLog } from '../constants/logs.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
+import { useNutritionDays } from '../hooks/useNutritionDays.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
@@ -70,7 +69,10 @@ export default function OverviewView({
   // Was a hardcoded 190 threaded down from App.jsx. Load is measured against
   // the live rowing CP and bike FTP anchors, so a fixed 190 both drifted from
   // the real value and misdescribed the calculation.
-  const { cp, ftp, cpAvailable } = useAnchors();
+  const { cp, ftp, cpAvailable, nutritionTargets } = useAnchors();
+  // Intake is logged into vitals and judged against the nutrition_targets
+  // anchor. No anchor → intake is still shown, just without a verdict.
+  const nutrition = useNutritionDays();
   return (
     <>
       {/* ── CONDENSED TODAY STATUS STRIP (live, mobile-first) ── */}
@@ -1147,169 +1149,179 @@ export default function OverviewView({
             NUTRITION STATUS
           </div>
           <div style={{ fontSize: 9, color: THEME.textFaint }}>
-            Share MacroFactor screenshot to update
+            {nutritionTargets
+              ? 'vs nutrition_targets anchor'
+              : 'targets anchor not set'}
           </div>
         </div>
-        {nutritionLog
-          .slice(-2)
-          .reverse()
-          .map((day, i) => {
-            const t = NUTRITION_TARGETS[day.dayType];
-            const calS = assessMacro(day.cal, t.cal);
-            const proS = assessMacro(day.protein, t.protein);
-            const fatS = assessMacro(day.fat, t.fat);
-            const carS = assessMacro(day.carbs, t.carbs);
-            const isToday = i === 0;
-            return (
+        {nutrition.isLoading ? (
+          <div style={{ fontSize: 10, color: THEME.muted, marginBottom: 8 }}>
+            Loading intake…
+          </div>
+        ) : nutrition.isError ? (
+          <div style={{ fontSize: 10, color: THEME.muted, marginBottom: 8 }}>
+            Intake unavailable — couldn&apos;t reach the database
+          </div>
+        ) : nutrition.days.length === 0 ? (
+          <div style={{ fontSize: 10, color: THEME.muted, marginBottom: 8 }}>
+            No intake logged
+          </div>
+        ) : null}
+        {nutrition.days.slice(0, 2).map((day, i) => {
+          const t = nutritionTargets?.[day.dayType] ?? null;
+          const range = (k, suffix = '') =>
+            t ? `${t[k][0]}–${t[k][1]}${suffix}` : '—';
+          const verdict = (v, k) => (t ? assessMacro(v, t[k]) : '');
+          const g = (v) => (v == null ? '—' : `${v}g`);
+          const calS = verdict(day.cal, 'cal');
+          const proS = verdict(day.protein, 'protein');
+          const fatS = verdict(day.fat, 'fat');
+          const carS = verdict(day.carbs, 'carbs');
+          const isToday = i === 0;
+          return (
+            <div
+              key={day.date}
+              data-testid="nutrition-day"
+              style={{
+                marginBottom: 8,
+                padding: '10px 12px',
+                background: isToday ? THEME.surfaceAlt : THEME.field,
+                borderRadius: 4,
+                border: `1px solid ${isToday ? alpha(THEME.critical, '30') : THEME.divider}`,
+              }}
+            >
               <div
-                key={day.date}
                 style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   marginBottom: 8,
-                  padding: '10px 12px',
-                  background: isToday ? THEME.surfaceAlt : THEME.field,
-                  borderRadius: 4,
-                  border: `1px solid ${isToday ? alpha(THEME.critical, '30') : THEME.divider}`,
                 }}
               >
-                <div
+                <span
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: 8,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: THEME.textStrong,
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: THEME.textStrong,
-                    }}
-                  >
-                    {day.date}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      color: THEME.muted,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    {day.dayType === 'two-a-day'
-                      ? 'TWO-A-DAY'
-                      : day.dayType === 'training'
-                        ? 'TRAINING'
-                        : 'REST'}
-                  </span>
-                </div>
-                <div
+                  {day.date}
+                </span>
+                <span
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4,1fr)',
-                    gap: 4,
+                    fontSize: 9,
+                    color: THEME.muted,
+                    letterSpacing: 1,
                   }}
                 >
-                  {[
-                    ['CAL', day.cal, `${t.cal[0]}–${t.cal[1]}`, calS],
-                    [
-                      'PRO',
-                      `${day.protein}g`,
-                      `${t.protein[0]}–${t.protein[1]}g`,
-                      proS,
-                    ],
-                    ['FAT', `${day.fat}g`, `${t.fat[0]}–${t.fat[1]}g`, fatS],
-                    [
-                      'CARB',
-                      `${day.carbs}g`,
-                      `${t.carbs[0]}–${t.carbs[1]}g`,
-                      carS,
-                    ],
-                  ].map(([label, val, target, status]) => (
+                  {day.dayType === 'two-a-day'
+                    ? 'TWO-A-DAY'
+                    : day.dayType === 'training'
+                      ? 'TRAINING'
+                      : day.dayType === 'rest'
+                        ? 'REST'
+                        : 'DAY TYPE NOT SET'}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4,1fr)',
+                  gap: 4,
+                }}
+              >
+                {[
+                  ['CAL', day.cal ?? '—', range('cal'), calS],
+                  ['PRO', g(day.protein), range('protein', 'g'), proS],
+                  ['FAT', g(day.fat), range('fat', 'g'), fatS],
+                  ['CARB', g(day.carbs), range('carbs', 'g'), carS],
+                ].map(([label, val, target, status]) => (
+                  <div
+                    key={label}
+                    style={{
+                      background: THEME.raised,
+                      borderRadius: 3,
+                      padding: '6px 6px',
+                    }}
+                  >
                     <div
-                      key={label}
                       style={{
-                        background: THEME.raised,
-                        borderRadius: 3,
-                        padding: '6px 6px',
+                        fontSize: 8,
+                        color: THEME.muted,
+                        letterSpacing: 1,
+                        marginBottom: 2,
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: 8,
-                          color: THEME.muted,
-                          letterSpacing: 1,
-                          marginBottom: 2,
-                        }}
-                      >
-                        {label}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: macroColor(status),
-                        }}
-                      >
-                        {val}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 8,
-                          color: THEME.textDim,
-                          marginTop: 1,
-                        }}
-                      >
-                        {target}
-                      </div>
-                      <div style={{ fontSize: 10, marginTop: 1 }}>{status}</div>
+                      {label}
                     </div>
-                  ))}
-                </div>
-                {day.burn &&
-                  (() => {
-                    const net = day.cal - day.burn;
-                    const netColor =
-                      Math.abs(net) <= 300
-                        ? THEME.caution
-                        : net < 0
-                          ? THEME.positive
-                          : THEME.warning;
-                    return (
-                      <div
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: status ? macroColor(status) : THEME.textStrong,
+                      }}
+                    >
+                      {val}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 8,
+                        color: THEME.textDim,
+                        marginTop: 1,
+                      }}
+                    >
+                      {target}
+                    </div>
+                    <div style={{ fontSize: 10, marginTop: 1 }}>{status}</div>
+                  </div>
+                ))}
+              </div>
+              {day.burn != null &&
+                day.cal != null &&
+                (() => {
+                  const net = day.cal - day.burn;
+                  const netColor =
+                    Math.abs(net) <= 300
+                      ? THEME.caution
+                      : net < 0
+                        ? THEME.positive
+                        : THEME.warning;
+                  return (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        paddingTop: 8,
+                        borderTop: `1px solid ${THEME.divider}`,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <span style={{ fontSize: 9, color: THEME.muted }}>
+                        Intake {day.cal} − burn ~{day.burn} (±15%)
+                      </span>
+                      <span
                         style={{
-                          marginTop: 8,
-                          paddingTop: 8,
-                          borderTop: `1px solid ${THEME.divider}`,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: netColor,
                         }}
                       >
+                        {net > 0 ? '+' : ''}
+                        {net}{' '}
                         <span style={{ fontSize: 9, color: THEME.muted }}>
-                          Intake {day.cal} − burn ~{day.burn} (±15%)
+                          {Math.abs(net) <= 300
+                            ? '~maintenance'
+                            : net < 0
+                              ? 'deficit'
+                              : 'surplus'}
                         </span>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: netColor,
-                          }}
-                        >
-                          {net > 0 ? '+' : ''}
-                          {net}{' '}
-                          <span style={{ fontSize: 9, color: THEME.muted }}>
-                            {Math.abs(net) <= 300
-                              ? '~maintenance'
-                              : net < 0
-                                ? 'deficit'
-                                : 'surplus'}
-                          </span>
-                        </span>
-                      </div>
-                    );
-                  })()}
-              </div>
-            );
-          })}
+                      </span>
+                    </div>
+                  );
+                })()}
+            </div>
+          );
+        })}
         <div
           style={{
             fontSize: 10,
@@ -1319,28 +1331,9 @@ export default function OverviewView({
             paddingTop: 10,
           }}
         >
-          ✅{' '}
-          <span style={{ color: THEME.positive }}>Expenditure confirmed:</span>{' '}
-          Fitbit device data (2,650–4,050/day) matches the bottom-up model
-          (~3,140 avg) — two independent methods agree. MacroFactor's 1,948
-          estimate is ~1,200 kcal low. Eat at maintenance during calibration,
-          then 0.3kg/week deficit (~2,800/day avg). Protein 190g constant.
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: THEME.muted,
-            lineHeight: 1.6,
-            borderTop: `1px solid ${THEME.divider}`,
-            paddingTop: 10,
-            marginTop: 2,
-          }}
-        >
-          📅 <span style={{ color: THEME.accent }}>Tracking cadence:</span>{' '}
-          Daily CSVs through calibration (~to Jun 24) while baselines set — RHR,
-          HRV, sleep, TDEE, Z2 power. After that, switch CSV export to week-view
-          and share weekly (Sun review prompt set). Daily detail is for
-          calibration, not forever.
+          Intake is logged into the vitals table; burn is the device&apos;s
+          daily calories. Judge the weekly average against the weight trend, not
+          a single day.
         </div>
       </div>
 

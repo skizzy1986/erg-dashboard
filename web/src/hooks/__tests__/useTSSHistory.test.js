@@ -29,7 +29,7 @@ function makeWrapper() {
 // useTSSHistory now reads CP/FTP through useAnchors, so both hooks call
 // supabase.from(). Branch by table so the anchors query and the sessions query
 // each resolve independently.
-function mockQuery(data, error = null, { cp = 205, ftp = 250 } = {}) {
+function mockQuery(data, error = null, { cp = 200, ftp = 250 } = {}) {
   fromMock.mockImplementation((table) => {
     if (table === 'anchors') {
       const rows = [];
@@ -199,7 +199,7 @@ describe('useTSSHistory', () => {
   });
 
   it('derives load from watts when sRPE was never captured', async () => {
-    // 152 W against CP 205 for 60min: (152/205)^2 * 10 * 1h = 5.50 -> 5
+    // 152 W against CP 200 (example) for 60min: (152/200)^2 * 100 * 1h = 57.8 -> 58
     mockQuery([
       {
         date: '8/6/26',
@@ -213,11 +213,11 @@ describe('useTSSHistory', () => {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data[0].tss).toBe(55);
+    expect(result.current.data[0].tss).toBe(58);
   });
 
   it('measures bike watts against FTP, not rowing CP', async () => {
-    // 196 W against FTP 250 for 60min = 61.5 -> 61. Against CP 205: 91.
+    // 196 W against FTP 250 for 60min = 61.5 -> 61. Against CP 200: 96.
     mockQuery([
       {
         date: '7/1/26',

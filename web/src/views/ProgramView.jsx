@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { HR_ZONES, EST_MHR, SRPE_SCALE } from '../constants/trainingConfig.js';
+import {
+  HR_ZONES,
+  SRPE_SCALE,
+  deriveHrBands,
+} from '../constants/trainingConfig.js';
 import {
   REP_SCHEMES,
   LOWER_DIFFERENTIATION,
@@ -7,8 +11,7 @@ import {
 } from '../constants/exercises.js';
 import {
   MACRO_TARGETS,
-  MF_PROGRAM,
-  DEFICIT_PROGRAM,
+  DEFICIT_GUARDRAILS,
   FUELLING,
   NUTRITION_PRINCIPLES,
 } from '../constants/nutrition.js';
@@ -28,9 +31,36 @@ import ProgramYear from './program/ProgramYear.jsx';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
+import { useAnchors } from '../hooks/useAnchors.js';
+import { formatAnchor } from '../utils/anchorValues.js';
+
+// "<low>–<high>" with open ends for the bottom and top zones.
+function bandLabel(zone, band) {
+  if (!band) return '—';
+  if (zone === 'UT2') return `< ${band.bpmHigh}`;
+  if (zone === 'AN') return `> ${band.bpmLow}`;
+  return `${band.bpmLow}–${band.bpmHigh}`;
+}
+
+const planNotSet = {
+  fontSize: 10,
+  color: THEME.muted,
+  padding: '6px 0',
+};
 
 export default function ProgramView({ expanded, setExpanded }) {
   const [progTab, setProgTab] = useState('phases');
+  // Personal targets, plans and the working MHR are live anchors; this file
+  // keeps only the generic framework around them.
+  const { anchors, hrMax, maintenancePlan, deficitPlan } = useAnchors();
+  const hrBands = deriveHrBands(hrMax);
+  const bandFor = (zone) => hrBands?.find((b) => b.zone === zone) ?? null;
+  const ut1 = bandFor('UT1');
+  const at = bandFor('AT');
+  const maintenanceDays = maintenancePlan?.days ?? [];
+  const maintenancePeak = maintenanceDays.length
+    ? Math.max(...maintenanceDays.map((d) => d.cal))
+    : null;
 
   return (
     <>
@@ -739,7 +769,9 @@ export default function ProgramView({ expanded, setExpanded }) {
                 HEART RATE ZONES
               </div>
               <div style={{ fontSize: 9, color: THEME.textFaint }}>
-                Est. MHR {EST_MHR} bpm · confirm when tested
+                {hrBands
+                  ? `Working MHR ${formatAnchor(anchors.hr_max_working)}`
+                  : 'MHR anchor unavailable'}
               </div>
             </div>
             {HR_ZONES.map((z) => (
@@ -781,7 +813,8 @@ export default function ProgramView({ expanded, setExpanded }) {
                         fontWeight: 600,
                       }}
                     >
-                      {z.bpm} bpm
+                      {bandLabel(z.zone, bandFor(z.zone))}
+                      {hrBands ? ' bpm' : ''}
                     </span>
                     <span style={{ fontSize: 9, color: THEME.textFaint }}>
                       {z.pct} MHR · {z.lactate}
@@ -814,11 +847,13 @@ export default function ProgramView({ expanded, setExpanded }) {
               lineHeight: 1.6,
             }}
           >
-            ⚠️ Avoid the grey zone (UT1 upper → AT, ~136–148 bpm). Most
-            recreational athletes spend too much time here. It's taxing enough
-            to accumulate fatigue but not intense enough to drive VO₂
-            adaptation. Your natural negative-split pacing pattern drifts into
-            this zone — use HR to stay below 136 on Z2 days.
+            ⚠️ Avoid the grey zone (UT1 upper → AT,{' '}
+            {at ? `~${at.bpmLow}–${at.bpmHigh} bpm` : '80–87% of MHR'}). Most
+            recreational athletes spend too much time here. It&apos;s taxing
+            enough to accumulate fatigue but not intense enough to drive VO₂
+            adaptation. Negative-split pacing drifts into this zone — use HR to
+            stay below {ut1 ? `${ut1.bpmHigh} bpm` : 'the top of UT1'} on Z2
+            days.
           </div>
 
           {/* ── STRENGTH GUIDELINES ── */}
@@ -1391,9 +1426,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             </span>
             Simultaneous fat loss + muscle gain is hardest for lean, trained
             lifters — but your rapid strength PRs signal a return-to-training
-            phase, exactly when recomp works best. Ride it while it lasts.
-            Logged in MacroFactor — its adaptive expenditure suits variable
-            training load.{' '}
+            phase, exactly when recomp works best. Ride it while it lasts.{' '}
             <span style={{ color: THEME.muted }}>
               Not dietitian advice — general framework.
             </span>
@@ -1417,7 +1450,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 marginBottom: 12,
               }}
             >
-              DAILY MACRO TARGETS · ~94KG
+              DAILY MACRO TARGETS
             </div>
             {MACRO_TARGETS.map((m) => (
               <div
@@ -1452,9 +1485,11 @@ export default function ProgramView({ expanded, setExpanded }) {
                       fontWeight: 600,
                     }}
                   >
-                    {m.target}{' '}
+                    {m.anchorKey && anchors[m.anchorKey]
+                      ? `${formatAnchor(anchors[m.anchorKey])} · `
+                      : ''}
                     <span style={{ color: THEME.muted, fontWeight: 500 }}>
-                      · {m.rule}
+                      {m.rule}
                     </span>
                   </span>
                 </div>
@@ -1477,12 +1512,12 @@ export default function ProgramView({ expanded, setExpanded }) {
                 fontStyle: 'italic',
               }}
             >
-              Currently MAINTENANCE (avg ~3,030/day) until clean TDEE confirms.
-              Deficit (0.3kg/wk) starts after. Protein → carbs → fat priority.
+              Floors are the live protein_floor_g / fat_floor_g anchors. Protein
+              → carbs → fat priority.
             </div>
           </div>
 
-          {/* Live MacroFactor periodized program */}
+          {/* Maintenance plan — the maintenance_plan anchor */}
           <div
             style={{
               background: THEME.raised,
@@ -1508,119 +1543,111 @@ export default function ProgramView({ expanded, setExpanded }) {
                   color: THEME.positive,
                 }}
               >
-                LIVE PROGRAM · PERIODIZED (MacroFactor)
+                MAINTENANCE PLAN · PERIODIZED
               </div>
               <div style={{ fontSize: 8, color: THEME.textFaint }}>
-                avg ~3,030 · maintenance
+                {anchors.maintenance_plan?.status ?? 'maintenance'}
               </div>
             </div>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: 10,
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
-                  {['Day', 'Training', 'Cal', 'P', 'C', 'F'].map((h) => (
-                    <td
-                      key={h}
-                      style={{
-                        padding: '4px 5px',
-                        color: THEME.muted,
-                        fontSize: 8,
-                        letterSpacing: 1,
-                        textAlign:
-                          h === 'Day' || h === 'Training' ? 'left' : 'right',
-                      }}
-                    >
-                      {h}
-                    </td>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {MF_PROGRAM.map((d, i) => {
-                  const hot = d.cal >= 3200;
-                  return (
-                    <tr
-                      key={i}
-                      style={{ borderBottom: `1px solid ${THEME.surfaceAlt}` }}
-                    >
+            {maintenanceDays.length === 0 ? (
+              <div style={planNotSet}>Plan not set in anchors</div>
+            ) : (
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: 10,
+                }}
+              >
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                    {['Day', 'Training', 'Cal', 'P', 'C', 'F'].map((h) => (
                       <td
+                        key={h}
                         style={{
-                          padding: '5px 5px',
-                          color: THEME.text,
-                          fontWeight: 700,
+                          padding: '4px 5px',
+                          color: THEME.muted,
+                          fontSize: 8,
+                          letterSpacing: 1,
+                          textAlign:
+                            h === 'Day' || h === 'Training' ? 'left' : 'right',
                         }}
                       >
-                        {d.day}
+                        {h}
                       </td>
-                      <td
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {maintenanceDays.map((d, i) => {
+                    const hot = d.cal === maintenancePeak;
+                    return (
+                      <tr
+                        key={i}
                         style={{
-                          padding: '5px 5px',
-                          color: THEME.neutralAccent,
+                          borderBottom: `1px solid ${THEME.surfaceAlt}`,
                         }}
                       >
-                        {d.train}
-                      </td>
-                      <td
-                        style={{
-                          padding: '5px 5px',
-                          color: hot ? THEME.positive : THEME.textSubtle,
-                          fontWeight: hot ? 700 : 400,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {d.cal}
-                      </td>
-                      <td
-                        style={{
-                          padding: '5px 5px',
-                          color: THEME.critical,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {d.p}
-                      </td>
-                      <td
-                        style={{
-                          padding: '5px 5px',
-                          color: THEME.accent,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {d.c}
-                      </td>
-                      <td
-                        style={{
-                          padding: '5px 5px',
-                          color: THEME.caution,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {d.f}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <div
-              style={{
-                fontSize: 8,
-                color: THEME.muted,
-                lineHeight: 1.5,
-                marginTop: 8,
-                fontStyle: 'italic',
-              }}
-            >
-              Protein locked 200g all days. Carbs periodized to load (395 on
-              two-a-day/long-row, 280 rest). MacroFactor's own expenditure est.
-              lags at 2,136 (near RMR) — hold ~3,030 via Collaborative override;
-              weight trend settles it.
-            </div>
+                        <td
+                          style={{
+                            padding: '5px 5px',
+                            color: THEME.text,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {d.day}
+                        </td>
+                        <td
+                          style={{
+                            padding: '5px 5px',
+                            color: THEME.neutralAccent,
+                          }}
+                        >
+                          {d.train}
+                        </td>
+                        <td
+                          style={{
+                            padding: '5px 5px',
+                            color: hot ? THEME.positive : THEME.textSubtle,
+                            fontWeight: hot ? 700 : 400,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {d.cal}
+                        </td>
+                        <td
+                          style={{
+                            padding: '5px 5px',
+                            color: THEME.critical,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {d.p}
+                        </td>
+                        <td
+                          style={{
+                            padding: '5px 5px',
+                            color: THEME.accent,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {d.c}
+                        </td>
+                        <td
+                          style={{
+                            padding: '5px 5px',
+                            color: THEME.caution,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {d.f}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Queued deficit program */}
@@ -1652,7 +1679,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 QUEUED · DEFICIT PROGRAM (LEAN PHASE)
               </div>
               <div style={{ fontSize: 8, color: THEME.textFaint }}>
-                ~0.25kg/wk
+                {deficitPlan?.rate ?? ''}
               </div>
             </div>
             <div
@@ -1663,103 +1690,109 @@ export default function ProgramView({ expanded, setExpanded }) {
                 marginBottom: 8,
               }}
             >
-              🔒 {DEFICIT_PROGRAM.trigger}
+              🔒{' '}
+              {deficitPlan?.trigger ??
+                'Start only after maintenance is confirmed — a deficit off a wrong maintenance does nothing or cuts too hard.'}
             </div>
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: 10,
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
-                  {['Day', 'Cal', 'P', 'C', 'F', 'vs maint'].map((h) => (
-                    <td
-                      key={h}
-                      style={{
-                        padding: '4px 5px',
-                        color: THEME.muted,
-                        fontSize: 8,
-                        letterSpacing: 1,
-                        textAlign:
-                          h === 'Day'
-                            ? 'left'
-                            : h === 'vs maint'
-                              ? 'right'
-                              : 'right',
-                      }}
-                    >
-                      {h}
-                    </td>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {DEFICIT_PROGRAM.days.map((d, i) => (
-                  <tr
-                    key={i}
-                    style={{ borderBottom: `1px solid ${THEME.surfaceAlt}` }}
-                  >
-                    <td
-                      style={{
-                        padding: '5px',
-                        color: THEME.text,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {d.day}
-                    </td>
-                    <td
-                      style={{
-                        padding: '5px',
-                        color: THEME.textSubtle,
-                        textAlign: 'right',
-                      }}
-                    >
-                      {d.cal}
-                    </td>
-                    <td
-                      style={{
-                        padding: '5px',
-                        color: THEME.critical,
-                        textAlign: 'right',
-                      }}
-                    >
-                      {d.p}
-                    </td>
-                    <td
-                      style={{
-                        padding: '5px',
-                        color: THEME.accent,
-                        textAlign: 'right',
-                      }}
-                    >
-                      {d.c}
-                    </td>
-                    <td
-                      style={{
-                        padding: '5px',
-                        color: THEME.caution,
-                        textAlign: 'right',
-                      }}
-                    >
-                      {d.f}
-                    </td>
-                    <td
-                      style={{
-                        padding: '5px',
-                        color: THEME.neutralAccent,
-                        textAlign: 'right',
-                        fontSize: 8,
-                      }}
-                    >
-                      {d.cut}
-                    </td>
+            {!deficitPlan ? (
+              <div style={planNotSet}>Plan not set in anchors</div>
+            ) : (
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: 10,
+                }}
+              >
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
+                    {['Day', 'Cal', 'P', 'C', 'F', 'vs maint'].map((h) => (
+                      <td
+                        key={h}
+                        style={{
+                          padding: '4px 5px',
+                          color: THEME.muted,
+                          fontSize: 8,
+                          letterSpacing: 1,
+                          textAlign:
+                            h === 'Day'
+                              ? 'left'
+                              : h === 'vs maint'
+                                ? 'right'
+                                : 'right',
+                        }}
+                      >
+                        {h}
+                      </td>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {deficitPlan.days.map((d, i) => (
+                    <tr
+                      key={i}
+                      style={{ borderBottom: `1px solid ${THEME.surfaceAlt}` }}
+                    >
+                      <td
+                        style={{
+                          padding: '5px',
+                          color: THEME.text,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {d.day}
+                      </td>
+                      <td
+                        style={{
+                          padding: '5px',
+                          color: THEME.textSubtle,
+                          textAlign: 'right',
+                        }}
+                      >
+                        {d.cal}
+                      </td>
+                      <td
+                        style={{
+                          padding: '5px',
+                          color: THEME.critical,
+                          textAlign: 'right',
+                        }}
+                      >
+                        {d.p}
+                      </td>
+                      <td
+                        style={{
+                          padding: '5px',
+                          color: THEME.accent,
+                          textAlign: 'right',
+                        }}
+                      >
+                        {d.c}
+                      </td>
+                      <td
+                        style={{
+                          padding: '5px',
+                          color: THEME.caution,
+                          textAlign: 'right',
+                        }}
+                      >
+                        {d.f}
+                      </td>
+                      <td
+                        style={{
+                          padding: '5px',
+                          color: THEME.neutralAccent,
+                          textAlign: 'right',
+                          fontSize: 8,
+                        }}
+                      >
+                        {d.cut}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
             <div
               style={{
                 fontSize: 9,
@@ -1771,7 +1804,7 @@ export default function ProgramView({ expanded, setExpanded }) {
             >
               GUARDRAILS
             </div>
-            {DEFICIT_PROGRAM.guardrails.map((g, i) => (
+            {DEFICIT_GUARDRAILS.guardrails.map((g, i) => (
               <div
                 key={i}
                 style={{
@@ -1795,7 +1828,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 marginTop: 8,
               }}
             >
-              📍 {DEFICIT_PROGRAM.phase}
+              📍 {deficitPlan?.phase ?? 'Phase timing not set in anchors.'}
             </div>
             <div
               style={{
@@ -1806,7 +1839,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 fontStyle: 'italic',
               }}
             >
-              💡 {DEFICIT_PROGRAM.note}
+              💡 {DEFICIT_GUARDRAILS.note}
             </div>
           </div>
 
@@ -1932,7 +1965,7 @@ export default function ProgramView({ expanded, setExpanded }) {
                 marginBottom: 10,
               }}
             >
-              💧 HYDRATION · WA HEAT
+              💧 HYDRATION · HEAT
             </div>
             {FUELLING.hydration.map((h, i) => (
               <div

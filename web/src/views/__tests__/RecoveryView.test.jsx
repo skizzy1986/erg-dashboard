@@ -8,14 +8,24 @@ import {
   computePersonalBaselines,
 } from '../../utils/recoveryAnalytics.js';
 
-// Vitals now come from useVitals, not the static recoveryLog constant.
-// LIPID_REF / HORMONE_REF / NIGGLES / bpLog / bloodsLog stay real.
+// Vitals come from useVitals; BP from useBpReadings; niggles and the private
+// health context from useAnchors. LIPID_REF / HORMONE_REF stay real (generic
+// reference data). Every hook-fed string below is synthetic.
 const useVitalsMock = vi.fn();
 vi.mock('../../hooks/useVitals.js', () => ({
   useVitals: () => useVitalsMock(),
 }));
+const useBpMock = vi.fn();
+vi.mock('../../hooks/useBpReadings.js', () => ({
+  useBpReadings: () => useBpMock(),
+}));
+const useAnchorsMock = vi.fn();
+vi.mock('../../hooks/useAnchors.js', () => ({
+  useAnchors: () => useAnchorsMock(),
+}));
 
-import { LIPID_REF, HORMONE_REF, NIGGLES } from '../../constants/logs.js';
+import * as logs from '../../constants/logs.js';
+import { LIPID_REF, HORMONE_REF } from '../../constants/logs.js';
 import RecoveryView from '../RecoveryView.jsx';
 
 const day = (over = {}) => ({
@@ -50,9 +60,27 @@ const setRows = (rows, tsbNow = 0) => {
 };
 const renderView = () => render(<RecoveryView isWide={true} />);
 
+const bpState = (over = {}) => ({
+  readings: [],
+  isLoading: false,
+  isError: false,
+  ...over,
+});
+const anchorsState = (over = {}) => ({
+  anchors: {},
+  niggles: [],
+  isLoading: false,
+  isError: false,
+  ...over,
+});
+
 beforeEach(() => {
   cleanup();
   useVitalsMock.mockReset();
+  useBpMock.mockReset();
+  useAnchorsMock.mockReset();
+  useBpMock.mockReturnValue(bpState());
+  useAnchorsMock.mockReturnValue(anchorsState());
   setRows([day(), day({ date: '2026-06-19' }), day({ date: '2026-06-18' })]);
 });
 
@@ -133,10 +161,126 @@ describe('RecoveryView', () => {
     }
   });
 
-  it('renders each tracked niggle', () => {
+  it('renders each live niggle anchor', () => {
+    useAnchorsMock.mockReturnValue(
+      anchorsState({
+        niggles: [
+          {
+            slug: 'example-a',
+            label: 'Example niggle A',
+            detail: 'Example guardrail A',
+            status: 'provisional',
+          },
+          {
+            slug: 'example-b',
+            label: 'Example niggle B',
+            detail: '',
+            status: null,
+          },
+        ],
+      })
+    );
     renderView();
-    for (const n of NIGGLES) {
-      expect(screen.getByText(n.area)).toBeInTheDocument();
+    expect(screen.getAllByTestId('niggle')).toHaveLength(2);
+    expect(screen.getByText('Example niggle A')).toBeInTheDocument();
+    expect(screen.getByText('Example guardrail A')).toBeInTheDocument();
+    expect(
+      screen.queryByText('No active niggles recorded')
+    ).not.toBeInTheDocument();
+  });
+
+  it('says no active niggles when there are no niggle anchors', () => {
+    renderView();
+    expect(screen.getByText('No active niggles recorded')).toBeInTheDocument();
+  });
+
+  it('shows loading and error states for niggles', () => {
+    useAnchorsMock.mockReturnValue(anchorsState({ isLoading: true }));
+    renderView();
+    expect(screen.getByText(/Loading niggles/)).toBeInTheDocument();
+    cleanup();
+    useAnchorsMock.mockReturnValue(anchorsState({ isError: true }));
+    renderView();
+    expect(screen.getByText(/Niggles unavailable/)).toBeInTheDocument();
+  });
+
+  it('renders BP readings from the hook, newest first as given', () => {
+    useBpMock.mockReturnValue(
+      bpState({
+        readings: [
+          {
+            measuredAt: '2026-01-02T07:00:00Z',
+            sys: 118,
+            dia: 76,
+            pulse: 60,
+            context: 'example clean',
+            clean: true,
+          },
+          {
+            measuredAt: '2026-01-01T19:00:00Z',
+            sys: 128,
+            dia: 79,
+            pulse: null,
+            context: '',
+            clean: false,
+          },
+        ],
+      })
+    );
+    renderView();
+    const rows = screen.getAllByTestId('bp-reading');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('118/76');
+    expect(rows[0]).toHaveTextContent('example clean');
+    expect(rows[1]).toHaveTextContent('Not a clean resting reading');
+    expect(screen.queryByText('No readings yet')).not.toBeInTheDocument();
+  });
+
+  it('shows loading, error and empty BP states', () => {
+    renderView();
+    expect(screen.getByText('No readings yet')).toBeInTheDocument();
+    cleanup();
+    useBpMock.mockReturnValue(bpState({ isLoading: true }));
+    renderView();
+    expect(screen.getByText(/Loading readings/)).toBeInTheDocument();
+    cleanup();
+    useBpMock.mockReturnValue(bpState({ isError: true }));
+    renderView();
+    expect(screen.getByText(/BP readings unavailable/)).toBeInTheDocument();
+  });
+
+  it('renders the health_context anchor only when it is set', () => {
+    renderView();
+    expect(screen.queryByTestId('health-context')).not.toBeInTheDocument();
+    cleanup();
+    useAnchorsMock.mockReturnValue(
+      anchorsState({
+        anchors: {
+          health_context: {
+            key: 'health_context',
+            value: 'Example private note',
+          },
+        },
+      })
+    );
+    renderView();
+    expect(screen.getByTestId('health-context')).toHaveTextContent(
+      'Example private note'
+    );
+  });
+
+  it('keeps the BP, bloods and niggle cards on a fresh DB with no vitals', () => {
+    setRows([]);
+    renderView();
+    expect(screen.getByText('VITALS UNAVAILABLE')).toBeInTheDocument();
+    expect(screen.getByText('No readings yet')).toBeInTheDocument();
+    expect(screen.getByText('No active niggles recorded')).toBeInTheDocument();
+    expect(screen.getByText(/BLOODS · LIPID PANEL/)).toBeInTheDocument();
+  });
+
+  it('no longer ships athlete records as constants', () => {
+    for (const name of ['bpLog', 'bloodsLog', 'NIGGLES']) {
+      expect(logs).not.toHaveProperty(name);
     }
   });
 

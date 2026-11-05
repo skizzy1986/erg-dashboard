@@ -22,7 +22,7 @@ beforeEach(() => {
   mockUseTSSHistory.mockReset();
   mockUseSessions.mockReset();
   mockUseAnchors.mockReset();
-  mockUseAnchors.mockReturnValue({ cp: 205, ftp: 250 });
+  mockUseAnchors.mockReturnValue({ cp: 200, ftp: 250 });
 });
 
 describe('MobileAnalytics', () => {
@@ -67,9 +67,9 @@ describe('MobileAnalytics', () => {
       ],
     });
     render(<MobileAnalytics />);
-    // (152/205)^2 * 100 = 55, the same value sessionLoad feeds the chart.
+    // (152/200)^2 * 100 = 58, the same value sessionLoad feeds the chart.
     expect(screen.getByText('Power only row')).toBeInTheDocument();
-    expect(screen.getByText('55 TSS')).toBeInTheDocument();
+    expect(screen.getByText('58 TSS')).toBeInTheDocument();
   });
 
   it('renders live recent sessions when useSessions returns completed rows', () => {

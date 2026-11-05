@@ -38,14 +38,14 @@ beforeEach(() => {
 describe('useAnchors', () => {
   it('resolves live cp/status and ftp from the current rows', async () => {
     mockAnchors([
-      { key: 'rowing_cp', value: '205', unit: 'W', status: 'provisional' },
+      { key: 'rowing_cp', value: '200', unit: 'W', status: 'provisional' },
       { key: 'bike_ftp', value: '250', unit: 'W', status: 'unvalidated' },
     ]);
     const { result } = renderHook(() => useAnchors(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.cp).toBe(205);
+    expect(result.current.cp).toBe(200);
     expect(result.current.cpStatus).toBe('provisional');
     expect(result.current.cpAvailable).toBe(true);
     expect(result.current.ftp).toBe(250);

@@ -99,7 +99,7 @@ export function benchmarkKeywords(name) {
 }
 
 // Local calendar day, zero-padded. NOT toISOString().slice(0,10): that reports
-// the UTC day, which in Australia/Perth (UTC+8) rolls over at 16:00 local and
+// the UTC day, which at athlete-local (UTC+8) rolls over at 16:00 local and
 // would flip a benchmark to overdue a day early.
 export function todayISO() {
   const d = new Date();
