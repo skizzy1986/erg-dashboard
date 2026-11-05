@@ -20,10 +20,14 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { viewArray } from '../../squat/utils/manifest.js';
-import { dequantise } from '../../squat/utils/dequantise.js';
+import { viewArray } from '../utils/arrays.js';
+import { dequantise } from '../utils/dequantise.js';
 import { createPoser } from '../utils/poseModel.js';
-import { muscleColours, writeVertexColours } from '../utils/sceneColours.js';
+import {
+  heatColours,
+  muscleColours,
+  writeVertexColours,
+} from '../utils/sceneColours.js';
 import {
   clampDistance,
   framingDistance,
@@ -45,6 +49,13 @@ ColorManagement.enabled = false;
 // Lights were tuned in r128 units; r155 made physically correct lighting the
 // default, which divides the effective intensity by π.
 const LIGHT_UNIT = Math.PI;
+
+const sameWeights = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+};
 
 // The e2e probe (frame counter, mirror check, pixel snapshot) exists only in
 // dev or behind ?anatomy-debug, so production carries one query-string read
@@ -313,8 +324,17 @@ export function createAnatomyScene({
     scene.add(ground);
 
     // ── appearance ─────────────────────────────────────────────────
-    function applyPalette(pal, st) {
-      const lt = st.lights;
+    // The palette and style the scene is currently painted with, and the
+    // activation weights it is painted under (null = anatomy colours). Held
+    // here so the vertex-colour write is callable on its own: a heatmap change
+    // must not redo the light setup, and a theme change must not lose the
+    // heatmap.
+    let pal = palette;
+    let st = style;
+    let heat = null;
+
+    function applyLights(p, style0) {
+      const lt = style0.lights;
       hemi.color.setRGB(...lt.hemisphere.sky);
       hemi.groundColor.setRGB(...lt.hemisphere.ground);
       hemi.intensity = lt.hemisphere.intensity * LIGHT_UNIT;
@@ -324,21 +344,35 @@ export function createAnatomyScene({
       rim.intensity = lt.rim.intensity * LIGHT_UNIT;
       fill.color.setRGB(...lt.fill.color);
       fill.intensity = lt.fill.intensity * LIGHT_UNIT;
-      boneMat.color.setRGB(...pal.bone);
-      barMat.color.setRGB(...pal.bar);
-      groundMat.color.setRGB(...pal.shadow);
-      groundMat.opacity = st.shadowOpacity;
-      const mc = muscleColours(meta.muscles, pal, st.jitter);
-      for (const s of colourSets) {
-        writeVertexColours(s.col, s.mid, s.tw, mc, pal.tendon, st.tendonBlend);
-        s.geo.attributes.color.needsUpdate = true;
+      boneMat.color.setRGB(...p.bone);
+      barMat.color.setRGB(...p.bar);
+      groundMat.color.setRGB(...p.shadow);
+      groundMat.opacity = style0.shadowOpacity;
+    }
+
+    function writeColours() {
+      const mc = heat
+        ? heatColours(meta.muscles, heat, pal.heat, pal.tendon)
+        : muscleColours(meta.muscles, pal, st.jitter);
+      const blend = heat ? st.tendonBlendHeat : st.tendonBlend;
+      for (const set of colourSets) {
+        writeVertexColours(set.col, set.mid, set.tw, mc, pal.tendon, blend);
+        set.geo.attributes.color.needsUpdate = true;
       }
+    }
+
+    function applyPalette(p, style0) {
+      pal = p;
+      st = style0;
+      applyLights(p, style0);
+      writeColours();
     }
     applyPalette(palette, style);
 
     // ── posing ─────────────────────────────────────────────────────
     let posedS = null;
     let pendingS = 0;
+    let pendingHeat = false;
     function applyPose(s) {
       poser.poseAt(s);
       for (const { mesh, m } of movers) {
@@ -451,6 +485,12 @@ export function createAnatomyScene({
       if (document.hidden) return;
       if (pendingS !== null && pendingS !== posedS) applyPose(pendingS);
       pendingS = null;
+      // In the same frame as the pose: a depth change and the heatmap change
+      // it implies must draw once, not twice.
+      if (pendingHeat) {
+        pendingHeat = false;
+        writeColours();
+      }
       let more = false;
       if (tween) {
         if (tween.start === null) tween.start = now;
@@ -545,8 +585,19 @@ export function createAnatomyScene({
         for (const g of layers.body) g.visible = body;
         invalidate();
       },
-      setPalette(pal, st) {
-        applyPalette(pal, st);
+      setPalette(p, style0) {
+        applyPalette(p, style0);
+        invalidate();
+      },
+      // null restores the anatomy colours and tendonBlend; a Float32Array of
+      // 0-1 per muscle switches to the heat ramp and tendonBlendHeat. Equal
+      // weights are a no-op, so dragging the depth slider with the heatmap off
+      // never touches 50,119 vertices.
+      setActivation(weights = null) {
+        const next = weights ?? null;
+        if (sameWeights(heat, next)) return;
+        heat = next;
+        pendingHeat = true;
         invalidate();
       },
       setReducedMotion(reduced) {

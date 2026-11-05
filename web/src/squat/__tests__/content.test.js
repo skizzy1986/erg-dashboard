@@ -11,6 +11,16 @@ import {
 import { FORM_CHECK, FORM_CHECK_LABEL } from '../constants/formCheck.js';
 import { METRICS_TABLE } from '../constants/metricsTable.js';
 import { METHOD } from '../constants/method.js';
+import {
+  ACT_BANDS,
+  ACT_BASIS,
+  ACT_NONE,
+  ACT_NOTE,
+  HEAT_LEGEND,
+  HEAT_STOPS,
+  STALE_LINK,
+} from '../constants/activationBands.js';
+import { REGION_NAMES, REGION_OF } from '../constants/muscleRegions.js';
 import { REFERENCES } from '../constants/references.js';
 import { MV_TABLE } from '../constants/velocityTable.js';
 import { ATTRIBUTION } from '../constants/attribution.js';
@@ -165,17 +175,72 @@ describe('modelled values are labelled modelled, never EMG', () => {
     ...Object.values(PHASE_GUIDE).flatMap((g) =>
       g.body.map((s) => text(s)).concat(g.lookFor, g.faults)
     ),
+    // Every user-facing activation string the muscle panel renders. Without
+    // these the "not EMG" requirement was unenforced for all of the new UI.
+    ...ACT_BANDS.map((b) => b.name),
+    ACT_NOTE,
+    ACT_BASIS,
+    ACT_NONE,
+    HEAT_LEGEND,
+    STALE_LINK,
+    ...REGION_NAMES,
   ].join('\n');
+
+  // The 118 `role` sentences from the data. PR2b-i's muscle card is the first
+  // thing that ever renders them, two lines above "Indicative estimate, not
+  // EMG." — so they are prose this page publishes, and they are scanned like
+  // any other. Scoped to what the UI shows, not to the file the spec named:
+  // that narrower scope is how one EMG claim reached the card.
+  const roles = manifest.meta.muscles.map((m) => m.role).join('\n');
+
+  it('never cites EMG in a muscle role sentence', () => {
+    expect(manifest.meta.muscles).toHaveLength(118);
+    for (const m of manifest.meta.muscles) {
+      expect(m.role, m.name).toBeTruthy();
+      expect(m.role, m.name).not.toMatch(/\bEMG\b/i);
+    }
+    expect(roles).not.toMatch(/\bEMG\b/i);
+    // The one that was edited, so the wording cannot drift back.
+    expect(manifest.meta.muscles[9].name).toBe('Rectus femoris');
+    expect(manifest.meta.muscles[9].role).toBe(
+      'The only quad that crosses the hip, so its length barely changes in a squat. It works at roughly half the level of the vasti.'
+    );
+  });
 
   it('never puts EMG next to an activation label', () => {
     expect(allProse).not.toMatch(/EMG\s+activation|activation\s*\(?EMG/i);
     expect(allProse).not.toMatch(/measured activation/i);
+    expect(roles).not.toMatch(/EMG\s+activation|activation\s*\(?EMG/i);
+    expect(roles).not.toMatch(/measured activation/i);
     const row = METRICS_TABLE.find((r) => r.metric === 'Estimated activation');
     expect(text(row.target)).toMatch(/^Estimated from joint moments, not EMG/);
   });
 
   it('says activation is estimated, not measured', () => {
     expect(text(METHOD.modelled[5])).toContain('Estimated, not measured.');
+  });
+
+  it("labels the bands as the model's own steps, with no citation implied", () => {
+    expect(ACT_NOTE).toBe('Indicative estimate, not EMG.');
+    expect(ACT_BASIS).toBe(
+      "Bands are this model's own colour steps, not a published threshold."
+    );
+    expect(ACT_NONE).toBe('Not a muscle — no activation estimate.');
+    expect(HEAT_LEGEND).toBe(
+      'Estimated activation at the depth shown. Indicative estimate, not EMG. Tendons are not coloured.'
+    );
+    expect(STALE_LINK).toBe(
+      'That link points to a muscle this version does not have.'
+    );
+    for (const s of [ACT_NOTE, ACT_BASIS, ACT_NONE, HEAT_LEGEND]) {
+      expect(s).not.toMatch(/\b(19|20)\d\d\b/);
+    }
+  });
+
+  it("cuts three bands at the model's own ramp stops", () => {
+    expect(ACT_BANDS.map((b) => b.name)).toEqual(['Low', 'Moderate', 'High']);
+    expect(ACT_BANDS.map((b) => b.max)).toEqual([0.3, 0.6, 1]);
+    expect(HEAT_STOPS).toEqual([0, 0.3, 0.6, 1]);
   });
 
   it('describes the importer without pretending it is live', () => {
@@ -220,6 +285,29 @@ describe('derived model values', () => {
     FORM_CHECK.forEach((f) => walk(f.ref));
     METRICS_TABLE.forEach((r) => walk(r.target));
     for (const k of keys) expect(s.kv[k], k).toBeTruthy();
+  });
+});
+
+// Index-keyed, so a data regeneration that reorders meta.muscles would move
+// every assignment silently. The sha pin above is what makes that impossible
+// without a human re-deriving the table; these assert the shape.
+describe('muscle regions', () => {
+  it('has eleven named regions, hips first', () => {
+    expect(REGION_NAMES).toHaveLength(11);
+    expect(REGION_NAMES[0]).toBe('Hip extensors');
+    expect(new Set(REGION_NAMES).size).toBe(11);
+  });
+
+  it('assigns all 118 muscles to exactly one real region, with no Other', () => {
+    expect(REGION_OF).toHaveLength(manifest.meta.muscles.length);
+    expect(REGION_OF).toHaveLength(118);
+    for (const r of REGION_OF) {
+      expect(Number.isInteger(r)).toBe(true);
+      expect(r).toBeGreaterThanOrEqual(0);
+      expect(r).toBeLessThan(REGION_NAMES.length);
+    }
+    expect(new Set(REGION_OF).size).toBe(11);
+    expect(REGION_NAMES).not.toContain('Other');
   });
 });
 

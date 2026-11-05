@@ -57,6 +57,7 @@ function fakeScene() {
       setLayers: vi.fn(),
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
+      setActivation: vi.fn(),
       camera: {
         reset: vi.fn(),
         preset: vi.fn(),
@@ -150,6 +151,7 @@ describe('SquatApp 3D stage', () => {
       setLayers() {},
       setPalette() {},
       setReducedMotion() {},
+      setActivation() {},
       camera: {},
       dispose() {},
       opts,
@@ -290,6 +292,7 @@ describe('SquatApp 3D stage', () => {
       setLayers: vi.fn(),
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
+      setActivation: vi.fn(),
       camera: {},
       dispose: vi.fn(),
     };

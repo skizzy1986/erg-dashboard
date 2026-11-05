@@ -42,10 +42,16 @@ describe('3D scene tokens', () => {
     'anatomyBone',
     'anatomyShadow',
     'anatomyBar',
+    'anatomyHeatLow',
+    'anatomyHeatMid',
+    'anatomyHeatHigh',
+    'anatomyHeatPeak',
   ];
 
   it.each(KEYS)('%s is a pointer with a value on both themes', (k) => {
-    expect(THEME[k]).toMatch(/^var\(--color-anatomy-[a-z]+\)$/);
+    // [a-z-]+, not [a-z]+: cssVarName('anatomyHeatLow') is
+    // --color-anatomy-heat-low, which the single-segment form rejected.
+    expect(THEME[k]).toMatch(/^var\(--color-anatomy-[a-z-]+\)$/);
     expect(LIGHT[k]).toMatch(/^#[0-9a-f]{6}$/);
     expect(DARK[k]).toMatch(/^#[0-9a-f]{6}$/);
   });
@@ -59,5 +65,28 @@ describe('3D scene tokens', () => {
   it('keeps the dark scene on the source page colours', () => {
     expect(DARK.anatomyMuscle).toBe('#a52529');
     expect(DARK.anatomyTendon).toBe('#d5dbe0');
+  });
+
+  it('starts the heat ramp on the same four stops in both themes', () => {
+    for (const k of [
+      'anatomyHeatLow',
+      'anatomyHeatMid',
+      'anatomyHeatHigh',
+      'anatomyHeatPeak',
+    ]) {
+      expect(LIGHT[k]).toBe(DARK[k]);
+    }
+    expect(LIGHT.anatomyHeatLow).toBe('#3d5a8c');
+    expect(LIGHT.anatomyHeatPeak).toBe('#ffd35c');
+  });
+
+  it('keeps every ramp stop distinct, so three bands read as three', () => {
+    const stops = [
+      LIGHT.anatomyHeatLow,
+      LIGHT.anatomyHeatMid,
+      LIGHT.anatomyHeatHigh,
+      LIGHT.anatomyHeatPeak,
+    ];
+    expect(new Set(stops).size).toBe(4);
   });
 });

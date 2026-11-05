@@ -93,14 +93,57 @@ export function writeVertexColours(out, mid, tw, muscleCols, tendon, blend) {
   return out;
 }
 
+// Where the four ramp tokens sit along 0-1. They are the band cuts, so
+// squat/constants/activationBands.js derives its HEAT_STOPS from the same
+// numbers and sceneColours.test.js asserts the two lists are equal — the model
+// and its legend cannot drift apart while that passes.
+export const HEAT_POSITIONS = [0, 0.3, 0.6, 1];
+
+/** RGB lerp along `stops` ([position, [r,g,b]] pairs, ascending). */
+export function rampAt(stops, a) {
+  if (!stops?.length) return [0, 0, 0];
+  if (stops.length === 1) return [...stops[0][1]];
+  const x = a < 0 || !Number.isFinite(a) ? 0 : a > 1 ? 1 : a;
+  let i = 0;
+  while (i < stops.length - 2 && x > stops[i + 1][0]) i++;
+  const [p0, c0] = stops[i];
+  const [p1, c1] = stops[i + 1];
+  const span = p1 - p0;
+  const t = span > 0 ? Math.max(0, Math.min(1, (x - p0) / span)) : 0;
+  return [0, 1, 2].map((k) => c0[k] + (c1[k] - c0[k]) * t);
+}
+
+/**
+ * One RGB triple per muscle under the activation heatmap: the ramp colour for
+ * its weight, and the tendon colour for a tendon — tendons carry no estimate,
+ * so they keep their own colour, mirroring the source page's recolor().
+ */
+export function heatColours(muscles, weights, stops, tendon) {
+  const out = new Float32Array(muscles.length * 3);
+  muscles.forEach((m, i) => {
+    const c = m.tendon ? tendon : rampAt(stops, weights?.[i] ?? 0);
+    out[i * 3] = c[0];
+    out[i * 3 + 1] = c[1];
+    out[i * 3 + 2] = c[2];
+  });
+  return out;
+}
+
 /** The scene's palette for a theme, from the anatomy* tokens. */
 export function scenePalette(themeName) {
   const p = themeName === 'dark' ? DARK : LIGHT;
+  const heat = [
+    p.anatomyHeatLow,
+    p.anatomyHeatMid,
+    p.anatomyHeatHigh,
+    p.anatomyHeatPeak,
+  ].map((hex, i) => [HEAT_POSITIONS[i], hexToRaw01(hex)]);
   return {
     muscle: hexToRaw01(p.anatomyMuscle),
     tendon: hexToRaw01(p.anatomyTendon),
     bone: hexToRaw01(p.anatomyBone),
     shadow: hexToRaw01(p.anatomyShadow),
     bar: hexToRaw01(p.anatomyBar),
+    heat,
   };
 }

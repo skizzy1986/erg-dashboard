@@ -13,7 +13,11 @@ export const DATA_ASSET = {
   },
   manifest: {
     file: 'squat-manifest.json',
-    bytes: 99904,
-    sha256: 'c2e7acdc6f6d8ffc687144ac90ab59c9b09bef917ccd639422e6f55ff1a1152a',
+    // Re-pinned 2026-11-05 (PR2b-i): one `meta.muscles[].role` sentence was
+    // edited to drop an EMG claim (docs/squat/PROVENANCE.md). `role` is prose
+    // with no offset keys, so only this file changed — the bin entries above
+    // are untouched and were NOT regenerated.
+    bytes: 99892,
+    sha256: '2ce630ff9973ae3a73d2bfe3e00e1ad313903f0f3aedc0a6134bfedca144f98e',
   },
 };

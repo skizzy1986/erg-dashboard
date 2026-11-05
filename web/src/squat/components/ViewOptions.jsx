@@ -11,7 +11,19 @@ const LAYERS = [
   ['skeleton', 'Skeleton'],
 ];
 
-export default function ViewOptions({ layers, onLayer, disabled = false }) {
+export default function ViewOptions({
+  layers,
+  onLayer,
+  heatmap = false,
+  onHeatmap,
+  disabled = false,
+}) {
+  // Not appended to LAYERS: that constant is the scene's meshes, and the
+  // heatmap is a colouring mode over whichever of them are showing.
+  const switches = [
+    ...LAYERS.map(([id, label]) => [id, label, !!layers[id], onLayer]),
+    ['heatmap', 'Activation heatmap', heatmap, (_id, on) => onHeatmap?.(on)],
+  ];
   return (
     <fieldset
       disabled={disabled}
@@ -34,7 +46,7 @@ export default function ViewOptions({ layers, onLayer, disabled = false }) {
           {LAYERS_WAITING}
         </span>
       )}
-      {LAYERS.map(([id, label]) => (
+      {switches.map(([id, label, on, onChange]) => (
         <label
           key={id}
           style={{
@@ -52,8 +64,8 @@ export default function ViewOptions({ layers, onLayer, disabled = false }) {
           <input
             type="checkbox"
             role="switch"
-            checked={layers[id]}
-            onChange={(e) => onLayer(id, e.target.checked)}
+            checked={on}
+            onChange={(e) => onChange(id, e.target.checked)}
             style={{
               // 24 px: the WCAG 2.5.8 floor axe checks the input itself
               // against, whatever the label around it adds.

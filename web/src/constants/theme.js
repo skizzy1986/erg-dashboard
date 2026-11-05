@@ -36,4 +36,8 @@ export const THEME = {
   anatomyBone: 'var(--color-anatomy-bone)',
   anatomyShadow: 'var(--color-anatomy-shadow)',
   anatomyBar: 'var(--color-anatomy-bar)',
+  anatomyHeatLow: 'var(--color-anatomy-heat-low)',
+  anatomyHeatMid: 'var(--color-anatomy-heat-mid)',
+  anatomyHeatHigh: 'var(--color-anatomy-heat-high)',
+  anatomyHeatPeak: 'var(--color-anatomy-heat-peak)',
 };

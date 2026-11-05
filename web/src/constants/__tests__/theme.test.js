@@ -35,12 +35,26 @@ const EXPECTED_KEYS = [
   'anatomyBone',
   'anatomyShadow',
   'anatomyBar',
+  'anatomyHeatLow',
+  'anatomyHeatMid',
+  'anatomyHeatHigh',
+  'anatomyHeatPeak',
+];
+
+// The activation ramp is geometry paint, not ink anyone reads, and starts on
+// the source page's own four stops — so these four are the same on both
+// palettes by design, and the "every value moves" rule exempts them.
+const SHARED_BY_DESIGN = [
+  'anatomyHeatLow',
+  'anatomyHeatMid',
+  'anatomyHeatHigh',
+  'anatomyHeatPeak',
 ];
 
 describe('THEME', () => {
-  it('has exactly the 31 expected keys (no more, no fewer)', () => {
+  it('has exactly the 35 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(THEME);
-    expect(keys).toHaveLength(31);
+    expect(keys).toHaveLength(35);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -56,9 +70,9 @@ describe('THEME', () => {
 });
 
 describe('DARK — the palette values THEME resolves to', () => {
-  it('has exactly the 31 expected keys (no more, no fewer)', () => {
+  it('has exactly the 35 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(DARK);
-    expect(keys).toHaveLength(31);
+    expect(keys).toHaveLength(35);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -115,8 +129,11 @@ describe('LIGHT — the second palette', () => {
   });
 
   it('moves every value — no token is shared with the dark palette', () => {
-    const shared = Object.keys(DARK).filter((k) => DARK[k] === LIGHT[k]);
+    const shared = Object.keys(DARK).filter(
+      (k) => DARK[k] === LIGHT[k] && !SHARED_BY_DESIGN.includes(k)
+    );
     expect(shared).toEqual([]);
+    for (const k of SHARED_BY_DESIGN) expect(LIGHT[k]).toBe(DARK[k]);
   });
 
   it('paints the ground conventions.md settled on, not the withdrawn one', () => {

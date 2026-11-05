@@ -62,6 +62,45 @@ describe('three r187 parity with the r128 page (source)', () => {
   });
 });
 
+// The heatmap's BEHAVIOUR is tested for real against a built scene in
+// scene/__tests__/createAnatomyScene.test.js — the colours change, they
+// restore byte-identically, and the frame the renderer draws already carries
+// them. What is pinned here is only what text can honestly pin.
+//
+// An earlier "recolours inside the same frame as the pose" check lived here
+// and has been dropped: it compared the index of `renderer.render(scene,
+// camera)` against the heat block, and that string appears more than once in
+// the file, so it passed almost regardless. The real-scene test captures what
+// the renderer SAW at draw time instead, which is the actual requirement.
+describe('activation heatmap wiring', () => {
+  it('exposes setActivation and skips unchanged weights', () => {
+    expect(CODE).toMatch(/setActivation\(weights = null\) \{/);
+    expect(CODE).toMatch(/if \(sameWeights\(heat, next\)\) return;/);
+  });
+
+  it('swaps the tendon blend with the colour source, and nothing else', () => {
+    expect(CODE).toMatch(
+      /const blend = heat \? st\.tendonBlendHeat : st\.tendonBlend;/
+    );
+    expect(CODE).toMatch(
+      /heatColours\(meta\.muscles, heat, pal\.heat, pal\.tendon\)/
+    );
+  });
+
+  it('keeps the colour write callable without redoing the light setup', () => {
+    // A heatmap toggle must not re-run applyLights, and a theme change must
+    // not lose the heatmap — both follow from these being separate.
+    expect(CODE).toMatch(/function applyLights\(/);
+    expect(CODE).toMatch(/function writeColours\(\) \{/);
+    const inPalette = CODE.slice(
+      CODE.indexOf('function applyPalette('),
+      CODE.indexOf('applyPalette(palette, style);')
+    );
+    expect(inPalette).toMatch(/applyLights\(p, style0\);/);
+    expect(inPalette).toMatch(/writeColours\(\);/);
+  });
+});
+
 describe('three is pinned', () => {
   it('to exactly 0.187.0 in package.json and the lockfile', () => {
     const pkg = JSON.parse(

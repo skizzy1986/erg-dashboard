@@ -63,7 +63,9 @@ web/                The app lives under web/ (Vite + Capacitor monorepo layout)
                     assets/ (extracted CC BY-SA anatomy data + LICENSE.md)
     anatomy/        Movement-neutral 3D model runtime (used by /squat):
                     utils/ (pure posing + colour + camera maths, fixture-tested
-                    against the source page — docs/squat/SKINNING.md),
+                    against the source page — docs/squat/SKINNING.md, plus the
+                    generic manifest readers arrays.js + dequantise.js; only
+                    validateManifest stayed in squat/utils/manifest.js),
                     constants/sceneStyle.js, scene/ (the ONLY code that imports
                     three.js; loaded lazily via scene/loadScene.js — ESLint enforces)
     App.jsx         Entry shell/router (~447 lines) — the former erg-dashboard.jsx monolith
@@ -357,9 +359,17 @@ and **SQUAT_TOTAL** (squat-only files, minus the 3D chunk) are gated separately,
 **SQUAT_3D** (files reachable only through `anatomy/scene/createAnatomyScene.js`: three.js
 + the scene) has its own line, and **SQUAT_DATA** caps the
 anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
-file over Workbox's 2 MiB ceiling. Measured 2026-11-04 after squat PR2a (three.js r187 in): **entry 146.6 / 150,
-total 385.4 / 400, squat entry 112.7 / 117, squat total 24.0 / 26, squat 3D 138.0 / 145 KB**,
-data 2.20 MB. `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
+file over Workbox's 2 MiB ceiling. Measured 2026-11-05 after squat PR2b-i (the muscle
+panel): **entry 146.8 / 150, total 385.6 / 400, squat entry 116.4 / 117, squat total
+27.6 / 30, squat 3D 138.2 / 145 KB**, data 2.20 MB. `SQUAT_TOTAL` was raised 26 → 30 in
+that change, from the measured 27.6 KB: squat total is the loose ceiling by the
+script's own definition — never precached, `CacheFirst` at runtime, stripped from the APK
+— so those bytes are on nobody's first paint. **`SQUAT_ENTRY` is the one to watch: 0.6 KB
+spare.** The muscle list is deliberately not lazy-loaded (the canvas is `aria-hidden`
+with `tabindex="-1"`, so the list is the model's accessible substitute and must not sit
+behind a chunk that can fail to fetch), so the next change to `/squat`'s static graph
+needs either a trim or Scott's decision on the 117 ceiling.
+`/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
 
 **Squat-only JS is `squat-` prefixed, never precached, and cached at runtime instead** — a
 reversal of PR1, where the tool's (then small) JS chunks were precached. `chunkFileNames`
@@ -378,12 +388,13 @@ per-chunk preamble and the shared code it now re-imports) plus `RouteRoot` itsel
 fix round added **+0.3 KB** more (→ 146.4): `RouteRoot` resolves the squat theme
 (`utils/squatTheme.js`) so the loading ground does not flash light, and canonicalises
 `/squat/` → `/squat`. PR2a added **+0.2 KB** (→ 146.6): `RouteRoot`'s first-visit offline
-message when the tool's chunk cannot be fetched. The dashboard pays ~2.1 KB of its 150 KB
-entry for the second product; that leaves 3.4 KB spare, so the next entry-growing change
-should look at the `RealtimeClient` reclaim above first.
+message when the tool's chunk cannot be fetched. PR2b-i added **+0.2 KB** (→ 146.8), all
+of it shared code the muscle panel pulled across the chunk boundary. The dashboard pays
+~2.3 KB of its 150 KB entry for the second product; that leaves 3.2 KB spare, so the next
+entry-growing change should look at the `RealtimeClient` reclaim above first.
 
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
-at first paint, so it lands in the entry, where there is 3.4 KB spare (2026-11-04). It is now a
+at first paint, so it lands in the entry, where there is 3.2 KB spare (2026-11-05). It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
 `npm run size` enforces every budget inside the **Build** job.
 

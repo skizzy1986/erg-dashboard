@@ -235,8 +235,10 @@ export default defineConfig({
         // Ratcheted 2026-11-04 (squat PR2a, #382): measured lines 93.16 /
         // functions 88.95 / branches 84.12, set ~4–5 points under, same
         // margin as the ratchets above.
-        lines: 88,
-        functions: 84,
+        // Ratcheted again 2026-11-05 (squat PR2b-i, #401): measured lines
+        // 93.6 / functions 89.7 / branches 85.1. Same ~4-5 point margin.
+        lines: 89,
+        functions: 85,
         branches: 80,
         // Commercial-baseline gate (80/80/70) for new/extracted code, applied
         // per-file as it lands. The global floor above ratchets toward this as

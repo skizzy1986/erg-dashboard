@@ -3,6 +3,7 @@ import { captureError } from '../../utils/sentry.js';
 import { loadSceneModule } from '../../anatomy/scene/loadScene.js';
 import { scenePalette } from '../../anatomy/utils/sceneColours.js';
 import { sceneStyle } from '../../anatomy/constants/sceneStyle.js';
+import { activationAt } from '../utils/activation.js';
 
 const isOffline = () =>
   typeof navigator !== 'undefined' && navigator.onLine === false;
@@ -139,6 +140,20 @@ export function useAnatomyScene({
   useEffect(() => {
     controller?.setPalette(scenePalette(themeName), sceneStyle(themeName));
   }, [controller, themeName]);
+
+  // Memoised, so the effect fires on a real change rather than every render,
+  // and so a depth drag with the heatmap off allocates nothing.
+  const activation = useMemo(
+    () =>
+      view.heatmap && manifest
+        ? activationAt(manifest.meta.muscles, view.s, view.direction)
+        : null,
+    [view.heatmap, view.s, view.direction, manifest]
+  );
+
+  useEffect(() => {
+    controller?.setActivation(activation);
+  }, [controller, activation]);
 
   useEffect(() => {
     controller?.setReducedMotion(reducedMotion);
