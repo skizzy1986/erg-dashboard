@@ -5,7 +5,7 @@ taken with ``sha256sum`` on the committed files; tests/test_inputs.py checks the
 """
 
 FIXED_INPUTS = {
-    'v3/base.html': '00a6adcb33aec55f1d474675e5027648700332ab4214ac6cf6375c6cbd4d8e33',
+    'v3/base.html': 'bd2ebc7b8067ecc9a8e9e6321b25e709834220c644992d89e7073bd71c863137',
     'T_global.npy': '56839e4e1efbfbfcf623181cbfa21c5716b1718ab0b9baf614cdc2abf3611bc6',
     'v3/bar_seat.npy': '0a796e66499aa25907acb631ef6236a252ef7cac4d540f493caa96d19f2ba466',
     'v3/girdle_p.npy': 'd71a0bd351b2b76511d55864ecf13ce4c88ab7e691295ce2299bd3137890a9fe',
