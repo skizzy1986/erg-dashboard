@@ -33,6 +33,10 @@ jobs:
   changes:
     name: Detect pipeline changes
     runs-on: ubuntu-latest
+    # paths-filter lists a PR's changed files through the REST API (dorny/paths-filter README)
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       pipeline: ${{ steps.filter.outputs.pipeline }}
     steps:

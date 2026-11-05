@@ -9,6 +9,7 @@ _HINT = {
     'fixed': 'no generator — restore with git checkout; see squat/inputs.py',
     'cache': 'regenerate it with python -m squat stage <name>; see python -m squat list',
     'stl': 'run scripts/fetch_stl.sh',
+    'input': 'check the path',
 }
 
 
@@ -22,7 +23,7 @@ class MissingInputError(FileNotFoundError):
 
     @property
     def label(self):
-        return {'fixed': 'fixed input', 'cache': 'cache', 'stl': 'STL'}[self.kind]
+        return {'fixed': 'fixed input', 'cache': 'cache', 'stl': 'STL', 'input': 'file'}[self.kind]
 
 
 def display(path):
@@ -69,7 +70,7 @@ class Paths:
         return self.repo / 'web' / 'src' / 'squat' / 'assets' / 'squat-manifest.json'
 
     def require(self, rel, kind, root=None, hint=None):
-        """Resolve ``rel`` under ``root`` (default: the data dir) or raise MissingInputError."""
+        """Resolve ``rel`` under ``root`` (default: the data dir; an absolute ``rel`` stands alone) or raise MissingInputError."""
         p = (self.data if root is None else Path(root)) / rel
         if not p.is_file():
             raise MissingInputError(p, kind, hint)

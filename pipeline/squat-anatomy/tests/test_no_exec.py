@@ -3,12 +3,14 @@ import ast
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
-SKIP = {'node_modules', 'ext', '.pytest_cache', '__pycache__'}
+SKIP = {'node_modules', '.pytest_cache', '__pycache__'}
+SKIP_DIRS = ('pipeline/ext/',)
 
 
 def _files():
     for p in sorted(PROJECT.rglob('*.py')):
-        if not SKIP.intersection(p.relative_to(PROJECT).parts):
+        rel = p.relative_to(PROJECT)
+        if not SKIP.intersection(rel.parts) and not rel.as_posix().startswith(SKIP_DIRS):
             yield p
 
 

@@ -44,6 +44,7 @@ Check a download with `sha256sum <file>` against the table. The same zips are mi
 ## Verified on 2026-11-04
 Starting from this committed folder plus `scripts/fetch_stl.sh`, running
 `python3 page/assemble.py && python3 pipeline/v3/build3.py page/template.html dist/squat.html`
+(pre-#402; today: `python -m squat build`)
 reproduces the app's data exactly. The decompressed data matches byte for byte (3,450,003
 bytes, sha256 `eb15d943…93b6be`), and so does the parsed manifest.
 

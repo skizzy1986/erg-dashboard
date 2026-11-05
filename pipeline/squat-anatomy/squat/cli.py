@@ -1,6 +1,7 @@
 """python -m squat build | stage <name> | list | verify HTML
 
-Exit codes: 0 ok, 1 verify mismatch, 2 usage, 3 missing fixed input or cache, 4 missing STL.
+Exit codes: 0 ok; 1 verify mismatch (or not a built page); 2 usage; 3 a missing input file (fixed input,
+cache, --template, the HTML given to verify, or the shipped manifest); 4 missing STL.
 """
 import argparse
 import hashlib
@@ -37,7 +38,10 @@ def _build(args, paths):
     from squat.build import build
     from squat.context import Context
     from squat.page import assemble_template
-    template = args.template.read_text(encoding='utf-8') if args.template else assemble_template(paths.page)
+    if args.template:
+        template = paths.require(args.template.resolve(), 'input').read_text(encoding='utf-8')
+    else:
+        template = assemble_template(paths.page)
     res = build(Context(paths), args.caches or paths.v3, template, args.out or paths.dist / 'squat.html')
     print(f'out {display(res.out)}\nraw_bytes {res.raw_bytes}\nraw_sha256 {res.raw_sha256}')
     return 0
@@ -48,7 +52,13 @@ def _stage(args, paths, parser):
     from squat.stages import STAGES
     if args.name not in STAGES:
         parser.error(f'unknown stage {args.name!r}; choose from {", ".join(STAGES)}')
-    out = STAGES[args.name].fn(Context(paths), args.in_dir or paths.v3, args.out_dir or paths.v3)
+    stage = STAGES[args.name]
+    # cache stages regenerate in place by default; the build's default is dist/ (see stages._build_run)
+    if args.out_dir:
+        out_dir = args.out_dir
+    else:
+        out_dir = None if args.name == 'build' else paths.v3
+    out = stage.fn(Context(paths), args.in_dir or paths.v3, out_dir)
     for p in out.values():
         print('wrote', display(p))
     return 0
@@ -72,16 +82,15 @@ def _list(paths):
 
 def _verify(args, paths):
     from squat.build import decode_html
-    if not args.html.is_file():
-        print(f'squat: no such file {args.html}', file=sys.stderr)
-        return EXIT_MISMATCH
+    paths.require(args.html.resolve(), 'input')
+    shipped_path = paths.require(paths.shipped_manifest, 'input', hint='the manifest /squat ships; restore with git checkout')
     try:
         man, raw = decode_html(args.html)
     except (AttributeError, ValueError, OSError, EOFError) as e:  # no script tags, bad base64/gzip/JSON/UTF-8
         print(f'squat: {args.html} is not a built squat page ({type(e).__name__})', file=sys.stderr)
         return EXIT_MISMATCH
     sha = hashlib.sha256(raw).hexdigest()
-    shipped = json.loads(paths.shipped_manifest.read_text(encoding='utf-8'))
+    shipped = json.loads(shipped_path.read_text(encoding='utf-8'))
     ok_data = len(raw) == GOLDEN_RAW_BYTES and sha == GOLDEN_RAW_SHA256
     ok_man = man == shipped
     print(f'raw_bytes {len(raw)} (golden {GOLDEN_RAW_BYTES})\nraw_sha256 {sha}\n'

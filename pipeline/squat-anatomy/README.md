@@ -44,7 +44,8 @@ python -m squat verify dist/squat.html   # decompressed data sha + manifest vs w
 Run these from this folder. The build reads cached stage outputs in `pipeline/v3/`. `python -m squat list` shows every stage with its inputs, outputs, STLs and runtime, plus the fixed inputs nothing here can regenerate. To regenerate a stage in place (`--in-dir`/`--out-dir` to redirect):
 
 ```bash
-python -m squat stage ik4         # arm/hand solve with ISB limits + thumb wrap (~3 min) -> armik4_x.npy
+python -m squat stage ik3         # arm/hand solve from the armik2 seed (~3 min) -> armik3_x.npy
+python -m squat stage ik4         # arm/hand re-solve with ISB limits + thumb wrap from armik3_x (~3 min) -> armik4_x.npy
 python -m squat stage upper3      # bones, upper-body muscles, deltoid/pec rebuild -> upper3.npz
 python -m squat stage balance3    # vertical bar path + quasi-static kinetics -> frames3/deltas3/hips3.npy, rows3.pkl
 python -m squat stage lengths3    # musculotendon path lengths -> mlen3.pkl
@@ -63,6 +64,8 @@ python -m pytest -m slow                                   # the IK solves (~3 m
 ```
 
 CI (`.github/workflows/ci-pipeline.yml`) sets `SQUAT_STRICT_STL=1`, so missing STLs fail rather than skip.
+
+The four stage caches reproduce byte for byte on the machine that generated them. On other CPUs, float results differ in the last bits (OpenBLAS/LAPACK pick kernels per CPU). So the stage tests pin shas and fall back to a numeric tolerance (`tests/_compare.py`, rtol 1e-7, atol 1e-9; integers, keys and shapes must still match exactly), and report the drift as a warning. The shipped data is built from the committed caches and is pinned exactly everywhere. Regenerate and commit a cache only when the change is intended, and note the machine in the commit.
 
 ## Render test (headless)
 
