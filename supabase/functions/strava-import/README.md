@@ -40,9 +40,9 @@ for an existing unlinked session in the same type family, within ±1 day, whose
   Sentry gets one issue for the run. A wrong adoption silently rewrites power
   onto a session that was not that session; a visible unresolved item does not.
 
-Tolerances come from real pairs: `±max(5 m, 0.5%)` (8/6 `13618` vs `13620`;
-7/3 `10187` vs `10192.2`) and a ±1-day window (four rows are filed a day off the
-activity's local date).
+Tolerances come from real pairs: `±max(5 m, 0.5%)` (the same training filed
+twice sat 2 m and 5.2 m apart on ~10–14 km pieces) and a ±1-day window (some
+rows are filed a day off the activity's local date).
 
 ### An adopted row keeps its own duration and distance, for ever
 
@@ -50,7 +50,7 @@ activity's local date).
 That promise only holds because `upsert_strava_session` honours it too: once a
 row is linked, **every later run reaches it through `upsert_strava_session`**,
 so an unguarded `DO UPDATE` there would undo the adoption's restraint one cron
-cycle later — `60min` → `60:00`, `13618` → `13620`, and `9min` → `8:49`, which
+cycle later — `60min` → `60:00`, `9998` → `10000`, and `9min` → `8:49`, which
 changes the parsed duration from 9.0 to 8.82 minutes and therefore the load.
 
 The discriminator is `sessions.source`, which is `'strava'` **only** on rows this
@@ -87,7 +87,7 @@ The floors keep the 240 s / 1080 m `CP Test` while dropping the 4 s / 16 s /
 | `date` | first 10 chars of `start_date_local`, reformatted to unpadded `M/D/YY`. **Never `new Date(...)`** — Deno runs in UTC and a timezone-less local string would shift the day for every evening session |
 | `type` | `'erg'` / `'cycling'`, lower case (what `normType()` in `web/src/utils/formatting.js` recognises) |
 | `label` | `` `<name> HH:MM` ``, ≤120 chars. **Never contains a watts figure** — that is what breaks dedupe today |
-| `duration` | `m:ss` from `moving_time` (1560 → `26:00`, 2469 → `41:09`) |
+| `duration` | `m:ss` from `moving_time` (1500 → `25:00`, 2465 → `41:05`) |
 | `distance_m` | `Math.round(distance)` |
 | `avg_watts` | only when Strava reports device watts; **never a pace-derived estimate**. Almost always comes from the detail fetch, not the list payload — see below |
 | `avg_hr` | only when `has_heartrate`. Same |
@@ -99,10 +99,10 @@ The floors keep the 240 s / 1080 m `CP Test` while dropping the 4 s / 16 s /
 Strava's **SummaryActivity** — what `GET /athlete/activities` returns — **does
 not reliably carry power or heart rate.** `average_watts` is documented
 rides-only and `has_device_watts` is a `DetailedActivity` field. Verified against
-Scott's account: the list payload for rowing activity `19859099686` carried
-`distance`, `moving_time`, `average_speed`, `total_calories` and `average_cadence`
-and **no watts and no heart rate**, while `GET /activities/19859099686` returned
-`average_watts: 135.706`, `average_heartrate: 124.475`, `has_device_watts: true`.
+a real rowing activity: its list payload carried `distance`, `moving_time`,
+`average_speed`, `total_calories` and `average_cadence` and **no watts and no
+heart rate**, while `GET /activities/:id` for the same activity returned
+`average_watts`, `average_heartrate` and `has_device_watts: true`.
 
 An importer that only fetched detail for a summary missing `distance` /
 `moving_time` / `start_date_local` would therefore write `avg_watts` and `avg_hr`

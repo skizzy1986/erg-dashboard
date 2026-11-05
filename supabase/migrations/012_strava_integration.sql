@@ -205,7 +205,7 @@ BEGIN
       -- decided the session was. But an adopted row is linked, so the NEXT run
       -- reaches it through this function instead, and an unguarded assignment
       -- here would undo that decision one cron cycle later: '60min' becomes
-      -- '60:00', 13618 becomes 13620, and '9min' becomes '8:49' — which changes
+      -- '60:00', 9998 becomes 10000, and '9min' becomes '8:49' — which changes
       -- the parsed duration from 9.0 to 8.82 minutes and therefore the load.
       -- source is the discriminator: it is 'strava' only on rows THIS importer
       -- inserted; an adopted row keeps its original portal/coach/coach_plan/

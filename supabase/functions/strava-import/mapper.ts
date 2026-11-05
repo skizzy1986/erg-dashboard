@@ -27,17 +27,17 @@ export const SPORT_TYPE_TO_SESSION_TYPE: Record<EligibleSportType, "erg" | "cycl
 };
 
 // Floors chosen against the real account, not picked round:
-//   120 s keeps the 240 s CP Test while dropping the 4 s / 16 s / 23 s / 72 s
+//   120 s keeps a 240 s CP Test while dropping the few-second to ~1-minute
 //   fragments Strava records when the PM5 or Zwift is bumped;
-//   200 m drops the 9 m / 40 m / 53 m / 155 m fragments from the same cause.
+//   200 m drops the tens-of-metres fragments from the same cause.
 // Both floors must hold — a 300 s, 30 m warm-up drift is still not a session.
 export const MIN_MOVING_TIME_S = 120;
 export const MIN_DISTANCE_M = 200;
 
 // Distance agreement for the adoption pass. Derived from real pairs that are
-// the same training filed twice: 8/6 13618 m vs 13620 m (2 m apart) and 7/3
-// 10187 m vs 10192.2 m (5.2 m apart). The 5 m floor is what catches the short
-// sessions where 0.5% is under a metre.
+// the same training filed twice, which sat a few metres apart (2 m and 5.2 m
+// on ~10-14 km pieces). The 5 m floor is what catches the short sessions
+// where 0.5% is under a metre.
 export const ADOPTION_DISTANCE_FLOOR_M = 5;
 export const ADOPTION_DISTANCE_FRACTION = 0.005;
 
@@ -112,7 +112,7 @@ export type AdoptionDecision =
 /**
  * The activity's local calendar day, as the ISO prefix Strava already gives us.
  *
- * start_date_local is "2026-08-22T21:02:23" — a LOCAL wall-clock stamp with no
+ * start_date_local is "2026-01-05T20:30:45" — a LOCAL wall-clock stamp with no
  * timezone marker. Slicing is the whole implementation on purpose.
  */
 export function localDateISO(startDateLocal: string): string {
@@ -120,7 +120,7 @@ export function localDateISO(startDateLocal: string): string {
 }
 
 /**
- * "2026-08-22T21:02:23" -> "8/22/26", the unpadded M/D/YY that sessions.date
+ * "2026-01-05T20:30:45" -> "1/5/26", the unpadded M/D/YY that sessions.date
  * uses (and that sessions.date_iso is generated from).
  *
  * NEVER `new Date(startDateLocal)`. Deno runs in UTC. Constructing a Date from
@@ -136,7 +136,7 @@ export function toLogDateFromLocal(startDateLocal: string): string {
   return `${Number(m)}/${Number(d)}/${y.slice(2)}`;
 }
 
-/** "2026-08-22T21:02:23" -> "21:02". Characters 11-16, no parsing. */
+/** "2026-01-05T20:30:45" -> "20:30". Characters 11-16, no parsing. */
 export function localTimeHHMM(startDateLocal: string): string {
   return String(startDateLocal).slice(11, 16);
 }
@@ -203,11 +203,11 @@ export function avgHrOrNull(a: StravaActivity): number | null {
  *
  * Strava's SummaryActivity — what /athlete/activities returns — does NOT
  * reliably carry power or heart rate. `average_watts` is documented rides-only,
- * and `has_device_watts` is a DetailedActivity field. Verified against Scott's
- * own account: the summary for rowing activity 19859099686 carried distance,
- * moving_time, average_speed, calories and cadence and NO watts and NO heart
- * rate, while GET /activities/19859099686 returned average_watts 135.706,
- * average_heartrate 124.475 and has_device_watts true.
+ * and `has_device_watts` is a DetailedActivity field. Verified against a real
+ * rowing activity: its summary carried distance, moving_time, average_speed,
+ * calories and cadence and NO watts and NO heart rate, while
+ * GET /activities/:id for the same activity returned average_watts,
+ * average_heartrate and has_device_watts true.
  *
  * So the detail fetch is the normal path, not an exception. Without it
  * avg_watts and avg_hr are null on essentially every imported row, sessionLoad()

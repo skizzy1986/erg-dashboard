@@ -48,37 +48,43 @@ const check = (name: string, cond: boolean, actual?: unknown) => {
   }
 };
 
-const BACKFILL_FROM = "2026-06-14"; // Scott's Gate 2 decision
+// A test-only floor. The live value is STRAVA_BACKFILL_FROM config, not a test input.
+const BACKFILL_FROM = "2026-01-01";
 
 // ---------------------------------------------------------------------------
-// Fixtures — real activities from Scott's account.
+// Fixtures — synthetic. Ids, times and figures are made up; only the shapes
+// and the edge cases they encode are taken from real Strava payloads.
+//   rowing      — an evening session (UTC+8), whose UTC date is the same day.
+//   virtualRide — just after local midnight, so its UTC date is the day BEFORE
+//                 its local date. A Date-based log date gets this one wrong.
+//   Watts round up and heart rate rounds down, so both directions are covered.
 // ---------------------------------------------------------------------------
 
 const rowing: StravaActivity = {
-  id: 19859099686,
-  name: "Afternoon Rowing",
+  id: 10000000001,
+  name: "Evening Rowing",
   sport_type: "Rowing",
-  start_date: "2026-08-22T13:02:23Z",
-  start_date_local: "2026-08-22T21:02:23",
-  distance: 5657.2,
-  moving_time: 1560,
-  average_watts: 135.706,
+  start_date: "2026-01-05T12:30:45Z",
+  start_date_local: "2026-01-05T20:30:45",
+  distance: 6000.4,
+  moving_time: 1500,
+  average_watts: 149.6,
   has_device_watts: true,
-  average_heartrate: 124.475,
+  average_heartrate: 130.4,
   has_heartrate: true,
 };
 
 const virtualRide: StravaActivity = {
-  id: 19032543769,
-  name: "Zwift Watopia",
+  id: 10000000002,
+  name: "Virtual Ride",
   sport_type: "VirtualRide",
-  start_date: "2026-06-22T16:43:49Z",
-  start_date_local: "2026-06-23T00:43:49",
-  distance: 32207.6,
-  moving_time: 3616,
-  average_watts: 197.42,
+  start_date: "2026-01-05T16:30:15Z",
+  start_date_local: "2026-01-06T00:30:15",
+  distance: 30000.4,
+  moving_time: 3615,
+  average_watts: 200.4,
   has_device_watts: true,
-  average_heartrate: 158.506,
+  average_heartrate: 140.4,
   has_heartrate: true,
 };
 
@@ -97,12 +103,12 @@ for (const sport of ["WeightTraining", "Ride", "Walk", "Workout", "Run", "Yoga",
 }
 check(
   "TC-01 before backfill_from rejected",
-  isEligible(act({ start_date_local: "2026-06-13T06:00:00" }), BACKFILL_FROM).reason ===
+  isEligible(act({ start_date_local: "2025-12-31T06:00:00" }), BACKFILL_FROM).reason ===
     "before_backfill_from",
 );
 check(
   "TC-01 on backfill_from accepted (boundary is inclusive)",
-  isEligible(act({ start_date_local: "2026-06-14T06:00:00" }), BACKFILL_FROM).eligible === true,
+  isEligible(act({ start_date_local: "2026-01-01T06:00:00" }), BACKFILL_FROM).eligible === true,
 );
 
 // ---------------------------------------------------------------------------
@@ -110,11 +116,11 @@ check(
 // ---------------------------------------------------------------------------
 console.log("\nTC-02 fragment floors");
 
-for (const secs of [23, 16, 72, 4, 119]) {
+for (const secs of [5, 15, 30, 60, 119]) {
   const v = isEligible(act({ moving_time: secs }), BACKFILL_FROM);
   check(`TC-02 ${secs}s fragment rejected`, v.eligible === false && v.reason === "moving_time", v);
 }
-for (const metres of [9, 40, 53, 155, 199]) {
+for (const metres of [10, 50, 100, 150, 199]) {
   const v = isEligible(act({ distance: metres, moving_time: 600 }), BACKFILL_FROM);
   check(`TC-02 ${metres}m fragment rejected`, v.eligible === false && v.reason === "distance", v);
 }
@@ -127,27 +133,27 @@ check("TC-02 exactly 200 m accepted",
   isEligible(act({ distance: 200, moving_time: 600 }), BACKFILL_FROM).eligible === true);
 
 // ---------------------------------------------------------------------------
-// TC-03 — the full mapping contract on a real activity
+// TC-03 — the full mapping contract on the rowing fixture
 // ---------------------------------------------------------------------------
-console.log("\nTC-03 mapActivityToSession on activity 19859099686");
+console.log("\nTC-03 mapActivityToSession on synthetic activity 10000000001");
 
 const mapped = mapActivityToSession(rowing);
-check("TC-03 date 8/22/26",        mapped.date === "8/22/26",        mapped.date);
+check("TC-03 date 1/5/26",         mapped.date === "1/5/26",         mapped.date);
 check("TC-03 type erg",            mapped.type === "erg",            mapped.type);
-check("TC-03 duration 26:00",      mapped.duration === "26:00",      mapped.duration);
-check("TC-03 distance_m 5657",     mapped.distance_m === 5657,       mapped.distance_m);
-check("TC-03 avg_watts 136",       mapped.avg_watts === 136,         mapped.avg_watts);
-check("TC-03 avg_hr 124",          mapped.avg_hr === 124,            mapped.avg_hr);
+check("TC-03 duration 25:00",      mapped.duration === "25:00",      mapped.duration);
+check("TC-03 distance_m 6000",     mapped.distance_m === 6000,       mapped.distance_m);
+check("TC-03 avg_watts 150",       mapped.avg_watts === 150,         mapped.avg_watts);
+check("TC-03 avg_hr 130",          mapped.avg_hr === 130,            mapped.avg_hr);
 check("TC-03 status completed",    mapped.status === "completed",    mapped.status);
 check("TC-03 source strava",       mapped.source === "strava",       mapped.source);
-check("TC-03 activity id carried", mapped.strava_activity_id === 19859099686, mapped.strava_activity_id);
+check("TC-03 activity id carried", mapped.strava_activity_id === 10000000001, mapped.strava_activity_id);
 
 const mappedRide = mapActivityToSession(virtualRide);
 check("TC-03 VirtualRide type cycling",  mappedRide.type === "cycling",       mappedRide.type);
-check("TC-03 VirtualRide date 6/23/26",  mappedRide.date === "6/23/26",       mappedRide.date);
-check("TC-03 VirtualRide duration 60:16", mappedRide.duration === "60:16",    mappedRide.duration);
-check("TC-03 VirtualRide distance 32208", mappedRide.distance_m === 32208,    mappedRide.distance_m);
-check("TC-03 VirtualRide watts 197",      mappedRide.avg_watts === 197,       mappedRide.avg_watts);
+check("TC-03 VirtualRide date 1/6/26",   mappedRide.date === "1/6/26",        mappedRide.date);
+check("TC-03 VirtualRide duration 60:15", mappedRide.duration === "60:15",    mappedRide.duration);
+check("TC-03 VirtualRide distance 30000", mappedRide.distance_m === 30000,    mappedRide.distance_m);
+check("TC-03 VirtualRide watts 200",      mappedRide.avg_watts === 200,       mappedRide.avg_watts);
 
 // These lower-case spellings are what normType() in web/src/utils/formatting.js
 // recognises. 'Rowing' / 'VirtualRide' would render as colourless unknowns.
@@ -175,13 +181,13 @@ check("TC-04 device_watts spelling also accepted",
 // flag alone is not a safe gate: a payload claiming device watts with no numeric
 // average_watts would write NULL over a value the adopted row already had.
 check("TC-04 usable-watts gate true when flag AND number present",
-  hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: 197 })) === true);
+  hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: 200 })) === true);
 check("TC-04 USABLE-WATTS GATE FALSE WHEN FLAG SET BUT VALUE MISSING",
   hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: null })) === false);
 check("TC-04 usable-watts gate false when value is not a number",
   hasUsableDeviceWatts(act({ has_device_watts: true, average_watts: undefined })) === false);
 check("TC-04 usable-watts gate false when no device watts at all",
-  hasUsableDeviceWatts(act({ has_device_watts: false, average_watts: 197 })) === false);
+  hasUsableDeviceWatts(act({ has_device_watts: false, average_watts: 200 })) === false);
 
 const noHr = act({ has_heartrate: false, average_heartrate: 150 });
 check("TC-04 has_heartrate false -> avg_hr null", mapActivityToSession(noHr).avg_hr === null,
@@ -195,8 +201,8 @@ check("TC-04 no estimate substituted for missing power",
 
 // needsDetailFetch — the gate that decides whether a summary is worth writing
 // at all. The SummaryActivity from /athlete/activities does not reliably carry
-// power or heart rate (verified: the list payload for 19859099686 had neither,
-// the detail payload had both), and a session imported without them scores 0 in
+// power or heart rate (verified against a real rowing activity: the list
+// payload had neither, the detail payload had both), and a session imported without them scores 0 in
 // sessionLoad(), so it would contribute nothing to CTL/ATL/TSB.
 check("TC-04 a summary with no watts and no HR needs detail",
   needsDetailFetch(act({ average_watts: undefined, has_device_watts: undefined,
@@ -223,25 +229,25 @@ for (const sport of ["WeightTraining", "Run", "Walk", "Ride"]) {
 // ---------------------------------------------------------------------------
 console.log("\nTC-05 labels");
 
-const morning = act({ id: 1, name: "Row", start_date_local: "2026-08-22T05:14:00" });
-const evening = act({ id: 2, name: "Row", start_date_local: "2026-08-22T18:47:00" });
+const morning = act({ id: 1, name: "Row", start_date_local: "2026-01-05T05:15:00" });
+const evening = act({ id: 2, name: "Row", start_date_local: "2026-01-05T18:45:00" });
 const lm = buildLabel(morning), le = buildLabel(evening);
 check("TC-05 same day + same name -> distinct labels", lm !== le, [lm, le]);
-check("TC-05 morning label", lm === "Row 05:14", lm);
-check("TC-05 evening label", le === "Row 18:47", le);
+check("TC-05 morning label", lm === "Row 05:15", lm);
+check("TC-05 evening label", le === "Row 18:45", le);
 for (const l of [lm, le, buildLabel(rowing)]) {
   // A watts figure in the label is exactly what breaks dedupe today: the label
   // changes whenever the power does, so one session reads as two.
   check(`TC-05 label carries no watts figure: ${l}`, !/\d+\s*w\b/i.test(l) && !/watt/i.test(l), l);
 }
 check("TC-05 blank name falls back to sport type",
-  buildLabel(act({ name: "   ", start_date_local: "2026-08-22T21:02:23" })) === "Strava Rowing 21:02",
+  buildLabel(act({ name: "   ", start_date_local: "2026-01-05T20:30:45" })) === "Strava Rowing 20:30",
   buildLabel(act({ name: "   " })));
 const longName = "x".repeat(400);
-const longLabel = buildLabel(act({ name: longName, start_date_local: "2026-08-22T21:02:23" }));
+const longLabel = buildLabel(act({ name: longName, start_date_local: "2026-01-05T20:30:45" }));
 check("TC-05 long label truncated to 120", longLabel.length <= 120, longLabel.length);
 check("TC-05 truncation keeps the time suffix (what keeps same-day labels distinct)",
-  longLabel.endsWith(" 21:02"), longLabel.slice(-10));
+  longLabel.endsWith(" 20:30"), longLabel.slice(-10));
 
 // ---------------------------------------------------------------------------
 // TC-06 — buildLabel is deterministic
@@ -265,63 +271,63 @@ check("TC-07 typeFamily maps the five real spellings",
 );
 check("TC-07 typeFamily rejects strength", typeFamily("Upper Strength") === null, typeFamily("Upper Strength"));
 
-// Real pair, 8/6: activity 13620 m vs a hand-filed 13618 m (2 m apart).
-const a86 = act({ id: 86, distance: 13620, start_date_local: "2026-08-06T05:30:00" });
-const c86: AdoptionCandidate = { id: 861, date_iso: "2026-08-06", type: "Z2 Aerobic", distance_m: 13618 };
-const d86 = chooseAdoptionCandidate(a86, [c86]);
-check("TC-07 2 m apart -> adopt", d86.decision === "adopt" && d86.sessionId === 861, d86);
+// Pair 1: activity 10000 m vs a hand-filed 9998 m (2 m apart).
+const aPair1 = act({ id: 86, distance: 10000, start_date_local: "2026-01-07T05:30:00" });
+const cPair1: AdoptionCandidate = { id: 861, date_iso: "2026-01-07", type: "Z2 Aerobic", distance_m: 9998 };
+const dPair1 = chooseAdoptionCandidate(aPair1, [cPair1]);
+check("TC-07 2 m apart -> adopt", dPair1.decision === "adopt" && dPair1.sessionId === 861, dPair1);
 
-// Real pair, 7/3: activity 10192.2 m vs a hand-filed 10187 m (5.2 m apart).
-const a73 = act({ id: 73, distance: 10192.2, start_date_local: "2026-07-03T05:30:00" });
-const c73: AdoptionCandidate = { id: 731, date_iso: "2026-07-03", type: "erg", distance_m: 10187 };
-const d73 = chooseAdoptionCandidate(a73, [c73]);
-check("TC-07 5.2 m apart -> adopt", d73.decision === "adopt" && d73.sessionId === 731, d73);
+// Pair 2: activity 8005.2 m vs a hand-filed 8000 m (5.2 m apart).
+const aPair2 = act({ id: 73, distance: 8005.2, start_date_local: "2026-01-08T05:30:00" });
+const cPair2: AdoptionCandidate = { id: 731, date_iso: "2026-01-08", type: "erg", distance_m: 8000 };
+const dPair2 = chooseAdoptionCandidate(aPair2, [cPair2]);
+check("TC-07 5.2 m apart -> adopt", dPair2.decision === "adopt" && dPair2.sessionId === 731, dPair2);
 
-// The +/-1 day window: four real rows are filed a day off the local date.
-const dayBefore = chooseAdoptionCandidate(a86, [{ ...c86, date_iso: "2026-08-05" }]);
+// The +/-1 day window: hand-filed rows are sometimes a day off the local date.
+const dayBefore = chooseAdoptionCandidate(aPair1, [{ ...cPair1, date_iso: "2026-01-06" }]);
 check("TC-07 candidate one day EARLIER -> adopt", dayBefore.decision === "adopt", dayBefore);
-const dayAfter = chooseAdoptionCandidate(a86, [{ ...c86, date_iso: "2026-08-07" }]);
+const dayAfter = chooseAdoptionCandidate(aPair1, [{ ...cPair1, date_iso: "2026-01-08" }]);
 check("TC-07 candidate one day LATER -> adopt", dayAfter.decision === "adopt", dayAfter);
-const twoDays = chooseAdoptionCandidate(a86, [{ ...c86, date_iso: "2026-08-08" }]);
+const twoDays = chooseAdoptionCandidate(aPair1, [{ ...cPair1, date_iso: "2026-01-09" }]);
 check("TC-07 candidate two days out -> insert", twoDays.decision === "insert", twoDays);
 
-check("TC-07 no candidates -> insert", chooseAdoptionCandidate(a86, []).decision === "insert");
+check("TC-07 no candidates -> insert", chooseAdoptionCandidate(aPair1, []).decision === "insert");
 check("TC-07 wrong family -> insert",
-  chooseAdoptionCandidate(a86, [{ ...c86, type: "Cycling" }]).decision === "insert");
+  chooseAdoptionCandidate(aPair1, [{ ...cPair1, type: "Cycling" }]).decision === "insert");
 check("TC-07 null distance candidate ignored -> insert",
-  chooseAdoptionCandidate(a86, [{ ...c86, distance_m: null }]).decision === "insert");
+  chooseAdoptionCandidate(aPair1, [{ ...cPair1, distance_m: null }]).decision === "insert");
 check("TC-07 outside tolerance -> insert",
-  chooseAdoptionCandidate(a86, [{ ...c86, distance_m: 13620 - 200 }]).decision === "insert");
+  chooseAdoptionCandidate(aPair1, [{ ...cPair1, distance_m: 10000 - 200 }]).decision === "insert");
 check("TC-07 tolerance floor is 5 m for short pieces", distanceTolerance(500) === 5, distanceTolerance(500));
-check("TC-07 tolerance is 0.5% above the floor", distanceTolerance(13620) === 68.1, distanceTolerance(13620));
+check("TC-07 tolerance is 0.5% above the floor", distanceTolerance(10000) === 50, distanceTolerance(10000));
 // A cycling activity must not adopt a rowing session of the same distance.
-const aRide = act({ id: 99, sport_type: "VirtualRide", distance: 13620, start_date_local: "2026-08-06T05:30:00" });
+const aRide = act({ id: 99, sport_type: "VirtualRide", distance: 10000, start_date_local: "2026-01-07T05:30:00" });
 check("TC-07 cycling activity ignores erg candidate",
-  chooseAdoptionCandidate(aRide, [c86]).decision === "insert");
+  chooseAdoptionCandidate(aRide, [cPair1]).decision === "insert");
 
 // ---------------------------------------------------------------------------
 // TC-08 — two plausible candidates means do nothing at all
 // ---------------------------------------------------------------------------
 console.log("\nTC-08 ambiguity is never resolved by guessing");
 
-const twoInTolerance = chooseAdoptionCandidate(a86, [
-  c86,
-  { id: 862, date_iso: "2026-08-06", type: "erg", distance_m: 13621 },
+const twoInTolerance = chooseAdoptionCandidate(aPair1, [
+  cPair1,
+  { id: 862, date_iso: "2026-01-07", type: "erg", distance_m: 10001 },
 ]);
 check("TC-08 two candidates -> ambiguous", twoInTolerance.decision === "ambiguous", twoInTolerance);
 check("TC-08 ambiguous never carries a sessionId",
   !("sessionId" in twoInTolerance), twoInTolerance);
 check("TC-08 both matches reported for the human to resolve",
   twoInTolerance.matches.length === 2, twoInTolerance.matches.length);
-const threeCandidates = chooseAdoptionCandidate(a86, [
-  c86,
-  { id: 862, date_iso: "2026-08-05", type: "erg", distance_m: 13619 },
-  { id: 863, date_iso: "2026-08-07", type: "Z2 Aerobic", distance_m: 13620 },
+const threeCandidates = chooseAdoptionCandidate(aPair1, [
+  cPair1,
+  { id: 862, date_iso: "2026-01-06", type: "erg", distance_m: 9999 },
+  { id: 863, date_iso: "2026-01-08", type: "Z2 Aerobic", distance_m: 10000 },
 ]);
 check("TC-08 three candidates -> ambiguous", threeCandidates.decision === "ambiguous", threeCandidates);
 // One in tolerance and one out is NOT ambiguous — the out-of-tolerance row is
 // simply not a match.
-const oneIn = chooseAdoptionCandidate(a86, [c86, { id: 864, date_iso: "2026-08-06", type: "erg", distance_m: 9000 }]);
+const oneIn = chooseAdoptionCandidate(aPair1, [cPair1, { id: 864, date_iso: "2026-01-07", type: "erg", distance_m: 9000 }]);
 check("TC-08 one in tolerance, one far out -> adopt", oneIn.decision === "adopt", oneIn);
 
 // ---------------------------------------------------------------------------
@@ -329,22 +335,22 @@ check("TC-08 one in tolerance, one far out -> adopt", oneIn.decision === "adopt"
 // ---------------------------------------------------------------------------
 console.log("\nTC-09 timezone-free log date");
 
-check("TC-09 21:02 local -> 8/22/26", toLogDateFromLocal("2026-08-22T21:02:23") === "8/22/26",
-  toLogDateFromLocal("2026-08-22T21:02:23"));
+check("TC-09 20:30 local -> 1/5/26", toLogDateFromLocal("2026-01-05T20:30:45") === "1/5/26",
+  toLogDateFromLocal("2026-01-05T20:30:45"));
 // These are the cases a `new Date(local)` implementation gets wrong: Deno runs
 // in UTC, so an evening Perth session (UTC+8) would roll back a day and an
 // early-morning one would not, misfiling sessions into the wrong training week.
-check("TC-09 23:59 local stays on its own day", toLogDateFromLocal("2026-08-22T23:59:59") === "8/22/26");
-check("TC-09 00:00 local stays on its own day", toLogDateFromLocal("2026-08-23T00:00:00") === "8/23/26");
+check("TC-09 23:59 local stays on its own day", toLogDateFromLocal("2026-01-05T23:59:59") === "1/5/26");
+check("TC-09 00:00 local stays on its own day", toLogDateFromLocal("2026-01-06T00:00:00") === "1/6/26");
 check("TC-09 04:45 local (5am erg) stays put", toLogDateFromLocal("2026-06-14T04:45:00") === "6/14/26");
 check("TC-09 month and day are UNPADDED", toLogDateFromLocal("2026-01-05T06:00:00") === "1/5/26",
   toLogDateFromLocal("2026-01-05T06:00:00"));
 check("TC-09 two-digit year", toLogDateFromLocal("2026-12-31T22:00:00") === "12/31/26");
 check("TC-09 result is independent of the process timezone",
-  toLogDateFromLocal("2026-08-22T21:02:23") === "8/22/26" &&
-  toLogDateFromLocal("2026-08-22T21:02:23") === mapActivityToSession(rowing).date);
-check("TC-09 localTimeHHMM slices chars 11-16", localTimeHHMM("2026-08-22T21:02:23") === "21:02",
-  localTimeHHMM("2026-08-22T21:02:23"));
+  toLogDateFromLocal("2026-01-05T20:30:45") === "1/5/26" &&
+  toLogDateFromLocal("2026-01-06T00:30:15") === mapActivityToSession(virtualRide).date);
+check("TC-09 localTimeHHMM slices chars 11-16", localTimeHHMM("2026-01-05T20:30:45") === "20:30",
+  localTimeHHMM("2026-01-05T20:30:45"));
 // Direct evidence the implementation does not go through Date: a stamp Date
 // would reject entirely still slices correctly.
 check("TC-09 an unparseable-by-Date stamp still slices",
@@ -356,9 +362,9 @@ check("TC-09 an unparseable-by-Date stamp still slices",
 // ---------------------------------------------------------------------------
 console.log("\nTC-10 formatDuration");
 
-check("TC-10 1560 -> 26:00", formatDuration(1560) === "26:00", formatDuration(1560));
-check("TC-10 2469 -> 41:09", formatDuration(2469) === "41:09", formatDuration(2469));
-check("TC-10 4647 -> 77:27", formatDuration(4647) === "77:27", formatDuration(4647));
+check("TC-10 1500 -> 25:00", formatDuration(1500) === "25:00", formatDuration(1500));
+check("TC-10 2465 -> 41:05", formatDuration(2465) === "41:05", formatDuration(2465));
+check("TC-10 4650 -> 77:30", formatDuration(4650) === "77:30", formatDuration(4650));
 check("TC-10 seconds are zero padded", formatDuration(61) === "1:01", formatDuration(61));
 check("TC-10 minutes are NOT zero padded", formatDuration(540) === "9:00", formatDuration(540));
 check("TC-10 0 -> 0:00", formatDuration(0) === "0:00", formatDuration(0));
@@ -1011,17 +1017,17 @@ const summary = (id: number, localIso: string, over: Partial<StravaActivity> = {
   sport_type: "Rowing",
   start_date: `${localIso.slice(0, 19)}Z`,
   start_date_local: localIso,
-  distance: 5657.2,
-  moving_time: 1560,
+  distance: 6000.4,
+  moving_time: 1500,
   ...over,
 });
 
 /** The same activity as /activities/:id returns it — with power and HR. */
 const detailed = (s: StravaActivity, over: Partial<StravaActivity> = {}): StravaActivity => ({
   ...s,
-  average_watts: 135.706,
+  average_watts: 149.6,
   has_device_watts: true,
-  average_heartrate: 124.475,
+  average_heartrate: 130.4,
   has_heartrate: true,
   ...over,
 });
@@ -1050,7 +1056,7 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
 // TC-16 — a dry run writes NOTHING
 // ---------------------------------------------------------------------------
 {
-  const a1 = summary(1001, "2026-08-22T21:02:23");
+  const a1 = summary(1001, "2026-08-21T20:30:45");
   const a2 = summary(1002, "2026-08-23T06:10:00");
   const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
   const net = installStrava({
@@ -1221,8 +1227,8 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
     strava_activity_id: null,
     date_iso: "2026-08-20",
     type: "Z2 Aerobic",
-    distance_m: 5659,
-    duration: "26min",
+    distance_m: 6002,
+    duration: "25min",
     source: "portal",
   };
   const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens }, sessions: [legacy] });
@@ -1245,7 +1251,7 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
     r2.updated === 1 && r2.imported === 0 && r2.adopted === 0, r2);
   check("TC-21 run 2 makes exactly one RPC call", db.rpcCalls.length === 1, db.rpcCalls);
   check("TC-21 the adopted row keeps the duration Scott filed",
-    db.state.sessions[0].duration === "26min", db.state.sessions[0]);
+    db.state.sessions[0].duration === "25min", db.state.sessions[0]);
 }
 
 // ---------------------------------------------------------------------------
@@ -1254,28 +1260,28 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
 {
   // The whole point of D1: a summary carries no watts, so without a detail
   // fetch avg_watts is null and sessionLoad() scores the session 0.
-  const s = summary(1601, "2026-08-22T21:02:23");
+  const s = summary(1601, "2026-08-21T20:30:45");
   const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
   const net = installStrava({ activities: [s], detail: { 1601: detailed(s) } });
   const r = await run(db);
   net.restore();
 
   check("TC-22 a power-less summary triggers a detail fetch", net.detailCalls.join() === "1601", net.detailCalls);
-  check("TC-22 the imported row carries device watts", db.rpcCalls[0].args.p_avg_watts === 136, db.rpcCalls[0].args);
-  check("TC-22 and heart rate", db.rpcCalls[0].args.p_avg_hr === 124, db.rpcCalls[0].args);
+  check("TC-22 the imported row carries device watts", db.rpcCalls[0].args.p_avg_watts === 150, db.rpcCalls[0].args);
+  check("TC-22 and heart rate", db.rpcCalls[0].args.p_avg_hr === 130, db.rpcCalls[0].args);
   check("TC-22 nothing deferred", r.deferred === 0 && r.status === "ok", r);
 }
 {
   // A summary that already carries both must NOT spend a read.
   const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
-  const net = installStrava({ activities: [fullSummary(1602, "2026-08-22T21:02:23")] });
+  const net = installStrava({ activities: [fullSummary(1602, "2026-08-21T20:30:45")] });
   await run(db);
   net.restore();
   check("TC-22 a complete summary costs no detail fetch", net.detailCalls.length === 0, net.detailCalls);
 }
 {
   // An ineligible-by-summary activity must not have a read spent on it either.
-  const short = summary(1603, "2026-08-22T21:02:23", { moving_time: 40, distance: 90 });
+  const short = summary(1603, "2026-08-21T20:30:45", { moving_time: 40, distance: 90 });
   const db = makeDb({ sync: syncRow(), tokens: { ...freshTokens } });
   const net = installStrava({ activities: [short], detail: { 1603: detailed(short) } });
   await run(db);
@@ -1376,7 +1382,7 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
     fullSummary(1902, "2026-06-21T06:00:00"),
     fullSummary(1903, "2026-06-22T06:00:00"),
     // Older than STRAVA_BACKFILL_FROM: this is what terminates the walk.
-    fullSummary(1904, "2026-06-10T06:00:00"),
+    fullSummary(1904, "2025-12-20T06:00:00"),
   ];
   const db = makeDb({
     sync: syncRow({
@@ -1513,8 +1519,8 @@ const run = (db: any, over: Record<string, unknown> = {}, opts: Record<string, u
     strava_activity_id: null,
     date_iso: "2026-08-20",
     type: "erg",
-    distance_m: 5657,
-    duration: "26:00",
+    distance_m: 6000,
+    duration: "25:00",
     source: "portal",
   });
   const db = makeDb({
