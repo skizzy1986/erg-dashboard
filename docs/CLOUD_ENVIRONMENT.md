@@ -169,12 +169,32 @@ gate. A `SessionStart` hook cannot do it — hooks are themselves gated by trust
 that would grant trust is the one trust is blocking:
 
 ```bash
-node -e 'const f="/root/.claude.json",fs=require("fs");
+root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+if [ ! -f "$root/.claude/settings.json" ]; then
+  echo "trust-flag: '$root' has no .claude/settings.json — not the checkout; fix the setup script" >&2
+  exit 1
+fi
+node -e 'const f="/root/.claude.json",fs=require("fs"),root=process.argv[1];
 const d=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8").replace(/^﻿/,"")):{};
-(d.projects??={})["/home/user/erg-dashboard"]??={};
-d.projects["/home/user/erg-dashboard"].hasTrustDialogAccepted=true;
-fs.writeFileSync(f,JSON.stringify(d,null,2));'
+(d.projects??={})[root]??={};
+d.projects[root].hasTrustDialogAccepted=true;
+fs.writeFileSync(f,JSON.stringify(d,null,2));' "$root"
+echo "trust-flag: trusted $root"
 ```
+
+**Trust is keyed on the exact directory and is not inherited** (measured 2026-11-05:
+trusting `/home/user` leaves the warning in place; trusting `/home/user/erg-dashboard`
+clears it). The path is therefore derived rather than written literally — a hardcoded
+`/home/user/erg-dashboard` is correct in today's containers and fails silently the day the
+platform changes the checkout path, which is the same defect `test-hooks.sh` carried for
+months (#398). The guard clause exists so that failure is loud: no `.claude/settings.json`
+under the resolved root means the script stops instead of trusting the wrong directory.
+Tested from the repo root, from `web/` (git resolves the toplevel either way) and from
+`/tmp`, which exits 1 and writes nothing.
+
+Because trust is per-directory, a **git worktree is not covered** by trusting the main
+clone — each `.claude/worktrees/<name>` is its own key. That only bites a local session;
+cloud sessions have their own VM and do not use worktrees.
 
 Verify in a new session with `claude doctor`: the "Ignoring 36 …" line disappears when it
 has taken. Setting the flag mid-session does clear that warning but does **not** activate

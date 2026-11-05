@@ -8,7 +8,13 @@ Two destinations, because they reach different places:
 | Block | Destination | Reaches |
 |---|---|---|
 | **A** below | claude.ai → Settings → Your Claude → "Instructions for Claude" | claude.ai chat, Coach sessions, Cowork chat |
-| **B** below | `.claude/CLAUDE.md` in this repo (live), and `~/.claude/CLAUDE.md` on Scott's machine | cloud sessions via the repo file; local Claude Code via user memory |
+| **B** below | `.claude/CLAUDE.md` in this repo | every cloud session |
+
+Scott works from cloud sessions with git as the source of truth and keeps no local clone,
+so `.claude/CLAUDE.md` in this repo is the *only* live channel for block B — there is no
+`~/.claude/CLAUDE.md` to put it in. The non-code material (docs, label artwork, business
+admin) lives in a Google Drive folder called SplitIQ, which is deliberately not a git
+working tree: a sync daemon and `.git` corrupt each other.
 
 The tone rules appear in both on purpose. claude.ai personalization is **not documented
 as reaching Claude Code** on any surface — the memory docs enumerate managed,
@@ -75,7 +81,7 @@ Spanish casually.
 
 ---
 
-## B — `.claude/CLAUDE.md` / `~/.claude/CLAUDE.md`
+## B — `.claude/CLAUDE.md`
 
 See [`.claude/CLAUDE.md`](../.claude/CLAUDE.md) for the live text. It carries the same
 communication rules as A, drops the coursework-coaching, Spanish and More 2 Relish
