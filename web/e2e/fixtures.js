@@ -12,6 +12,8 @@
 // console-error listeners that the visual spec has no use for, and visual.spec.js
 // pins the browser clock, which smoke must not do.
 
+import { expect } from '@playwright/test';
+
 export const STORAGE_KEY = 'sb-test-project-auth-token';
 
 // `nowMs` is a parameter because visual.spec.js pins the browser clock — the
@@ -58,6 +60,53 @@ export async function seedSession(context, nowMs) {
     },
     [STORAGE_KEY, fakeSession(nowMs)]
   );
+}
+
+// Click something that lazy-loads (every tab is a React.lazy chunk) and wait
+// until the requests that click started have finished and the network has
+// been quiet for `quietMs`.
+//
+// page.waitForLoadState('networkidle') cannot do this: a load state is
+// reached once per document, and "if the state has been already reached
+// while loading current document, the method resolves immediately"
+// (Playwright docs, page.waitForLoadState). A tab switch is not a
+// navigation, so after the first settle it returned at once and every
+// screenshot or absence-check raced the chunk. Measured with the PROGRAM
+// chunk delayed 1.5 s: #root was 43,401 chars after that wait, 73,883 once
+// the tab arrived. Listeners go on BEFORE the click so the chunk request
+// cannot slip past them.
+export async function clickAndSettle(
+  page,
+  target,
+  { quietMs = 500, timeout = 10_000 } = {}
+) {
+  const inflight = new Set();
+  let lastActivity = Date.now();
+  const start = (req) => {
+    inflight.add(req);
+    lastActivity = Date.now();
+  };
+  const end = (req) => {
+    inflight.delete(req);
+    lastActivity = Date.now();
+  };
+  page.on('request', start);
+  page.on('requestfinished', end);
+  page.on('requestfailed', end);
+  try {
+    await target.click();
+    await expect
+      .poll(() => inflight.size === 0 && Date.now() - lastActivity >= quietMs, {
+        timeout,
+        intervals: [100],
+        message: `network did not go quiet for ${quietMs}ms after the click`,
+      })
+      .toBe(true);
+  } finally {
+    page.off('request', start);
+    page.off('requestfinished', end);
+    page.off('requestfailed', end);
+  }
 }
 
 export async function installAppFixtures(context, { now } = {}) {
