@@ -249,12 +249,17 @@ paste reported `deno 2.9.8` and a `claude doctor` with no `Ignoring 36 …` line
 of the script took. Treat that line reappearing as a regression to investigate, not as setup
 still outstanding.
 
-**What that confirms, and what it does not.** `claude doctor` reading the allowlist proves
-the flag is set and the settings file is being loaded. It does **not** prove the hooks
-execute. The evidence for that is the `PreToolUse` echo —
-`[HOOK] Bash command about to run …` — appearing on an ordinary Bash call; that echo reaches
-the agent rather than the terminal, so confirming it means asking the session whether it saw
-one. Until then, hooks are expected-but-unconfirmed.
+**Hooks execute too, confirmed 2026-11-05 by side effect rather than by output.** A session
+with the flag live showed `web/node_modules` restamped at session start, which only
+`session-start.sh`'s `npm ci --prefix web` does — so `SessionStart` fired.
+
+Note how that was established, because the obvious test does not work. Hook *stdout* — the
+`[HOOK] Bash command about to run …` echo, the lint hook's findings — does not reliably
+reach the agent, so its absence proves nothing: a hook that ran silently and a hook that
+never ran look identical. Two sessions concluded "hooks are not firing" from that absence,
+and after the flag was set a third did the same while the hooks were in fact running. Test a
+hook by what it *changes* — `node_modules` restamped, a `PreToolUse` exit 2 blocking a tool
+call (`block-secret-commit.sh`) — never by what it prints.
 
 Three `claude doctor` warnings are unrelated environment plumbing and predate this work
 (observed 2026-11-05 in a container booted before any of it): config install method
