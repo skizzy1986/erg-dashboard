@@ -46,7 +46,9 @@ jobs:
       ACTION: ${{ inputs.action }}
       ITEM: ${{ inputs.item }}
       STATUS: ${{ inputs.status }}
-      OWNER: skizzy1986
+      # "@me" = the PAT's owner (skizzy1986). A named login makes gh look up
+      # user-vs-org first, which fails with "unknown owner type" on this token.
+      OWNER: "@me"
       NUMBER: 1
       REPO: ${{ github.repository }}
     steps:
@@ -74,7 +76,7 @@ jobs:
           report() { printf '%s\n' "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
 
           fail() { echo "::error::$1"; exit 1; }
-          NOACCESS="ADD_TO_PROJECT_PAT cannot read project $OWNER/$NUMBER (expired, or missing the project scope)."
+          NOACCESS="Could not read Split IQ (project $NUMBER) with ADD_TO_PROJECT_PAT; see the gh error above."
 
           PID=$(gh project view "$NUMBER" --owner "$OWNER" --format json --jq .id) || fail "$NOACCESS"
           FIELD=$(gh project field-list "$NUMBER" --owner "$OWNER" --format json \
