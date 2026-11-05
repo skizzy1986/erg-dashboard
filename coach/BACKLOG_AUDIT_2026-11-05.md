@@ -57,6 +57,19 @@ action=move item=402 status="In progress"
 
 The closes, label edits and retitles in §3–§6 are plain GitHub issue edits.
 
+**Dispatch these one at a time, and wait for each run to reach `in_progress` before
+sending the next.** Learned on 2026-11-05 while applying this audit: eleven `move`
+dispatches sent together produced three successes and eight `cancelled` runs. The
+workflow's `concurrency` group keeps `cancel-in-progress: false`, but GitHub Actions also
+holds at most **one pending run per concurrency group**, so each new dispatch cancels the
+one still waiting behind the running job. A run that has already started is safe to queue
+behind. `docs/CLOUD_ENVIRONMENT.md` does not say this yet; it should (fold into #311).
+
+**Applied 2026-11-05, approved by Scott:** every close, carry-across, label and title change
+in §3–§6 has been made on GitHub, and every board move above plus the Ready moves for the
+P0/P1 set (#312, #311, #216, #209, #326, #327, #210) have been dispatched. The doc fixes
+in §2 ride #311, which is P0.
+
 ## 3. Close or supersede
 
 | Issue | Reason | Evidence |
