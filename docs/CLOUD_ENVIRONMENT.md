@@ -198,6 +198,12 @@ Because trust is per-directory, a **git worktree is not covered** by trusting th
 clone — each `.claude/worktrees/<name>` is its own key. That only bites a local session;
 cloud sessions have their own VM and do not use worktrees.
 
+**Status: Scott reported this block pasted into the setup script on 2026-11-05.** Recorded
+on his word and **not verified** — the session that wrote this line was already running, and
+trust is read at container start, so it could not test its own environment. The first
+session after that paste is the one that confirms it. Treat an `Ignoring 36 …` line from
+then on as a regression to investigate, not as setup still outstanding.
+
 Verify in a new session with `claude doctor`: the "Ignoring 36 …" line disappears when it
 has taken. Setting the flag mid-session does clear that warning but does **not** activate
 the hooks — trust is read once at startup (measured 2026-11-05: the same `Write` probe
