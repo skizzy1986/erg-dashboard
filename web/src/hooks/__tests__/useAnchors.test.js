@@ -11,6 +11,9 @@ vi.mock('../../supabaseClient.js', () => ({
   },
 }));
 
+vi.mock('../../utils/sentry.js', () => ({ captureError: vi.fn() }));
+import { captureError } from '../../utils/sentry.js';
+
 import { useAnchors } from '../useAnchors.js';
 
 function makeWrapper() {
@@ -33,7 +36,25 @@ function mockAnchors(data, error = null) {
 
 beforeEach(() => {
   fromMock.mockReset();
+  captureError.mockClear();
 });
+
+async function renderAnchors(rows) {
+  mockAnchors(rows);
+  const hook = renderHook(() => useAnchors(), { wrapper: makeWrapper() });
+  await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+  return hook;
+}
+
+const day = {
+  cal: [1800, 2200],
+  protein: [140, 160],
+  carbs: [200, 250],
+  fat: [50, 70],
+};
+const plan = {
+  days: [{ day: 'Mon', train: 'Example', cal: 2000, p: 150, c: 220, f: 60 }],
+};
 
 describe('useAnchors', () => {
   it('resolves live cp/status and ftp from the current rows', async () => {
@@ -81,5 +102,91 @@ describe('useAnchors', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.cp).toBe(null);
     expect(result.current.cpAvailable).toBe(false);
+  });
+
+  // Synthetic values throughout — the real ones live only in the database.
+  it('resolves the working MHR and its status', async () => {
+    const { result } = await renderAnchors([
+      {
+        key: 'hr_max_working',
+        value: '180',
+        unit: 'bpm',
+        status: 'unvalidated',
+      },
+    ]);
+    expect(result.current.hrMax).toBe(180);
+    expect(result.current.hrMaxStatus).toBe('unvalidated');
+  });
+
+  it('defaults every new field when the anchors are absent', async () => {
+    const { result } = await renderAnchors([]);
+    expect(result.current.hrMax).toBe(null);
+    expect(result.current.hrMaxStatus).toBe(null);
+    expect(result.current.niggles).toEqual([]);
+    expect(result.current.nutritionTargets).toBe(null);
+    expect(result.current.maintenancePlan).toBe(null);
+    expect(result.current.deficitPlan).toBe(null);
+    expect(result.current.parseErrors).toEqual([]);
+    expect(captureError).not.toHaveBeenCalled();
+  });
+
+  it('lists niggle anchors newest first', async () => {
+    const { result } = await renderAnchors([
+      {
+        key: 'niggle:a',
+        value: 'Example A',
+        note: 'n',
+        valid_from: '2026-01-01',
+      },
+      { key: 'niggle:b', value: 'Example B', valid_from: '2026-02-01' },
+    ]);
+    expect(result.current.niggles.map((n) => n.slug)).toEqual(['b', 'a']);
+  });
+
+  it('parses valid JSON targets and plans', async () => {
+    const { result } = await renderAnchors([
+      {
+        key: 'nutrition_targets',
+        value: JSON.stringify({ rest: day }),
+        unit: 'json',
+      },
+      { key: 'maintenance_plan', value: JSON.stringify(plan), unit: 'json' },
+      {
+        key: 'deficit_plan',
+        value: JSON.stringify({
+          ...plan,
+          trigger: 'Example',
+          rate: 'r',
+          phase: 'p',
+        }),
+        unit: 'json',
+      },
+    ]);
+    expect(result.current.nutritionTargets).toEqual({ rest: day });
+    expect(result.current.maintenancePlan).toEqual(plan);
+    expect(result.current.deficitPlan.trigger).toBe('Example');
+    expect(result.current.parseErrors).toEqual([]);
+  });
+
+  it('nulls a malformed JSON anchor and reports it once', async () => {
+    const { result, rerender } = await renderAnchors([
+      { key: 'nutrition_targets', value: 'not json', unit: 'json' },
+      {
+        key: 'maintenance_plan',
+        value: JSON.stringify({ days: [] }),
+        unit: 'json',
+      },
+    ]);
+    expect(result.current.nutritionTargets).toBe(null);
+    expect(result.current.maintenancePlan).toBe(null);
+    expect(result.current.parseErrors).toHaveLength(2);
+    await waitFor(() => expect(captureError).toHaveBeenCalledTimes(2));
+    rerender();
+    rerender();
+    expect(captureError).toHaveBeenCalledTimes(2);
+    expect(captureError.mock.calls[0][1]).toEqual({
+      source: 'useAnchors',
+      op: 'parseJsonAnchor',
+    });
   });
 });

@@ -118,7 +118,7 @@ describe('ErgView', () => {
     expect(container.textContent).toContain('provisional');
   });
 
-  it('shows "CP unavailable" when the anchor is missing (no stale 190)', () => {
+  it('shows "CP unavailable" when the anchor is missing (no stale constant)', () => {
     useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
     useAnchorsMock.mockReturnValue({
       cp: null,
@@ -215,26 +215,26 @@ describe('ErgView', () => {
     it('shows the live CP in the calibration panel, not a stale constant', () => {
       const { container } = renderView();
       expect(container.textContent).toContain('CP 200W (provisional)');
-      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+      expect(container.textContent).not.toMatch(/CP\/FTP est\. \d+W/);
     });
 
     // POWER_DURATION's predicted-watts column still carries pre-anchor estimates
-    // (incl. "~180–190W") — that table belongs to #180, so these assertions are
-    // scoped to the two surfaces that present a *current* CP.
-    it('never presents 190W as the current CP', () => {
+    // — that table belongs to #180, so these assertions are scoped to the two
+    // surfaces that present a *current* CP.
+    it('presents only the anchor value as the current CP', () => {
       const { container } = renderView();
-      expect(container.textContent).not.toContain('CP/FTP est. 190W');
-      expect(container.textContent).not.toMatch(/CRITICAL POWER190W/);
+      expect(container.textContent).not.toMatch(/CP\/FTP est\. \d+W/);
+      expect(container.textContent).toMatch(/CRITICAL POWER200W/);
     });
 
     it('follows the anchor when it changes rather than staying pinned', () => {
       useAnchorsMock.mockReturnValue({
-        cp: 212,
+        cp: 210,
         cpStatus: 'confirmed',
         cpAvailable: true,
       });
       const { container } = renderView();
-      expect(container.textContent).toContain('CP 212W (confirmed)');
+      expect(container.textContent).toContain('CP 210W (confirmed)');
     });
 
     it('says the anchor is unavailable instead of falling back silently', () => {
@@ -246,7 +246,7 @@ describe('ErgView', () => {
       const { container } = renderView();
       expect(container.textContent).toContain('CP anchor unavailable');
       expect(container.textContent).toContain('CP unavailable');
-      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+      expect(container.textContent).not.toMatch(/CP\/FTP est\. \d+W/);
     });
 
     it('does not show a past-dated CP test window', () => {

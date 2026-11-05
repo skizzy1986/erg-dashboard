@@ -505,8 +505,8 @@ export default function RecoveryView({ isWide }) {
             marginTop: 4,
           }}
         >
-          ⚠️ Medication decisions belong to your GP. A fortnight of clean
-          morning readings is the evidence a supervised review needs. Heavy
+          ⚠️ Not medical advice — a GP interprets these readings. A fortnight of
+          clean morning readings is the most useful record to bring. Heavy
           lifting: breathe through reps, no Valsalva/breath-holding under load.
         </div>
       </div>

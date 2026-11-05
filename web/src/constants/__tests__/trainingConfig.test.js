@@ -25,7 +25,7 @@ describe('CP is never mirrored as a static constant', () => {
     const copy = CALIBRATION_STATUS.map(
       (r) => `${r.metric} ${r.basis} ${r.upgrade}`
     ).join(' ');
-    expect(copy).not.toMatch(/\b190\s*W\b/i);
+    expect(copy).not.toMatch(/\bCP\b[^,.]*\d+\s*W\b/i);
     expect(copy).not.toMatch(/CP\/FTP est\./i);
   });
 
