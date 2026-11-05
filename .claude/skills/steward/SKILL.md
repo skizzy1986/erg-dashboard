@@ -62,7 +62,7 @@ Green is at its most misleading here.
 |---|---|
 | On a **Dependabot** PR never use `gh pr update-branch` — a `GITHUB_TOKEN` push never re-triggers required checks, so auto-merge stalls forever (`dependabot-maintenance.yml:8-11`). Comment `@dependabot rebase` — **from an actor with push access**: Dependabot refuses the command from `github-actions[bot]`, which is why `rebase-behind` posts it with the owner's fine-grained PAT, not `GITHUB_TOKEN` (`dependabot-maintenance.yml:13-20`, #351; until then the job had been a no-op). An agent's own `GITHUB_TOKEN` comment will be refused the same way. Actions is also barred from approving here; the attempt broke the 2026-07-02 run on PR #124 (`dependabot-auto-merge.yml:7-9`). | Permanently stall an armed auto-merge. |
 | Colour hexes, box metrics and type stay in **separate PRs** — see `DESIGN.md`. | Fix a `check:colours` failure and tidy the padding on the same line. |
-| The recurring defect here is **automation that exits 0 while doing nothing**: ESLint silently skipping `.jsx` (`9800b58`), two hooks inert behind exit 0 for months (`d2d0bd4`), the token seam dropping 67 tints (`8ad2637`). | Accept green as proof. Read the step log for a non-zero item count, not the exit status. |
+| The recurring defect here is **automation that exits 0 while doing nothing**: ESLint silently skipping `.jsx` (`9800b58`), two hooks inert behind exit 0 for months (`d2d0bd4`), the token seam dropping 67 tints (`8ad2637`), and `test-hooks.sh` reporting `7 passed, 0 failed` with exit 0 whenever `web/node_modules/.bin/eslint` is absent, because it skips its two eslint cases rather than failing (`test-hooks.sh:88-101`; measured 2026-11-05 by removing the binary). `hook-smoke-test.yml` greps the log for that skip line so the degradation cannot read as a pass — the count, not the exit status, is the signal. | Accept green as proof. Read the step log for a non-zero item count, not the exit status. |
 
 ## When you report back
 
@@ -103,7 +103,7 @@ most likely to be stale.**
 |---|---|
 | Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`, `Zone bands match derivePaceZones`, `Build Debug APK`, `Context7 rule reaches every workflow`** — those ten, and nothing else. `CodeQL` is emitted by the GitHub Advanced Security app and is a **different check-run** from `codeql.yml`'s job `Analyze (JavaScript/TypeScript)`; the ruleset binds the former. |
 | Advisory — red does **not** block merge | `Lighthouse`, `Playwright Smoke`, `Playwright Visual`. Still fix them; just do not report them as blocking. |
-| Reports but is not required | `Build Web Assets`, `Seer Code Review`, `Vercel Preview Comments`, `Analyze (JavaScript/TypeScript)`, `Label by changed paths`, `add-to-project`, `Flag steward skill staleness`, `Enable auto-merge`, and every `Detect …` filter job. Red here does not block either — but see the `Build Web Assets` trap below. |
+| Reports but is not required | `Build Web Assets`, `Seer Code Review`, `Vercel Preview Comments`, `Analyze (JavaScript/TypeScript)`, `Label by changed paths`, `add-to-project`, `Flag steward skill staleness`, `Enable auto-merge`, `Hooks pass their smoke test` (`hook-smoke-test.yml`, added 2026-11-05), and every `Detect …` filter job. Red here does not block either — but see the `Build Web Assets` trap below. |
 | Also enforced | a PR before merging · branches up to date before merging · force pushes blocked **on `main` only**, so `--force-with-lease` on your own feature branch is fine |
 | Not enforced | linear history. Squash with `(#N)` is convention, not a gate. |
 
@@ -166,3 +166,14 @@ the ruleset is edited outside this repo, so nothing in git can tell you it moved
 `ci-android.yml` trigger and concurrency re-read on 2026-08-28 at `3bd2337` while fixing #330,
 alongside the `on:` block of every other workflow in `.github/workflows/`: `ci-android.yml` was the
 only one pushing on anything but `main`, and so the only one that could collide with itself.
+
+The *Reports but is not required* row and the exit-0 defect row re-verified on 2026-11-05 against
+`.github/workflows/hook-smoke-test.yml` as added by #398, and against `.claude/hooks/test-hooks.sh`
+at that commit. The new workflow reports two check-runs — `Detect hook changes`, already covered by
+the row's `Detect …` clause, and `Hooks pass their smoke test` — and **neither is in the ruleset**,
+so the required set is still the same ten. Two facts from the same PR that this file does not cover
+but that bear on reading a check list here: nothing had ever executed `test-hooks.sh`, and settings-
+defined hooks and `permissions.allow` do not apply in a cloud session at all until the workspace is
+trusted (`claude doctor`: *"Ignoring 36 permissions.allow entries … this workspace has not been
+trusted"*). The second is environment configuration, not CI — it is recorded in
+`docs/CLOUD_ENVIRONMENT.md`.
