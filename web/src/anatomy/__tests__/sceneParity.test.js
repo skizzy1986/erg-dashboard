@@ -62,6 +62,49 @@ describe('three r187 parity with the r128 page (source)', () => {
   });
 });
 
+// The heatmap's wiring, pinned the same way: the module cannot run in jsdom,
+// and each of these failing silently costs a frame or a whole repaint.
+describe('activation heatmap wiring', () => {
+  it('exposes setActivation and skips unchanged weights', () => {
+    expect(CODE).toMatch(/setActivation\(weights = null\) \{/);
+    expect(CODE).toMatch(/if \(sameWeights\(heat, next\)\) return;/);
+  });
+
+  it('recolours inside the same frame as the pose, so one frame draws', () => {
+    const atPose = CODE.indexOf(
+      'if (pendingS !== null && pendingS !== posedS)'
+    );
+    const atHeat = CODE.indexOf('if (pendingHeat) {');
+    expect(atPose).toBeGreaterThan(-1);
+    expect(atHeat).toBeGreaterThan(atPose);
+    expect(
+      CODE.indexOf('renderer.render(scene, camera);', atHeat)
+    ).toBeGreaterThan(atHeat);
+  });
+
+  it('swaps the tendon blend with the colour source, and nothing else', () => {
+    expect(CODE).toMatch(
+      /const blend = heat \? st\.tendonBlendHeat : st\.tendonBlend;/
+    );
+    expect(CODE).toMatch(
+      /heatColours\(meta\.muscles, heat, pal\.heat, pal\.tendon\)/
+    );
+  });
+
+  it('keeps the colour write callable without redoing the light setup', () => {
+    // A heatmap toggle must not re-run applyLights, and a theme change must
+    // not lose the heatmap — both follow from these being separate.
+    expect(CODE).toMatch(/function applyLights\(/);
+    expect(CODE).toMatch(/function writeColours\(\) \{/);
+    const inPalette = CODE.slice(
+      CODE.indexOf('function applyPalette('),
+      CODE.indexOf('applyPalette(palette, style);')
+    );
+    expect(inPalette).toMatch(/applyLights\(p, style0\);/);
+    expect(inPalette).toMatch(/writeColours\(\);/);
+  });
+});
+
 describe('three is pinned', () => {
   it('to exactly 0.187.0 in package.json and the lockfile', () => {
     const pkg = JSON.parse(

@@ -89,8 +89,22 @@ const MAX_TOTAL_GZIP_KB = 400;
 // controls now render, disabled, from first paint). SQUAT_ENTRY 112.7 KB, still
 // inside 117. The dashboard entry measured 146.6 KB (+0.2): RouteRoot's
 // first-visit offline fallback.
+//
+// PR2b-i re-measured 2026-11-05 with the muscle panel in (list, card, legend,
+// region map, bands, slugs, activation maths): SQUAT_TOTAL 27.26 KB, so the
+// ceiling is 27.26 + 10% = 29.99, set to 30. Squat total is the LOOSE ceiling
+// by this script's own definition — never precached, CacheFirst at runtime,
+// stripped from the APK — so these bytes are on nobody's first paint. The
+// panel is NOT lazy-loaded to dodge it: the canvas is aria-hidden with
+// tabindex="-1", so the list IS the accessible substitute for the model, and
+// putting it behind a chunk that can fail to fetch would make it the least
+// reliable thing on the page in exactly the situation it exists for.
+//
+// SQUAT_ENTRY is the tight gate and it still passes, at 116.11 of 117 — but
+// that is 0.89 KB spare, measured, and the next change of any size will fail
+// it. Raising it is not this PR's call.
 const MAX_SQUAT_ENTRY_GZIP_KB = 117;
-const MAX_SQUAT_TOTAL_GZIP_KB = 26;
+const MAX_SQUAT_TOTAL_GZIP_KB = 30;
 // three.js (r187, tree-shaken) + OrbitControls + the anatomy scene and posing
 // maths. Measured 2026-11-04 at 138.0 KB; ~5% headroom, because a
 // three.js bump is the likeliest way this grows and should be noticed.

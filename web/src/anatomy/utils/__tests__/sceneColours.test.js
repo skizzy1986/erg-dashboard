@@ -1,14 +1,18 @@
 import { DARK, LIGHT } from '../../../constants/themeValues.js';
 import { SCENE_STYLE, sceneStyle } from '../../constants/sceneStyle.js';
 import {
+  heatColours,
+  HEAT_POSITIONS,
   hexToRaw01,
   hslToRgb,
   jitteredMuscle,
   muscleColours,
+  rampAt,
   rgbToHsl,
   scenePalette,
   writeVertexColours,
 } from '../sceneColours.js';
+import { HEAT_STOPS } from '../../../squat/constants/activationBands.js';
 
 const J = SCENE_STYLE.dark.jitter;
 
@@ -95,5 +99,150 @@ describe('scenePalette and sceneStyle', () => {
   it('falls back to light for an unknown theme', () => {
     expect(sceneStyle('dark')).toBe(SCENE_STYLE.dark);
     expect(sceneStyle('nope')).toBe(SCENE_STYLE.light);
+  });
+});
+
+describe('the activation ramp', () => {
+  const STOPS = [
+    [0, [0, 0, 0]],
+    [0.5, [1, 0, 0]],
+    [1, [1, 1, 1]],
+  ];
+
+  it('sits on exactly the band cuts the legend prints', () => {
+    // Two readers of one set of stops. Let these drift and the model says
+    // High where the legend says Moderate.
+    expect(HEAT_POSITIONS).toEqual(HEAT_STOPS);
+  });
+
+  it('returns a stop exactly at its own position', () => {
+    expect(rampAt(STOPS, 0)).toEqual([0, 0, 0]);
+    expect(rampAt(STOPS, 0.5)).toEqual([1, 0, 0]);
+    expect(rampAt(STOPS, 1)).toEqual([1, 1, 1]);
+  });
+
+  it('lerps RGB between the bracketing stops', () => {
+    expect(rampAt(STOPS, 0.25)).toEqual([0.5, 0, 0]);
+    rampAt(STOPS, 0.75).forEach((x, i) =>
+      expect(x).toBeCloseTo([1, 0.5, 0.5][i], 12)
+    );
+  });
+
+  it('clamps out-of-range and non-finite weights to the ends', () => {
+    expect(rampAt(STOPS, -1)).toEqual([0, 0, 0]);
+    expect(rampAt(STOPS, 2)).toEqual([1, 1, 1]);
+    expect(rampAt(STOPS, NaN)).toEqual([0, 0, 0]);
+  });
+
+  it('survives degenerate stop lists', () => {
+    expect(rampAt([], 0.5)).toEqual([0, 0, 0]);
+    expect(rampAt(undefined, 0.5)).toEqual([0, 0, 0]);
+    expect(rampAt([[0.3, [0.2, 0.4, 0.6]]], 0.9)).toEqual([0.2, 0.4, 0.6]);
+    expect(
+      rampAt(
+        [
+          [0.5, [1, 0, 0]],
+          [0.5, [0, 1, 0]],
+        ],
+        0.5
+      )
+    ).toEqual([1, 0, 0]);
+  });
+
+  it('reads the four heat tokens as raw channels on both themes', () => {
+    for (const t of ['light', 'dark']) {
+      const heat = scenePalette(t).heat;
+      expect(heat.map(([p]) => p)).toEqual(HEAT_STOPS);
+      expect(heat).toHaveLength(4);
+      for (const [, rgb] of heat) {
+        expect(rgb).toHaveLength(3);
+        for (const c of rgb) expect(c).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(scenePalette('light').heat[0][1]).toEqual(
+      hexToRaw01(LIGHT.anatomyHeatLow)
+    );
+  });
+});
+
+describe('heatColours', () => {
+  const pal = scenePalette('dark');
+  const muscles = [{}, { tendon: true }, {}];
+
+  it('gives a ramp colour per muscle and the tendon colour to tendons', () => {
+    const cols = heatColours(
+      muscles,
+      new Float32Array([0, 0.5, 1]),
+      pal.heat,
+      pal.tendon
+    );
+    expect(cols).toBeInstanceOf(Float32Array);
+    expect(cols).toHaveLength(9);
+    expect([...cols.slice(0, 3)]).toEqual(rampAt(pal.heat, 0).map(Math.fround));
+    // Tendons carry no estimate, so the weight at index 1 is ignored.
+    expect([...cols.slice(3, 6)]).toEqual(pal.tendon.map(Math.fround));
+    expect([...cols.slice(6, 9)]).toEqual(rampAt(pal.heat, 1).map(Math.fround));
+  });
+
+  it('treats a missing weight as zero rather than NaN', () => {
+    const cols = heatColours(
+      muscles,
+      new Float32Array(0),
+      pal.heat,
+      pal.tendon
+    );
+    for (const c of cols) expect(Number.isFinite(c)).toBe(true);
+    expect([...cols.slice(0, 3)]).toEqual(rampAt(pal.heat, 0).map(Math.fround));
+    expect(heatColours(muscles, undefined, pal.heat, pal.tendon)).toHaveLength(
+      9
+    );
+  });
+
+  it('separates Low from High visibly', () => {
+    expect(rampAt(pal.heat, 0)).not.toEqual(rampAt(pal.heat, 1));
+  });
+});
+
+// The scene's setActivation(null) must restore byte-identical anatomy colours.
+// The scene module itself needs WebGL (covered by e2e), so what is asserted
+// here is the write it performs: the same inputs produce the same bytes, and
+// the heat write in between leaves nothing behind.
+describe('switching the heatmap off restores the exact anatomy colours', () => {
+  const pal = scenePalette('light');
+  const st = SCENE_STYLE.light;
+  const muscles = [{}, { tendon: true }, {}, {}];
+  const mid = new Uint8Array([0, 1, 2, 3, 0, 2]);
+  const tw = new Uint8Array([0, 255, 120, 30, 200, 0]);
+  const write = (mc, blend) =>
+    writeVertexColours(
+      new Float32Array(mid.length * 3),
+      mid,
+      tw,
+      mc,
+      pal.tendon,
+      blend
+    );
+
+  it('is byte-identical before and after a heat pass', () => {
+    const anatomy = () =>
+      write(muscleColours(muscles, pal, st.jitter), st.tendonBlend);
+    const before = anatomy();
+    const heat = write(
+      heatColours(
+        muscles,
+        new Float32Array([0.2, 0.4, 0.8, 1]),
+        pal.heat,
+        pal.tendon
+      ),
+      st.tendonBlendHeat
+    );
+    const after = anatomy();
+    expect([...after]).toEqual([...before]);
+    expect([...heat]).not.toEqual([...before]);
+  });
+
+  it('uses the softer tendon blend under the heatmap', () => {
+    expect(st.tendonBlendHeat).toBeLessThan(st.tendonBlend);
+    expect(st.tendonBlendHeat).toBe(0.75);
   });
 });

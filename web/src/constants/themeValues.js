@@ -41,6 +41,14 @@ export const DARK = {
   anatomyBone: '#e6dccb',
   anatomyShadow: '#000004',
   anatomyBar: '#9aa3b5',
+  // The activation heatmap's ramp stops (SKINNING.md RAMP), read two ways: the
+  // scene turns them into raw 0-1 channels, the legend prints them as swatches.
+  // Both themes start on the same four, as the source page had them — the
+  // convention anatomyMuscle/anatomyTendon already follow.
+  anatomyHeatLow: '#3d5a8c',
+  anatomyHeatMid: '#8c3b6b',
+  anatomyHeatHigh: '#cf3a2a',
+  anatomyHeatPeak: '#ffd35c',
 };
 
 // The light palette. Values are conventions.md's, which is design-owned and
@@ -91,6 +99,11 @@ export const LIGHT = {
   anatomyBone: '#c9bca3',
   anatomyShadow: '#2a3350',
   anatomyBar: '#5d667a',
+  // Source parity with DARK: the ramp paints geometry, not ink anyone reads.
+  anatomyHeatLow: '#3d5a8c',
+  anatomyHeatMid: '#8c3b6b',
+  anatomyHeatHigh: '#cf3a2a',
+  anatomyHeatPeak: '#ffd35c',
 };
 
 // The palette the document boots on. Light is primary (#251); dark is retained

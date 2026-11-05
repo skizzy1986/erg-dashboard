@@ -14,9 +14,15 @@ not in this repository (see `PROVENANCE.md`).
 An array entry is `{ o, n, t, shape? }`: byte offset into the **decompressed**
 buffer, element count, dtype code and optional shape. Dtypes: `<i2` Int16,
 `|u1` Uint8, `<u2` Uint16, `<u4` Uint32, `<f4` Float32, `|i1` Int8
-(`web/src/squat/utils/manifest.js`). Positions are int16 quantised:
+(`web/src/anatomy/utils/arrays.js`). Positions are int16 quantised:
 `value * s + c` per group centre `c` and scale `s`
-(`web/src/squat/utils/dequantise.js`).
+(`web/src/anatomy/utils/dequantise.js`).
+
+Those two modules are **movement-neutral** and so live under `anatomy/`, not
+`squat/`: any movement's manifest is read the same way. What stays in
+`web/src/squat/utils/manifest.js` is `validateManifest`, which asserts
+`meta.S` and `meta.readout` — the squat tool's own contract, not a generic
+array reader. That is the split line.
 
 ## Coordinates and sampling
 
@@ -62,3 +68,52 @@ tool's React UI stays in `web/src/squat/`.
 
 The headline numbers the guide, form check and metrics table print are derived
 from these fields by `web/src/squat/utils/repSummary.js`.
+
+## The muscle panel (118 muscles, eleven regions)
+
+The canvas is `aria-hidden` with `tabindex="-1"`, so the grouped muscle list is
+the accessible substitute for the model, not an extra. It is therefore never
+behind a lazy chunk.
+
+**Regions.** `web/src/squat/constants/muscleRegions.js` holds `REGION_NAMES`
+(eleven, ordered the way a squat loads — hips first, not alphabetical) and
+`REGION_OF`: one small int per muscle, **in `meta.muscles` order**. Index-keyed
+deliberately — 257 bytes against ~1,017 for a name-keyed map, on a budget where
+that matters. Safe only because `squat-manifest.json` is pinned by sha256 **and**
+byte count in `constants/dataAsset.js`, asserted in `__tests__/content.test.js`:
+the data cannot shift under the array without a test failing first and forcing a
+human to re-derive it. **Re-derive `REGION_OF` whenever the pipeline is re-run.**
+The readable record — all 118 rows as `name -> region` — lives in
+`web/src/squat/__tests__/muscleIndex.test.js`, where it costs no bundle bytes and
+fails loudly if an index moves. There is no "Other" region; every muscle belongs
+to exactly one, including the two tendons (`Iliotibial tract`, `Achilles
+(calcaneal) tendon`), which are listed because an incomplete substitute for the
+model is not a substitute.
+
+**Slugs.** `#m=<slug>` deep-links a muscle. There is no slug table:
+`slugify(name)` in `utils/muscleIndex.js` lowercases, maps `[^a-z0-9]+` to `-`
+and trims the ends. Over all 118 names that gives 118 unique slugs, longest 47
+characters. ~80 bytes of function instead of ~1 KB of data, and a name survives
+a data regeneration where an array index does not.
+`web/src/utils/squatRoute.js` validates `m` by **shape only**
+(`/^[a-z0-9-]{1,64}$/`) because it sits outside `src/squat/` so `RouteRoot` can
+read it at first paint without pulling the tool's chunk in; the tool resolves the
+slug itself and reports a dead link.
+
+**Bands, not numbers.** `constants/activationBands.js` holds the three bands
+(Low / Moderate / High, cut at 0.30 and 0.60 of `act/255`) and every
+user-facing activation string, in one file so the prose scan in
+`__tests__/content.test.js` reaches all of it. The cuts are the model's own
+colour-ramp stops (`SKINNING.md` RAMP), not a published threshold — which is why
+there is no citation and `ACT_BASIS` says so in words. The card shows the band at
+the current depth and direction plus the peak band across the whole rep, because
+a muscle reading Low at 10% depth may be the hardest worker at the bottom.
+
+**The heatmap** is off by default and is a colouring mode, not a mesh layer: it
+lives beside `layers` in `hooks/useAnatomyViewState.js`, and the scene takes it
+through one controller method, `setActivation(weights | null)`. The four ramp
+tokens (`anatomyHeat{Low,Mid,High,Peak}`) have two readers — the scene as raw
+0–1 channels via `scenePalette`, the legend as `var()` strings via `THEME` — so
+the model and its key cannot drift apart. `HEAT_POSITIONS` in
+`anatomy/utils/sceneColours.js` and `HEAT_STOPS` in `activationBands.js` are
+asserted equal for the same reason.

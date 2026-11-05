@@ -1,5 +1,5 @@
-import { viewArray } from '../../squat/utils/manifest.js';
-import { dequantise } from '../../squat/utils/dequantise.js';
+import { viewArray } from './arrays.js';
+import { dequantise } from './dequantise.js';
 import { depthIndex } from './depth.js';
 import { frameAt, staticMatrices } from './frames.js';
 import { createCurves, curvesAt, skinCurveSet } from './curveSkin.js';

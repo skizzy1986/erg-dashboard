@@ -7,11 +7,18 @@ import {
 } from '../../anatomy/utils/depth.js';
 
 // What the 3D view is showing: a depth sample, which way the bar is moving,
-// and which layers are on. Nothing goes in the URL hash yet (PR2b).
+// which layers are on, and whether the activation heatmap is colouring them.
+// None of it goes in the URL hash — only the selected muscle does, and that
+// lives in useMuscleSelection.
+//
+// `heatmap` is a sibling of `layers`, not a member: layers are meshes and
+// setLayers' contract is {muscles, skeleton, body}, while the heatmap is a
+// colouring mode over whichever meshes are showing.
 const INITIAL = {
   sample: 0,
   direction: 'lowering',
   layers: { muscles: true, skeleton: true },
+  heatmap: false,
 };
 
 const clampSample = (n, ns) => Math.max(0, Math.min(ns - 1, Math.round(n)));
@@ -42,6 +49,8 @@ export function viewReducer(state, action) {
       return state.layers[action.name] === undefined
         ? state
         : { ...state, layers: { ...state.layers, [action.name]: !!action.on } };
+    case 'heatmap':
+      return { ...state, heatmap: !!action.on };
     default:
       return state;
   }
@@ -73,6 +82,7 @@ export function useAnatomyViewState(ns) {
     (name, on) => dispatch({ type: 'layer', name, on }),
     []
   );
+  const setHeatmap = useCallback((on) => dispatch({ type: 'heatmap', on }), []);
 
   return useMemo(
     () => ({
@@ -82,12 +92,24 @@ export function useAnatomyViewState(ns) {
       direction: state.direction,
       phase: derivePhase(s, state.direction),
       layers: state.layers,
+      heatmap: state.heatmap,
       setSample,
       step,
       setDirection,
       jumpToPhase,
       setLayer,
+      setHeatmap,
     }),
-    [ns, state, s, setSample, step, setDirection, jumpToPhase, setLayer]
+    [
+      ns,
+      state,
+      s,
+      setSample,
+      step,
+      setDirection,
+      jumpToPhase,
+      setLayer,
+      setHeatmap,
+    ]
   );
 }

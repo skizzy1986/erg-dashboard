@@ -6,8 +6,8 @@ import { createPoser } from '../poseModel.js';
 import { createCurves, curvesAt, evalBind } from '../curveSkin.js';
 import { depthIndex } from '../depth.js';
 import { transformPoint } from '../quat.js';
-import { viewArray } from '../../../squat/utils/manifest.js';
-import { dequantise } from '../../../squat/utils/dequantise.js';
+import { viewArray } from '../arrays.js';
+import { dequantise } from '../dequantise.js';
 import { DATA_ASSET } from '../../../squat/constants/dataAsset.js';
 
 // The reference positions come from the published page's own posing

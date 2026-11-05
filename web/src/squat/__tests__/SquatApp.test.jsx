@@ -46,7 +46,9 @@ describe('SquatApp', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'High-bar back squat' })
     ).toBeInTheDocument();
-    expect(screen.getByRole('status').textContent).toMatch(
+    // Two status regions now: the loader and the muscle filter's match count.
+    expect(screen.getByTestId('load-status')).toHaveAttribute('role', 'status');
+    expect(screen.getByTestId('load-status').textContent).toMatch(
       /Downloading anatomy/
     );
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();

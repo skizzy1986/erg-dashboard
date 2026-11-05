@@ -211,6 +211,88 @@ for (const scheme of ['light', 'dark']) {
   });
 }
 
+test('the muscle listbox is one tab stop, and axe-clean with a card open', async ({
+  page,
+}) => {
+  const errors = await openReady(page);
+  const listbox = page.getByRole('listbox', { name: 'Muscles by region' });
+  await expect(listbox).toBeVisible();
+  await expect(listbox.getByRole('option')).toHaveCount(118);
+  await expect(listbox.getByRole('group')).toHaveCount(11);
+  // One tab stop for 118 options: exactly one has tabindex 0.
+  expect(
+    await listbox.evaluate(
+      (el) => el.querySelectorAll('[role="option"][tabindex="0"]').length
+    )
+  ).toBe(1);
+
+  // Arrows move focus and select NOTHING — the URL is the proof.
+  const first = listbox.getByRole('option').first();
+  await first.focus();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  expect(new URL(page.url()).hash).toBe('');
+  await page.keyboard.press('Enter');
+  expect(new URL(page.url()).hash).toBe('#m=adductor-minimus');
+  await expect(
+    page.getByRole('heading', { level: 3, name: 'Adductor minimus' })
+  ).toBeFocused();
+  await expect(page.getByTestId('muscle-band')).toContainText(
+    'Indicative estimate, not EMG.'
+  );
+  expect(await axe(page)).toEqual([]);
+
+  // The heatmap is off until asked, and its legend arrives with it.
+  const heat = page.getByRole('switch', { name: 'Activation heatmap' });
+  await expect(heat).not.toBeChecked();
+  await heat.click();
+  await expect(heat).toBeChecked();
+  await expect(page.getByText('Activation key')).toBeVisible();
+  await expect(page.getByText(/Tendons are not coloured/)).toBeVisible();
+  expect(await axe(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('a #m= deep link selects on load; a dead one says so and is dropped', async ({
+  page,
+}) => {
+  const errors = await openReady(page, '/squat#m=vastus-lateralis');
+  await expect(
+    page.getByRole('option', { name: 'Vastus lateralis' })
+  ).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.getByRole('heading', { level: 3, name: 'Vastus lateralis' })
+  ).toBeVisible();
+  expect(new URL(page.url()).hash).toBe('#m=vastus-lateralis');
+
+  await openReady(page, '/squat#m=no-such-muscle');
+  await expect(
+    page.getByText('That link points to a muscle this version does not have.')
+  ).toBeVisible();
+  expect(new URL(page.url()).hash).toBe('');
+  expect(errors).toEqual([]);
+});
+
+test('the filter never adds a history entry, and the heatmap redraws', async ({
+  page,
+}) => {
+  await openReady(page, DEBUG);
+  const idle = await settledFrames(page);
+  const before = await page.evaluate(() => window.history.length);
+  await page.getByRole('searchbox', { name: /Filter muscles/ }).fill('glutes');
+  await expect(page.getByTestId('muscle-matches')).toContainText('of 118');
+  expect(await page.evaluate(() => window.history.length)).toBe(before);
+  expect(new URL(page.url()).hash).toBe('');
+
+  // Turning the heatmap on recolours, which costs frames; it is off by
+  // default, so nothing was spent before the click.
+  await page.getByRole('switch', { name: 'Activation heatmap' }).click();
+  await expect.poll(() => frames(page)).toBeGreaterThan(idle);
+  const lit = await settledFrames(page);
+  await page.getByRole('switch', { name: 'Activation heatmap' }).click();
+  await expect.poll(() => frames(page)).toBeGreaterThan(lit);
+});
+
 test('the canvas is hidden from assistive tech and skipped by Tab', async ({
   page,
 }) => {
@@ -447,6 +529,22 @@ for (const width of [360, 390]) {
       await expect(page.getByRole('link', { name: /Open SplitIQ/ })).toHaveText(
         /^Open SplitIQ/
       );
+      expect(await smallTargets(page)).toEqual([]);
+
+      // With a muscle card open, the attribution and the modelled framing are
+      // still there — the panel stacks above them, it does not push them out.
+      await page.getByRole('option', { name: 'Soleus' }).click();
+      await expect(
+        page.getByRole('heading', { level: 3, name: 'Soleus' })
+      ).toBeVisible();
+      await expect(page.getByText('Modelled, not measured')).toBeVisible();
+      await expect(
+        page.getByText(/Muscle activation is estimated from joint moments/)
+      ).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: /BodyParts3D/ })
+      ).toBeVisible();
+      expect(await noHorizontalScroll(page)).toBe(true);
       expect(await smallTargets(page)).toEqual([]);
 
       await page.getByRole('button', { name: 'Coaching guide' }).click();
