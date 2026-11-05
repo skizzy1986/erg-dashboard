@@ -39,11 +39,13 @@ Running it again from the setup script installs twice and lets the two copies dr
 hook also prints a warning if `deno` is missing, so a broken setup script shows up at the
 start of the session rather than when a Deno test is first needed.
 
-> **This rationale is currently false, measured 2026-11-05.** That hook has never run in a
-> cloud session — settings-defined hooks are gated behind workspace trust, which no cloud
-> container grants. `web/node_modules` arrives some other way, and the `deno` warning has
-> never fired. See *Project permissions* below for the trust flag that fixes it, and for
-> what granting it does to session startup.
+> **This rationale holds only once the workspace is trusted, measured 2026-11-05.** Until
+> the trust flag is in this setup script, the hook has never run in a cloud session —
+> settings-defined hooks are gated behind workspace trust, which no cloud container grants
+> by default. `web/node_modules` arrives some other way and the `deno` warning never fires.
+> With the flag in place the hook does run, the `npm ci` above is the one that counts, and
+> this note is accurate again. See *Project permissions* for the flag and for the install
+> race it introduces.
 
 ## Network
 
@@ -201,13 +203,27 @@ has taken. Setting the flag mid-session does clear that warning but does **not**
 the hooks — trust is read once at startup (measured 2026-11-05: the same `Write` probe
 still produced no hook output after the flag was set).
 
-**Enabling trust changes session startup, so weigh it.** `session-start.sh` runs
-`npm ci --prefix web`, which has never actually executed here — `web/node_modules` is
+**Decided 2026-11-05: trust is granted, and the full `npm ci` is wanted.** `session-start.sh`
+runs `npm ci --prefix web`, which has never actually executed here — `web/node_modules` is
 present from the platform's own dependency install or the image, not from the hook (the
-setup-script log contains only the Deno install). Granting trust therefore adds a full
-`npm ci` to every session start, on top of whatever already provides the modules. The
-*Why no `npm ci`* note under **Setup script** rests on that hook firing and is wrong until
-trust is set.
+setup-script log contains only the Deno install). Once trust is set the hook fires and the
+install runs every session, deliberately: a lockfile-exact `ci` is the thing the quality
+gates are supposed to run against, and the alternative is trusting an install nobody in this
+repo controls. Do not "optimise" it away. The *Why no `npm ci`* note under **Setup script**
+is therefore correct again from the moment trust is set, and false before it.
+
+**It does not block the session.** The hook declares `{"async": true, "asyncTimeout":
+300000}` (`session-start.sh:9`), so the install runs in the background with a five-minute
+budget and the session is usable immediately.
+
+**That asynchrony is the one real hazard, and it is a race, not a delay.** `npm ci` deletes
+`node_modules` before installing (npm's documented behaviour), so a session whose first
+action is `npm test`, `npm run lint` or `npm run build` can hit the window where the
+platform's modules have been removed and the lockfile install has not finished. The failure
+looks like a broken checkout rather than a race. If that bites, the fix is to drop
+`"async": true` from line 9 so session start waits for a correct `node_modules` instead —
+slower start, no window. Until then: if a gate fails at the very start of a session with
+missing modules, re-run it before diagnosing anything.
 
 The docs also say that in a cloud thread started inside a claude.ai **Project**, the repo's
 `.claude/settings.json` permission rules and hooks do not apply, so this whole file is inert
