@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { THEME } from '../../constants/theme.js';
 import { SPACE } from '../../constants/tokens.js';
 import { ACT_BASIS, ACT_NONE, ACT_NOTE } from '../constants/activationBands.js';
-import { card, chip, microLabel, secondaryButton } from './ui.js';
+import { card, chip, microLabel, secondaryButton, srOnly } from './ui.js';
 
 /**
  * The selected muscle: what it is, what it does in a squat, and how hard it is
@@ -21,26 +21,39 @@ export default function MuscleCard({
   onClear,
 }) {
   const headingRef = useRef(null);
-  const seen = useRef(false);
+  const hadMuscle = useRef(false);
   const slug = muscle?.slug ?? null;
 
-  // The card appears beside the list rather than replacing it, so without this
-  // a screen-reader user hears nothing. Moving focus to the heading IS the
-  // announcement — and on a clear it lands on the empty card's heading rather
-  // than falling to the document body, since the button that was focused has
-  // just been unmounted.
+  // The card appears beside the list rather than replacing it, so a selection
+  // is ANNOUNCED through a live region, not by moving focus. Focus must stay
+  // in the listbox: a keyboard user picks a muscle and then keeps arrowing,
+  // and focus() scrolls, so a #m= deep link would yank the page on load.
   //
-  // Not on the first render: a page load must not steal focus. A deep link
-  // resolving after the manifest lands does move it, which is the point of
-  // having followed the link.
+  // The one exception is a clear, where the button that had focus has just
+  // unmounted — without this, focus falls to document.body. preventScroll
+  // keeps even that from moving the page.
   useEffect(() => {
-    if (seen.current) headingRef.current?.focus();
-    seen.current = true;
+    if (!slug && hadMuscle.current) {
+      headingRef.current?.focus({ preventScroll: true });
+    }
+    hadMuscle.current = !!slug;
   }, [slug]);
+
+  const announcement = muscle ? `Showing ${muscle.name}` : '';
+
+  // One live region across both states, mounted before anything it has to
+  // announce — a role="status" added at the same moment as its text is not
+  // reliably read out.
+  const live = (
+    <span role="status" data-testid="muscle-announce" style={srOnly}>
+      {announcement}
+    </span>
+  );
 
   if (!muscle) {
     return (
       <div style={{ ...card, padding: SPACE.lg }}>
+        {live}
         <h3 ref={headingRef} tabIndex={-1} style={{ ...microLabel, margin: 0 }}>
           Muscle detail
         </h3>
@@ -69,6 +82,7 @@ export default function MuscleCard({
         gap: SPACE.sm,
       }}
     >
+      {live}
       <h3
         ref={headingRef}
         tabIndex={-1}

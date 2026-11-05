@@ -12,7 +12,6 @@ import {
   scenePalette,
   writeVertexColours,
 } from '../sceneColours.js';
-import { HEAT_STOPS } from '../../../squat/constants/activationBands.js';
 
 const J = SCENE_STYLE.dark.jitter;
 
@@ -109,10 +108,15 @@ describe('the activation ramp', () => {
     [1, [1, 1, 1]],
   ];
 
-  it('sits on exactly the band cuts the legend prints', () => {
-    // Two readers of one set of stops. Let these drift and the model says
-    // High where the legend says Moderate.
-    expect(HEAT_POSITIONS).toEqual(HEAT_STOPS);
+  it('is a sorted 0-1 ramp, so every weight lands between two stops', () => {
+    // The squat-side half of this — that these positions are exactly the band
+    // cuts the legend prints — is asserted in
+    // squat/__tests__/activation.test.js. It cannot live here: anatomy/ does
+    // not reach into squat/.
+    expect(HEAT_POSITIONS[0]).toBe(0);
+    expect(HEAT_POSITIONS.at(-1)).toBe(1);
+    expect([...HEAT_POSITIONS].sort((a, b) => a - b)).toEqual(HEAT_POSITIONS);
+    expect(new Set(HEAT_POSITIONS).size).toBe(HEAT_POSITIONS.length);
   });
 
   it('returns a stop exactly at its own position', () => {
@@ -152,7 +156,7 @@ describe('the activation ramp', () => {
   it('reads the four heat tokens as raw channels on both themes', () => {
     for (const t of ['light', 'dark']) {
       const heat = scenePalette(t).heat;
-      expect(heat.map(([p]) => p)).toEqual(HEAT_STOPS);
+      expect(heat.map(([p]) => p)).toEqual(HEAT_POSITIONS);
       expect(heat).toHaveLength(4);
       for (const [, rgb] of heat) {
         expect(rgb).toHaveLength(3);

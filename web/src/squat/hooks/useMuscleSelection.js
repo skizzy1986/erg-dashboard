@@ -28,6 +28,9 @@ export function useMuscleSelection({ index, hash, setHash }) {
   // effect, so it is already on screen for the first paint that notices.
   const [dead, setDead] = useState(null);
   if (stale && dead !== slug) setDead(slug);
+  // And it stops outliving it: arriving at a live muscle by any route — Back,
+  // a hashchange, a pasted link — clears the alert. Guarded, so it cannot loop.
+  if (muscle && dead) setDead(null);
 
   // A dead link is dropped so it does not survive a reload or get re-shared.
   useEffect(() => {

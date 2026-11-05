@@ -39,6 +39,10 @@ writes:
 | `web/src/squat/assets/squat-anatomy.bin` | 2,202,168 | `92437fba2129bc54231aafcaacb462e9f95627f18ffce801c76e8b4b047fe3d1` |
 | `web/src/squat/assets/squat-manifest.json` | 99,904 | `c2e7acdc6f6d8ffc687144ac90ab59c9b09bef917ccd639422e6f55ff1a1152a` |
 
+The manifest committed today is **not** that byte-for-byte extraction output —
+one prose sentence has been edited by hand since. See *Hand edits to the
+manifest* below; `squat-anatomy.bin` is still exactly as extracted.
+
 `squat-anatomy.bin` is the gzip stream **byte for byte as base64-decoded** —
 never re-compressed — so it decompresses to the same 3,450,003-byte buffer the
 source page indexed. `squat-manifest.json` is the manifest JSON re-serialised
@@ -48,6 +52,52 @@ the same input reproduces both hashes.
 The expected sizes and hashes are pinned in
 `web/src/squat/constants/dataAsset.js`, and the content test re-hashes the
 committed files against them.
+
+## Hand edits to the manifest
+
+`meta.muscles[].role` is a prose field. It carries no `{o, n, t}` entry, nothing
+indexes into `squat-anatomy.bin` through it, and no computation in the app or
+the pipeline reads it — it is coaching copy that the UI prints. So it can be
+edited in place in `squat-manifest.json` without touching the binary, and that
+is strictly better than a rebuild: `pipeline/squat-anatomy/ARCHIVE.md` records
+that rebuilding on a different zlib produces a different gzip stream for the
+same 3,450,003 decompressed bytes, which would churn 2.2 MB for a wording
+change.
+
+Every such edit must be made in **both** places, or a future rebuild
+reintroduces it:
+
+1. `web/src/squat/assets/squat-manifest.json` — what the app ships.
+2. `pipeline/squat-anatomy/pipeline/v3/base.html` — the pipeline's source for
+   the same string.
+
+Then re-pin `manifest.bytes` and `manifest.sha256` in
+`web/src/squat/constants/dataAsset.js` (**leave the `bin` entries alone**), and
+re-pin `data_version.manifest_sha256` in
+`web/src/anatomy/utils/__tests__/fixtures/squat-skinning-fixture.json` — that
+fixture records which manifest it was generated against, and its `raw_sha256`
+and `bin_raw_bytes` are what actually guard the posing numbers. Both stay
+unchanged for a prose edit, so the fixture itself is **not** regenerated.
+
+### Log
+
+| Date | PR | Field | Change |
+|---|---|---|---|
+| 2026-11-05 | PR2b-i | `meta.muscles[9].role` (Rectus femoris) | Dropped an EMG claim. Before: *"The only quad that crosses the hip, so its length barely changes in a squat. **EMG shows it working at roughly half the level of the vasti.**"* After: *"The only quad that crosses the hip, so its length barely changes in a squat. **It works at roughly half the level of the vasti.**"* |
+
+Why: PR2b-i's muscle card is the first thing in this app that ever renders these
+118 sentences, and it prints the `role` two lines above "Indicative estimate,
+not EMG." One sentence out of 118 cited EMG, so the card contradicted its own
+caveat. The underlying claim — rectus femoris works at about half the level of
+the vasti — is the model's, and it is kept; only the appeal to electromyography,
+which this page has not done and cannot source, is removed.
+`web/src/squat/__tests__/content.test.js` now scans all 118 `role` strings for
+`/\bEMG\b/i`, so the next data change cannot reintroduce it silently.
+
+Manifest after this edit: **99,892 bytes**,
+`2ce630ff9973ae3a73d2bfe3e00e1ad313903f0f3aedc0a6134bfedca144f98e`.
+`squat-anatomy.bin` unchanged (2,202,168 bytes,
+`92437fba…fe3d1`; decompressed `eb15d943…b6be`).
 
 ## Updating the data
 

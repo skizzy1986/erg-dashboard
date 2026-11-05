@@ -62,24 +62,20 @@ describe('three r187 parity with the r128 page (source)', () => {
   });
 });
 
-// The heatmap's wiring, pinned the same way: the module cannot run in jsdom,
-// and each of these failing silently costs a frame or a whole repaint.
+// The heatmap's BEHAVIOUR is tested for real against a built scene in
+// scene/__tests__/createAnatomyScene.test.js — the colours change, they
+// restore byte-identically, and the frame the renderer draws already carries
+// them. What is pinned here is only what text can honestly pin.
+//
+// An earlier "recolours inside the same frame as the pose" check lived here
+// and has been dropped: it compared the index of `renderer.render(scene,
+// camera)` against the heat block, and that string appears more than once in
+// the file, so it passed almost regardless. The real-scene test captures what
+// the renderer SAW at draw time instead, which is the actual requirement.
 describe('activation heatmap wiring', () => {
   it('exposes setActivation and skips unchanged weights', () => {
     expect(CODE).toMatch(/setActivation\(weights = null\) \{/);
     expect(CODE).toMatch(/if \(sameWeights\(heat, next\)\) return;/);
-  });
-
-  it('recolours inside the same frame as the pose, so one frame draws', () => {
-    const atPose = CODE.indexOf(
-      'if (pendingS !== null && pendingS !== posedS)'
-    );
-    const atHeat = CODE.indexOf('if (pendingHeat) {');
-    expect(atPose).toBeGreaterThan(-1);
-    expect(atHeat).toBeGreaterThan(atPose);
-    expect(
-      CODE.indexOf('renderer.render(scene, camera);', atHeat)
-    ).toBeGreaterThan(atHeat);
   });
 
   it('swaps the tendon blend with the colour source, and nothing else', () => {

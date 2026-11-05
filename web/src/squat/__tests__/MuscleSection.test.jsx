@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
@@ -130,15 +131,57 @@ describe('the muscle section in the page', () => {
     ).toBeInTheDocument();
   });
 
-  it('opens the card on a click and deep-links the selection', async () => {
+  it('opens the card on a click, deep-links it, and leaves focus in the list', async () => {
     const user = userEvent.setup();
     await openList();
-    await user.click(screen.getByRole('option', { name: 'Soleus' }));
+    const option = screen.getByRole('option', { name: 'Soleus' });
+    await user.click(option);
     expect(window.location.hash).toBe('#m=soleus');
+    expect(screen.getByTestId('muscle-band')).toHaveTextContent(ACT_NOTE);
+    // Announced, not focused: a keyboard user keeps arrowing from here.
+    expect(screen.getByTestId('muscle-announce')).toHaveTextContent(
+      'Showing Soleus'
+    );
     expect(
       screen.getByRole('heading', { level: 3, name: 'Soleus' })
-    ).toHaveFocus();
-    expect(screen.getByTestId('muscle-band')).toHaveTextContent(ACT_NOTE);
+    ).not.toHaveFocus();
+    expect(option).toHaveFocus();
+  });
+
+  it('arrows on to the next muscle after selecting one', async () => {
+    const user = userEvent.setup();
+    await openList();
+    await user.click(screen.getByRole('option', { name: 'Gluteus maximus' }));
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(window.location.hash).toBe('#m=adductor-magnus');
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Adductor magnus' })
+    ).toBeInTheDocument();
+  });
+
+  // StrictMode double-invokes effects on mount, which is how a "have I run
+  // before?" ref latch turns into a focus grab on first paint in dev.
+  it('takes no focus under StrictMode with a deep link set', async () => {
+    window.history.replaceState(null, '', '/squat#m=soleus');
+    const scene = fakeScene();
+    render(
+      <StrictMode>
+        <SquatApp loadScene={scene.loadScene} />
+      </StrictMode>
+    );
+    expect(document.activeElement).toBe(document.body);
+    await finishDownload();
+    await waitFor(() => expect(options()).toHaveLength(118));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { level: 3, name: 'Soleus' })
+      ).toBeInTheDocument()
+    );
+    // Resolving the link must not scroll or steal focus — it announces.
+    expect(document.activeElement).toBe(document.body);
+    expect(screen.getByTestId('muscle-announce')).toHaveTextContent(
+      'Showing Soleus'
+    );
   });
 
   it('restores a selection from #m= on load, after the manifest arrives', async () => {
@@ -148,6 +191,24 @@ describe('the muscle section in the page', () => {
       screen.getByRole('heading', { level: 3, name: 'Vastus lateralis' })
     ).toBeInTheDocument();
     expect(window.location.hash).toBe('#m=vastus-lateralis');
+  });
+
+  it('clears the stale-link alert once a live muscle is reached', async () => {
+    window.history.replaceState(null, '', '/squat#m=not-a-muscle');
+    await openList();
+    expect(await screen.findByRole('alert')).toHaveTextContent(STALE_LINK);
+    // Arriving at a valid muscle by hashchange — Back, or a pasted link —
+    // must take the alert down, not leave it beside a valid card.
+    act(() => {
+      window.history.replaceState(null, '', '/squat#m=soleus');
+      window.dispatchEvent(new window.HashChangeEvent('hashchange'));
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { level: 3, name: 'Soleus' })
+      ).toBeInTheDocument()
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('shows the stale-link message and strips a dead #m=', async () => {
@@ -319,5 +380,96 @@ describe('the no-scene path keeps the list whole', () => {
       screen.queryByRole('switch', { name: 'Activation heatmap' })
     ).toBeNull();
     expect(screen.queryByText(/Activation key/i)).toBeNull();
+  });
+});
+
+describe('before the manifest arrives', () => {
+  const placeholder = () => screen.getByTestId('muscle-list-placeholder');
+
+  it('says it is loading rather than "0 muscles and tendons"', async () => {
+    let resolveManifest;
+    globalThis.fetch = vi.fn(
+      () =>
+        new Promise((r) => {
+          resolveManifest = () =>
+            r({ ok: true, json: () => Promise.resolve(manifest) });
+        })
+    );
+    const scene = fakeScene();
+    render(<SquatApp loadScene={scene.loadScene} />);
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'Every muscle in the lift',
+      })
+    ).toBeInTheDocument();
+    expect(placeholder()).toHaveTextContent('Loading the muscle list…');
+    expect(placeholder()).toHaveAttribute('aria-busy', 'true');
+    // None of the empty-state copy is on screen.
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByText(/No muscle matches that/)).toBeNull();
+    expect(screen.queryByText(/0 muscles and tendons/)).toBeNull();
+    expect(screen.queryByTestId('muscle-matches')).toBeNull();
+
+    await act(async () => resolveManifest());
+    await waitFor(() => expect(options()).toHaveLength(118));
+    expect(screen.queryByTestId('muscle-list-placeholder')).toBeNull();
+  });
+
+  it('HOLDS a #m= deep link through the loading state', async () => {
+    window.history.replaceState(null, '', '/squat#m=soleus');
+    let resolveManifest;
+    globalThis.fetch = vi.fn(
+      () =>
+        new Promise((r) => {
+          resolveManifest = () =>
+            r({ ok: true, json: () => Promise.resolve(manifest) });
+        })
+    );
+    const scene = fakeScene();
+    render(<SquatApp loadScene={scene.loadScene} />);
+    expect(placeholder()).toHaveTextContent('Loading the muscle list…');
+    // Not resolvable yet, so not stale: the hash survives.
+    expect(window.location.hash).toBe('#m=soleus');
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    await act(async () => resolveManifest());
+    await waitFor(() => expect(options()).toHaveLength(118));
+    expect(window.location.hash).toBe('#m=soleus');
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Soleus' })
+    ).toBeInTheDocument();
+  });
+
+  it('says the list is unavailable when the manifest cannot be fetched', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    const scene = fakeScene();
+    render(<SquatApp loadScene={scene.loadScene} />);
+    await waitFor(() =>
+      expect(placeholder()).toHaveTextContent(/could not be loaded/)
+    );
+    expect(placeholder()).not.toHaveAttribute('aria-busy');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByText(/No muscle matches that/)).toBeNull();
+    // An offline first visit is this same state — the tool says so once, in
+    // the stage card, and the panel does not pretend to have an empty list.
+    expect(screen.getByTestId('load-status')).toHaveTextContent(
+      /could not be loaded|needs a connection/
+    );
+  });
+
+  it('holds a #m= deep link even when the manifest never arrives', async () => {
+    window.history.replaceState(null, '', '/squat#m=soleus');
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    const scene = fakeScene();
+    render(<SquatApp loadScene={scene.loadScene} />);
+    await waitFor(() =>
+      expect(placeholder()).toHaveTextContent(/could not be loaded/)
+    );
+    // Nothing resolved it, so nothing may call it dead: a reload once the
+    // network is back must still land on the muscle.
+    expect(window.location.hash).toBe('#m=soleus');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

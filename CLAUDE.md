@@ -360,11 +360,11 @@ and **SQUAT_TOTAL** (squat-only files, minus the 3D chunk) are gated separately,
 + the scene) has its own line, and **SQUAT_DATA** caps the
 anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
 file over Workbox's 2 MiB ceiling. Measured 2026-11-05 after squat PR2b-i (the muscle
-panel): **entry 146.8 / 150, total 385.7 / 400, squat entry 116.1 / 117, squat total
-27.3 / 30, squat 3D 138.2 / 145 KB**, data 2.20 MB. `SQUAT_TOTAL` was raised 26 → 30 in
-that change, from the measured 27.26 KB + 10%: squat total is the loose ceiling by the
+panel): **entry 146.8 / 150, total 385.6 / 400, squat entry 116.4 / 117, squat total
+27.6 / 30, squat 3D 138.2 / 145 KB**, data 2.20 MB. `SQUAT_TOTAL` was raised 26 → 30 in
+that change, from the measured 27.6 KB: squat total is the loose ceiling by the
 script's own definition — never precached, `CacheFirst` at runtime, stripped from the APK
-— so those bytes are on nobody's first paint. **`SQUAT_ENTRY` is the one to watch: 0.9 KB
+— so those bytes are on nobody's first paint. **`SQUAT_ENTRY` is the one to watch: 0.6 KB
 spare.** The muscle list is deliberately not lazy-loaded (the canvas is `aria-hidden`
 with `tabindex="-1"`, so the list is the model's accessible substitute and must not sit
 behind a chunk that can fail to fetch), so the next change to `/squat`'s static graph

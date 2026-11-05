@@ -91,8 +91,10 @@ const MAX_TOTAL_GZIP_KB = 400;
 // first-visit offline fallback.
 //
 // PR2b-i re-measured 2026-11-05 with the muscle panel in (list, card, legend,
-// region map, bands, slugs, activation maths): SQUAT_TOTAL 27.26 KB, so the
-// ceiling is 27.26 + 10% = 29.99, set to 30. Squat total is the LOOSE ceiling
+// region map, bands, slugs, activation maths): SQUAT_TOTAL 27.6 KB after the
+// Gate-3 fix round (27.26 before it). 27.6 + 10% is 30.4; the ceiling is set
+// to 30 rather than 31, which is ~9% and so slightly tighter than the
+// convention allows. Squat total is the LOOSE ceiling
 // by this script's own definition — never precached, CacheFirst at runtime,
 // stripped from the APK — so these bytes are on nobody's first paint. The
 // panel is NOT lazy-loaded to dodge it: the canvas is aria-hidden with
@@ -100,8 +102,8 @@ const MAX_TOTAL_GZIP_KB = 400;
 // putting it behind a chunk that can fail to fetch would make it the least
 // reliable thing on the page in exactly the situation it exists for.
 //
-// SQUAT_ENTRY is the tight gate and it still passes, at 116.11 of 117 — but
-// that is 0.89 KB spare, measured, and the next change of any size will fail
+// SQUAT_ENTRY is the tight gate and it still passes, at 116.4 of 117 — but
+// that is 0.6 KB spare, measured, and the next change of any size will fail
 // it. Raising it is not this PR's call.
 const MAX_SQUAT_ENTRY_GZIP_KB = 117;
 const MAX_SQUAT_TOTAL_GZIP_KB = 30;

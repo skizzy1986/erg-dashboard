@@ -3,13 +3,20 @@ import { RADIUS, SPACE } from '../../constants/tokens.js';
 import { ACT_BANDS, HEAT_LEGEND } from '../constants/activationBands.js';
 import { card, microLabel } from './ui.js';
 
-// One swatch per band, in ramp order. The peak token sits at the top of High,
-// so High shows the gradient between its two stops rather than a flat fill.
-const SWATCH = [
+// The four ramp stops sit at 0, 0.30, 0.60 and 1 — the band cuts — so a band
+// is the SEGMENT between two of them, not one of them. A flat swatch lies:
+// a muscle at 0.29 is drawn almost the Mid colour and labelled Low, and the
+// legend would show Low as the Low stop. Each swatch is therefore the gradient
+// across its own band, which is exactly what rampAt() paints on the model.
+const STOPS = [
   THEME.anatomyHeatLow,
   THEME.anatomyHeatMid,
-  `linear-gradient(90deg, ${THEME.anatomyHeatHigh}, ${THEME.anatomyHeatPeak})`,
+  THEME.anatomyHeatHigh,
+  THEME.anatomyHeatPeak,
 ];
+const SWATCH = STOPS.slice(0, -1).map(
+  (from, i) => `linear-gradient(90deg, ${from}, ${STOPS[i + 1]})`
+);
 
 /**
  * The key to the model's colours. Band names sit BESIDE the swatches, never on

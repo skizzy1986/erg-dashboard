@@ -1,5 +1,11 @@
 import { REGION_NAMES, REGION_OF } from '../constants/muscleRegions.js';
-import { regionsMatching } from '../constants/muscleSynonyms.js';
+import { MUSCLE_SYNONYMS } from '../constants/muscleSynonyms.js';
+
+// Below this, a query is too short to mean a region: "a" would otherwise pull
+// in abs, abductors and arms, and "hi" every hip region. Short queries still
+// match muscle names and roles, which is what someone two letters into a word
+// is actually doing.
+const MIN_REGION_QUERY = 3;
 
 /**
  * A muscle's URL slug. A function, not a table: 118 names produce 118 unique
@@ -22,12 +28,43 @@ export const foldQuery = (s) =>
     .toLowerCase();
 
 /**
+ * Region ids a query names, by region name or by coach word. `q` must already
+ * be folded.
+ *
+ * A synonym matches as a PREFIX of the query's own length, never the other way
+ * round: `word.includes(q)` alone makes "a" match nine regions, and the
+ * reverse test `q.includes(word)` is worse still — it made "gluteus medius"
+ * return Hip extensors (because the query contains "glute") and "quadratus
+ * lumborum" return Knee extensors (because it contains "quad"). Those are
+ * queries a coach types. A prefix test gives "glu" -> glutes and leaves
+ * "gluteus medius" to the name match, which is where it belongs.
+ */
+export function regionsMatching(q) {
+  const out = new Set();
+  if (!q || q.length < MIN_REGION_QUERY) return out;
+  REGION_NAMES.forEach((name, id) => {
+    if (name.toLowerCase().includes(q)) out.add(id);
+  });
+  for (const [word, id] of Object.entries(MUSCLE_SYNONYMS)) {
+    if (word.startsWith(q)) out.add(id);
+  }
+  return out;
+}
+
+/**
  * Groups `meta.muscles` into the eleven regions. `all` is manifest order, so
  * an entry's `i` is its index in the activation arrays.
  */
 export function buildMuscleIndex(muscles) {
   const all = (muscles ?? []).map((m, i) => {
-    const region = REGION_OF[i] ?? 0;
+    const region = REGION_OF[i];
+    // Unreachable while the manifest sha pin holds, which is exactly why it
+    // throws: a silent `?? 0` would file an unmapped muscle under Hip
+    // extensors, the one default that reads as a deliberate coaching claim.
+    // Re-derive REGION_OF — see docs/onboarding/NEW_MOVEMENT.md.
+    if (region === undefined) {
+      throw new Error(`No region for muscle ${i} (${m?.name}).`);
+    }
     return {
       i,
       name: m.name,

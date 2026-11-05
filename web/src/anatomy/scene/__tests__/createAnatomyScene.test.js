@@ -3,7 +3,13 @@ import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { BufferGeometry, DirectionalLight } from 'three';
 import { createAnatomyScene } from '../createAnatomyScene.js';
-import { scenePalette } from '../../utils/sceneColours.js';
+import {
+  heatColours,
+  muscleColours,
+  scenePalette,
+  writeVertexColours,
+} from '../../utils/sceneColours.js';
+import { viewArray } from '../../utils/arrays.js';
 import { sceneStyle } from '../../constants/sceneStyle.js';
 
 // jsdom has no WebGL, so the real renderer is swapped for a recorder. The rest
@@ -141,5 +147,221 @@ describe('createAnatomyScene teardown', () => {
     );
     expect(window.__anatomyFrames).toBeUndefined();
     expect(window.__anatomyDebug).toBeUndefined();
+  });
+});
+
+// The heatmap against the REAL scene: real three geometry, real BufferAttributes,
+// real colour writes. The pure-function test and the text pins in
+// sceneParity.test.js all pass if writeColours() writes the wrong colours into
+// the wrong attribute; only this catches that.
+describe('setActivation on a built scene', () => {
+  // Deterministic, spread across the ramp, and built here rather than imported
+  // from squat/utils/activation.js — anatomy/ must not reach into squat/.
+  const weightsFor = (n) =>
+    Float32Array.from({ length: n }, (_, i) => (i % 11) / 10);
+
+  // Captures the queued frame callbacks so a frame can be driven on demand.
+  // Only the batch pending at call time is run, so a self-requeuing frame
+  // (damping) cannot spin.
+  function frameDriver() {
+    const q = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      q.push(cb);
+      return q.length;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    return () => {
+      for (const cb of q.splice(0)) cb(0);
+    };
+  }
+
+  const colourAttrs = (spy) =>
+    spy.mock.calls.filter(([name]) => name === 'color').map(([, attr]) => attr);
+  const snapshot = (attrs) => attrs.map((a) => Float32Array.from(a.array));
+
+  // What the colour attribute for one muscle set MUST hold, recomputed from
+  // the pure helpers. Comparing a restore against the scene's own earlier
+  // output only proves it is self-consistent — a swapped blend constant, or
+  // the wrong colour source, would be stable and therefore invisible. These
+  // name tendonBlend and tendonBlendHeat explicitly, so swapping them fails.
+  const expectedColours = ({ mid, tw, weights, palette, style }) =>
+    writeVertexColours(
+      new Float32Array(mid.length * 3),
+      mid,
+      tw,
+      weights
+        ? heatColours(
+            manifest.meta.muscles,
+            weights,
+            palette.heat,
+            palette.tendon
+          )
+        : muscleColours(manifest.meta.muscles, palette, style.jitter),
+      palette.tendon,
+      weights ? style.tendonBlendHeat : style.tendonBlend
+    );
+
+  // The scene's makeSet call order: cm, lb, st, sa. lb is skipped — its tendon
+  // weights are all zero, so it cannot tell the two blends apart.
+  const SETS = [
+    { name: 'cm', at: 0, mid: 'cm_mid', tw: 'cm_tw' },
+    { name: 'st', at: 2, mid: 'st_mid', tw: 'st_tw' },
+    { name: 'sa', at: 3, mid: 'sa_mid', tw: 'sa_tw' },
+  ];
+  const A = (name) => viewArray(manifest, buffer, name);
+  const assertMatches = (shot, weights, label) => {
+    const palette = scenePalette('dark');
+    const style = sceneStyle('dark');
+    for (const set of SETS) {
+      expect([...shot[set.at]], `${set.name} ${label}`).toEqual([
+        ...expectedColours({
+          mid: A(set.mid),
+          tw: A(set.tw),
+          weights,
+          palette,
+          style,
+        }),
+      ]);
+    }
+  };
+
+  it('recolours every muscle set, then restores byte-identical anatomy colours', () => {
+    const drive = frameDriver();
+    const setAttr = vi.spyOn(BufferGeometry.prototype, 'setAttribute');
+    const ctl = build(container);
+    const attrs = colourAttrs(setAttr);
+    // cm (curve), lb (trunk), st (static upper) and sa (intercostals).
+    expect(attrs).toHaveLength(4);
+    for (const a of attrs) expect(a.array.length).toBeGreaterThan(0);
+
+    const anatomy = snapshot(attrs);
+    expect(anatomy.some((a) => a.some((c) => c !== 0))).toBe(true);
+    const versions = attrs.map((a) => a.version);
+    // The built scene's colours are the ones the helpers specify, tendon
+    // blend included — not merely whatever the scene happened to write.
+    assertMatches(anatomy, null, 'anatomy');
+
+    const w = weightsFor(manifest.meta.muscles.length);
+    ctl.setActivation(w);
+    drive();
+    const heat = snapshot(attrs);
+    // Every set really changed — not just the first one the loop touches.
+    heat.forEach((a, i) =>
+      expect([...a], `set ${i}`).not.toEqual([...anatomy[i]])
+    );
+    attrs.forEach((a, i) =>
+      expect(a.version, `set ${i}`).toBeGreaterThan(versions[i])
+    );
+    // Changed to the ramp at the softer blend, not to something that merely
+    // differs.
+    assertMatches(heat, w, 'heat');
+
+    ctl.setActivation(null);
+    drive();
+    snapshot(attrs).forEach((a, i) =>
+      expect([...a], `set ${i}`).toEqual([...anatomy[i]])
+    );
+    ctl.dispose();
+  });
+
+  it('is a no-op for weights equal to the ones already applied', () => {
+    const drive = frameDriver();
+    const setAttr = vi.spyOn(BufferGeometry.prototype, 'setAttribute');
+    const ctl = build(container);
+    const attrs = colourAttrs(setAttr);
+    drive();
+
+    const w = weightsFor(manifest.meta.muscles.length);
+    ctl.setActivation(w);
+    drive();
+    const after = snapshot(attrs);
+    const versions = attrs.map((a) => a.version);
+    const renders = fake.renderers[0].render.mock.calls.length;
+
+    // A different array object holding the same numbers: no repaint, and no
+    // frame requested — this is what keeps a depth drag from recolouring
+    // 50,119 vertices on every one of the 41 steps.
+    ctl.setActivation(Float32Array.from(w));
+    drive();
+    attrs.forEach((a, i) => expect(a.version, `set ${i}`).toBe(versions[i]));
+    snapshot(attrs).forEach((a, i) => expect([...a]).toEqual([...after[i]]));
+    expect(fake.renderers[0].render.mock.calls.length).toBe(renders);
+
+    // And setActivation(null) twice is a no-op the second time.
+    ctl.setActivation(null);
+    drive();
+    const nulled = attrs.map((a) => a.version);
+    ctl.setActivation(null);
+    drive();
+    attrs.forEach((a, i) => expect(a.version).toBe(nulled[i]));
+    ctl.dispose();
+  });
+
+  it('draws ONE frame for a depth change, with the new colours already in it', () => {
+    const drive = frameDriver();
+    const setAttr = vi.spyOn(BufferGeometry.prototype, 'setAttribute');
+    const ctl = build(container);
+    const attrs = colourAttrs(setAttr);
+    drive();
+    const renderer = fake.renderers[0];
+    const before = Float32Array.from(attrs[0].array);
+
+    // What the renderer SAW, captured at draw time. A render count alone
+    // cannot tell a recolour that happened before the draw from one that
+    // happened after it and left the drawn frame a step stale.
+    const drawn = [];
+    renderer.render.mockImplementation(() => {
+      drawn.push(Float32Array.from(attrs[0].array));
+    });
+
+    ctl.setDepth(0.5);
+    ctl.setActivation(weightsFor(manifest.meta.muscles.length));
+    drive();
+
+    expect(drawn).toHaveLength(1);
+    expect([...drawn[0]]).not.toEqual([...before]);
+    expect([...drawn[0]]).toEqual([...attrs[0].array]);
+    ctl.dispose();
+  });
+
+  it('keeps the heatmap across a theme change, and the theme across a toggle', () => {
+    const drive = frameDriver();
+    const setAttr = vi.spyOn(BufferGeometry.prototype, 'setAttribute');
+    const ctl = build(container);
+    const attrs = colourAttrs(setAttr);
+    const darkAnatomy = snapshot(attrs);
+
+    const w = weightsFor(manifest.meta.muscles.length);
+    ctl.setActivation(w);
+    drive();
+    const darkHeat = snapshot(attrs);
+
+    ctl.setPalette(scenePalette('light'), sceneStyle('light'));
+    drive();
+    const lightHeat = snapshot(attrs);
+    // Still the heatmap (the light ramp differs from the light anatomy
+    // colours), and the ramp tokens are theme-identical, so the heat colours
+    // themselves do not move — the tendon blend ground does.
+    lightHeat.forEach((a, i) =>
+      expect([...a]).not.toEqual([...darkAnatomy[i]])
+    );
+
+    ctl.setActivation(null);
+    drive();
+    const lightAnatomy = snapshot(attrs);
+    lightAnatomy.forEach((a, i) =>
+      expect([...a]).not.toEqual([...darkAnatomy[i]])
+    );
+    lightAnatomy.forEach((a, i) =>
+      expect([...a]).not.toEqual([...lightHeat[i]])
+    );
+
+    ctl.setPalette(scenePalette('dark'), sceneStyle('dark'));
+    drive();
+    snapshot(attrs).forEach((a, i) =>
+      expect([...a]).toEqual([...darkAnatomy[i]])
+    );
+    expect(darkHeat.length).toBe(4);
+    ctl.dispose();
   });
 });

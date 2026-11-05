@@ -1,8 +1,8 @@
 // Coach words a filter box gets typed into, mapped to a region id rather than
 // to muscle names — that is what keeps this table small. Only words that no
-// muscle name or region name already contains are worth a row here.
-import { REGION_NAMES } from './muscleRegions.js';
-
+// muscle name or region name already contains earn a row.
+//
+// Plain data, no imports: the matching itself lives in utils/muscleIndex.js.
 export const MUSCLE_SYNONYMS = {
   glutes: 0,
   glute: 0,
@@ -36,15 +36,3 @@ export const MUSCLE_SYNONYMS = {
   hands: 10,
   fingers: 10,
 };
-
-/** Region ids whose name or synonyms match `q` (already lowercased). */
-export function regionsMatching(q) {
-  const out = new Set();
-  REGION_NAMES.forEach((name, id) => {
-    if (name.toLowerCase().includes(q)) out.add(id);
-  });
-  for (const [word, id] of Object.entries(MUSCLE_SYNONYMS)) {
-    if (word.includes(q) || q.includes(word)) out.add(id);
-  }
-  return out;
-}

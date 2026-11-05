@@ -181,7 +181,6 @@ export default function MuscleList({
                     role="option"
                     aria-selected={isSelected}
                     tabIndex={isActive ? 0 : -1}
-                    data-slug={m.slug}
                     onFocus={() => setFocusSlug(m.slug)}
                     onClick={() => onSelect(m.slug)}
                     onKeyDown={(e) => {
@@ -193,7 +192,12 @@ export default function MuscleList({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      minHeight: 36,
+                      // 44, not WCAG 2.5.8 AA's 24 px floor: this list is
+                      // the accessible substitute for the canvas, so it is
+                      // held to the same target size as every other control
+                      // on the page. It costs nothing — the list is its own
+                      // scroll region either way.
+                      minHeight: 44,
                       padding: `${SPACE.xs}px ${SPACE.sm}px`,
                       borderRadius: RADIUS.sm,
                       fontFamily: FONT.sans,

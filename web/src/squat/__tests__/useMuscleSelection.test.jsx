@@ -76,6 +76,29 @@ describe('useMuscleSelection', () => {
     expect(window.location.hash).toBe('#m=soleus');
   });
 
+  it('clears the notice when a hashchange lands on a live muscle', () => {
+    window.history.replaceState(null, '', '/squat#m=not-a-muscle');
+    const { result } = harness(LOADED);
+    expect(result.current.sel.notice).toBe(STALE_LINK);
+    // Back, or a pasted link — not a select(). The alert must not outlive it.
+    act(() => {
+      window.history.replaceState(null, '', '/squat#m=soleus');
+      window.dispatchEvent(new window.HashChangeEvent('hashchange'));
+    });
+    expect(result.current.sel.muscle.name).toBe('Soleus');
+    expect(result.current.sel.notice).toBeNull();
+  });
+
+  it('keeps holding a slug when the index never arrives', () => {
+    window.history.replaceState(null, '', '/squat#m=soleus');
+    const { result, rerender } = harness(EMPTY);
+    rerender({ index: EMPTY });
+    rerender({ index: EMPTY });
+    expect(window.location.hash).toBe('#m=soleus');
+    expect(result.current.sel.notice).toBeNull();
+    expect(result.current.sel.slug).toBe('soleus');
+  });
+
   it('writes and removes the slug through select and clear', () => {
     const { result } = harness(LOADED);
     act(() => result.current.sel.select('gracilis'));

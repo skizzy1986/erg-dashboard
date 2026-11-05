@@ -266,34 +266,46 @@ describe('MuscleCard', () => {
     expect(screen.getByText(/Not contractile/)).toBeInTheDocument();
   });
 
-  it('moves focus to the heading when a selection appears, not on first paint', () => {
-    const { rerender } = render(
-      <MuscleCard
-        muscle={null}
-        band={null}
-        peakBand={null}
-        depthPercent={0}
-        phase="Standing"
-        direction="lowering"
-        onClear={() => {}}
-      />
-    );
-    // A page load must not steal focus.
+  const cardWith = (muscle) => (
+    <MuscleCard
+      muscle={muscle}
+      band={muscle ? ACT_BANDS[0] : null}
+      peakBand={muscle ? peakBandOf(MUSCLES[0]) : null}
+      depthPercent={10}
+      phase="Descent"
+      direction="lowering"
+      onClear={() => {}}
+    />
+  );
+
+  it('announces a selection through a live region, and never takes focus', () => {
+    const { rerender } = render(cardWith(null));
+    const live = screen.getByTestId('muscle-announce');
+    expect(live).toHaveAttribute('role', 'status');
+    // Mounted before it has anything to say: a role="status" that appears at
+    // the same moment as its text is not reliably announced.
+    expect(live.textContent).toBe('');
+    expect(live.style.position).toBe('absolute');
+
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    outside.focus();
+    rerender(cardWith(entry));
+    expect(live).toHaveTextContent('Showing Gluteus maximus');
+    // Focus stays where the user put it — in the real page, in the listbox,
+    // so arrowing on to the next muscle still works.
+    expect(outside).toHaveFocus();
+    outside.remove();
+  });
+
+  it('takes focus only on a clear, where the button it was on has unmounted', () => {
+    const { rerender } = render(cardWith(entry));
     expect(document.activeElement).toBe(document.body);
-    rerender(
-      <MuscleCard
-        muscle={entry}
-        band={ACT_BANDS[0]}
-        peakBand={peakBandOf(MUSCLES[0])}
-        depthPercent={10}
-        phase="Descent"
-        direction="lowering"
-        onClear={() => {}}
-      />
-    );
+    rerender(cardWith(null));
     expect(
-      screen.getByRole('heading', { level: 3, name: 'Gluteus maximus' })
+      screen.getByRole('heading', { level: 3, name: 'Muscle detail' })
     ).toHaveFocus();
+    expect(screen.getByTestId('muscle-announce').textContent).toBe('');
   });
 
   it('prompts rather than going blank with nothing selected', () => {
@@ -334,15 +346,27 @@ describe('HeatmapLegend', () => {
     expect(screen.getByText(HEAT_LEGEND)).toBeInTheDocument();
   });
 
-  it('paints the swatches from the four heat tokens only', () => {
+  it('draws each band as the ramp segment the model paints for it', () => {
     render(<HeatmapLegend />);
     const bg = ACT_BANDS.map(
       (b) => screen.getByTestId(`heat-swatch-${b.id}`).style.background
     );
-    expect(bg[0]).toContain('var(--color-anatomy-heat-low)');
-    expect(bg[1]).toContain('var(--color-anatomy-heat-mid)');
-    expect(bg[2]).toContain('var(--color-anatomy-heat-high)');
-    expect(bg[2]).toContain('var(--color-anatomy-heat-peak)');
+    // Not a flat fill per band: a muscle at 0.29 is drawn near the Mid colour
+    // and labelled Low, so a flat Low swatch would not match the model.
+    const stops = [
+      'var(--color-anatomy-heat-low)',
+      'var(--color-anatomy-heat-mid)',
+      'var(--color-anatomy-heat-high)',
+      'var(--color-anatomy-heat-peak)',
+    ];
+    bg.forEach((style, i) => {
+      expect(style, ACT_BANDS[i].id).toContain('linear-gradient');
+      expect(style, ACT_BANDS[i].id).toContain(stops[i]);
+      expect(style, ACT_BANDS[i].id).toContain(stops[i + 1]);
+      expect(style.indexOf(stops[i])).toBeLessThan(style.indexOf(stops[i + 1]));
+    });
+    // Four tokens, three bands: every segment used, none twice at the same end.
+    expect(bg).toHaveLength(3);
   });
 });
 

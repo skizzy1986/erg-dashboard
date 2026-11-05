@@ -106,7 +106,20 @@ async function smallTargets(page, scope = 'body') {
     const root = document.querySelector(sel);
     return [
       ...root.querySelectorAll(
-        'a[href], button, [role="tab"], [role="radio"], input[type="range"]'
+        [
+          'a[href]',
+          'button',
+          '[role="tab"]',
+          '[role="radio"]',
+          'input[type="range"]',
+          // The muscle list's rows: the panel's primary control, and the
+          // accessible substitute for the canvas.
+          '[role="option"]',
+          // The switch INPUT is deliberately 24 px (WCAG 2.5.8 AA's floor,
+          // which is what axe measures); the target a finger hits is the
+          // label around it, so that is what is measured here.
+          'label:has([role="switch"])',
+        ].join(', ')
       ),
     ]
       .filter((el) => el.offsetParent !== null && !el.closest('[inert]'))
@@ -208,50 +221,61 @@ for (const scheme of ['light', 'dark']) {
       expect(errors).toEqual([]);
       expect(await axe(page)).toEqual([]);
     });
+
+    test('the muscle listbox is one tab stop, and axe-clean with a card open', async ({
+      page,
+    }) => {
+      const errors = await openReady(page);
+      const listbox = page.getByRole('listbox', { name: 'Muscles by region' });
+      await expect(listbox).toBeVisible();
+      await expect(listbox.getByRole('option')).toHaveCount(118);
+      await expect(listbox.getByRole('group')).toHaveCount(11);
+      // One tab stop for 118 options: exactly one has tabindex 0.
+      expect(
+        await listbox.evaluate(
+          (el) => el.querySelectorAll('[role="option"][tabindex="0"]').length
+        )
+      ).toBe(1);
+
+      // Arrows move focus and select NOTHING — the URL is the proof.
+      const first = listbox.getByRole('option').first();
+      await first.focus();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('ArrowDown');
+      expect(new URL(page.url()).hash).toBe('');
+      await page.keyboard.press('Enter');
+      expect(new URL(page.url()).hash).toBe('#m=adductor-minimus');
+      await expect(page.getByTestId('muscle-band')).toContainText(
+        'Indicative estimate, not EMG.'
+      );
+      // Announced, not focused: focus stays on the option so the next arrow
+      // press keeps moving down the list.
+      await expect(page.getByTestId('muscle-announce')).toHaveText(
+        'Showing Adductor minimus'
+      );
+      await expect(listbox.getByRole('option').nth(2)).toBeFocused();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press('Enter');
+      expect(new URL(page.url()).hash).toBe('#m=rectus-femoris');
+      // The one role sentence that used to cite EMG, two lines above the card's
+      // own "not EMG" caveat (docs/squat/PROVENANCE.md).
+      await expect(
+        page.getByText(/It works at roughly half the level/)
+      ).toBeVisible();
+      expect(await axe(page)).toEqual([]);
+
+      // The heatmap is off until asked, and its legend arrives with it.
+      const heat = page.getByRole('switch', { name: 'Activation heatmap' });
+      await expect(heat).not.toBeChecked();
+      await heat.click();
+      await expect(heat).toBeChecked();
+      await expect(page.getByText('Activation key')).toBeVisible();
+      await expect(page.getByText(/Tendons are not coloured/)).toBeVisible();
+      expect(await axe(page)).toEqual([]);
+      expect(errors).toEqual([]);
+    });
   });
 }
-
-test('the muscle listbox is one tab stop, and axe-clean with a card open', async ({
-  page,
-}) => {
-  const errors = await openReady(page);
-  const listbox = page.getByRole('listbox', { name: 'Muscles by region' });
-  await expect(listbox).toBeVisible();
-  await expect(listbox.getByRole('option')).toHaveCount(118);
-  await expect(listbox.getByRole('group')).toHaveCount(11);
-  // One tab stop for 118 options: exactly one has tabindex 0.
-  expect(
-    await listbox.evaluate(
-      (el) => el.querySelectorAll('[role="option"][tabindex="0"]').length
-    )
-  ).toBe(1);
-
-  // Arrows move focus and select NOTHING — the URL is the proof.
-  const first = listbox.getByRole('option').first();
-  await first.focus();
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  expect(new URL(page.url()).hash).toBe('');
-  await page.keyboard.press('Enter');
-  expect(new URL(page.url()).hash).toBe('#m=adductor-minimus');
-  await expect(
-    page.getByRole('heading', { level: 3, name: 'Adductor minimus' })
-  ).toBeFocused();
-  await expect(page.getByTestId('muscle-band')).toContainText(
-    'Indicative estimate, not EMG.'
-  );
-  expect(await axe(page)).toEqual([]);
-
-  // The heatmap is off until asked, and its legend arrives with it.
-  const heat = page.getByRole('switch', { name: 'Activation heatmap' });
-  await expect(heat).not.toBeChecked();
-  await heat.click();
-  await expect(heat).toBeChecked();
-  await expect(page.getByText('Activation key')).toBeVisible();
-  await expect(page.getByText(/Tendons are not coloured/)).toBeVisible();
-  expect(await axe(page)).toEqual([]);
-  expect(errors).toEqual([]);
-});
 
 test('a #m= deep link selects on load; a dead one says so and is dropped', async ({
   page,

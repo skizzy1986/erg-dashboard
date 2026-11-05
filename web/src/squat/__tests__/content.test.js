@@ -186,9 +186,32 @@ describe('modelled values are labelled modelled, never EMG', () => {
     ...REGION_NAMES,
   ].join('\n');
 
+  // The 118 `role` sentences from the data. PR2b-i's muscle card is the first
+  // thing that ever renders them, two lines above "Indicative estimate, not
+  // EMG." — so they are prose this page publishes, and they are scanned like
+  // any other. Scoped to what the UI shows, not to the file the spec named:
+  // that narrower scope is how one EMG claim reached the card.
+  const roles = manifest.meta.muscles.map((m) => m.role).join('\n');
+
+  it('never cites EMG in a muscle role sentence', () => {
+    expect(manifest.meta.muscles).toHaveLength(118);
+    for (const m of manifest.meta.muscles) {
+      expect(m.role, m.name).toBeTruthy();
+      expect(m.role, m.name).not.toMatch(/\bEMG\b/i);
+    }
+    expect(roles).not.toMatch(/\bEMG\b/i);
+    // The one that was edited, so the wording cannot drift back.
+    expect(manifest.meta.muscles[9].name).toBe('Rectus femoris');
+    expect(manifest.meta.muscles[9].role).toBe(
+      'The only quad that crosses the hip, so its length barely changes in a squat. It works at roughly half the level of the vasti.'
+    );
+  });
+
   it('never puts EMG next to an activation label', () => {
     expect(allProse).not.toMatch(/EMG\s+activation|activation\s*\(?EMG/i);
     expect(allProse).not.toMatch(/measured activation/i);
+    expect(roles).not.toMatch(/EMG\s+activation|activation\s*\(?EMG/i);
+    expect(roles).not.toMatch(/measured activation/i);
     const row = METRICS_TABLE.find((r) => r.metric === 'Estimated activation');
     expect(text(row.target)).toMatch(/^Estimated from joint moments, not EMG/);
   });

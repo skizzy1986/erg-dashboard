@@ -204,20 +204,55 @@ function MuscleSection({
   direction,
   heatmap,
   wide,
+  loading,
+  failed,
 }) {
+  const title = (
+    <h2
+      id="muscles-title"
+      style={{
+        margin: `0 0 ${SPACE.md}px`,
+        fontSize: 18,
+        fontWeight: 700,
+        color: THEME.text,
+      }}
+    >
+      Every muscle in the lift
+    </h2>
+  );
+
+  // The list is built from the manifest, so until that arrives there is
+  // nothing to list — and "No muscle matches that. 0 muscles and tendons" is a
+  // worse thing to show on every page load than a sentence saying so.
+  if (loading || failed) {
+    return (
+      <section aria-labelledby="muscles-title" style={{ marginTop: SPACE.xl }}>
+        {title}
+        <div style={{ ...card, padding: SPACE.lg }}>
+          <p
+            // Announced when it resolves, either way.
+            role="status"
+            aria-busy={loading ? 'true' : undefined}
+            data-testid="muscle-list-placeholder"
+            style={{
+              margin: 0,
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: THEME.text,
+            }}
+          >
+            {failed
+              ? 'The muscle list needs the model data, which could not be loaded. Retry above, or reload the page.'
+              : 'Loading the muscle list…'}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section aria-labelledby="muscles-title" style={{ marginTop: SPACE.xl }}>
-      <h2
-        id="muscles-title"
-        style={{
-          margin: `0 0 ${SPACE.md}px`,
-          fontSize: 18,
-          fontWeight: 700,
-          color: THEME.text,
-        }}
-      >
-        Every muscle in the lift
-      </h2>
+      {title}
       <div
         style={
           wide
@@ -461,6 +496,8 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
           direction={view.direction}
           heatmap={view.heatmap && scene.status === 'ready'}
           wide={wide}
+          loading={!data.manifest && data.stage !== 'error'}
+          failed={!data.manifest && data.stage === 'error'}
         />
 
         <PhaseStrip onOpen={openGuide} wide={wide} />

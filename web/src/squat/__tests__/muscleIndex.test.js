@@ -1,15 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REGION_NAMES, REGION_OF } from '../constants/muscleRegions.js';
-import {
-  MUSCLE_SYNONYMS,
-  regionsMatching,
-} from '../constants/muscleSynonyms.js';
+import { MUSCLE_SYNONYMS } from '../constants/muscleSynonyms.js';
 import {
   buildMuscleIndex,
   filterMuscles,
   findBySlug,
   foldQuery,
+  regionsMatching,
   slugify,
 } from '../utils/muscleIndex.js';
 
@@ -253,6 +251,12 @@ describe('buildMuscleIndex', () => {
     expect(empty.all).toEqual([]);
     expect(empty.regions).toEqual([]);
   });
+
+  it('throws rather than defaulting a muscle the region map does not cover', () => {
+    expect(() =>
+      buildMuscleIndex([...MUSCLES, { name: 'Extra muscle' }])
+    ).toThrow(/No region for muscle 118 \(Extra muscle\)/);
+  });
 });
 
 describe('filterMuscles', () => {
@@ -279,9 +283,36 @@ describe('filterMuscles', () => {
     expect(names('lats')).toContain('Latissimus dorsi');
     expect(names('grip')).toContain('Flexor digitorum profundus');
     expect(regionsMatching('calves').has(6)).toBe(true);
+    // A partial word still finds the region, so the filter works as you type.
+    expect(regionsMatching('glu').has(0)).toBe(true);
     expect(Object.values(MUSCLE_SYNONYMS).every((id) => REGION_NAMES[id])).toBe(
       true
     );
+  });
+
+  // The matcher used to test `q.includes(word)` as well, which made any query
+  // CONTAINING a coach word drag in that word's whole region.
+  it('does not drag in a region because the query contains a coach word', () => {
+    expect(regionsMatching('gluteus medius').size).toBe(0);
+    expect(names('gluteus medius')).toEqual(['Gluteus medius']);
+    expect(names('gluteus medius')).not.toContain('Adductor magnus');
+    expect(names('gluteus medius')).not.toContain('Gluteus maximus');
+
+    expect(regionsMatching('quadratus lumborum').size).toBe(0);
+    expect(names('quadratus lumborum')).toEqual(['Quadratus lumborum']);
+    expect(names('quadratus lumborum')).not.toContain('Vastus lateralis');
+  });
+
+  it('ignores the synonym table for a one- or two-character query', () => {
+    // "a" used to reach nine of the eleven regions.
+    for (const q of ['a', 'g', 'ab', 'hi', 'q']) {
+      expect(regionsMatching(q).size, q).toBe(0);
+    }
+    expect(regionsMatching('')).toEqual(new Set());
+    // Names and roles still match, which is what a two-letter query means.
+    expect(names('ab').length).toBeLessThan(118);
+    expect(names('ab')).toContain('Rectus abdominis');
+    expect(names('ab')).not.toContain('Soleus');
   });
 
   it('matches a region name as well as a muscle name', () => {

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ACT_BANDS } from '../constants/activationBands.js';
+import { ACT_BANDS, HEAT_STOPS } from '../constants/activationBands.js';
+import { HEAT_POSITIONS } from '../../anatomy/utils/sceneColours.js';
 import {
   activationAt,
   activationOf,
@@ -143,5 +144,20 @@ describe('peakBandOf', () => {
       counts[p ? p.id : 'none'] = (counts[p ? p.id : 'none'] ?? 0) + 1;
     }
     expect(counts).toEqual({ low: 83, mod: 21, high: 12, none: 2 });
+  });
+});
+
+// One token, two readers: the legend prints band names against HEAT_STOPS and
+// the scene paints the ramp against HEAT_POSITIONS. Let them drift and the
+// model says High where the legend says Moderate. Asserted on the squat side
+// because anatomy/ must not import from squat/.
+describe('the ramp and the bands are the same cuts', () => {
+  it('puts a ramp stop at 0, at every band cut, and at 1', () => {
+    expect(HEAT_STOPS).toEqual([0, ...ACT_BANDS.map((b) => b.max)]);
+    expect(HEAT_POSITIONS).toEqual(HEAT_STOPS);
+  });
+
+  it('gives each band exactly one swatch segment', () => {
+    expect(HEAT_STOPS).toHaveLength(ACT_BANDS.length + 1);
   });
 });
