@@ -288,9 +288,20 @@ budget and the session is usable immediately.
 `node_modules` before installing (npm's documented behaviour), so a session whose first
 action is `npm test`, `npm run lint` or `npm run build` can hit the window where the
 platform's modules have been removed and the lockfile install has not finished. The failure
-looks like a broken checkout rather than a race. If that bites, the fix is to drop
-`"async": true` from line 9 so session start waits for a correct `node_modules` instead —
-slower start, no window. Until then: if a gate fails at the very start of a session with
+looks like a broken checkout rather than a race.
+
+**The window is about 24 seconds** (measured 2026-11-05: `web/node_modules` restamped at
+10:51:18, `.bin/eslint` present at 10:51:42, install otherwise clean). That number is the
+reason to leave `"async": true` alone rather than remove it. Dropping it buys a closed
+window at the price of a guaranteed ~25-second block on *every* session start, which is
+close to a wash — and it is not the one-line change it looks like, because a synchronous
+hook is then subject to a hook timeout (`HOOK_TIMEOUT_MS`, and the per-hook `timeout` field
+in `settings.json`) that nobody here has established. Set it too low and `npm ci` is killed
+mid-install, leaving a broken `node_modules` and no async budget to finish under: strictly
+worse than the race. Revisit only if the install gets materially slower, e.g. on a cold npm
+cache.
+
+The operational rule in the meantime: if a gate fails at the very start of a session with
 missing modules, re-run it before diagnosing anything.
 
 The docs also say that in a cloud thread started inside a claude.ai **Project**, the repo's
