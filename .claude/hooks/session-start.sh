@@ -10,6 +10,8 @@ echo '{"async": true, "asyncTimeout": 300000}'
 
 cd "$CLAUDE_PROJECT_DIR"
 
+command -v deno >/dev/null 2>&1 || echo "[session-start] WARNING: deno not found - edge-function tests (ci-functions.yml) cannot run. Fix the environment setup script: see docs/CLOUD_ENVIRONMENT.md"
+
 echo "[session-start] Installing npm dependencies..."
 # The app is the web/ workspace child. The repo root package.json declares
 # only husky, so a bare `npm install` here leaves web/node_modules absent and

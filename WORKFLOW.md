@@ -138,28 +138,32 @@ cannot be done from a remote agent session.
 
 ## The status board — "Split IQ" (GitHub Projects)
 
-The **Split IQ** board is the at-a-glance answer to "what's happening." All work is
-directed through it. Columns:
+The **Split IQ** board ([projects/1](https://github.com/users/skizzy1986/projects/1)) is
+the at-a-glance answer to "what's happening." All work is directed through it. Columns:
 
 ```
-Todo  →  In-progress  →  In-review  →  Done
+Backlog  →  Ready  →  In progress  →  In review  →  Done
 ```
 
-Issues enter in **Todo**, move to **In-progress** when you start a branch, to
-**In-review** when the PR opens, and to **Done** on merge.
+| Move | How |
+|---|---|
+| New issue/PR → **Backlog** | Automatic: *Auto-add to project* + *Item added to project* |
+| Reopened → **Backlog** | Automatic: *Item reopened* |
+| **Backlog → Ready** | **By hand**: triaged and worth doing next |
+| **Ready → In progress** | **By hand**: when you cut the branch |
+| Issue → **In review** | Automatic: *Pull request linked to issue* — fires on `Closes #N` in the PR body (the PR template already carries it; see §3). It moves the linked **issue**; the PR's own card stays in Backlog until it merges |
+| → **Done** | Automatic: *Item closed* + *Pull request merged* |
 
-> **Board automation (one-time UI setup).** The board itself ("Split IQ") already
-> exists. GitHub Projects boards and their built-in workflows can't be configured by
-> repo automation, so turn these on once in the UI — *Project → ⋯ → **Workflows*** —
-> so items flow without manual dragging:
-> 1. **Auto-add to project** → filter `is:issue is:open` (and a second rule for
->    `is:pr is:open`) → sets **Status = Todo**. This pulls every new issue/PR in.
-> 2. **Item reopened / added** → **Status = Todo**.
-> 3. **Pull request merged** and **Item closed** → **Status = Done**.
->    (Pair with `Closes #N` in the PR body — see §3 — so a merge closes the issue and
->    moves it to Done in one step.)
-> 4. Move to **In-progress** / **In-review** by hand when you start a branch / open a
->    PR (Projects has no native "branch created" trigger).
+GitHub has no trigger for "triaged" or "branch created", so those two moves stay manual.
+Cloud sessions read the board and make the two manual moves through
+`.github/workflows/project-board.yml` — see [`docs/CLOUD_ENVIRONMENT.md`](docs/CLOUD_ENVIRONMENT.md).
+
+> **Built-in workflows (configured 2026-11-05, *Project → ⋯ → Workflows*).**
+> **On:** Auto-add to project (repo `erg-dashboard`, filter `is:issue,pr is:open`) ·
+> Item added to project (issues + PRs → Backlog) · Item reopened (→ Backlog) ·
+> Pull request linked to issue (→ In review) · Item closed (→ Done) ·
+> Pull request merged (→ Done) · Auto-close issue (default) · Auto-add sub-issues (default).
+> **Off:** Auto-archive items · Code changes requested · Code review approved.
 
 > **Committed auto-add fallback.** `.github/workflows/add-to-project.yml` adds new
 > issues/PRs to Split IQ from CI as a belt-and-suspenders layer behind the built-in

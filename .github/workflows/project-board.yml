@@ -1,0 +1,119 @@
+name: Project board
+
+# Reads and moves items on the "Split IQ" board (users/skizzy1986/projects/1).
+#
+# Cloud Claude Code sessions cannot reach Projects v2: GraphQL is blocked and
+# user-scoped REST is refused. They can dispatch a workflow through the
+# repo-scoped API, so this job does the board work on their behalf. It shares
+# the ADD_TO_PROJECT_PAT secret with add-to-project.yml, because GITHUB_TOKEN
+# cannot reach a user-owned project. See docs/CLOUD_ENVIRONMENT.md.
+#
+# `status` is a string, not a choice: a choice input is always rendered with a
+# selected value, so `list` runs would carry a meaningless status. It is
+# validated against the board's live option names instead, which also keeps it
+# correct if a column is renamed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: list the board, or move one item
+        type: choice
+        options: [list, move]
+        required: true
+        default: list
+      item:
+        description: issue or PR number (move only)
+        type: string
+        required: false
+      status:
+        description: 'target column (move only): Backlog, Ready, In progress, In review, Done'
+        type: string
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: project-board
+  cancel-in-progress: false
+
+jobs:
+  board:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      ACTION: ${{ inputs.action }}
+      ITEM: ${{ inputs.item }}
+      STATUS: ${{ inputs.status }}
+      OWNER: skizzy1986
+      NUMBER: 1
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Check inputs
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::ADD_TO_PROJECT_PAT is not set. Create a classic PAT with project + repo scope and add it as a repo secret (see docs/CLOUD_ENVIRONMENT.md)."
+            exit 1
+          fi
+          if [ "$ACTION" = "move" ]; then
+            if ! [[ "$ITEM" =~ ^[0-9]+$ ]]; then
+              echo "::error::move needs item = an issue or PR number."
+              exit 1
+            fi
+            if [ -z "$STATUS" ]; then
+              echo "::error::move needs status = a column name."
+              exit 1
+            fi
+          fi
+
+      - name: Run
+        run: |
+          set -euo pipefail
+          report() { printf '%s\n' "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+
+          fail() { echo "::error::$1"; exit 1; }
+          NOACCESS="ADD_TO_PROJECT_PAT cannot read project $OWNER/$NUMBER (expired, or missing the project scope)."
+
+          PID=$(gh project view "$NUMBER" --owner "$OWNER" --format json --jq .id) || fail "$NOACCESS"
+          FIELD=$(gh project field-list "$NUMBER" --owner "$OWNER" --format json \
+            --jq '.fields[] | select(.name == "Status")') || fail "$NOACCESS"
+          if [ -z "$PID" ] || [ -z "$FIELD" ]; then
+            fail "Could not resolve project $OWNER/$NUMBER or its Status field."
+          fi
+          FID=$(jq -r .id <<<"$FIELD")
+
+          if [ "$ACTION" = "list" ]; then
+            ORDER='["Backlog","Ready","In progress","In review","Done"]'
+            ITEMS=$(gh project item-list "$NUMBER" --owner "$OWNER" -L 1000 --format json) || fail "$NOACCESS"
+            SHOWN=$(jq '.items | length' <<<"$ITEMS")
+            TOTAL=$(jq '.totalCount // (.items | length)' <<<"$ITEMS")
+            if [ "$TOTAL" -gt "$SHOWN" ]; then
+              echo "::warning::Board has $TOTAL items; only the first $SHOWN are listed. Raise -L in project-board.yml."
+            fi
+            TABLE=$(jq -r --argjson order "$ORDER" '
+                def rank: (.status // "") as $s
+                  | ($order | index($s)) // (if $s == "" then 99 else 98 end);
+                ["| # | Type | Title | Status |", "|---|---|---|---|"]
+                + (.items | sort_by(rank, (.content.number // 0)) | map(
+                    "| \(.content.number // "-") | \(.content.type // "-") | \((.title // "") | gsub("\\|"; "\\|")) | \(.status // "(none)") |"
+                  ))
+                | .[]' <<<"$ITEMS")
+            report "### Split IQ board ($SHOWN of $TOTAL items)"
+            report ""
+            report "$TABLE"
+            exit 0
+          fi
+
+          OID=$(jq -r --arg s "$STATUS" '.options[] | select(.name == $s) | .id' <<<"$FIELD")
+          if [ -z "$OID" ]; then
+            VALID=$(jq -r '[.options[].name] | join(", ")' <<<"$FIELD")
+            fail "Unknown status. Valid: $VALID"
+          fi
+          URL=$(gh api "repos/$REPO/issues/$ITEM" --jq .html_url) || fail "No issue or PR #$ITEM in $REPO."
+          ITEM_ID=$(gh project item-add "$NUMBER" --owner "$OWNER" --url "$URL" --format json --jq .id) \
+            || fail "Could not add #$ITEM to the board (PAT needs project write)."
+          gh project item-edit --id "$ITEM_ID" --project-id "$PID" --field-id "$FID" \
+            --single-select-option-id "$OID" >/dev/null || fail "Could not set the Status of #$ITEM."
+          report "#$ITEM -> $STATUS"
