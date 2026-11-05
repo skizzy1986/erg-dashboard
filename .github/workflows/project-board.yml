@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::ADD_TO_PROJECT_PAT is not set. Create a classic PAT with project + repo scope and add it as a repo secret (see docs/CLOUD_ENVIRONMENT.md)."
+            echo "::error::ADD_TO_PROJECT_PAT is not set. Create a classic PAT with project, read:org and read:discussion scopes and add it as a repo secret (see docs/CLOUD_ENVIRONMENT.md)."
             exit 1
           fi
           if [ "$ACTION" = "move" ]; then

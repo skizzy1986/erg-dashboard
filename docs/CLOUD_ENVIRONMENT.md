@@ -170,20 +170,27 @@ The board's built-in workflows handle every automatic move (see `WORKFLOW.md`). 
 workflow exists so a session can read the board and make the two manual moves: to Ready,
 and to In progress.
 
-Caveats until the first real runs confirm them:
+Verified 2026-11-05: `action=list` (run 41988480375) printed the full board with real
+Status values, so the token, the `@me` owner and the `gh project` JSON shapes
+(`.items[].status`, `.items[].content`, `.fields[].options[]`) all hold. `move` has not run
+yet; its `item-add` → `.id` step is the one part still unconfirmed.
 
-- The script assumes the JSON shape of `gh project` output (`.items[].status`,
-  `.items[].content`, `.fields[].options[]`, the `.id` from `item-add`), which the `gh`
-  manual does not document. A wrong shape fails loudly or shows every Status as
-  `(none)`, so check the first `action=list` run and record the result here.
+Caveats:
+
+- The owner is `@me` (the PAT's owner), not the login `skizzy1986`. Given a login, `gh`
+  first asks whether it is a user or an org, and failed with "unknown owner type".
 - `move` on an item not yet on the board races the board's own *Item added to project →
   Backlog* rule, so the item can land in Backlog. Run the same `move` again.
 - `list` reads up to 1,000 items and warns in the log if the board holds more.
 
 **Scott's one-time setup.** Add the repo secret `ADD_TO_PROJECT_PAT`: a classic PAT with
-`project` + `repo` scope (`project` alone is enough on this public repo). It is the same
-secret `add-to-project.yml` uses. `GITHUB_TOKEN` cannot reach a user-owned project. Without
-the secret the workflow fails with a clear error.
+exactly these scopes: `project`, `read:org` and `read:discussion`. `gh project` refuses to
+run without the two read scopes ("your authentication token is missing required scopes
+[read:org read:discussion]"). No `repo` scope is needed, because this repo is public. Set
+an expiry (90 days) and rotate it before then. An expired token shows up as `Bad
+credentials` in `add-to-project`. It is the same secret `add-to-project.yml` uses.
+`GITHUB_TOKEN` cannot reach a user-owned project. Without the secret the workflow fails with
+a clear error.
 
 ## Rebuild checklist
 

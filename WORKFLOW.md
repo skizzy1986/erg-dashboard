@@ -169,8 +169,9 @@ Cloud sessions read the board and make the two manual moves through
 > issues/PRs to Split IQ from CI as a belt-and-suspenders layer behind the built-in
 > auto-add rule. It stays a **no-op until** you add the `ADD_TO_PROJECT_PAT` secret,
 > because the default `GITHUB_TOKEN` can't write to a user-owned project. To enable:
-> create a **classic PAT** with `project` + `repo` scope (or a fine-grained PAT with
-> project write), add it as repo secret **`ADD_TO_PROJECT_PAT`**, then set the board's
+> create a **classic PAT** with `project`, `read:org` and `read:discussion` (the last two
+> are what `project-board.yml`'s `gh project` calls need; see
+> [`docs/CLOUD_ENVIRONMENT.md`](docs/CLOUD_ENVIRONMENT.md)), add it as repo secret **`ADD_TO_PROJECT_PAT`**, then set the board's
 > project number in `project-url` inside that workflow.
 
 ---
