@@ -3,6 +3,7 @@
   "data_version": {
     "note": "The repo data files this fixture was generated against. The page blob is the same 3,450,003 decompressed bytes (SKINNING.md section 9.7); if web/src/squat/constants/dataAsset.js changes, regenerate this fixture from the new data before trusting the posing tests.",
     "bin_sha256": "92437fba2129bc54231aafcaacb462e9f95627f18ffce801c76e8b4b047fe3d1",
+    "raw_sha256": "eb15d943be022632eb6a799d53c41b27d857ece4cc21f842d7a9c7b6bc93b6be",
     "bin_raw_bytes": 3450003,
     "manifest_sha256": "c2e7acdc6f6d8ffc687144ac90ab59c9b09bef917ccd639422e6f55ff1a1152a"
   },

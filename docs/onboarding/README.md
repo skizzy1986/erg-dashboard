@@ -88,7 +88,7 @@ The dashboard at `/` needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from
 ## 3. How the squat tool works
 
 ```
-squat-anatomy pipeline (Python, separate project — see NEW_MOVEMENT.md)
+pipeline/squat-anatomy (Python — see its README and NEW_MOVEMENT.md)
         │  writes
         ▼
 web/src/squat/assets/squat-manifest.json   ← array index + all model metadata (meta)
