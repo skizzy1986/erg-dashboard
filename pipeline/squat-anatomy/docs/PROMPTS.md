@@ -2,7 +2,7 @@
 
 ## Brief once per session
 
-> This repo builds a single-file 3D coaching model of a high-bar back squat (`dist/squat.html`). Read `CLAUDE.md`, `README.md` and `docs/ARCHITECTURE.md` first. Do not hand-edit the data blob. Edit `page/` and `pipeline/`, rebuild with `page/assemble.py` + `pipeline/v3/build3.py`, and verify with the headless harness at 1440×900, 1280×820 dark and 390×844 before you report back. Label anything modelled as modelled, and cite a source for every new target or reference range.
+> This repo builds a single-file 3D coaching model of a high-bar back squat (`dist/squat.html`). Read `CLAUDE.md`, `README.md` and `docs/ARCHITECTURE.md` first. Do not hand-edit the data blob. Edit `page/` and `pipeline/`, rebuild with `python -m squat build`, and verify with the headless harness at 1440×900, 1280×820 dark and 390×844 before you report back. Label anything modelled as modelled, and cite a source for every new target or reference range.
 
 ## What makes a good request here
 
@@ -21,7 +21,7 @@
 > I've attached `opencap_squats.zip` (OpenCap lab validation, squat trials only). Add a pipeline stage that segments each rep into phases, time-normalises onto the reference rep and stores mean ± SD bands in `META.ref_bands` for knee/hip/ankle angles, net moments and vasti/glute EMG. Draw them as shaded bands labelled "OpenCap lab set, bodyweight squats, n = <subjects>". Don't change the modelled curves.
 
 **Fix or refine anatomy**
-> The rotator cuff and biceps long head still come from the v2 pose with a corrective skin. Rebuild supraspinatus, infraspinatus, teres minor, subscapularis and the biceps heads from the BodyParts3D STLs using the deltoid method in `pipeline/v3/upper3.py` (geodesic origin to insertion blend, dual-quaternion skinning). For the biceps, blend scapula → humerus → radius in three segments. Show back and front shoulder close-ups before and after, and confirm the clearance printout is unchanged.
+> The rotator cuff and biceps long head still come from the v2 pose with a corrective skin. Rebuild supraspinatus, infraspinatus, teres minor, subscapularis and the biceps heads from the BodyParts3D STLs using the deltoid method in `squat/stages/upper3.py` (geodesic origin to insertion blend, dual-quaternion skinning). For the biceps, blend scapula → humerus → radius in three segments. Show back and front shoulder close-ups before and after, and confirm the clearance printout is unchanged.
 
 **Variant**
 > Add a low-bar preset: bar seated about 5 cm lower on the posterior deltoid and spine of the scapula, wider grip, trunk solved so the bar stays over midfoot. Report trunk lean, hip-to-knee moment ratio (target about 2.3, Wretenberg 1996) and shoulder ER. Keep the high-bar preset byte-identical.

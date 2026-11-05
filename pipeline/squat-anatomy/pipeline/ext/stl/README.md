@@ -1,7 +1,7 @@
 # BodyParts3D STLs (not committed)
 
 The pipeline reads 14 BodyParts3D STL files from this folder (about 15 MB). **Every
-build needs them,** including `build3.py`, because `kin3.py` loads some of them. They
+build needs them,** including `python -m squat build`, because the arm model (`squat/model/arm.py`) loads six of them. They
 aren't committed, so fetch them first:
 
 ```bash

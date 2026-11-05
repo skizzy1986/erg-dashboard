@@ -89,7 +89,7 @@ scripts/fetch_stl.sh
 ```
 
 ```bash
-python3 page/assemble.py && python3 pipeline/v3/build3.py page/template.html dist/squat.html
+python -m squat build && python -m squat verify dist/squat.html
 ```
 
 A new movement means new stages in this pipeline (its own poses, frames, curves and

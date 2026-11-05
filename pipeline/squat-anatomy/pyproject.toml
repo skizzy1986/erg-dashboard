@@ -1,0 +1,10 @@
+# pytest configuration only: there is no build backend, the package runs from this folder (python -m squat).
+# [tool.pytest] with list-valued addopts/markers is the native table of pytest >= 9.0.
+[tool.pytest]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-m", "not slow", "--strict-markers", "-ra"]
+markers = [
+    "slow: >60 s, deselected by default (python -m pytest -m slow)",
+    "stl: needs the BodyParts3D STLs (scripts/fetch_stl.sh)",
+]
