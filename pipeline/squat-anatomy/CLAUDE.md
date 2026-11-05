@@ -19,7 +19,7 @@ This repo builds one self-contained HTML page (`dist/squat.html`): a 3D, phase-r
 - Phases: 0 brace, 1 lowering (eccentric), 2 bottom (bar within 2 cm of its lowest point), 3 drive (concentric), 4 lockout. Activation tables are `act[0]` (lowering) and `act[1]` (drive), uint8 per depth.
 - Shoulder angles follow ISB (Wu et al. 2005), humerothoracic YXY: plane of elevation, elevation, axial rotation. **Do not use swing–twist "twist" as external rotation.** Twist equals plane + axial rotation (Codman), and that mistake nearly shipped once.
 - Joint angles in readouts: knee flexion, hip flexion is pelvis-to-femur (it changes by the trunk re-balance angle δ), ankle dorsiflexion, lumbar flexion from standing, trunk lean is the hip-centre-to-shoulder line from vertical.
-- Page UI: vanilla JS, three.js r128 from cdnjs (pinned), Barlow / Barlow Condensed from Google Fonts. Colours come from CSS tokens in `page/1-head.html` with light and dark values. Chart series use the four validated slots `--s1..--s4`, always in that order.
+- Page UI: vanilla JS, three.js r128 from cdnjs (pinned, with an SRI `integrity` hash in `page/2-markup.html`: if you change the version, update the hash from cdnjs), Barlow / Barlow Condensed from Google Fonts. Colours come from CSS tokens in `page/1-head.html` with light and dark values. Chart series use the four validated slots `--s1..--s4`, always in that order.
 - Artifact runtime limits: no `alert/confirm/prompt`, no file downloads, no external fetches except CDN scripts and fonts. Files are read client-side with FileReader only.
 
 ## Gotchas that cost time before
