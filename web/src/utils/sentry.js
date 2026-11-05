@@ -22,6 +22,8 @@ function tracePropagationTargets() {
   }
 }
 
+const PII_KEY_DENY = ['forwarded', '-ip', 'remote-', 'via', '-user'];
+
 export function initSentry() {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   if (!dsn) return false;
@@ -42,8 +44,25 @@ export function initSentry() {
     // Conservative sampling to stay well inside a free-tier quota; raise later
     // if performance tracing proves useful.
     tracesSampleRate: 0.1,
-    // This is a single-user coaching app, but keep PII off by default anyway.
-    sendDefaultPii: false,
+    // v11 removed sendDefaultPii and made collection permissive by default:
+    // left unset, it would ship cookies, user IP and every HTTP request and
+    // response body — here, Supabase payloads of training and health data.
+    // This block is the SDK migration guide's "preserve the v10 default", i.e.
+    // what `sendDefaultPii: false` used to mean.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: {
+        request: { deny: PII_KEY_DENY },
+        response: { deny: PII_KEY_DENY },
+      },
+      httpBodies: [],
+      urlQueryParams: { deny: PII_KEY_DENY },
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    },
   });
   return true;
 }
