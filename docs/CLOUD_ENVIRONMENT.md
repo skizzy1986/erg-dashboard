@@ -39,6 +39,12 @@ Running it again from the setup script installs twice and lets the two copies dr
 hook also prints a warning if `deno` is missing, so a broken setup script shows up at the
 start of the session rather than when a Deno test is first needed.
 
+> **This rationale is currently false, measured 2026-11-05.** That hook has never run in a
+> cloud session — settings-defined hooks are gated behind workspace trust, which no cloud
+> container grants. `web/node_modules` arrives some other way, and the `deno` warning has
+> never fired. See *Project permissions* below for the trust flag that fixes it, and for
+> what granting it does to session startup.
+
 ## Network
 
 Access level **Limited**, with the package-manager defaults, plus:
@@ -140,12 +146,52 @@ mostly matters in Accept-edits mode.
   `bash -c '…'`, `git -C . push` or `git -c … push`; those fall through to the mode and
   the other rules. Branch protection on `main` still blocks a direct push.
 
-**Unconfirmed: whether project allow rules apply in cloud sessions.** One-line check: in a
-cloud session in Accept-edits mode, run `npm run check:zones` from `web/`. No prompt means
-they applied. Record the result here when known. The repo's hooks do run in a plain cloud
-session (the SessionStart install and the Stop hook fire). The docs also say that in a
-cloud thread started inside a claude.ai **Project**, the repo's `.claude/settings.json`
-permission rules and hooks do not apply, so this whole file is inert there.
+**Confirmed 2026-11-05: none of this file's rules apply in a cloud session, and neither do
+the hooks, until the workspace is trusted.** The previous version of this section called
+the permission question "unconfirmed" and asserted that "the repo's hooks do run in a plain
+cloud session (the SessionStart install and the Stop hook fire)". Both are wrong. In a
+cloud container `claude doctor` reports:
+
+```
+Ignoring 36 permissions.allow entries from .claude/settings.json: this workspace has not
+been trusted. Run Claude Code interactively here once and accept the trust dialog, or set
+projects["/home/user/erg-dashboard"].hasTrustDialogAccepted: true in /root/.claude.json.
+```
+
+`/root/.claude.json` ships with `projects: {}` and the container is rebuilt per session, so
+the allowlist is discarded every time. The hooks go with it: a `Write` to a `web/src/*.js`
+file carrying a lint error that `eslint --max-warnings=0` does flag produced **no**
+`PostToolUse` output, and `session-start.sh` never ran. There is no trust dialog to accept
+in a cloud session.
+
+**The fix belongs in the setup script**, which runs before the session and outside the
+gate. A `SessionStart` hook cannot do it — hooks are themselves gated by trust, so the hook
+that would grant trust is the one trust is blocking:
+
+```bash
+node -e 'const f="/root/.claude.json",fs=require("fs");
+const d=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,"utf8").replace(/^﻿/,"")):{};
+(d.projects??={})["/home/user/erg-dashboard"]??={};
+d.projects["/home/user/erg-dashboard"].hasTrustDialogAccepted=true;
+fs.writeFileSync(f,JSON.stringify(d,null,2));'
+```
+
+Verify in a new session with `claude doctor`: the "Ignoring 36 …" line disappears when it
+has taken. Setting the flag mid-session does clear that warning but does **not** activate
+the hooks — trust is read once at startup (measured 2026-11-05: the same `Write` probe
+still produced no hook output after the flag was set).
+
+**Enabling trust changes session startup, so weigh it.** `session-start.sh` runs
+`npm ci --prefix web`, which has never actually executed here — `web/node_modules` is
+present from the platform's own dependency install or the image, not from the hook (the
+setup-script log contains only the Deno install). Granting trust therefore adds a full
+`npm ci` to every session start, on top of whatever already provides the modules. The
+*Why no `npm ci`* note under **Setup script** rests on that hook firing and is wrong until
+trust is set.
+
+The docs also say that in a cloud thread started inside a claude.ai **Project**, the repo's
+`.claude/settings.json` permission rules and hooks do not apply, so this whole file is inert
+there regardless.
 
 ## The Split IQ board from a cloud session
 
@@ -223,7 +269,8 @@ branches named `release-assets/*`.
 ## Rebuild checklist
 
 1. Create the environment with the repository `skizzy1986/erg-dashboard`.
-2. Paste the setup script.
+2. Paste the setup script — **including the trust-flag block** under *Project permissions*,
+   without which none of `.claude/settings.json` applies.
 3. Set network access to Limited and add the hosts above.
 4. Leave environment variables empty, or add only the two `VITE_` values.
 5. Enable the connectors above and disable unrelated ones.
@@ -233,4 +280,5 @@ branches named `release-assets/*`.
    - `deno --version` prints 2.x
    - `web/node_modules` exists
    - the three Deno tests pass
-   - the one-line check under *Project permissions*
+   - `claude doctor` does **not** print `Ignoring 36 permissions.allow entries` — if it
+     does, the trust flag did not take and the allowlist and all four hooks are inert

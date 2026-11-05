@@ -1,0 +1,94 @@
+name: Hook smoke test
+
+# `.claude/hooks/test-hooks.sh` is the regression test for the Claude Code hooks.
+# It was written because the PostToolUse and Stop hooks were both inert behind
+# exit 0 for months and nobody noticed (#295, d2d0bd4) — and then nothing ever
+# ran it, so it rotted the same way: by 2026-11-05 two of its nine cases were
+# failing in any checkout at /home/user/erg-dashboard, which is every cloud
+# session. A test nothing executes is a comment.
+#
+# Separate workflow, not another step in ci-web.yml's lint job, for the reason
+# context7-rule.yml gives: ci-web.yml's `changes` filter is scoped to 'web/**'
+# (ci-web.yml:33-36), so a PR touching only .claude/** skips that whole job and
+# the guard would never fire on the files it exists to protect.
+#
+# Path filtering is at the JOB level, never workflow-level `on.paths`, per
+# ci-web.yml:3-7: a workflow that never triggers reports NOTHING, which as a
+# required check strands the PR on "Expected — waiting for status", whereas a
+# job skipped by an `if:` reports "skipped", which branch protection counts as
+# passing.
+#
+# KNOWN GAP: this runs the hook scripts directly, so it verifies their behaviour
+# and not the wiring in .claude/settings.json. A settings.json change that
+# detaches a hook, renames a matcher or breaks its JSON passes unnoticed, which
+# is why that file is deliberately NOT in the filter below — running this job
+# against a settings-only change would report green having checked nothing about
+# it, the exact failure mode this workflow exists to end.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hook-smoke-test-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect hook changes
+    runs-on: ubuntu-latest
+    outputs:
+      hooks: ${{ steps.filter.outputs.hooks }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            hooks:
+              - '.claude/hooks/**'
+              - '.github/workflows/hook-smoke-test.yml'
+
+  check:
+    name: Hooks pass their smoke test
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.hooks == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # Two of the nine cases assert a real eslint result, and without
+      # web/node_modules/.bin/eslint test-hooks.sh SKIPS them and still reports
+      # "7 passed, 0 failed" with exit 0 (test-hooks.sh:88-101). Those two are
+      # the ones that catch a regression to string-munging the hook payload, so
+      # a run without them is the green-but-verifying-nothing result this
+      # workflow is meant to prevent. lint-edited-file.sh also shells out to
+      # node to parse that payload, which setup-node provides.
+      - name: Install web deps
+        run: npm ci
+        working-directory: web
+
+      - name: Run the hook smoke test
+        shell: bash
+        run: |
+          set -o pipefail
+          bash .claude/hooks/test-hooks.sh 2>&1 | tee "$RUNNER_TEMP/hook-smoke.log"
+
+      # Belt and braces for the paragraph above: if the install silently stops
+      # providing eslint, the script goes quietly back to 7/0 and passes. Assert
+      # on the skip line itself so that degradation is a failure, not a green.
+      - name: Fail if the eslint cases were skipped
+        shell: bash
+        run: |
+          if grep -qF 'skip  lint: eslint cases' "$RUNNER_TEMP/hook-smoke.log"; then
+            echo "::error file=.github/workflows/hook-smoke-test.yml::test-hooks.sh skipped its two eslint cases, so this job passed without exercising them. web/node_modules/.bin/eslint was missing after npm ci."
+            exit 1
+          fi
+          echo "All nine cases ran."
