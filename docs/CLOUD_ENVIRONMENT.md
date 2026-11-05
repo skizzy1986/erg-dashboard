@@ -192,6 +192,34 @@ credentials` in `add-to-project`. It is the same secret `add-to-project.yml` use
 `GITHUB_TOKEN` cannot reach a user-owned project. Without the secret the workflow fails with
 a clear error.
 
+## Releases from a cloud session
+
+The session's proxy refuses the release API (`gh release create` → 403), so a cloud
+session can't create a release directly. Adding a token doesn't help, because the refusal
+comes from the proxy, not from GitHub.
+
+**Workaround: `.github/workflows/release.yml`.** Dispatch it with `actions_run_trigger`
+(workflow `release.yml`, ref `main`). It runs with `GITHUB_TOKEN` and the `contents: write`
+permission, so no secret is needed.
+
+| Inputs | Effect |
+|---|---|
+| `tag` (+ `title`, `notes`, `target`, default `main`) | Creates the release at `target`. If the tag already has a release, it replaces that release's title and notes. |
+| `assets=true` | Attaches every file in the `release-assets/` folder of branch `release-assets/<tag>`, then deletes that branch. `release-assets/NOTES.md`, if present, becomes the notes. |
+
+Steps to attach files:
+1. Commit them to a branch `release-assets/<tag>` that has a `release-assets/` folder at
+   its root. Branch from `main`, so the rest of the tree is ordinary.
+2. Push the branch.
+3. Dispatch with `assets=true`.
+
+Files go up with `--clobber`, so a re-run replaces a file of the same name. The job summary
+lists each asset's size and the sha256 of the file it uploaded. Git caps each file at
+100 MB.
+
+The workflow never deletes a release or a tag; Scott does that. It only reads or deletes
+branches named `release-assets/*`.
+
 ## Rebuild checklist
 
 1. Create the environment with the repository `skizzy1986/erg-dashboard`.

@@ -1,0 +1,157 @@
+name: Release
+
+# Creates or updates a GitHub Release on behalf of a cloud Claude Code session.
+#
+# Cloud sessions cannot create releases: the session's GitHub proxy refuses the
+# release API (403), whatever token is configured. They can dispatch a workflow
+# through the repo-scoped API, so this job does it with GITHUB_TOKEN, limited
+# to contents: write. Same pattern as project-board.yml; see
+# docs/CLOUD_ENVIRONMENT.md.
+#
+# Files to attach travel on a short-lived branch named release-assets/<tag>:
+# every file under its release-assets/ folder is uploaded, and release-assets/
+# NOTES.md (if present) becomes the release notes. The branch is deleted after
+# a successful upload, so the files never reach main. Only branches with that
+# prefix are ever read or deleted.
+#
+# Re-running for an existing tag updates it: title and notes are replaced when
+# given, and files with the same name are overwritten (--clobber). This job
+# never deletes a release or a tag; that stays with a human.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: tag to create or update, e.g. squat-anatomy-archive-2026-11-04
+        type: string
+        required: true
+      title:
+        description: release title (new release; or replaces the title of an existing one)
+        type: string
+        required: false
+      target:
+        description: commit or branch to tag when the tag does not exist yet
+        type: string
+        required: false
+        default: main
+      notes:
+        description: release notes, Markdown (ignored when the assets branch has NOTES.md)
+        type: string
+        required: false
+      assets:
+        description: attach files from the release-assets/<tag> branch, then delete it
+        type: boolean
+        required: false
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+      TAG: ${{ inputs.tag }}
+      TITLE: ${{ inputs.title }}
+      TARGET: ${{ inputs.target }}
+      NOTES: ${{ inputs.notes }}
+      WITH_ASSETS: ${{ inputs.assets }}
+    steps:
+      - name: Check inputs
+        run: |
+          set -euo pipefail
+          if ! [[ "$TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]]; then
+            echo "::error::tag must be letters, digits, dot, dash or underscore: '$TAG'"
+            exit 1
+          fi
+          if ! [[ "$TARGET" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]]; then
+            echo "::error::target is not a plain branch or commit: '$TARGET'"
+            exit 1
+          fi
+          echo "ASSETS_BRANCH=release-assets/$TAG" >> "$GITHUB_ENV"
+
+      - name: Fetch the assets branch
+        if: inputs.assets
+        uses: actions/checkout@v7
+        with:
+          ref: release-assets/${{ inputs.tag }}
+          path: payload
+          persist-credentials: false
+
+      - name: Collect files and notes
+        run: |
+          set -euo pipefail
+          : > files.txt
+          if [ "$WITH_ASSETS" = "true" ]; then
+            dir=payload/release-assets
+            if [ ! -d "$dir" ]; then
+              echo "::error::$ASSETS_BRANCH has no release-assets/ folder"
+              exit 1
+            fi
+            find "$dir" -maxdepth 1 -type f ! -name NOTES.md -print | sort > files.txt
+            if [ -f "$dir/NOTES.md" ]; then cp "$dir/NOTES.md" notes.md; fi
+            if [ ! -s files.txt ] && [ ! -f notes.md ]; then
+              echo "::error::$ASSETS_BRANCH holds nothing to publish"
+              exit 1
+            fi
+          fi
+          if [ ! -f notes.md ] && [ -n "$NOTES" ]; then printf '%s\n' "$NOTES" > notes.md; fi
+          echo "Files to attach:"; cat files.txt
+
+      - name: Create or update the release
+        run: |
+          set -euo pipefail
+          mapfile -t files < files.txt
+          if gh release view "$TAG" --repo "$REPO" > /dev/null 2>&1; then
+            echo "Updating existing release $TAG"
+            args=()
+            [ -n "$TITLE" ] && args+=(--title "$TITLE")
+            [ -f notes.md ] && args+=(--notes-file notes.md)
+            if [ ${#args[@]} -gt 0 ]; then gh release edit "$TAG" --repo "$REPO" "${args[@]}"; fi
+            if [ ${#files[@]} -gt 0 ]; then gh release upload "$TAG" --repo "$REPO" --clobber "${files[@]}"; fi
+          else
+            echo "Creating release $TAG at $TARGET"
+            [ -f notes.md ] || : > notes.md
+            gh release create "$TAG" --repo "$REPO" --target "$TARGET" \
+              --title "${TITLE:-$TAG}" --notes-file notes.md "${files[@]}"
+          fi
+
+      - name: Verify and summarise
+        run: |
+          set -euo pipefail
+          {
+            echo "## Release \`$TAG\`"
+            gh release view "$TAG" --repo "$REPO" --json url --jq '"<" + .url + ">"'
+            echo
+            echo "| Asset | Bytes | sha256 (uploaded file) |"
+            echo "|---|---:|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          published=$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[] | "\(.name)\t\(.size)"')
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            name=$(basename "$f")
+            size=$(stat -c %s "$f")
+            got=$(printf '%s\n' "$published" | awk -F'\t' -v n="$name" '$1==n {print $2}')
+            if [ "$got" != "$size" ]; then
+              echo "::error::$name: release shows ${got:-nothing}, expected $size bytes"
+              exit 1
+            fi
+            echo "| \`$name\` | $size | \`$(sha256sum "$f" | cut -d' ' -f1)\` |" >> "$GITHUB_STEP_SUMMARY"
+          done < files.txt
+          cat "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete the assets branch
+        if: inputs.assets
+        run: |
+          set -euo pipefail
+          case "$ASSETS_BRANCH" in release-assets/*) ;; *) exit 1 ;; esac
+          gh api -X DELETE "repos/$REPO/git/refs/heads/$ASSETS_BRANCH"
+          echo "Deleted $ASSETS_BRANCH"
