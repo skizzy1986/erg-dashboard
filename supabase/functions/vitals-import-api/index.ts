@@ -1,7 +1,7 @@
 // vitals-import-api — daily ingestion of vitals directly from the Google Health API
 // (health.googleapis.com/v4) into public.vitals. Replaces the manual CSV path
 // (vitals-import); see WO-005. Mints a short-lived access token from a stored refresh
-// token, lists four metrics (HRV, RHR, sleep, weight) for yesterday (Perth time) via
+// token, lists four metrics (HRV, RHR, sleep, weight) for yesterday (athlete-local, UTC+8) via
 // dataPoints.list, maps them via mapper.ts, and upserts via public.upsert_vital
 // (coalesce: never null-wipes an existing value).
 //
@@ -75,12 +75,12 @@ Deno.serve(async (req: Request) => {
     return json({ error: "token exchange failed" }, 502);
   }
 
-  // 4. yesterday in Perth time (UTC+8), and the following day, for half-open
+  // 4. yesterday in athlete-local time (UTC+8), and the following day, for half-open
   //    [date, nextDate) filters. The daily-* types key on a user-timezone .date,
-  //    so the Perth-local calendar day is the correct window.
-  const perthYesterday = new Date(Date.now() + 8 * 3600 * 1000 - 24 * 3600 * 1000);
-  const date = ymd(perthYesterday);
-  const nextDate = ymd(new Date(Date.UTC(perthYesterday.getUTCFullYear(), perthYesterday.getUTCMonth(), perthYesterday.getUTCDate()) + 86400000));
+  //    so the athlete-local calendar day is the correct window.
+  const localYesterday = new Date(Date.now() + 8 * 3600 * 1000 - 24 * 3600 * 1000);
+  const date = ymd(localYesterday);
+  const nextDate = ymd(new Date(Date.UTC(localYesterday.getUTCFullYear(), localYesterday.getUTCMonth(), localYesterday.getUTCDate()) + 86400000));
 
   // 5. per-type snake_case filters (filter is snake_case; response is camelCase).
   //    weight keys on the civil sample date; sleep on the wake date (civil_end_time)

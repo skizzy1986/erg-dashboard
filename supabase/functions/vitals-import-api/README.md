@@ -18,7 +18,7 @@ On each run the function:
 
 1. Guards on the `x-cron-secret` header (vs `CRON_SECRET`).
 2. Exchanges `GOOGLE_HEALTH_REFRESH_TOKEN` for a short-lived access token (no browser).
-3. Computes yesterday's date in Perth time (UTC+8).
+3. Computes yesterday's date in athlete-local time (UTC+8).
 4. Lists four metrics in parallel via `dataPoints.list` (GET, snake_case `filter`) —
    HRV, RHR, sleep, weight. A failure on any one metric maps that field to `null`;
    the others still upsert. (`dailyRollUp` is unsupported for the daily-* and sleep
@@ -86,7 +86,7 @@ One-time local grant (Bridge/Scott, ~20 min). Full Google Cloud setup is in
 
 ## Cron registration
 
-03:00 UTC ~= 11:00 Perth, same window as `vitals-import`. Replace the `<CRON_SECRET>`
+03:00 UTC ~= 11:00 athlete-local (UTC+8), same window as `vitals-import`. Replace the `<CRON_SECRET>`
 placeholder with the real value before registering; do not commit the secret.
 
 ```sql
@@ -119,7 +119,7 @@ response is **camelCase**.
 | Weight | `dataPoints[].weight.weightGrams` | **grams** → ÷1000 for kg |
 | Sleep | `dataPoints[].sleep.summary.minutesAsleep` | minutes → ÷60 for hours, summed across sessions |
 
-Filters used (yesterday Perth, half-open `[date, nextDate)`): daily-* types key on
+Filters used (yesterday athlete-local (UTC+8), half-open `[date, nextDate)`): daily-* types key on
 `{type}.date`; weight on `weight.sample_time.civil_time`; sleep on
 `sleep.interval.civil_end_time` (the wake date). The extractors fail safe — a missing
 shape yields `null`, not an exception, so a metric with no data for the day surfaces as

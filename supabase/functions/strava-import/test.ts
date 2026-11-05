@@ -332,7 +332,7 @@ console.log("\nTC-09 timezone-free log date");
 check("TC-09 21:02 local -> 8/22/26", toLogDateFromLocal("2026-08-22T21:02:23") === "8/22/26",
   toLogDateFromLocal("2026-08-22T21:02:23"));
 // These are the cases a `new Date(local)` implementation gets wrong: Deno runs
-// in UTC, so an evening Perth session (UTC+8) would roll back a day and an
+// in UTC, so an evening athlete-local session (UTC+8) would roll back a day and an
 // early-morning one would not, misfiling sessions into the wrong training week.
 check("TC-09 23:59 local stays on its own day", toLogDateFromLocal("2026-08-22T23:59:59") === "8/22/26");
 check("TC-09 00:00 local stays on its own day", toLogDateFromLocal("2026-08-23T00:00:00") === "8/23/26");

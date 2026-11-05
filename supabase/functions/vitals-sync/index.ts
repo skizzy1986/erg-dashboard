@@ -63,15 +63,15 @@ Deno.serve(async (req: Request) => {
 
   const supa = createClient(supaUrl!, serviceKey!, { auth: { persistSession: false } });
 
-  // yesterday in Perth time (UTC+8) — same window as the scheduled cron
-  const perthYesterday = new Date(Date.now() + 8 * 3600 * 1000 - 24 * 3600 * 1000);
-  const date = ymd(perthYesterday);
+  // yesterday in athlete-local time (UTC+8) — same window as the scheduled cron
+  const localYesterday = new Date(Date.now() + 8 * 3600 * 1000 - 24 * 3600 * 1000);
+  const date = ymd(localYesterday);
   const nextDate = ymd(
     new Date(
       Date.UTC(
-        perthYesterday.getUTCFullYear(),
-        perthYesterday.getUTCMonth(),
-        perthYesterday.getUTCDate(),
+        localYesterday.getUTCFullYear(),
+        localYesterday.getUTCMonth(),
+        localYesterday.getUTCDate(),
       ) + 86400000,
     ),
   );

@@ -126,7 +126,7 @@ export function localDateISO(startDateLocal: string): string {
  * NEVER `new Date(startDateLocal)`. Deno runs in UTC. Constructing a Date from
  * a timezone-less local string makes the runtime guess a zone, and then reading
  * calendar fields off it shifts the day for every session Scott rows after
- * 08:00 Perth time — which is most of them. That is a silent off-by-one that
+ * 08:00 athlete-local time (UTC+8) — which is most of them. That is a silent off-by-one that
  * would misfile sessions into the wrong training week and quietly corrupt every
  * CTL/ATL/TSB figure downstream. String slicing has no zone to get wrong.
  */

@@ -99,10 +99,10 @@ The floors keep the 240 s / 1080 m `CP Test` while dropping the 4 s / 16 s /
 Strava's **SummaryActivity** — what `GET /athlete/activities` returns — **does
 not reliably carry power or heart rate.** `average_watts` is documented
 rides-only and `has_device_watts` is a `DetailedActivity` field. Verified against
-Scott's account: the list payload for rowing activity `19859099686` carried
-`distance`, `moving_time`, `average_speed`, `total_calories` and `average_cadence`
-and **no watts and no heart rate**, while `GET /activities/19859099686` returned
-`average_watts: 135.706`, `average_heartrate: 124.475`, `has_device_watts: true`.
+a live rowing activity: its list payload carried `distance`, `moving_time`,
+`average_speed`, `total_calories` and `average_cadence` and **no watts and no
+heart rate**, while `GET /activities/{id}` for the same activity returned
+`average_watts`, `average_heartrate` and `has_device_watts: true`.
 
 An importer that only fetched detail for a summary missing `distance` /
 `moving_time` / `start_date_local` would therefore write `avg_watts` and `avg_hr`

@@ -5,8 +5,8 @@
 -- exactly what marks a row as "not yet linked to a Strava activity" and so makes
 -- it a candidate for the adoption pass.
 --
--- bigint, not integer, and this is not a style preference. A live activity id in
--- Scott's account is 19859099686 — eleven digits, comfortably past 2^31-1
+-- bigint, not integer, and this is not a style preference. Live Strava activity
+-- ids are already eleven digits (e.g. 12345678901), comfortably past 2^31-1
 -- (2147483647). An integer column would reject every real import with a numeric
 -- overflow.
 ALTER TABLE public.sessions
