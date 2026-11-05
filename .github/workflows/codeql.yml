@@ -26,6 +26,7 @@ jobs:
         with:
           languages: javascript-typescript
           queries: security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
 
       # No build step: JavaScript/TypeScript is analysed directly (no autobuild).
       - name: Perform CodeQL analysis

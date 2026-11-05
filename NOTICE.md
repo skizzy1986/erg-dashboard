@@ -18,6 +18,12 @@ The derived data in these two files is shared under the same licence; see
 `web/src/squat/assets/LICENSE.md`. The squat tool credits BodyParts3D on every
 screen that can show the anatomy.
 
+The same applies to the pipeline that generates them, `pipeline/squat-anatomy/`.
+Its geometry-bearing stage outputs (`pipeline/v3/base.html`, `*.npy`, `*.npz`, `*.pkl`)
+are BodyParts3D-derived and shared under CC BY-SA 2.1 JP. The source BodyParts3D STLs
+aren't committed; `scripts/fetch_stl.sh` fetches them from the public BodyParts3D
+repository. The pipeline's own code is covered by the root `LICENSE`.
+
 ## OpenSim musculoskeletal models
 
 The squat model's leg-muscle paths follow these published models. No model

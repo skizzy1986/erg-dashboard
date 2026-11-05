@@ -56,21 +56,36 @@ A good first design exercise is a `movement` config (the shape is sketched in
 `docs/squat/RESEARCH_BRIEF.md` §6: skeleton, reference curves, phases, targets,
 faults, cues, sources) and a list of exactly which lines above it would replace.
 
-## The missing piece: the data pipeline
+## The data pipeline
 
-The two data files are produced by a **separate Python project, `squat-anatomy`**
-(BodyParts3D meshes, OpenSim-derived muscle paths, kinetics, activation). It is
-**not in this repository yet**. [`docs/squat/PROVENANCE.md`](../squat/PROVENANCE.md)
-records the release (v3) and how the files were extracted.
+The two data files are produced by the **`squat-anatomy`** Python project
+(BodyParts3D meshes, OpenSim-derived muscle paths, kinetics, activation). It lives
+at [`pipeline/squat-anatomy/`](../../pipeline/squat-anatomy/). Start with its
+`README.md`, `CLAUDE.md` (working rules) and `docs/ARCHITECTURE.md`, then
+[`ARCHIVE.md`](../../pipeline/squat-anatomy/ARCHIVE.md) for what is committed and
+what isn't. To rebuild the squat page and data (about a minute, plus the one-off STL
+fetch):
 
-Scott intends to make it available here. Until then, you can still:
+```bash
+cd pipeline/squat-anatomy && pip install -r requirements.txt
+```
 
-- read the format and maths (ARCHITECTURE.md, SKINNING.md) and the runtime code;
-- prototype UI, interaction and coaching ideas against the squat data;
-- prototype a new movement's **config and phases** without new geometry.
+```bash
+scripts/fetch_stl.sh
+```
 
-Generating **new geometry** for a new movement needs that pipeline. When it lands, this
-section will point to it.
+```bash
+python3 page/assemble.py && python3 pipeline/v3/build3.py page/template.html dist/squat.html
+```
+
+A new movement means new stages in this pipeline (its own poses, frames, curves and
+activation), producing a new `<movement>.html` that the extractor turns into the two
+data files. Two cautions:
+- **Some squat data has no generator.** It comes from the v1 page, whose code was
+  lost (see ARCHIVE.md). A new movement would need its own route to that data: frames,
+  curve definitions, static foot matrices.
+- **Stages run in Python on your computer.** Claude chat can read and explain them; to
+  run them you need Python locally or Claude Code.
 
 ## Licensing to keep in mind for new movements
 

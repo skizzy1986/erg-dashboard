@@ -1,0 +1,10 @@
+name: erg-dashboard CodeQL config
+
+# pipeline/ holds the vendored squat-anatomy project (#389). It's a Python build
+# plus the source of a standalone single-file page, and is never deployed: /squat
+# is served from web/, which stays fully scanned. The page's .js files are HTML
+# fragments that page/assemble.py concatenates (they open with <script>), so
+# parsing them as JS only produces syntax-error noise. pipeline/v3/base.html is an
+# archived input whose script code isn't built into any output.
+paths-ignore:
+  - pipeline/**

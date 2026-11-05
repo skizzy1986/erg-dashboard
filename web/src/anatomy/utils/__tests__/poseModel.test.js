@@ -46,10 +46,12 @@ describe('posing fixture data version', () => {
     const message =
       'Anatomy data version changed — regenerate the posing fixture ' +
       '(docs/squat/SKINNING.md §11) before trusting these tests.';
-    expect(DATA_ASSET.bin.sha256, message).toBe(v.bin_sha256);
+    // Pinned on the DECOMPRESSED data, not the gzip bytes: rebuilding with
+    // pipeline/squat-anatomy on a different zlib yields the same 3,450,003
+    // bytes in a different gzip stream, which is not a data change.
+    expect(sha(raw), message).toBe(v.raw_sha256);
     expect(DATA_ASSET.bin.rawBytes, message).toBe(v.bin_raw_bytes);
     expect(DATA_ASSET.manifest.sha256, message).toBe(v.manifest_sha256);
-    expect(sha(binBytes), message).toBe(v.bin_sha256);
     // The repo manifest is a re-serialisation of the page's (99,904 vs
     // 100,785 bytes, same values — SKINNING.md §9.7), so it is pinned by its
     // own hash, recorded in the fixture alongside the page's.
