@@ -142,7 +142,7 @@ Adopt GitHub-native project management and retire the work-order system.
 | Element | Decision |
 |---|---|
 | **Backlog** | GitHub **Issues**, one per unit of work, labelled `P0/P1/P2` + division/area, grouped by **milestone** |
-| **Status** | GitHub **Projects** board: Todo → In-progress → In-review → Done |
+| **Status** | GitHub **Projects** board: Backlog → Ready → In progress → In review → Done |
 | **Unit of work** | A branch per issue → **PR** → the three CI gates → squash-merge to `main`; PR body uses `Closes #N` |
 | **Work orders** | **Deprecated.** `done` records kept as history; the one open item (Google Health API) migrated to an issue; draft/duplicate files removed |
 | **Factory pipeline** | Unchanged — it already ends in PR→CI→merge; `WORKFLOW.md` shows how the two compose |

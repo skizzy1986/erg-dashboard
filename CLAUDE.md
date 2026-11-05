@@ -92,7 +92,7 @@ coach/
   skills/       Pipeline definitions (/orchestrate, /feature, /refactor, /research),
                 /daily task brief, erg-context.md spawn preamble, and domain
                 knowledge docs
-  settings.json Hooks configuration (automation triggers)
+  settings.json Permissions allowlist (allow / ask) + hooks configuration (automation triggers)
 ```
 
 ## Code Style
@@ -604,6 +604,13 @@ authorises consequential/destructive/schema changes; review structure before mat
 writes; read back every write. Honour the data-layer gotchas under *Supabase Schema*
 on every insert.
 
+## Cloud environment
+
+Cloud sessions (Claude Code on the web) run in a claude.ai environment configured outside
+the repo: setup script, network allowlist, env vars, connectors, permission mode. How to
+rebuild it from scratch, and why each setting is what it is, lives in
+**[`docs/CLOUD_ENVIRONMENT.md`](docs/CLOUD_ENVIRONMENT.md)**.
+
 ## Change Procedure (PR-centric)
 
 > The standing workflow is defined in **[`WORKFLOW.md`](WORKFLOW.md)**: every
@@ -643,7 +650,12 @@ without needing to prompt Coach.
 
 ### Concurrent sessions: one worktree each
 
-**Every Claude Code session works in its own git worktree.** Call `EnterWorktree`
+**This applies to local sessions that share one directory on Scott's machine.** A
+cloud session (Claude Code on the web) runs in its own VM with its own clone, so it
+already has the isolation a worktree provides and does not call `EnterWorktree`;
+it works on the branch it was assigned. See [`docs/CLOUD_ENVIRONMENT.md`](docs/CLOUD_ENVIRONMENT.md).
+
+**Every local Claude Code session works in its own git worktree.** Call `EnterWorktree`
 before the first edit — not as a rescue once a conflict appears.
 
 Sessions launched in the same directory share one working tree and one `HEAD`.
@@ -675,7 +687,7 @@ list shows which other sessions are running in this directory.
 
 - Never push directly to main — always use feature branches; branch protection enforces this
 - Branch from a freshly-fetched `origin/main`; keep branches short-lived and rebase (not merge) to stay current — `--force-with-lease` only, never `--force`
-- Work in your own worktree (`EnterWorktree`) — never share a working tree with another running session
+- Local sessions: work in your own worktree (`EnterWorktree`) — never share a working tree with another running session. Cloud sessions already have their own VM and clone; skip `EnterWorktree` and stay on the assigned branch
 - Never hardcode credentials — use `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 - Never delete Supabase rows without confirming with the user first
 - Always run `npm run build` before marking a feature complete
