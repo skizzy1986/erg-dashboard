@@ -14,12 +14,11 @@ import { FONT } from './constants/type.js';
 
 // Every tab is lazy. Only one is on screen at a time, and four of them are
 // the heaviest files in the repo (ProgramView ~1,958 lines, StrengthLogger
-// ~1,682, OverviewView ~1,423, ErgView ~1,271), so shipping all fourteen to
+// ~1,682, OverviewView ~1,423, ErgView ~1,271), so shipping every tab to
 // paint one of them was most of the entry chunk. React.lazy caches the
 // resolved module, so only a tab's FIRST visit suspends.
 const StrengthLogger = lazy(() => import('./StrengthLogger.jsx'));
 const ErgLiveView = lazy(() => import('./views/ErgLiveView.jsx'));
-const CoachView = lazy(() => import('./views/CoachView.jsx'));
 const ErgView = lazy(() => import('./views/ErgView.jsx'));
 const JournalView = lazy(() => import('./views/JournalView.jsx'));
 const RecoveryView = lazy(() => import('./views/RecoveryView.jsx'));
@@ -360,7 +359,6 @@ export default function App() {
             ['recovery', 'Recovery'],
             ['log', 'Log'],
             ['journal', 'Journal'],
-            ['coach', 'Coach'],
             ['settings', 'Settings'],
           ].map(([v, label]) => (
             <button
@@ -487,8 +485,6 @@ export default function App() {
 
             {/* ── JOURNAL VIEW (longitudinal spine) ── */}
             {view === 'journal' && <JournalView />}
-            {/* ── COACH VIEW (Claude fitness coach chat) ── */}
-            {view === 'coach' && <CoachView />}
 
             {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
             {view === 'settings' && (

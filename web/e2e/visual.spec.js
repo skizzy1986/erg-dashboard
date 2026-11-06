@@ -12,8 +12,8 @@
 //     below), so S6 cannot lean on these baselines for chart layout. The mask
 //     tracks the container's bounding box, so container geometry IS still
 //     covered — what is lost is everything drawn inside it.
-//   - Desktop plan/live/erg/strength/logger/mobility/recovery/log/coach, mobile
-//     erg/coach, StrengthLogger entirely, and every hover, focus and expanded
+//   - Desktop plan/live/erg/strength/logger/mobility/recovery/log, mobile
+//     erg, StrengthLogger entirely, and every hover, focus and expanded
 //     state.
 //
 // WHY THE CLOCK IS PINNED: OverviewView, CalendarView, MobileAnalytics and
@@ -172,7 +172,7 @@ test.describe('mobile shell', () => {
   // entirely different component tree, which is why these shots are not
   // optional. BottomTabBar buttons hold an icon span and a label span, so the
   // accessible name is the emoji plus the label; substring matching is enough
-  // and none of the five labels is a substring of another.
+  // and none of the four labels is a substring of another.
   const tab = (page, label) => page.getByRole('button', { name: label });
 
   test('today', async ({ page, context }) => {

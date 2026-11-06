@@ -53,8 +53,8 @@ export function computeReadiness(latest, baselines = {}, tsb = null) {
 
   // Without an RHR there is nothing to score. Previously a missing row scored 0
   // FATIGUED and an all-null row scored 100 READY — a fabricated verdict in
-  // either direction, and the 0 defeated CoachView's `!= null` guard so it
-  // reached the Coach prompt as fact. Absent data is reported as absent.
+  // either direction, and a 0 defeats every consumer's `!= null` guard and
+  // renders as fact. Absent data is reported as absent.
   if (!latest || typeof latest.rhr !== 'number') {
     return {
       score: null,

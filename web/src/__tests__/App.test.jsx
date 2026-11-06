@@ -107,9 +107,6 @@ vi.mock('../StrengthLogger.jsx', () => ({
 vi.mock('../views/ErgLiveView.jsx', () => ({
   default: () => <div>ErgLiveView-stub</div>,
 }));
-vi.mock('../views/CoachView.jsx', () => ({
-  default: () => <div>CoachView-stub</div>,
-}));
 vi.mock('../views/SettingsView.jsx', () => ({
   default: () => <div>SettingsView-stub</div>,
 }));
@@ -228,7 +225,6 @@ const NAV = [
   ['RECOVERY', 'RecoveryView-stub'],
   ['LOG', 'LogView-stub'],
   ['JOURNAL', 'JournalView-stub'],
-  ['COACH', 'CoachView-stub'],
   ['SETTINGS', 'SettingsView-stub'],
 ];
 
@@ -241,9 +237,16 @@ describe('App', () => {
 
     expect(screen.getByText('SPLITIQ')).toBeInTheDocument();
 
+    // Thirteen tabs: the Coach tab was retired in #414.
+    expect(NAV).toHaveLength(13);
+    const navRow = screen.getByRole('button', {
+      name: 'OVERVIEW',
+    }).parentElement;
+    expect(navRow.querySelectorAll('button')).toHaveLength(13);
     for (const [label] of NAV) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('button', { name: 'COACH' })).toBeNull();
 
     // Every tab is lazy (#331), so its content arrives when the chunk
     // resolves rather than in the click’s own tick — findBy, not getBy.

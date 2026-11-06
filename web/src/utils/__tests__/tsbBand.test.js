@@ -36,14 +36,15 @@ describe('tsbBand', () => {
     }
   });
 
-  it('reproduces the Coach signal mapping exactly', () => {
-    // Preserved, not corrected: useCoach banded on +10 / -10 alone, so
-    // `fatigued` and `deep` both report RED. Changing what the Coach is told
-    // is a training decision, not a refactor.
-    expect(tsbBand(11).signal).toBe('GREEN');
-    expect(tsbBand(0).signal).toBe('AMBER');
-    expect(tsbBand(-20).signal).toBe('RED');
-    expect(tsbBand(-40).signal).toBe('RED');
+  it('carries exactly key, floor, label and token — no consumer-specific fields', () => {
+    for (const b of TSB_BANDS) {
+      expect(Object.keys(b).sort(), b.key).toEqual([
+        'floor',
+        'key',
+        'label',
+        'token',
+      ]);
+    }
   });
 
   it('gives each band a distinct token and label', () => {
@@ -54,7 +55,7 @@ describe('tsbBand', () => {
 
 describe('no surface bands TSB on its own thresholds', () => {
   // Six call sites had drifted into three different schemes: +10/-10/-30 on
-  // four surfaces, +10/-10 in useCoach, and >5/>=-10 in ErgView — so a TSB of
+  // four surfaces, +10/-10 on a fifth, and >5/>=-10 in ErgView — so a TSB of
   // 7 painted green on the erg tab and amber everywhere else.
   const srcRoot = join(import.meta.dirname, '../..');
   const walk = (dir) =>

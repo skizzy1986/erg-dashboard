@@ -23,7 +23,6 @@ const mockMinimize = vi.fn();
 vi.mock('../MobileToday.jsx', () => ({ default: () => <p>TODAY</p> }));
 vi.mock('../MobileProgress.jsx', () => ({ default: () => <p>PROGRESS</p> }));
 vi.mock('../MobileRecovery.jsx', () => ({ default: () => <p>BODY</p> }));
-vi.mock('../../CoachView.jsx', () => ({ default: () => <p>COACH</p> }));
 vi.mock('../../ErgLiveView.jsx', () => ({ default: () => <p>ERG LIVE</p> }));
 vi.mock('../../../StrengthLogger.jsx', () => ({
   default: () => <p>STRENGTH LOGGER</p>,
@@ -43,10 +42,13 @@ afterEach(() => {
   window.location.hash = '';
 });
 
-describe('MobileApp — the five destinations', () => {
+describe('MobileApp — the four destinations', () => {
   it('opens on Today', () => {
     render(<MobileApp />);
     expect(screen.getByText('TODAY')).toBeInTheDocument();
+    // Today is stubbed to a bare marker, so every button here is a tab.
+    expect(screen.getAllByRole('button')).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: /Coach/ })).toBeNull();
   });
 
   it('shows a tab for each destination and switches between them', async () => {
@@ -55,7 +57,6 @@ describe('MobileApp — the five destinations', () => {
     for (const [label, marker] of [
       ['Progress', 'PROGRESS'],
       ['Body', 'BODY'],
-      ['Coach', 'COACH'],
     ]) {
       await user.click(tab(label));
       expect(screen.getByText(marker), label).toBeInTheDocument();
@@ -63,9 +64,16 @@ describe('MobileApp — the five destinations', () => {
   });
 
   it('deep-links from the hash', () => {
+    window.location.hash = '#/body';
+    render(<MobileApp />);
+    expect(screen.getByText('BODY')).toBeInTheDocument();
+  });
+
+  it('a retired #/coach deep link opens Today, not Body', () => {
     window.location.hash = '#/coach';
     render(<MobileApp />);
-    expect(screen.getByText('COACH')).toBeInTheDocument();
+    expect(screen.getByText('TODAY')).toBeInTheDocument();
+    expect(screen.queryByText('BODY')).toBeNull();
   });
 });
 
@@ -132,14 +140,14 @@ describe('the hardware back button unwinds one level at a time', () => {
     await user.click(tab('Progress'));
     await user.click(tab('Body'));
     await user.click(tab('Train'));
-    await user.click(tab('Coach'));
+    await user.click(tab('Today'));
     expect(backHandlers).toHaveLength(1);
   });
 
   it('the one listener still sees the current route', async () => {
     const user = userEvent.setup();
     render(<MobileApp />);
-    await user.click(tab('Coach'));
+    await user.click(tab('Progress'));
     back();
     expect(await screen.findByText('TODAY')).toBeInTheDocument();
     expect(mockMinimize).not.toHaveBeenCalled();

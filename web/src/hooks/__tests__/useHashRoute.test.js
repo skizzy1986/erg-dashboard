@@ -12,13 +12,12 @@ const setHash = (h) => {
 };
 
 describe('destinations', () => {
-  it('is the five the artboards draw, in their drawn order', () => {
+  it('is the four the shell draws, in order', () => {
     expect(DESTINATIONS.map((d) => d.id)).toEqual([
       'today',
       'train',
       'progress',
       'body',
-      'coach',
     ]);
   });
 
@@ -72,8 +71,8 @@ describe('useHashRoute', () => {
 
   it('follows a hash changed from outside — the browser back button', () => {
     const { result } = renderHook(() => useHashRoute());
-    act(() => result.current[1]('coach'));
-    expect(result.current[0]).toBe('coach');
+    act(() => result.current[1]('body'));
+    expect(result.current[0]).toBe('body');
     act(() => {
       setHash('#/train');
       window.dispatchEvent(new window.Event('hashchange'));
@@ -86,5 +85,16 @@ describe('useHashRoute', () => {
     act(() => result.current[1]('erg'));
     expect(result.current[0]).toBe('today');
     expect(window.location.hash).toBe('');
+  });
+
+  it('a retired destination (#/coach) falls back to the default, and navigate ignores it', () => {
+    setHash('#/coach');
+    const { result } = renderHook(() => useHashRoute());
+    expect(result.current[0]).toBe('today');
+    act(() => result.current[1]('coach'));
+    expect(result.current[0]).toBe('today');
+    // Intentional: navigate refuses a non-destination without rewriting the
+    // hash, so a stale bookmark keeps #/coach in the URL while Today renders.
+    expect(window.location.hash).toBe('#/coach');
   });
 });

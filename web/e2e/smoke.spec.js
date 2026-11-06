@@ -25,7 +25,6 @@ const TABS = [
   'recovery',
   'log',
   'journal',
-  'coach',
   'settings',
 ];
 

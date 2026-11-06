@@ -241,3 +241,64 @@ slice 2+ after this merges); the #306/#308 note; the guard output and the next-d
 
 **Orchestrator's recommendation at Gate 3: ship.** Both judges agree the diff is correct and complete;
 every remaining item is carried by the PR body or by a read-back after merge.
+
+---
+
+## Slice 2 — #414 — retire the coach client
+
+> `/orchestrate slice 2 #414`, 2026-11-06, `main` at `5c6cd7e`. Session:
+> https://claude.ai/code/session_018vVjPwmi51kr6GEc1a9vbj. Story skipped (epic Gate 1 covers it;
+> D3 four destinations, D4 drop `signal`). Stage 1 delta research (Codebase Onboarding Engineer,
+> sonnet) and Stage 3 spec (Workflow Architect, opus) both read-only, tree clean after each.
+> **Gate 2 passed 2026-11-06** (Scott: "go — session branch is fine"). Branch `ccr-0421c4ed-dpqub3`.
+
+### Research corrections to the plan
+
+- `#/coach` resolves to Today only once `coach` leaves `DESTINATIONS`: `useHashRoute.read()`
+  (`useHashRoute.js:10-13`) collapses unknown ids to `DEFAULT_DESTINATION`. Deleting the
+  `MobileApp.jsx:75` branch alone would fall through to `MobileRecovery` at `:76` (which is `body`'s
+  legitimate branch). Criterion 3 needs both, pinned by a `MobileApp`-level test.
+- `TSB_BANDS[].signal` has one production reader, `useCoach.js:49`. OverviewView's `.signal`
+  (`:142,:838,:938`) comes from `autoregulate()` in `utils/analysis.js` — different thing, slice 8.
+- Extra stale comments beyond the plan: `trainingLoad.js:28`, `recoveryAnalytics.js:55-57` (names
+  `CoachView`), `tsbBand.test.js:57`, `e2e/visual.spec.js:15-16`; and `MobileApp.test.jsx:135,142`
+  click Coach in the listener tests.
+- `App` and `MobileApp` are both `lazy()` in `AuthGate.jsx:16-17`, so CoachView is not in ENTRY.
+- The desktop view is plain `useState` (`App.jsx:195`), never persisted — no migration needed.
+- `check:design-sync` never reads `DESTINATIONS`; `config.json:34`'s doc string is slice 12.
+- 8 visual baselines carry the nav: `desktop-{overview,calendar,program,journal}`,
+  `mobile-{today,train,progress,body}`. Regenerate only via `e2e-web.yml` dispatch
+  (`update_baselines: true`) on the branch with a PR open.
+
+### Build brief (summary of the approved spec)
+
+1. **Delete** `hooks/useCoach.js`, `views/CoachView.jsx`, `hooks/__tests__/useCoach.test.js`,
+   `hooks/__tests__/useCoachWiring.test.js`, `views/__tests__/CoachView.test.jsx`.
+2. **`constants/destinations.js`**: "five" → "four"; drop the coach comment line and entry; one line
+   noting the artboards' fifth was retired in #414.
+3. **`views/mobile/MobileApp.jsx`**: drop the import and the `coach` branch; keep the final else.
+4. **`App.jsx`**: "all fourteen" → "every tab"; drop lazy import, nav tuple, render branch + comment.
+5. **`utils/trainingLoad.js`**: drop the four `signal:` lines; rewrite the band comment and the
+   :26-28 unit comment without naming the coach.
+6. Comment-only: `useErgSessions.js:41`, `recoveryAnalytics.js:54-57`, `trainingLoad.test.js:44-47`,
+   `tsbBand.test.js:56-58`, `e2e/visual.spec.js:15-16`, `.github/ISSUE_TEMPLATE/bug.yml:40`.
+7. **`vite.config.js:290`**: drop the `useCoach.js` per-file key; globals untouched.
+8. **`e2e/smoke.spec.js:28`**: drop `'coach'`.
+9. **Guard** `web/src/__tests__/noCoachClient.test.js`: recursive `node:fs` walk of `src/` and `e2e/`
+   (tests included), extensions js/jsx/mjs/cjs/json/css/md/html, one case-insensitive RegExp built
+   from concatenated needles (no self-match, no path exemption); three tests — both roots scanned,
+   pattern self-check, offenders `toEqual([])` as `file:line: match`.
+
+### Test plan (criterion → test)
+
+| # | Test |
+|---|---|
+| 1 | `noCoachClient.test.js` |
+| 2 | `App.test.jsx`: mock + NAV row gone, 13 tabs pinned, no COACH button. `useHashRoute.test.js`: exact four ids; external-hash test uses `body`. `MobileApp.test.jsx`: four buttons, no Coach; deep-link uses `#/body`; listener tests click Today / Progress. Smoke spec loses `coach`. |
+| 3 | `MobileApp.test.jsx` "a retired #/coach deep link opens Today, not Body"; `useHashRoute.test.js` "#/coach falls back to the default, and navigate ignores it". |
+| 4 | `tsbBand.test.js`: bands carry exactly `floor,key,label,token`. |
+| 5–6 | Coverage and `npm run size` before/after in the PR body. |
+| 7 | Baseline dispatch after the PR opens; E2E — Web green. |
+
+Out: `coach-chat`, `coach_messages`, the secret (slice 3); the coach rail; `CLAUDE.md` and
+`training-science.md` (slice 11); design-sync docs (slice 12); `check-bundle-size.mjs:22`.
