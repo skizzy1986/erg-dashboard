@@ -42,6 +42,6 @@ create policy bp_readings_owner on public.bp_readings
   for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- The only read is "latest N for this user", newest first.
-create index if not exists bp_readings_user_measured_at
-  on public.bp_readings (user_id, measured_at desc);
+-- No separate index: the only read is "latest N for this user", newest first,
+-- and the unique (user_id, measured_at) constraint's btree already serves it
+-- (a btree scans backwards as cheaply as forwards).

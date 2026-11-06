@@ -18,35 +18,14 @@
 // Scanning every tracked markdown file is what closes the class.
 //
 //   npm run check:zones
+//
+// checkBands() is pure (files in, findings out) so it is unit-tested in
+// scripts/__tests__/check-zone-bands.test.mjs; the CLI below only gathers the
+// tracked files and prints.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-
-const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = resolve(webRoot, '..');
-
-const configPath = join(webRoot, 'src/constants/trainingConfig.js');
-if (!existsSync(configPath)) {
-  console.error('check:zones: src/constants/trainingConfig.js is missing.');
-  process.exit(1);
-}
-const { derivePaceZones } = await import(pathToFileURL(configPath).href);
-
-let files;
-try {
-  files = execFileSync('git', ['ls-files', '*.md'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-  })
-    .split('\n')
-    .filter(Boolean)
-    //  A tracked file deleted in the working tree (not yet staged) is still listed.
-    .filter((rel) => existsSync(join(repoRoot, rel)));
-} catch (e) {
-  console.error(`check:zones: could not list tracked markdown — ${e.message}`);
-  process.exit(1);
-}
 
 // Markdown emphasis lands inside the numbers (`AT **160–180** W`) and the bands
 // wrap across lines in at least one document, so normalise before matching:
@@ -73,85 +52,133 @@ const BAND = new RegExp(
 //  bands proves nothing — it would pass on a repo with every band deleted.
 const CANARY = '.claude/skills/training-science.md';
 
-const failures = [];
-let checked = 0;
-let canaryChecked = 0;
+// files: [{ path, text }] — path relative to the repo root.
+export function checkBands(files, derivePaceZones) {
+  const failures = [];
+  let checked = 0;
+  let canaryChecked = 0;
 
-for (const rel of files) {
-  const text = normalise(readFileSync(join(repoRoot, rel), 'utf8'));
+  for (const { path: rel, text: raw } of files) {
+    const text = normalise(raw);
 
-  for (const m of text.matchAll(BAND)) {
-    //  A band statement names all three zones. Prose that merely mentions
-    //  "UT1/UT2" (there is plenty) must not be read as a published band.
-    if (!/\bAT\b/.test(m[0]) || !/\bUT1\b/.test(m[0])) continue;
+    for (const m of text.matchAll(BAND)) {
+      //  A band statement names all three zones. Prose that merely mentions
+      //  "UT1/UT2" (there is plenty) must not be read as a published band.
+      if (!/\bAT\b/.test(m[0]) || !/\bUT1\b/.test(m[0])) continue;
 
-    //  Derive against the CP the document itself quotes, so a doc written for a
-    //  different anchor is not reported as wrong when it is merely historical.
-    //  Both approximation signs count. The design-side mirrors are committed
-    //  verbatim and write "CP ≈ <n>W"; a tilde-only class reads that as quoting
-    //  no CP at all and fails a document whose bands are in fact correct — and
-    //  the mirror cannot be hand-edited to suit the guard.
-    //  Read the CP from before the band's LAST "UT2" label, not the match start:
-    //  the lazy prefix can begin at an earlier UT2 (a line of zone percentages,
-    //  say) and step over the "CP ~200 W" that introduces the band itself.
-    const bandStart = m.index + m[0].lastIndexOf('UT2');
-    const cpMatch = text
-      .slice(0, bandStart)
-      .match(/[~≈]\s?(\d{2,4})\s?W(?![^ ]*\/)/g);
-    const cp = cpMatch
-      ? Number(cpMatch[cpMatch.length - 1].match(/\d+/)[0])
-      : null;
-    if (!cp) {
-      failures.push(
-        `${rel} publishes UT2/UT1/AT bands but names no CP to derive them from`
-      );
-      continue;
-    }
-
-    checked += 1;
-    if (rel === CANARY) canaryChecked += 1;
-    const zones = derivePaceZones(cp);
-    const claimed = m.slice(1, 7).map(Number);
-
-    ['UT2', 'UT1', 'AT'].forEach((name, i) => {
-      const z = zones.find((x) => x.zone === name);
-      const [lo, hi] = [claimed[i * 2], claimed[i * 2 + 1]];
-      if (z.wattsLow !== lo || z.wattsHigh !== hi) {
+      //  Derive against the CP the document itself quotes, so a doc written for a
+      //  different anchor is not reported as wrong when it is merely historical.
+      //  Both approximation signs count. The design-side mirrors are committed
+      //  verbatim and write "CP ≈ <n>W"; a tilde-only class reads that as quoting
+      //  no CP at all and fails a document whose bands are in fact correct — and
+      //  the mirror cannot be hand-edited to suit the guard.
+      //  Read the CP from before the band's LAST "UT2" label, not the match start:
+      //  the lazy prefix can begin at an earlier UT2 (a line of zone percentages,
+      //  say) and step over the "CP ~200 W" that introduces the band itself.
+      const bandStart = m.index + m[0].lastIndexOf('UT2');
+      const cpMatch = text
+        .slice(0, bandStart)
+        .match(/[~≈]\s?(\d{2,4})\s?W(?![^ ]*\/)/g);
+      const cp = cpMatch
+        ? Number(cpMatch[cpMatch.length - 1].match(/\d+/)[0])
+        : null;
+      if (!cp) {
         failures.push(
-          `${rel} gives ${name} as ${lo}-${hi} W; derivePaceZones(${cp}) yields ` +
-            `${z.wattsLow}-${z.wattsHigh}`
+          `${rel} publishes UT2/UT1/AT bands but names no CP to derive them from`
         );
+        continue;
       }
-    });
+
+      checked += 1;
+      if (rel === CANARY) canaryChecked += 1;
+      const zones = derivePaceZones(cp);
+      const claimed = m.slice(1, 7).map(Number);
+
+      ['UT2', 'UT1', 'AT'].forEach((name, i) => {
+        const z = zones.find((x) => x.zone === name);
+        const [lo, hi] = [claimed[i * 2], claimed[i * 2 + 1]];
+        if (z.wattsLow !== lo || z.wattsHigh !== hi) {
+          failures.push(
+            `${rel} gives ${name} as ${lo}-${hi} W; derivePaceZones(${cp}) yields ` +
+              `${z.wattsLow}-${z.wattsHigh}`
+          );
+        }
+      });
+    }
   }
+
+  if (checked === 0) {
+    failures.push(
+      'no published bands found — the guard would be vacuous. Keep the labelled ' +
+        'worked example ("CP ~200 W (example only): UT2 … / UT1 … / AT … W").'
+    );
+  } else if (canaryChecked === 0) {
+    failures.push(
+      `${CANARY} publishes no checkable UT2/UT1/AT band — it must keep the ` +
+        'labelled worked example so this guard is never vacuous.'
+    );
+  }
+  return { checked, failures };
 }
 
-if (checked === 0) {
-  failures.push(
-    'no published bands found — the guard would be vacuous. Keep the labelled ' +
-      'worked example ("CP ~200 W (example only): UT2 … / UT1 … / AT … W").'
+async function main() {
+  const webRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+  const repoRoot = resolve(webRoot, '..');
+
+  const configPath = join(webRoot, 'src/constants/trainingConfig.js');
+  if (!existsSync(configPath)) {
+    console.error('check:zones: src/constants/trainingConfig.js is missing.');
+    process.exit(1);
+  }
+  const { derivePaceZones } = await import(pathToFileURL(configPath).href);
+
+  let files;
+  try {
+    files = execFileSync('git', ['ls-files', '*.md'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    })
+      .split('\n')
+      .filter(Boolean)
+      //  A tracked file deleted in the working tree (not yet staged) is still listed.
+      .filter((rel) => existsSync(join(repoRoot, rel)));
+  } catch (e) {
+    console.error(
+      `check:zones: could not list tracked markdown — ${e.message}`
+    );
+    process.exit(1);
+  }
+
+  const { checked, failures } = checkBands(
+    files.map((rel) => ({
+      path: rel,
+      text: readFileSync(join(repoRoot, rel), 'utf8'),
+    })),
+    derivePaceZones
   );
-} else if (canaryChecked === 0) {
-  failures.push(
-    `${CANARY} publishes no checkable UT2/UT1/AT band — it must keep the ` +
-      'labelled worked example so this guard is never vacuous.'
+
+  if (failures.length) {
+    console.error('\nzone band guard FAILED\n');
+    for (const f of failures) console.error(`  ✗ ${f}\n`);
+    console.error(
+      'A rowing zone band written into prose has drifted from the code.\n\n' +
+        'The bands are derived from the live rowing_cp anchor by derivePaceZones();\n' +
+        'they are not constants. Either correct the prose to what the function\n' +
+        'returns at the CP that document quotes, or stop publishing watt figures\n' +
+        'there and point at derivePaceZones(cp) instead.\n'
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    `check:zones: ${checked} published zone band(s) across ${files.length} tracked ` +
+      'markdown files match derivePaceZones.'
   );
 }
 
-if (failures.length) {
-  console.error('\nzone band guard FAILED\n');
-  for (const f of failures) console.error(`  ✗ ${f}\n`);
-  console.error(
-    'A rowing zone band written into prose has drifted from the code.\n\n' +
-      'The bands are derived from the live rowing_cp anchor by derivePaceZones();\n' +
-      'they are not constants. Either correct the prose to what the function\n' +
-      'returns at the CP that document quotes, or stop publishing watt figures\n' +
-      'there and point at derivePaceZones(cp) instead.\n'
-  );
-  process.exit(1);
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+) {
+  await main();
 }
-
-console.log(
-  `check:zones: ${checked} published zone band(s) across ${files.length} tracked ` +
-    'markdown files match derivePaceZones.'
-);

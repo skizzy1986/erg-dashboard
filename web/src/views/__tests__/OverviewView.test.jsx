@@ -139,6 +139,22 @@ describe('OverviewView', () => {
     expect(screen.getByText(/Rowing CP 200W/)).toBeInTheDocument();
   });
 
+  it('quotes the CP and FTP anchors with their status in the load note', () => {
+    useAnchorsMock.mockReturnValue({
+      cp: 200,
+      cpStatus: 'provisional',
+      ftp: 250,
+      ftpStatus: 'confirmed',
+      cpAvailable: true,
+    });
+    render(<OverviewView {...baseProps} />);
+    expect(
+      screen.getByText(
+        /rowing CP 200W \(provisional\) and bike FTP 250W \(confirmed\)/
+      )
+    ).toBeInTheDocument();
+  });
+
   it('says CP is unavailable rather than showing a stale threshold', () => {
     useAnchorsMock.mockReturnValue({
       cp: null,

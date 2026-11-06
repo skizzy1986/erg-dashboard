@@ -14,14 +14,14 @@
 --
 -- Schema only — no seed. Historical intake is loaded separately and read back.
 --
--- The kcal CHECK is a typo guard, not a dietary limit. day_type matches the
+-- The kcal and macro-gram CHECKs are typo guards, not dietary limits. day_type matches the
 -- three keys of the nutrition_targets anchor.
 
 alter table public.vitals
   add column if not exists intake_kcal        integer check (intake_kcal between 0 and 10000),
-  add column if not exists intake_protein_g   numeric(5,1),
-  add column if not exists intake_carbs_g     numeric(5,1),
-  add column if not exists intake_fat_g       numeric(5,1),
+  add column if not exists intake_protein_g   numeric(5,1) check (intake_protein_g between 0 and 1000),
+  add column if not exists intake_carbs_g     numeric(5,1) check (intake_carbs_g between 0 and 1000),
+  add column if not exists intake_fat_g       numeric(5,1) check (intake_fat_g between 0 and 1000),
   add column if not exists nutrition_day_type text check (nutrition_day_type in ('two-a-day','training','rest')),
   add column if not exists nutrition_note     text;
 

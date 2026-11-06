@@ -22,8 +22,8 @@ describe('coach-chat system prompt hygiene', () => {
     expect(systemPrompt()).not.toBe(null);
   });
 
-  it('carries no hard-coded power, HR, energy or mass figure', () => {
-    expect(systemPrompt()).not.toMatch(/\d+\s?(W|bpm|kcal|g)\b/);
+  it('carries no hard-coded power, HR, energy, mass or pressure figure', () => {
+    expect(systemPrompt()).not.toMatch(/\d+\s?(w|bpm|kcal|kg|g|mmhg)\b/i);
   });
 
   it('names no fixed intensity model', () => {

@@ -16,10 +16,10 @@ export const ErgSession = () => (
         date: '6/19',
         duration: '60min',
         srpe: 5,
-        distance_m: 13850,
-        avg_watts: 138,
-        avg_hr: 132,
-        coachNote: 'Held 20spm throughout. Hamstring quiet.',
+        distance_m: 14000,
+        avg_watts: 130,
+        avg_hr: 130,
+        coachNote: 'Held 20spm throughout. Felt good.',
       }}
     />
   </Stack>

@@ -22,8 +22,7 @@ import { formatAnchor } from '../utils/anchorValues.js';
 // compresses, costing prompt tokens without changing the answer.
 const RECENT_SESSION_COUNT = 8;
 
-// The local calendar day, not the UTC one. The athlete is athlete-local (UTC+8),
-// so toISOString() names yesterday for the whole local morning — exactly when
+// The local calendar day, not the UTC one. The athlete's clock is UTC+8, so toISOString() names yesterday for the whole local morning — exactly when
 // readiness is checked and today's session asked about. toLogDate reads local
 // date fields; toISODate converts its M/D/YY back to ISO.
 export function todayISO() {
@@ -45,6 +44,10 @@ const CONTEXT_ANCHOR_KEYS = [
   'athlete_profile',
 ];
 const ANCHOR_TEXT_CAP = 600;
+// Cap on the whole block, so a run of long niggles cannot push CURRENT TRAINING
+// DATA past coach-chat's 8,000-char cut.
+export const ANCHOR_BLOCK_CAP = 3000;
+const TRUNCATED_MARKER = '(truncated)';
 
 const capText = (s) =>
   typeof s === 'string' && s.length > ANCHOR_TEXT_CAP
@@ -72,7 +75,19 @@ export function buildAnchorsBlock(anchors) {
     );
   }
   if (!lines.length) return [];
-  return ['ATHLETE ANCHORS (live; status in brackets):', ...lines];
+  const header = 'ATHLETE ANCHORS (live; status in brackets):';
+  const block = [header, ...lines];
+  if (block.join('\n').length <= ANCHOR_BLOCK_CAP) return block;
+  // Over the cap: keep whole lines only, then mark the cut.
+  const kept = [header];
+  let size = header.length + 1 + TRUNCATED_MARKER.length;
+  for (const line of lines) {
+    if (size + 1 + line.length > ANCHOR_BLOCK_CAP) break;
+    kept.push(line);
+    size += 1 + line.length;
+  }
+  kept.push(TRUNCATED_MARKER);
+  return kept;
 }
 
 export function buildTrainingContext(

@@ -24,6 +24,7 @@ function makeWrapper() {
 function mockQuery(data, error = null) {
   const chain = {
     select: (...a) => ((calls.select = a), chain),
+    in: (...a) => ((calls.in = a), chain),
     order: (...a) => ((calls.order = a), chain),
     limit: (...a) => ((calls.limit = a), Promise.resolve({ data, error })),
   };
@@ -36,7 +37,7 @@ beforeEach(() => {
 });
 
 describe('useCoachLog', () => {
-  it('queries coach_log by date desc, capped at 200', async () => {
+  it('queries decisions + observations only, by date desc, capped at 200', async () => {
     mockQuery([]);
     const { result } = renderHook(() => useCoachLog(), {
       wrapper: makeWrapper(),
@@ -46,6 +47,7 @@ describe('useCoachLog', () => {
     expect(calls.select[0]).toBe(
       'id, date, entry_type, body, tags, supersedes, created_at'
     );
+    expect(calls.in).toEqual(['entry_type', ['decision', 'observation']]);
     expect(calls.order).toEqual(['date', { ascending: false }]);
     expect(calls.limit).toEqual([200]);
     expect(result.current.decisions).toEqual([]);

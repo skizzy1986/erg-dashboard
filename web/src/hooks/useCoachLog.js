@@ -4,7 +4,9 @@ import { supabase } from '../supabaseClient.js';
 import { toDecisions, toHypotheses } from '../utils/coachLog.js';
 
 // The context store's diary + decision record, newest first. coach_log.date is
-// a native `date`, so ordering on it is correct (unlike sessions.date).
+// a native `date`, so ordering on it is correct (unlike sessions.date). Diary
+// rows are filtered out server-side so they cannot crowd decisions out of the
+// 200-row window.
 export function useCoachLog() {
   const query = useQuery({
     queryKey: ['coach_log'],
@@ -12,6 +14,7 @@ export function useCoachLog() {
       const { data, error } = await supabase
         .from('coach_log')
         .select('id, date, entry_type, body, tags, supersedes, created_at')
+        .in('entry_type', ['decision', 'observation'])
         .order('date', { ascending: false })
         .limit(200);
       if (error) throw error;

@@ -22,8 +22,8 @@ const regimeStart = (from) => {
 
 // Day arithmetic goes through UTC. Two LOCAL midnights either side of a DST
 // transition are 23h or 25h apart, so (a - b) / 86400000 floors to the wrong
-// whole day and the cycle slips permanently. Sydney and Adelaide reproduce it;
-// Perth, Brisbane and CI (UTC) do not, so CI cannot catch it.
+// whole day and the cycle slips permanently. DST zones reproduce it; the
+// athlete-local zone (UTC+8) and CI (UTC) have no DST, so CI cannot catch it.
 const utcDay = (date) =>
   Math.floor(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000

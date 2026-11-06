@@ -136,6 +136,34 @@ describe('ProgramView', { timeout: 15000 }, () => {
     expect(screen.getByText(/150 g \(confirmed\)/)).toBeInTheDocument();
   });
 
+  it('renders the fat floor from the fat_floor_g anchor (synthetic value)', () => {
+    useAnchorsMock.mockReturnValue({
+      ...emptyAnchors,
+      anchors: {
+        fat_floor_g: {
+          key: 'fat_floor_g',
+          value: '60',
+          unit: 'g',
+          status: 'provisional',
+        },
+      },
+    });
+    renderView();
+    const fat = nutrition.MACRO_TARGETS.find((m) => m.macro === 'Fat');
+    const ruleEl = screen.getByText(fat.rule);
+    expect(ruleEl.parentElement.textContent).toBe(
+      `60 g (provisional) · ${fat.rule}`
+    );
+  });
+
+  it('falls back to the rule alone when the floor anchors are absent', () => {
+    renderView();
+    for (const m of nutrition.MACRO_TARGETS) {
+      const ruleEl = screen.getByText(m.rule);
+      expect(ruleEl.parentElement.textContent).toBe(m.rule);
+    }
+  });
+
   it('keeps no personal plan or target constants', () => {
     for (const name of ['MF_PROGRAM', 'DEFICIT_PROGRAM', 'NUTRITION_TARGETS']) {
       expect(nutrition).not.toHaveProperty(name);

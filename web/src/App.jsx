@@ -42,12 +42,12 @@ const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
        - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION, ROSTER
        - Components: WorkoutItem, LogEntry, tooltips
    • APP COMPONENT .......... from `export default function App`
-       - State + live clock/roster, NAV, then one block per tab:
+       - State + live clock/week mode, NAV, then one block per tab:
          overview · calendar · program · erg · strength · mobility
          · recovery · log · journal
    KEY SYSTEMS:
-   • Roster auto-switch: getRosterMode() — home/FIFO by date,
-     anchored to ROSTER_ANCHOR (Tue 23 Jun 2026 = FIFO out).
+   • Week auto-switch: getRosterMode() — loading/deload week by date,
+     anchored to ROSTER_ANCHOR.
    • Shared workout UI: WorkoutItem (one session/box) + daySessions().
    • Validate before deploy: esbuild + the each-tab render test.
    ═══════════════════════════════════════════════════════════════ */
@@ -136,12 +136,12 @@ const strengthTrend = {
 };
 
 // ── PROGRAM STRUCTURE ─────────────────────────────────────────
-// Based on: polarized TID (Seiler 2010, Silva Oliveira et al. 2024),
+// Based on: intensity-distribution research (Seiler 2010, Silva Oliveira et al. 2024),
 // British Rowing training matrix, Pete Plan continuous improvement model
 
-// ── 2-WEEK MICROCYCLE (roster-driven) ─────────────────────────
-// 1-on/1-off FIFO roster used AS periodization. Home week = loading,
-// FIFO week = auto-deload. Erg is priority; strength yields when scarce.
+// ── 2-WEEK MICROCYCLE ─────────────────────────────────────────
+// Loading and deload weeks alternate. Erg is priority; strength yields
+// when scarce.
 
 // ── STRENGTH GUIDELINES ───────────────────────────────────────
 // Concurrent training: heavy/low-rep compounds minimise interference

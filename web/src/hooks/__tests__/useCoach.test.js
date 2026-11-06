@@ -24,7 +24,11 @@ vi.mock('../useVitals.js', () => ({
   }),
 }));
 
-import { buildTrainingContext, todayISO } from '../useCoach.js';
+import {
+  buildTrainingContext,
+  todayISO,
+  ANCHOR_BLOCK_CAP,
+} from '../useCoach.js';
 
 // buildTrainingContext is a pure exported function — no mocking needed
 describe('buildTrainingContext', () => {
@@ -320,6 +324,59 @@ describe('buildTrainingContext — athlete anchors block', () => {
       .split('\n')
       .find((l) => l.startsWith('athlete_profile:'));
     expect(line).toBe(`athlete_profile: ${'x'.repeat(600)}…`);
+  });
+
+  it('caps the whole anchors block at a line boundary, before the training data', () => {
+    const anchors = {};
+    for (let i = 0; i < 10; i++) {
+      const key = `niggle:example-${i}`;
+      anchors[key] = {
+        key,
+        value: 'watch',
+        status: 'provisional',
+        note: 'n'.repeat(500),
+      };
+    }
+    const result = buildTrainingContext(
+      null,
+      null,
+      0,
+      'READY',
+      [],
+      null,
+      false,
+      anchors
+    );
+    const [block] = result.split('\nCURRENT TRAINING DATA');
+    expect(block.length).toBeLessThanOrEqual(ANCHOR_BLOCK_CAP);
+    const lines = block.split('\n');
+    expect(lines[lines.length - 1]).toBe('(truncated)');
+    for (const l of lines.slice(1, -1)) {
+      expect(l).toMatch(/^niggle:example-\d: watch \(provisional\) — n{500}$/);
+    }
+    expect(lines.length).toBeLessThan(12);
+    expect(result).toContain('CURRENT TRAINING DATA');
+  });
+
+  it('leaves a block under the cap untouched (no marker)', () => {
+    const result = buildTrainingContext(
+      null,
+      null,
+      0,
+      'READY',
+      [],
+      null,
+      false,
+      {
+        rowing_cp: {
+          key: 'rowing_cp',
+          value: '200',
+          unit: 'W',
+          status: 'provisional',
+        },
+      }
+    );
+    expect(result).not.toContain('(truncated)');
   });
 
   it('emits no block when anchors are null or empty', () => {

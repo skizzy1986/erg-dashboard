@@ -9,6 +9,6 @@
 --   select measured_at, sys_mmhg, dia_mmhg, pulse_bpm, context, clean, source
 --   from public.bp_readings order by measured_at;
 --
--- The policy and index are dropped with the table.
+-- The policy and the unique constraint's index are dropped with the table.
 
 drop table if exists public.bp_readings;

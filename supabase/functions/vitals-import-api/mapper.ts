@@ -1,8 +1,8 @@
 // mapper.ts — pure mapping of Google Health API `dataPoints.list` responses into VitalRecord.
 // No side effects, no IO — unit-testable outside Deno.
 //
-// Response shape (camelCase), confirmed against live Fitbit/Health-Connect data:
-//   { "dataPoints": [ { "dailyHeartRateVariability": { "averageHeartRateVariabilityMilliseconds": 31.8, ... } }, ... ] }
+// Response shape (camelCase; example value is synthetic):
+//   { "dataPoints": [ { "dailyHeartRateVariability": { "averageHeartRateVariabilityMilliseconds": 40.0, ... } }, ... ] }
 //   resting HR:  dataPoints[].dailyRestingHeartRate.beatsPerMinute   (string int64)
 //   HRV (RMSSD): dataPoints[].dailyHeartRateVariability.averageHeartRateVariabilityMilliseconds (number, ms)
 //   weight:      dataPoints[].weight.weightGrams                      (number, grams -> /1000 kg)

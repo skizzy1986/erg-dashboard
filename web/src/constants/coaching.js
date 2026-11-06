@@ -64,12 +64,13 @@ export const ADAPTIVE_RULES = [
   },
   {
     id: 'R7',
-    domain: 'Roster periodisation',
+    domain: 'Periodisation',
     tier: 1,
-    rule: 'FIFO swing = forced deload. Adaptation happens during recovery, not loading.',
+    rule: 'Deload weeks are forced recovery. Adaptation happens during recovery, not loading.',
     action:
-      "Push when home, don't fight the deload on swing. Consolidate, don't grind.",
-    origin: 'Core structural principle — roster as periodisation.',
+      "Push in loading weeks, don't fight the deload. Consolidate, don't grind.",
+    origin:
+      'Core structural principle — loading/deload weeks as periodisation.',
   },
   {
     id: 'R8',
@@ -88,7 +89,8 @@ export const ADAPTIVE_RULES = [
     rule: 'Never benchmark while fatigued.',
     action:
       'Tests (CP, 5k, 2k) only on fresh days, off completed prerequisite work.',
-    origin: 'Standing principle; CP test scheduled post-FIFO fresh day.',
+    origin:
+      'Standing principle; CP test scheduled on a fresh day after a deload.',
   },
   {
     id: 'R10',

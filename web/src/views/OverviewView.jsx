@@ -66,10 +66,11 @@ export default function OverviewView({
   // screen scored readiness off June data. Same hook, same single readiness
   // definition, as RecoveryView and mobile.
   const { latest: todayRec, readiness, personalBaselines } = useVitals();
-  // Was a hardcoded 190 threaded down from App.jsx. Load is measured against
-  // the live rowing CP and bike FTP anchors, so a fixed 190 both drifted from
-  // the real value and misdescribed the calculation.
-  const { cp, ftp, cpAvailable, nutritionTargets } = useAnchors();
+  // Was the legacy constant threaded down from App.jsx. Load is measured
+  // against the live rowing CP and bike FTP anchors, so a fixed number both
+  // drifted from the real value and misdescribed the calculation.
+  const { cp, cpStatus, ftp, ftpStatus, cpAvailable, nutritionTargets } =
+    useAnchors();
   // Intake is logged into vitals and judged against the nutrition_targets
   // anchor. No anchor → intake is still shown, just without a verdict.
   const nutrition = useNutritionDays();
@@ -1122,7 +1123,7 @@ export default function OverviewView({
           CTL builds over 42 days — values will be underestimated until ~6 weeks
           of data.{' '}
           {cpAvailable
-            ? `Power-derived load is measured against rowing CP ${cp}W and bike FTP ${ftp ?? '—'}W; revalidate with a test to sharpen it.`
+            ? `Power-derived load is measured against rowing CP ${cp}W${cpStatus ? ` (${cpStatus})` : ''} and bike FTP ${ftp ?? '—'}W${ftp != null && ftpStatus ? ` (${ftpStatus})` : ''}; revalidate with a test to sharpen it.`
             : 'Power-derived load is unavailable while the CP anchor cannot be read.'}
         </div>
       </div>

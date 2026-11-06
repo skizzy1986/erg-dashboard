@@ -394,7 +394,7 @@ export default function RecoveryView({ isWide }) {
             BLOOD PRESSURE
           </div>
           <div style={{ fontSize: 9, color: THEME.textFaint }}>
-            for GP review
+            clean record
           </div>
         </div>
         <div
@@ -405,8 +405,8 @@ export default function RecoveryView({ isWide }) {
             lineHeight: 1.5,
           }}
         >
-          Building a clean record for GP review. Best reading = AM, seated, 5min
-          rest, pre-coffee, pre-training.
+          Building a clean record. Best reading = AM, seated, 5min rest,
+          pre-coffee, pre-training.
         </div>
         {bp.isLoading ? (
           <div style={{ fontSize: 10, color: THEME.muted }}>
@@ -538,9 +538,7 @@ export default function RecoveryView({ isWide }) {
           >
             BLOODS · LIPID PANEL
           </div>
-          <div style={{ fontSize: 9, color: THEME.textFaint }}>
-            GP test pending
-          </div>
+          <div style={{ fontSize: 9, color: THEME.textFaint }}>pending</div>
         </div>
         <div
           style={{
