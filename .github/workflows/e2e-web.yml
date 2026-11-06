@@ -84,8 +84,8 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       pw: ${{ steps.pw.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         # A manual run has no diff to filter on, and it only ever targets the
         # baseline job below — so the test jobs stay skipped.
@@ -108,8 +108,8 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.pw }}-noble
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -120,7 +120,7 @@ jobs:
           # Actions overrides HOME to /github/home inside containers; Playwright
           # expects the image's root home for its browser installs.
           HOME: /root
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -135,8 +135,8 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.pw }}-noble
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -148,7 +148,7 @@ jobs:
       # Actual/expected/diff triplets for every failed comparison. The artifact
       # name must differ from the smoke job's — upload-artifact rejects a
       # duplicate name within a run, and both jobs write playwright-report/.
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: playwright-visual-diff
@@ -164,8 +164,8 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.changes.outputs.pw }}-noble
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -179,7 +179,7 @@ jobs:
           HOME: /root
       # Both the handoff to `Commit Visual Baselines` and the manual fallback:
       # if the push is ever refused, the zip is still downloadable from the run.
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: visual-baselines
           path: web/e2e/visual.spec.js-snapshots/
@@ -198,7 +198,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Land on the branch itself, not the detached SHA, so there is
           # something to push to.
@@ -206,7 +206,7 @@ jobs:
           token: ${{ secrets.VISUAL_BASELINE_PAT || secrets.GITHUB_TOKEN }}
       # Overwrites in place; it does not delete. Retiring a baseline after its
       # test is removed stays a manual edit.
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: visual-baselines
           path: web/e2e/visual.spec.js-snapshots/

@@ -40,8 +40,8 @@ jobs:
     outputs:
       pipeline: ${{ steps.filter.outputs.pipeline }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -58,15 +58,15 @@ jobs:
     env:
       SQUAT_STRICT_STL: '1'
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.13'
           cache: pip
           cache-dependency-path: pipeline/squat-anatomy/requirements*.txt
       # The STLs are fetched from a pinned BodyParts3D commit (scripts/fetch_stl.sh), so the
       # script's hash is a complete cache key; tests/test_inputs.py checks each file's sha256.
-      - uses: actions/cache@v6
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: pipeline/squat-anatomy/pipeline/ext/stl
           key: bp3d-stl-${{ hashFiles('pipeline/squat-anatomy/scripts/fetch_stl.sh') }}
