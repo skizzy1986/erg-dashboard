@@ -207,3 +207,37 @@ web/.design-sync/CLAUDE.md
 3. **The preamble's own sentence will go stale.** "The LLM coach… still in the tree are being removed (#412)" becomes false after slices 3 and 10. Recommend adding "update the `erg-context.md` §Project removal sentence" to slice 11's scope.
 4. **Slices 2+ need the new preamble.** Any slice branch cut before this merges carries the old briefing, so cut slices 2+ only after this lands.
 
+
+### Stage 6 verdicts and Gate 3 — slice 1
+
+**Gate 3 status: AWAITING SCOTT** (2026-11-06 ~06:20 UTC). Built on `housekeeping/vision-rebrief-agents`,
+one commit, rebased onto `main` at `93fe6cb` (which carries `VISION.md`, #410 merged) → head `f489692`.
+Guards re-run on that head with the SHA recorded (`check:context7`, `check:design-sync`, `check:zones`,
+`lint`, `format:check` all exit 0; Vitest 125 files / 1,591 tests green). The PR is not yet opened;
+delivery follows Scott's "ship".
+
+**Code Reviewer (sonnet): APPROVE.** Verbatim match of all five edits verified mechanically; prose true of
+the tree today (coach and schedule files present, `derivePaceZones` at `trainingConfig.js:306`,
+`useAnchors` reads `anchors`, `001_enable_rls.sql` `auth.uid() = user_id`); guards pass and the Context7
+block is outside the hunks; style consistent; nothing personal or secret added and `~205 W` removed; the
+`VISION.md` pointer was a merge-order condition, now satisfied by the rebase. Nit: the edit 2b table row
+is ~120 columns (a table row cannot wrap). Open item 7 (does `paths: 'CLAUDE.md'` match the nested
+design-sync file?) settled by the orchestrator from the GitHub Actions workflow-syntax docs via Context7:
+"Path patterns must match the whole path, and start from the repository's root", with `'**/README.md'`
+as the documented form for "anywhere" — so the doctrine guard cannot fire on this PR.
+
+**Reality Checker (opus): fix-then-ship — no Blocker; the diff needs no change.** Criteria 2, 3, 4 met
+with evidence; 1 and 6 were merge-order / CI-only and are now met by the rebase and will be confirmed by
+PR CI; 5's "no doctrine issue" half is a next-day read-back. Should-fix (discharged): the guard log
+carried no SHA — re-run on the rebased head, SHA recorded. Nice-to-have (accepted as is): the RLS/JWT
+sentence generalises over the `vitals-import-api` cron, which writes with the service role for a fixed
+env user — the text is Gate-2-approved and stated at product level; and a commit-trailer model-name
+query that reflects the judge's own attribution reminder, not this session's. Stage 5 skip judged
+justified for a docs slice: guards prove the machine contracts, Vitest proves nothing changed under
+`src/`, and tests cannot prove prose truth (checked by hand), agent briefing (slice 2's spec will show)
+or design visibility (after `/design-login`). The PR body must carry: `Closes #413` / `Part of #412` /
+depends-on #410; the `/design-login` follow-up; the staleness note (#424); the sequencing note (cut
+slice 2+ after this merges); the #306/#308 note; the guard output and the next-day doctrine-issue check.
+
+**Orchestrator's recommendation at Gate 3: ship.** Both judges agree the diff is correct and complete;
+every remaining item is carried by the PR body or by a read-back after merge.
