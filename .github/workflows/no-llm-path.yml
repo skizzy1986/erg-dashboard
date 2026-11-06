@@ -1,0 +1,56 @@
+name: No LLM path
+
+# The in-app LLM coach was retired in #414 (client) and #415 (edge function and
+# table), and VISION.md rules out another. This pins the two fixed strings that
+# mark an LLM call path (the provider's API host and the edge secret) out of
+# every tracked file under web/ and supabase/functions/.
+#
+# A separate workflow, not a step in ci-web.yml or ci-functions.yml: each is
+# path-filtered to ONE of the two trees (ci-web.yml:35, ci-functions.yml:30),
+# so a guard in either never fires on a change to the other. That is the
+# failure zone-bands.yml:10-14 and context7-rule.yml:8-13 record. Node builtins
+# and git only, so no npm ci.
+#
+# Job-level path filtering, never workflow-level `on.paths`, for the reason
+# ci-web.yml:3-7 gives: as a required check, a workflow that never triggers
+# strands the PR on "Expected — waiting for status", while a skipped job
+# passes. Not required until the check-run name below is added to the ruleset.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: no-llm-path-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect LLM-path guard inputs
+    runs-on: ubuntu-latest
+    outputs:
+      scan: ${{ steps.filter.outputs.scan }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            scan:
+              - 'web/**'
+              - 'supabase/functions/**'
+              - '.github/workflows/no-llm-path.yml'
+
+  check:
+    name: No LLM API host or key in web or functions
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.scan == 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: node web/scripts/check-no-llm-path.mjs

@@ -13,9 +13,10 @@ import { captureFunctionError } from "../_shared/sentry.ts";
 
 const FN = "vitals-sync";
 
-// Same list as coach-chat, and for the same reason — supabase.functions.invoke
-// goes through the Sentry-instrumented global fetch, so this function is
-// preflighted with `sentry-trace` and `baggage` too. See coach-chat/index.ts.
+// Same list as strava-connect and strava-sync, and for the same reason:
+// supabase.functions.invoke goes through the Sentry-instrumented global fetch,
+// so this function is preflighted with `sentry-trace` and `baggage` too.
+// Dropping either fails the OPTIONS and the request is never sent (#301).
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":

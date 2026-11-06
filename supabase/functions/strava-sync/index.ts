@@ -13,7 +13,7 @@ import { serviceClient } from "../strava-import/supaClient.ts";
 
 const FN = "strava-sync";
 
-// Same header list as strava-connect and coach-chat, and for the same reason:
+// Same header list as strava-connect and vitals-sync, and for the same reason:
 // supabase.functions.invoke goes through the Sentry-instrumented global fetch,
 // so sentry-trace and baggage appear in the preflight. Dropping either fails
 // the OPTIONS and the request is never sent (incident #301).
