@@ -287,7 +287,6 @@ export default defineConfig({
           branches: 70,
         },
         'src/hooks/useSessions.js': { lines: 80, functions: 80, branches: 70 },
-        'src/hooks/useCoach.js': { lines: 80, functions: 80, branches: 70 },
         'src/hooks/useTSSHistory.js': {
           lines: 80,
           functions: 80,

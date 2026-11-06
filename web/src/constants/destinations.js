@@ -1,4 +1,4 @@
-// The five destinations, from DESIGN_BRIEF.md §2.2 and the artboards' own
+// The four destinations, from DESIGN_BRIEF.md §2.2 and the artboards' own
 // `data-tab` ids. One list, so the tab bar and the shell cannot disagree about
 // what exists — and so desktop can adopt the same names in S3.
 //
@@ -7,7 +7,7 @@
 //   train    The live session — prescription, logging, the set in front of me.
 //   progress Is the training working? Load, erg, strength, history.
 //   body     Readiness and the readings behind it — sleep, RHR, HRV.
-//   coach    Why the plan says what it says.
+// The artboards draw a fifth, coach; it was retired in #414.
 //
 // Icons are still emoji. The artboards draw 18x18 glyphs; swapping them is
 // iconography, not information architecture, and is deliberately left out of
@@ -17,7 +17,6 @@ export const DESTINATIONS = [
   { id: 'train', label: 'Train', icon: '🚣' },
   { id: 'progress', label: 'Progress', icon: '📈' },
   { id: 'body', label: 'Body', icon: '❤️' },
-  { id: 'coach', label: 'Coach', icon: '🤖' },
 ];
 
 export const DEFAULT_DESTINATION = 'today';

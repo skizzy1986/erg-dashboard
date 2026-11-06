@@ -24,8 +24,8 @@ function thresholdFor(type, cp, ftp) {
 // curve coasts on whatever was last rated by hand.
 //
 // The unit matters as much as the formula. Every threshold downstream — the
-// TSB bands in App.jsx and MobileAnalytics, LoadTooltip, useCoach's
-// GREEN/AMBER/RED, calcReadiness's `tsb < -20` deduction — was calibrated for
+// TSB_BANDS table below (read by every surface that bands TSB) and
+// calcReadiness's `tsb < -20` deduction — was calibrated for
 // classic TSS. An earlier sRPE-hours unit (an hour at sRPE 7 → 7) left every
 // one of those bands ~10x too wide, which pinned TSB mid-range and meant the
 // fatigue deduction could never fire. Do not rescale one side without the other.
@@ -128,47 +128,36 @@ export function deriveTargets(hr130Series) {
 }
 
 // The TSB bands, in one place. These thresholds were inlined at five call
-// sites and had already drifted: four surfaces banded on +10 / -10 / -30 while
-// useCoach.js banded on +10 / -10 alone, so a TSB of -20 read "Fatigued —
-// normal mid-week" on screen and RED to the Coach. HANDOFF.md §5 calls that
-// the same defect as computing the number two different ways.
+// sites and had already drifted onto different schemes, so the same TSB
+// read one band on one screen and another elsewhere. HANDOFF.md §5 calls
+// that the same defect as computing the number two different ways.
 //
 // `token` is a THEME key, not a colour — this module is pure maths and does
 // not import the palette. Callers do THEME[band.token].
-//
-// `signal` reproduces useCoach's existing three-way mapping exactly, which is
-// why `fatigued` and `deep` share RED. That collapse is preserved rather than
-// corrected: telling the Coach RED for a state the dashboard calls normal is
-// arguably wrong, but changing what the Coach is told is a training decision,
-// not a refactor. See the note in useCoach.js.
 export const TSB_BANDS = [
   {
     key: 'fresh',
     floor: 10,
     label: 'Fresh — good form',
     token: 'positive',
-    signal: 'GREEN',
   },
   {
     key: 'neutral',
     floor: -10,
     label: 'Neutral — balanced',
     token: 'caution',
-    signal: 'AMBER',
   },
   {
     key: 'fatigued',
     floor: -30,
     label: 'Fatigued — normal mid-week',
     token: 'warning',
-    signal: 'RED',
   },
   {
     key: 'deep',
     floor: -Infinity,
     label: 'High fatigue — rest critical',
     token: 'critical',
-    signal: 'RED',
   },
 ];
 

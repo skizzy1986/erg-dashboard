@@ -37,6 +37,6 @@ body:
     id: context
     attributes:
       label: Environment / context
-      description: Web or Android APK? Console errors? Affected view (Coach, ErgLive, mobile tab)?
+      description: Web or Android APK? Console errors? Affected view (ErgLive, mobile tab)?
     validations:
       required: false

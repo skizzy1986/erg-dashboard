@@ -41,10 +41,9 @@ describe('sessionLoad', () => {
     ).toBe(100);
   });
 
-  // The TSB bands in App.jsx/MobileAnalytics, LoadTooltip, useCoach's
-  // GREEN/AMBER/RED and calcReadiness's `tsb < -20` are all calibrated for
-  // classic TSS. If this unit ever drifts back to sRPE-hours those bands go
-  // ~10x too wide and silently stop firing, so pin the unit here.
+  // TSB_BANDS (every surface that bands TSB) and calcReadiness's `tsb < -20`
+  // are all calibrated for classic TSS. If this unit ever drifts back to
+  // sRPE-hours those bands go ~10x too wide and silently stop firing, so pin the unit here.
   it('emits classic TSS units, not sRPE-hours', () => {
     const hourAtThreshold = sessionLoad(
       { duration: '60:00', srpe: null, type: 'erg', avg_watts: 205 },

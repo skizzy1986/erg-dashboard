@@ -5,7 +5,6 @@ import MobileToday from './MobileToday.jsx';
 import MobileProgress from './MobileProgress.jsx';
 import MobileTrain from './MobileTrain.jsx';
 import MobileRecovery from './MobileRecovery.jsx';
-import CoachView from '../CoachView.jsx';
 import BottomTabBar, {
   TAB_BAR_HEIGHT,
 } from '../../components/mobile/BottomTabBar.jsx';
@@ -72,7 +71,6 @@ export default function MobileApp() {
   else if (route === 'train')
     content = <MobileTrain mode={trainMode} onMode={setTrainMode} />;
   else if (route === 'progress') content = <MobileProgress />;
-  else if (route === 'coach') content = <CoachView />;
   else content = <MobileRecovery />;
 
   return (
