@@ -18,7 +18,7 @@
 
 | | |
 |---|---|
-| **Pipeline position** | **GATE 1 PASSED 2026-11-06** (Scott: "go — yes to D1–D7 and D23, your recommendations stand"). Stage 3 (Spec) for slice 1 in progress; Gate 2 next. Nothing built yet. |
+| **Pipeline position** | **GATE 1 PASSED 2026-11-06** (Scott: "go — yes to D1–D7 and D23, your recommendations stand"). **GATE 2 PASSED** for slice 1 (#413) at ~06:10 UTC — building on `housekeeping/vision-rebrief-agents` (approved branch); Stage 6 judges and Gate 3 next. Specs and verdicts: [`REORIENTATION_SLICE_SPECS.md`](REORIENTATION_SLICE_SPECS.md). |
 | **Decisions** | D1–D7 and D23 **yes**; D8–D22 the recommendations in §6 stand. Scott's own actions still open: merge #410 (D1); close #306 and #308 as not planned (slice 1); remove the `ANTHROPIC_API_KEY` edge secret when slice 3 runs (D7). |
 | **How to continue** | Reply in the session, or comment on [PR #411](https://github.com/skizzy1986/erg-dashboard/pull/411) with decisions. The next step is Stage 3 (Spec) for the first approved slice. In a fresh session: `/orchestrate slice N of coach/REORIENTATION_EPIC_2026-11-06.md`, and give the agents the research appendix. |
 | **Tracking** | Epic tracker #412 with one sub-issue per slice: 1 → #413, 2 → #414, 3 → #415, 4a → #416, 4b → #417, 5 → #418, 6 → #419, 7 → #420, 8 → #421, 9 → #422, 10 → #423, 11 → #424, 12 → #425. Each slice PR carries `Part of #412` and `Closes #<its sub-issue>`. |

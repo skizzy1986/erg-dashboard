@@ -9,7 +9,7 @@
 
 ## Slice 1 — #413 — land VISION.md, re-brief the agents
 
-**Gate 2 status: AWAITING SCOTT** (brief delivered 2026-11-06 ~05:58 UTC; orchestrator verified the
+**Gate 2 status: APPROVED by Scott 2026-11-06 ~06:10 UTC** — "approve all three, yes to the new branch, 2b and slice 11": the three texts as written, branch `housekeeping/vision-rebrief-agents` cut from `main`, edit 2b (`AGENTS.md:53`) included, and slice 11 (#424) gains the item "retire the 'still in the tree … being removed' sentence in `erg-context.md` §Project once slices 3 and 10 land". (Brief delivered 2026-11-06 ~05:58 UTC; orchestrator verified the
 `ci-web.yml` `web/**` filter, `config.json:58` `readmeHeader`, the current text of all three files,
 `check-context7.mjs:33-34,73`, and that `VISION.md` is absent from `origin/main`).
 
