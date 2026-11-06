@@ -18,7 +18,7 @@
 
 | | |
 |---|---|
-| **Pipeline position** | **GATE 1 PASSED 2026-11-06** (Scott: "go — yes to D1–D7 and D23, your recommendations stand"). **GATE 2 PASSED** for slice 1 (#413) at ~06:10 UTC — building on `housekeeping/vision-rebrief-agents` (approved branch); Stage 6 judges and Gate 3 next. Specs and verdicts: [`REORIENTATION_SLICE_SPECS.md`](REORIENTATION_SLICE_SPECS.md). |
+| **Pipeline position** | **GATE 1 PASSED 2026-11-06** (Scott: "go — yes to D1–D7 and D23, your recommendations stand"). **Slice 1 DELIVERED** as draft PR #426 (Gate 3 "ship it" ~06:25 UTC; #410 merged at `93fe6cb`, branch rebased on it). Next: slice 2 (#414) — cut its branch only after #426 merges so it inherits the new preamble; its Stage 3 spec needs D3 (four destinations) and D4 (drop `signal`), both decided. Specs and verdicts: [`REORIENTATION_SLICE_SPECS.md`](REORIENTATION_SLICE_SPECS.md). |
 | **Decisions** | D1–D7 and D23 **yes**; D8–D22 the recommendations in §6 stand. Scott's own actions still open: merge #410 (D1); close #306 and #308 as not planned (slice 1); remove the `ANTHROPIC_API_KEY` edge secret when slice 3 runs (D7). |
 | **How to continue** | Reply in the session, or comment on [PR #411](https://github.com/skizzy1986/erg-dashboard/pull/411) with decisions. The next step is Stage 3 (Spec) for the first approved slice. In a fresh session: `/orchestrate slice N of coach/REORIENTATION_EPIC_2026-11-06.md`, and give the agents the research appendix. |
 | **Tracking** | Epic tracker #412 with one sub-issue per slice: 1 → #413, 2 → #414, 3 → #415, 4a → #416, 4b → #417, 5 → #418, 6 → #419, 7 → #420, 8 → #421, 9 → #422, 10 → #423, 11 → #424, 12 → #425. Each slice PR carries `Part of #412` and `Closes #<its sub-issue>`. |
@@ -284,13 +284,14 @@ classification are marked.
 | #55, #56 | survive | none | Imports "where useful"; #56's priority predates the pivot — Scott to re-confirm. |
 | #382, #407, #408 | unrelated | none | `/squat` track. |
 | #216 | unrelated | none | `duration_min` migration; needs Scott's approval. |
-| #63, #326, #327, #342 | unrelated | none | CI and infra. |
+| #326, #327, #342 | unrelated | none | CI and infra. |
+| #63 | closed 2026-11-06 | none | Closed by #409 (every action reference SHA-pinned). |
 
 ## 8. Out of scope for the epic
 
 - New flagship movements (deadlift, bench, row, press) — one pipeline run each.
 - The exercises → anatomy link — the live `exercises` table (873 rows) is not reproducible from migrations; a seed comes first. `exercise_media.model_3d_key` is the only hook and nothing reads it.
-- Strava deployment — the four `strava-*` functions are not live.
+- Strava deployment — the four `strava-*` functions are not live. Note for any later multi-user or shared view: Strava's API terms reportedly bar showing a user's Strava data to anyone but that user (secondary sources only, per the VISION.md session's handoff); the live terms need reading before anything multi-user is built on the importer.
 - The SimTK licence read (`NOTICE.md:42-50`) — owner action gating wider distribution.
 - The `exercises` seed and the `exercise_prs` view migration — reproducibility fixes independent of the cull.
 - Rewriting git history (D11).

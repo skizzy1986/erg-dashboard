@@ -210,7 +210,7 @@ web/.design-sync/CLAUDE.md
 
 ### Stage 6 verdicts and Gate 3 — slice 1
 
-**Gate 3 status: AWAITING SCOTT** (2026-11-06 ~06:20 UTC). Built on `housekeeping/vision-rebrief-agents`,
+**Gate 3 status: SHIPPED — Scott: "ship it" (2026-11-06 ~06:25 UTC); delivered as draft PR #426** (`housekeeping/vision-rebrief-agents`, head `f489692`), subscribed, #413 moved to In review. Mark ready once CI is green; merge is Scott's. Built on `housekeeping/vision-rebrief-agents`,
 one commit, rebased onto `main` at `93fe6cb` (which carries `VISION.md`, #410 merged) → head `f489692`.
 Guards re-run on that head with the SHA recorded (`check:context7`, `check:design-sync`, `check:zones`,
 `lint`, `format:check` all exit 0; Vitest 125 files / 1,591 tests green). The PR is not yet opened;
