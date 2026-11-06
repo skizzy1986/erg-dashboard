@@ -20,7 +20,7 @@
 |---|---|
 | **Pipeline position** | **WAITING AT GATE 1** — Stage 1 (Research) and Stage 2 (Story) done. Nothing specced, nothing built. |
 | **What Scott decides** | §6. D1–D7 unblock slices 1–3 and need answers now. The rest carry a default (the recommendation) and can be answered when their slice starts, except the destructive ones, which always need an explicit yes. |
-| **How to continue** | Reply in the session, or comment on this PR with decisions. The next step is Stage 3 (Spec) for the first approved slice. In a fresh session: `/orchestrate slice N of coach/REORIENTATION_EPIC_2026-11-06.md`, and give the agents the research appendix. |
+| **How to continue** | Reply in the session, or comment on [PR #411](https://github.com/skizzy1986/erg-dashboard/pull/411) with decisions. The next step is Stage 3 (Spec) for the first approved slice. In a fresh session: `/orchestrate slice N of coach/REORIENTATION_EPIC_2026-11-06.md`, and give the agents the research appendix. |
 | **Tracking** | No GitHub issue exists for the epic yet (D23). On approval the orchestrator files one tracker with a sub-issue per slice, per `WORKFLOW.md` and the audit's "no tracker without a dated exit" rule. |
 
 ## 1. Classification
