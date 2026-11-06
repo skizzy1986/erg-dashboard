@@ -63,8 +63,8 @@ describe('useBpReadings', () => {
       },
       {
         measured_at: '2026-01-01T07:00:00Z',
-        sys_mmhg: 120,
-        dia_mmhg: 78,
+        sys_mmhg: 122,
+        dia_mmhg: 80,
         pulse_bpm: null,
         context: null,
         clean: null,
@@ -85,8 +85,8 @@ describe('useBpReadings', () => {
       },
       {
         measuredAt: '2026-01-01T07:00:00Z',
-        sys: 120,
-        dia: 78,
+        sys: 122,
+        dia: 80,
         pulse: null,
         context: '',
         clean: false,

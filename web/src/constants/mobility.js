@@ -1,6 +1,6 @@
 import { THEME } from './theme.js';
 // Mobility / yoga — an integral training pillar (not accessory afterthought).
-// Given the left hamstring/glute rehab, mobility is load-bearing for staying
+// Given the current rehab work (see the live niggle anchors), mobility is load-bearing for staying
 // healthy enough to train. Three strands: soft-tissue (foam roll), pre-session
 // drills (prime before erg/lift), and yoga flows (longer reset).
 // MOBILITY_ROUTINES = the library on hand; logged mobility work is sessions rows

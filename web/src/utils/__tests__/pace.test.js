@@ -7,8 +7,8 @@ import {
 } from '../pace.js';
 
 describe('wattsToPace500', () => {
-  it('converts 190W to ~122.6 s/500m', () => {
-    expect(wattsToPace500(190)).toBeCloseTo(122.6, 1);
+  it('converts 200W (example CP) to ~120.5 s/500m', () => {
+    expect(wattsToPace500(200)).toBeCloseTo(120.5, 1);
   });
   it('converts 150W to ~132.6 s/500m', () => {
     expect(wattsToPace500(150)).toBeCloseTo(132.6, 1);
@@ -17,7 +17,7 @@ describe('wattsToPace500', () => {
 
 describe('pace500ToWatts', () => {
   it('round-trips with wattsToPace500', () => {
-    expect(pace500ToWatts(wattsToPace500(190))).toBeCloseTo(190, 2);
+    expect(pace500ToWatts(wattsToPace500(200))).toBeCloseTo(200, 2);
   });
 });
 
@@ -43,7 +43,7 @@ describe('formatPace', () => {
 });
 
 describe('classifyZone', () => {
-  const cp = 190;
+  const cp = 200; // example CP
   it('returns null when watts is null', () => {
     expect(classifyZone(null, cp)).toBe(null);
   });
@@ -75,7 +75,7 @@ describe('classifyZone', () => {
     expect(classifyZone(0.9 * cp, cp)).toBe('TR');
   });
   it('classifies TR at exactly 100% CP', () => {
-    expect(classifyZone(190, cp)).toBe('TR');
+    expect(classifyZone(200, cp)).toBe('TR');
   });
   it('classifies the AN lower boundary (105%)', () => {
     expect(classifyZone(1.05 * cp, cp)).toBe('AN');

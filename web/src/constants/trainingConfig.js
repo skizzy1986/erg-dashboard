@@ -300,12 +300,12 @@ export const SRPE_SCALE =
   'Rate each session 1–10 within 30min of finishing: 1–2 very easy · 3–4 easy (UT2 target) · 5–6 moderate (UT1 target) · 7–8 hard (threshold, Phase 2) · 9–10 maximal (race/test only). UT2 sessions scoring 5+ = going too hard. UT1 scoring 7+ = drifting. Trend matters: same session scoring harder week-on-week = fatigue accumulating, flag it.';
 
 export const HR130_POWER = [
-  // actual readings (HR-anchored sessions, chest strap)
-  { date: '6/8', watts: 130, type: 'actual', setupArtifact: true }, // 60min, HR avg 123 — partly drag/strap settling, excluded from the fit
-  { date: '6/10', watts: 145, type: 'actual' }, // 45min, HR 132
-  { date: '6/12', watts: 151, type: 'actual' }, // 45min, HR 130 — clean anchor reading
-  { date: '6/13', watts: 149, type: 'actual' }, // 60min, Strava-confirmed HR 130.6 — clean anchor
-  { date: '6/15', watts: 149, type: 'actual' }, // 60min, HR130 locked all hour — clean anchor, on 5h24m sleep
+  // HR-anchored sessions (chest strap)
+  { date: '6/8', watts: 130, type: 'actual', setupArtifact: true }, // setup artifact — excluded from the fit
+  { date: '6/10', watts: 145, type: 'actual' },
+  { date: '6/12', watts: 151, type: 'actual' },
+  { date: '6/13', watts: 149, type: 'actual' },
+  { date: '6/15', watts: 149, type: 'actual' },
 ];
 
 const ZONE_POWER_PCT = [

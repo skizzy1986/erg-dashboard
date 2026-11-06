@@ -186,7 +186,7 @@ const HR130_PROJECTION = {
   endLow: 165, // conservative end-of-base
   endHigh: 180, // optimistic end-of-base
   endDate: 'early Sep',
-  note: 'Projection assumes consistent execution + sleep holding. Early-phase return gains slow over time. 4 clean points now (134→145→151→149 at HR130), incl. Strava-verified. We replace this with real data at the end-of-base 5k benchmark. Watch actual vs band.',
+  note: 'Projection assumes consistent execution and recovery holding. Early-phase gains slow over time. Replace the band with real data at the end-of-base benchmark and watch actual vs band.',
 };
 
 const card = {
@@ -487,11 +487,9 @@ export default function ErgView({ tsbNow, ctlNow }) {
             lineHeight: 1.5,
           }}
         >
-          Z2 watt targets (fixed DF, HR ceiling = top of UT1): UT1 working
-          sessions 143–150W (pacer 143–145W — bumped from 140 after 6/12 showed
-          151W at HR130), UT2 easy/FIFO 125–135W (pacer 130W). Set pacer on
-          watts; let HR cap at the top of UT1. Engine is climbing — re-check
-          targets weekly.
+          UT2 / UT1 targets come from your live CP (see the zone table). Set the
+          pacer on watts and let HR cap at the top of UT1. Re-check targets as
+          the engine climbs.
         </div>
       </div>
 
@@ -773,11 +771,10 @@ export default function ErgView({ tsbNow, ctlNow }) {
                 marginTop: 6,
               }}
             >
-              Computed (least-squares) on the 4 clean HR130 anchors; the 6/8
-              reading is excluded as a drag/strap setup artifact. We don't
-              extrapolate the slope forward — early gains decelerate, so a
-              linear projection would overstate. Real forward signal = the
-              end-of-base 5k.
+              Computed (least-squares) on the clean anchor readings; setup
+              artifacts are excluded. The slope is not extrapolated forward —
+              early gains decelerate, so a linear projection would overstate.
+              The real forward signal is the end-of-base benchmark.
             </div>
           </div>
         )}

@@ -70,7 +70,7 @@ describe('ErgView', () => {
         mkSession(1, 150, 'UT1'),
         mkSession(2, 120, 'UT2'),
         mkSession(3, 165, 'AT'),
-        mkSession(4, 190, 'TR'),
+        mkSession(4, 195, 'TR'),
         mkSession(5, 220, 'AN'),
         mkSession(6, 130, 'UT2'),
         mkSession(7, 145, 'UT1'),
