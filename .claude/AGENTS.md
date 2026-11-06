@@ -40,8 +40,8 @@ with the right context and gates on your approval.
 
 ## Advisory Agency agents — task → agent
 
-Only five divisions are high-value for a solo dashboard. The rest (game-dev, GIS,
-sales, real-estate, …) are noise here.
+Only five divisions are high-value for a small React/Supabase training app. The rest
+(game-dev, GIS, sales, real-estate, …) are noise here.
 
 ### Design — the visual system
 Now a real lane; see [`DESIGN.md`](../DESIGN.md). Always prepend
@@ -50,7 +50,7 @@ Now a real lane; see [`DESIGN.md`](../DESIGN.md). Always prepend
 | Task | Agent |
 |---|---|
 | Draft a screen or component against the brief before it is built | `design-ui-designer` |
-| IA questions — the 13→5 nav cut, the Today screen, destination count | `design-ux-architect` |
+| IA questions — the mobile nav cut to four destinations, the Today screen, destination count | `design-ux-architect` |
 | Review a diff for token or property-boundary violations | `design-brand-guardian` |
 | Contrast, labels and focus pass on a view | `testing-accessibility-auditor` |
 
