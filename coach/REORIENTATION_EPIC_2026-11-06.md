@@ -18,10 +18,10 @@
 
 | | |
 |---|---|
-| **Pipeline position** | **WAITING AT GATE 1** — Stage 1 (Research) and Stage 2 (Story) done. Nothing specced, nothing built. |
-| **What Scott decides** | §6. D1–D7 unblock slices 1–3 and need answers now. The rest carry a default (the recommendation) and can be answered when their slice starts, except the destructive ones, which always need an explicit yes. |
+| **Pipeline position** | **GATE 1 PASSED 2026-11-06** (Scott: "go — yes to D1–D7 and D23, your recommendations stand"). Stage 3 (Spec) for slice 1 in progress; Gate 2 next. Nothing built yet. |
+| **Decisions** | D1–D7 and D23 **yes**; D8–D22 the recommendations in §6 stand. Scott's own actions still open: merge #410 (D1); close #306 and #308 as not planned (slice 1); remove the `ANTHROPIC_API_KEY` edge secret when slice 3 runs (D7). |
 | **How to continue** | Reply in the session, or comment on [PR #411](https://github.com/skizzy1986/erg-dashboard/pull/411) with decisions. The next step is Stage 3 (Spec) for the first approved slice. In a fresh session: `/orchestrate slice N of coach/REORIENTATION_EPIC_2026-11-06.md`, and give the agents the research appendix. |
-| **Tracking** | No GitHub issue exists for the epic yet (D23). On approval the orchestrator files one tracker with a sub-issue per slice, per `WORKFLOW.md` and the audit's "no tracker without a dated exit" rule. |
+| **Tracking** | Epic tracker #412 with one sub-issue per slice: 1 → #413, 2 → #414, 3 → #415, 4a → #416, 4b → #417, 5 → #418, 6 → #419, 7 → #420, 8 → #421, 9 → #422, 10 → #423, 11 → #424, 12 → #425. Each slice PR carries `Part of #412` and `Closes #<its sub-issue>`. |
 
 ## 1. Classification
 
