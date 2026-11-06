@@ -2,10 +2,10 @@
 
 Ordered by how much each one improves trust in the numbers per unit of work. Each item lists the reason, scope and done criteria. Keep PRs small: one item per PR, and split the larger ones.
 
-## 1. Pipeline hygiene (do first)
+## 1. Pipeline hygiene (done, #402)
 - **Why:** the `exec` chains with shared globals make every later PR slower and riskier.
 - **Scope:** turn `pipeline/v3/*.py` into an importable package (`squat/`) with explicit inputs and outputs per stage, add a CLI (`python -m squat build|stage <name>`) and pin `requirements.txt`. Add a golden test that rebuilds `dist/squat.html` and compares hashes, plus a pytest per stage for shapes and key numbers (for example δ at the bottom is about +4.1°, mean drive speed about 0.61 m/s, peak force about 1.38×).
-- **Done when:** the rebuild is byte-identical, `pytest` passes, and no script uses `exec`.
+- **Done when:** the rebuild's decompressed data sha256 and parsed manifest match what `/squat` ships (the gzip stream is zlib-dependent, so not the HTML bytes; Gate 1, #402; stage pins exact on the reference machine, within tolerance elsewhere), `pytest` passes, and no script uses `exec`. **Done:** `squat/`, `tests/`, `.github/workflows/ci-pipeline.yml`.
 
 ## 2. Overlay the OpenCap lab validation set (measured bands)
 - **Why:** this turns modelled curves into curves you can compare against measurements.

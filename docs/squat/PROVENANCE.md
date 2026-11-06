@@ -101,7 +101,7 @@ Manifest after this edit: **99,892 bytes**,
 
 ## Updating the data
 
-1. Rebuild `dist/squat.html` in the source project.
+1. Rebuild `dist/squat.html` in the source project (`cd pipeline/squat-anatomy && python -m squat build`). `python -m squat verify dist/squat.html` checks it against the shipped manifest and the pinned data sha; a data change fails it until the pins move.
 2. Re-run the extraction above; it prints both sizes and hashes.
 3. Update `constants/dataAsset.js` and the table above in the same PR.
 4. `npm run build && npm run size` — `SQUAT_DATA` fails above 2.3 MB.

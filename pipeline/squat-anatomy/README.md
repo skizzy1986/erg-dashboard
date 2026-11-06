@@ -14,12 +14,17 @@ page/                      page sources, concatenated into page/template.html
   2-markup.html            panels, guide content, data placeholders, three.js tag
   3-core.js                data decode + three.js scene, bones, muscle skinning, bar, bar path
   4-ui.js                  rep timeline, readouts, charts, form check, guide, importer, framing, test hook
-  assemble.py              writes page/template.html
-pipeline/                  Python build (ROOT for every script; override with SQUAT_ROOT)
-  repack.py                read/write the manifest + gzip/base64 data blob inside the HTML
+  assemble.py              writes page/template.html (optional: the build assembles in memory)
+squat/                     the Python package: python -m squat build | stage <name> | list | verify
+  paths.py, inputs.py      every path (SQUAT_ROOT overrides pipeline/), the pinned fixed inputs and STLs
+  model/                   base page, girdle, skin, arm, readouts, curves, kinetics, activation, DQS
+  stages/                  balance3, lengths3, phase3, upper3, ik3, ik4, regcur (see docs/ARCHITECTURE.md)
+  build.py, repack.py      assemble the page; read/write the manifest + gzip/base64 data blob
+tests/                     pytest: golden rebuild, per-stage byte pins, numbers, inputs, no-exec guard
+pipeline/                  data only: fixed inputs and cached stage outputs (override with SQUAT_ROOT)
   T_global.npy             BodyParts3D (mm) -> model (m) transform
-  ext/stl/                 the 14 BodyParts3D STLs the v3 pipeline reads (scripts/fetch_stl.sh refetches)
-  v3/                      v3 stage scripts, their inputs and their cached outputs (see docs/ARCHITECTURE.md)
+  ext/stl/                 the 14 BodyParts3D STLs the pipeline reads (scripts/fetch_stl.sh refetches)
+  v3/                      stage inputs and cached outputs (see docs/ARCHITECTURE.md)
 harness/                   headless Chromium (SwiftShader) render + evaluation scripts
 samples/squat_test.mot     synthetic OpenCap-style file for the importer
 docs/                      ARCHITECTURE, ROADMAP, PROMPTS, CHANGELOG, REFERENCES
@@ -30,26 +35,39 @@ CLAUDE.md                  working rules for Claude Code sessions in this repo
 ## Build
 
 ```bash
-pip install -r requirements.txt          # numpy, scipy, trimesh, fast-simplification, rtree
-python3 page/assemble.py                 # page/*.html|js -> page/template.html
-python3 pipeline/v3/build3.py page/template.html dist/squat.html
+pip install -r requirements.txt          # pinned numpy, scipy, trimesh, fast-simplification, rtree
+scripts/fetch_stl.sh                     # the 14 BodyParts3D STLs, at a pinned commit
+python -m squat build                    # page/* + cached stage outputs -> dist/squat.html
+python -m squat verify dist/squat.html   # decompressed data sha + manifest vs what /squat ships
 ```
 
-`build3.py` reads cached stage outputs in `pipeline/v3/`. To regenerate a stage, run it before the build (each finishes in under a minute except the arm solve):
+Run these from this folder. The build reads cached stage outputs in `pipeline/v3/`. `python -m squat list` shows every stage with its inputs, outputs, STLs and runtime, plus the fixed inputs nothing here can regenerate. To regenerate a stage in place (`--in-dir`/`--out-dir` to redirect):
 
 ```bash
-python3 pipeline/v3/run_ik4.py      # arm/hand solve with ISB limits + thumb wrap (~3 min) -> armik4_x.npy
-python3 pipeline/v3/upper3.py       # bones, upper-body muscles, deltoid/pec rebuild -> upper3.npz
-python3 pipeline/v3/balance3.py     # vertical bar path + quasi-static kinetics -> frames3/deltas3/hips3.npy, rows3.pkl
-python3 pipeline/v3/lengths3.py     # musculotendon path lengths -> mlen3.pkl
-python3 pipeline/v3/phase3.py       # timed rep, ground force, per-depth phase factors -> phase3.npz
+python -m squat stage ik3         # arm/hand solve from the armik2 seed (~3 min) -> armik3_x.npy
+python -m squat stage ik4         # arm/hand re-solve with ISB limits + thumb wrap from armik3_x (~3 min) -> armik4_x.npy
+python -m squat stage upper3      # bones, upper-body muscles, deltoid/pec rebuild -> upper3.npz
+python -m squat stage balance3    # vertical bar path + quasi-static kinetics -> frames3/deltas3/hips3.npy, rows3.pkl
+python -m squat stage lengths3    # musculotendon path lengths -> mlen3.pkl
+python -m squat stage phase3      # timed rep, ground force, per-depth phase factors -> phase3.npz
 ```
 
-`regcur.py` (re-registers the rest bones to the posed arm, producing `Tcur.npy`) also needs the hand-bone STLs listed in `base.py:BONE_FID`; fetch them with `scripts/fetch_stl.sh <ids>`.
+`regcur` (re-registers the rest bones to the posed arm, producing `Tcur.npy`) also needs the hand-bone STLs listed in `squat/geom.py:BONE_FID` and `T_arm_all.npy` from the preserve bundle; fetch the STLs with `scripts/fetch_stl.sh <ids>`.
 
-Rebuild check: running the stages and the build from this bundle reproduces `dist/squat.html` byte for byte. Keep it that way: any change that alters output should be intentional and visible in a diff of the rebuilt file.
+Rebuild check: the build reproduces the data `/squat` ships byte for byte (decompressed data sha256 and parsed manifest; the gzip stream itself depends on the zlib build). `tests/test_golden.py` enforces it.
 
-## Test (headless)
+## Test (pytest)
+
+```bash
+pip install -r requirements-dev.txt && python -m pytest    # ~5 s; skips STL tests if STLs are missing
+python -m pytest -m slow                                   # the IK solves (~3 min each) and regcur
+```
+
+CI (`.github/workflows/ci-pipeline.yml`) sets `SQUAT_STRICT_STL=1`, so missing STLs fail rather than skip.
+
+The four stage caches reproduce byte for byte on the machine that generated them. On other CPUs, float results differ in the last bits (OpenBLAS/LAPACK pick kernels per CPU). So the stage tests pin shas and fall back to a numeric tolerance (`tests/_compare.py`, rtol 1e-7, atol 1e-9; integers, keys and shapes must still match exactly), and report the drift as a warning. The shipped data is built from the committed caches and is pinned exactly everywhere. Regenerate and commit a cache only when the change is intended, and note the machine in the commit.
+
+## Render test (headless)
 
 Cloud Claude Code sessions ship Chromium and a matching Playwright. Use those and don't install another Playwright, because a different version won't find the browser. Locally: `npm i -g playwright && npx playwright install chromium`. The harness loads three.js r128 from `harness/node_modules`. `scripts/rebuild.sh` and `scripts/smoke.sh` wrap the commands below:
 

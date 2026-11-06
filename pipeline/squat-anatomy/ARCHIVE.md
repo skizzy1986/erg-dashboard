@@ -8,10 +8,10 @@ built it (2026-11-04) and committed here so the data can be rebuilt and extended
 
 | | In git | Why |
 |---|---|---|
-| Page sources (`page/`), the Python build (`pipeline/`), harness, scripts, docs, samples | ✅ | Everything needed to understand and rebuild the data. |
-| Cached stage outputs (`pipeline/v3/*.npy`, `*.npz`, `*.pkl`, `base.html`) | ✅ about 8 MB | `build3.py` rebuilds the page from these in about a second. `base.html` carries data from the v1 page, whose generator is lost, so it can't be regenerated. |
-| 14 BodyParts3D STLs (`pipeline/ext/stl/*.stl`, about 15 MB) | ❌ | Refetch them with `scripts/fetch_stl.sh`. **Every build needs them**, `build3.py` included. |
-| The published page (`dist/squat.html`) | ❌ | Rebuild it with `pipeline/v3/build3.py`. |
+| Page sources (`page/`), the Python build (`pipeline/`), harness, scripts, docs, samples | ✅ | Everything needed to understand and rebuild the data. The Python build is now the `squat/` package; the original scripts are in git history. |
+| Cached stage outputs (`pipeline/v3/*.npy`, `*.npz`, `*.pkl`, `base.html`) | ✅ about 8 MB | `python -m squat build` rebuilds the page from these in about a second. `base.html` carries data from the v1 page, whose generator is lost, so it can't be regenerated. |
+| 14 BodyParts3D STLs (`pipeline/ext/stl/*.stl`, about 15 MB) | ❌ | Refetch them with `scripts/fetch_stl.sh`. **Every build needs them**, `python -m squat build` included. |
+| The published page (`dist/squat.html`) | ❌ | Rebuild it with `python -m squat build`. |
 
 ## The archive release
 
@@ -31,7 +31,7 @@ Check a download with `sha256sum <file>` against the table. The same zips are mi
   `meta.static`/`cop`/`heel`/`tip`/`zc`. **Its generator can't be recovered.**
 - **`v2-root/`:** the v2 refinement scripts and data (arm, grip, kinematics, activation,
   repack). They use absolute paths from the chat's folder, so they won't run as they are.
-  `T_arm_all.npy` is needed by `pipeline/v3/regcur.py`.
+  `T_arm_all.npy` is needed by `python -m squat stage regcur`.
 - **`v3-extra/`:** v3 files the main bundle leaves out. `run_ik2.py` and `armik_x.npy`
   start the arm IK seed chain (`armik_x` → `armik2_x` → `armik3_x` → `armik4_x`), plus
   the build logs.
@@ -44,6 +44,7 @@ Check a download with `sha256sum <file>` against the table. The same zips are mi
 ## Verified on 2026-11-04
 Starting from this committed folder plus `scripts/fetch_stl.sh`, running
 `python3 page/assemble.py && python3 pipeline/v3/build3.py page/template.html dist/squat.html`
+(pre-#402; today: `python -m squat build`)
 reproduces the app's data exactly. The decompressed data matches byte for byte (3,450,003
 bytes, sha256 `eb15d943…93b6be`), and so does the parsed manifest.
 

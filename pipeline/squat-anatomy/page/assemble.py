@@ -1,8 +1,14 @@
-"""Concatenate the page sources into the template that pipeline/v3/build3.py fills with data.
-Usage: python3 page/assemble.py  ->  page/template.html"""
-import os
-D = os.path.dirname(os.path.abspath(__file__))
-parts = ['1-head.html', '2-markup.html', '3-core.js', '4-ui.js']
-html = ''.join(open(os.path.join(D, p), encoding='utf-8').read() + ('\n' if p == '3-core.js' else '') for p in parts)
-open(os.path.join(D, 'template.html'), 'w', encoding='utf-8').write(html)
+"""Write page/template.html from the page sources: python3 page/assemble.py.
+
+`python -m squat build` assembles the template in memory, so the build no longer needs this file.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from squat.page import assemble_template  # noqa: E402
+
+D = Path(__file__).parent
+html = assemble_template(D)
+(D / 'template.html').write_text(html, encoding='utf-8')
 print('wrote page/template.html', len(html), 'chars')

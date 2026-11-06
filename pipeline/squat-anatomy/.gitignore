@@ -7,5 +7,6 @@ page/template.html
 
 # BodyParts3D STLs are refetched by scripts/fetch_stl.sh (not committed; see ../../docs/squat/PROVENANCE.md)
 pipeline/ext/stl/*.stl
-# dist/squat.html is rebuilt by pipeline/v3/build3.py
+# dist/squat.html is rebuilt by python -m squat build
 dist/*.html
+.pytest_cache/
