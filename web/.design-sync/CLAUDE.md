@@ -14,6 +14,14 @@
 > is the missing half — and it is the one of the three the code side owns, because the
 > domain lives in the code.
 
+> **Superseded in part — read `VISION.md` (repo root) first.** As of 2026-11-06 SplitIQ is
+> not a one-athlete dashboard and has no AI coach. In this file, "What SplitIQ is" (the
+> single-user premise), the **Coach** destination, the **Microcycle** entry and the CP and
+> zone figures (one athlete's calibration) are superseded, as are the Coach, roster,
+> Planning and nutrition sections of `HANDOFF.md`, `DESIGN_BRIEF.md` and `conventions.md`.
+> The mobile target is four destinations. Those lines are struck later (tracked in #412);
+> until then, where they disagree with `VISION.md`, `VISION.md` wins — do not design them.
+
 ## What SplitIQ is
 
 A personal training dashboard for **one rower** — Scott. Erg, strength and bike. It

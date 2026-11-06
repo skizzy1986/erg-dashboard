@@ -7,10 +7,17 @@
 
 ## Project
 
-Personal coaching dashboard for rowing (erg), strength, and cycling training.
-Solo user: Scott. React 19 + Vite SPA under `web/` (Capacitor monorepo layout),
-Supabase (Postgres + Auth + Edge Functions), Vercel hosting, Vitest + React
-Testing Library. Full briefing: `CLAUDE.md`.
+SplitIQ — a training app where the movements explain themselves. A 3D anatomical
+runtime (`web/src/anatomy/`; first product `/squat`) shows what a lift does, wrapped
+around a training log with an honest load model. For anyone who lifts or rows; a hobby
+built to a public-quality standard. User data is keyed on `user_id` under owner-only
+RLS, the user taken from the verified JWT. No AI coach and no personal prescription
+engine: the load model stays (CTL/ATL/TSB, `sessionLoad`, readiness,
+`derivePaceZones(cp)` with calibration read from `anchors`). The LLM coach and the
+one-athlete schedule/prescription code still in the tree are being removed (#412) —
+do not extend them. React 19 + Vite SPA under `web/` (Capacitor monorepo layout),
+Supabase (Postgres + Auth + Edge Functions), Vercel hosting, Vitest + React Testing
+Library. Read `VISION.md` first (it wins where docs disagree), then `CLAUDE.md`.
 
 ## Architecture layers (place code in the correct layer — never a new monolith)
 
@@ -92,8 +99,10 @@ Projects: `erg-dashboard` (the app) and `erg-dashboard-functions` (edge function
 
 CTL = 42-day exponential average of training load (fitness). ATL = 7-day
 average (fatigue). TSB = CTL − ATL (form). sRPE = session effort, 1–10.
-CP = critical power (~205 W rowing, provisional). Deeper domain detail:
-`.claude/skills/training-science.md`.
+CP = critical power, the anchor every rowing zone derives from — read it from the
+per-user `anchors` table (`rowing_cp`); never hardcode a value. Deeper domain detail:
+`.claude/skills/training-science.md` (its prescription sections are superseded by
+`VISION.md`).
 
 ## READ-ONLY instruction template
 
