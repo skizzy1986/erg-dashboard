@@ -184,6 +184,13 @@ describe('OverviewView', () => {
     expect(container.textContent.length).toBeGreaterThan(200);
   });
 
+  it('shows an empty nutrition panel with no third-party app prompt', () => {
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText('NUTRITION STATUS')).toBeInTheDocument();
+    expect(screen.getByText('No nutrition log yet.')).toBeInTheDocument();
+    expect(screen.queryByText(/MacroFactor/)).not.toBeInTheDocument();
+  });
+
   it('handles an empty session history without crashing', () => {
     const { container } = render(
       <OverviewView {...baseProps} loggedSessions={[]} />

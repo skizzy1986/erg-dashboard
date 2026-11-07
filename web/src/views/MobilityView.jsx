@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import { mobilityLog } from '../constants/logs.js';
-import {
-  MOBILITY_ROUTINES,
-  MOBILITY_STREAK_NOTE,
-} from '../constants/mobility.js';
+import { MOBILITY_ROUTINES } from '../constants/mobility.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
 
@@ -33,9 +29,8 @@ export default function MobilityView() {
           🧘 MOBILITY — a training pillar
         </div>
         <div style={{ fontSize: 11, color: THEME.textSubtle, lineHeight: 1.6 }}>
-          Not accessory work. With the left hamstring/glute rehab, mobility is
-          load-bearing for staying healthy enough to train. The pre-session
-          prime especially — it's rehab activation disguised as a warm-up.
+          Not accessory work. Regular mobility keeps you healthy enough to
+          train, and the pre-session prime doubles as the warm-up.
         </div>
       </div>
 
@@ -218,108 +213,6 @@ export default function MobilityView() {
             </div>
           );
         })}
-      </div>
-
-      {/* Tracking log */}
-      <div
-        style={{
-          fontSize: 9,
-          letterSpacing: 3,
-          color: THEME.accentAlt,
-          marginBottom: 8,
-        }}
-      >
-        RECENT · TRACKED
-      </div>
-      <div
-        style={{
-          background: THEME.surfaceAlt,
-          border: `1px solid ${alpha(THEME.accentAlt, '30')}`,
-          borderLeft: `3px solid ${THEME.accentAlt}`,
-          borderRadius: 6,
-          padding: '10px 13px',
-          marginBottom: 10,
-          fontSize: 10,
-          color: THEME.neutralAccent,
-          lineHeight: 1.6,
-        }}
-      >
-        {MOBILITY_STREAK_NOTE}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {mobilityLog.map((m, i) => {
-          const r = MOBILITY_ROUTINES.find((x) => x.id === m.type);
-          const col = r ? r.color : THEME.neutralAccent;
-          return (
-            <div
-              key={i}
-              style={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderLeft: `3px solid ${col}`,
-                borderRadius: 6,
-                padding: '11px 14px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 4,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 9,
-                  }}
-                >
-                  <span style={{ fontSize: 14 }}>{r ? r.icon : '•'}</span>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: THEME.textStrong,
-                    }}
-                  >
-                    {m.label}
-                  </div>
-                </div>
-                <div style={{ fontSize: 10, color: THEME.muted }}>
-                  {m.date} · {m.duration}
-                </div>
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: THEME.textSubtle,
-                  lineHeight: 1.5,
-                  paddingLeft: 23,
-                }}
-              >
-                {m.note}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div
-        style={{
-          marginTop: 12,
-          background: THEME.surfaceAlt,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 6,
-          padding: '11px 14px',
-          fontSize: 10,
-          color: THEME.muted,
-          textAlign: 'center',
-          lineHeight: 1.6,
-        }}
-      >
-        Report mobility sessions in chat to log them here. Pre-session prime +
-        foam roll + yoga all count.
       </div>
     </>
   );
