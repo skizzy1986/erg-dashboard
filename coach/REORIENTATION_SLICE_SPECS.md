@@ -418,3 +418,135 @@ GitHub comments unless asked); work on the session-assigned branch.
 Out: `.github/workflows/claude.yml` and its secret; `CLAUDE.md`, `README.md`, `steward/SKILL.md`,
 `architecture.md`, `supabase-patterns.md` (slice 11, #424); `strava-connect/index.ts:22`;
 `noCoachClient.test.js`; tests for `vitals-sync` (#312 stays open).
+
+---
+
+## Slice 4a — #416 — health data out of source and out of the bundle
+
+> `/orchestrate slice 4a (#416)`, 2026-11-07, `main` at `0d8c204`. Session:
+> https://claude.ai/code/session_018vVjPzCX7rF3ojhY4JKNRu. Classified as a bug fix (issue labelled
+> `bug`), so Story was skipped: the issue body is the approved story. Stage 1 research (Codebase
+> Onboarding Engineer, sonnet) and Stage 3 spec (Workflow Architect, opus) were both read-only, and
+> the tree was clean after each. Branch `claude/magical-hypatia-7p50yq`. Data is described by shape
+> only.
+
+### Gate 2 — Scott, 2026-11-07
+
+- **`LIPID_REF`: rebase on AACB 2018** (Harmonised Lipid Reporting Recommendations). The old
+  table mixed purposes. TC < 5.5 and HDL > 1.0 (male) are AACB reporting limits. LDL < 2.0 is a
+  high-risk treatment target, which in a generic app is personal prescription. TG < 1.7 is the
+  NCEP ATP III metabolic-syndrome criterion. The new table is TC ≤ 5.5, LDL ≤ 3.0, HDL ≥ 1.0 male
+  and ≥ 1.2 female, TG ≤ 2.0 mmol/L, labelled "limit", with one source link. The figures came
+  from search extracts only, because the AACB PDF host does not resolve under this environment's
+  allowlist. **Scott reads the PDF at Gate 3 before merge.**
+- **`HORMONE_REF`: deleted** (the epic plan's version, over the issue's "keep with a source"). The
+  panel is sex-specific and existed for one person's history. 4b decides what reference data the
+  hormone section gets.
+- Everything else as specced: "Go — build it".
+
+### Research corrections to the plan
+
+1. The epic says delete `HORMONE_REF` and the issue says keep it. Resolved at Gate 2 above.
+2. `logs.js` holds more personal comment text than the issue lists: the bloods header (2-5,
+   bodyweight figures), the mobility header (11-12), the nutrition header (281) and an orphan
+   device comment (341-343). They all go with their exports.
+3. Personal prose in `RecoveryView.jsx` that the issue does not name: the data-status note
+   (377-395), the right-hand header labels in BP, bloods and hormone, the bloods prep blurb and
+   weight-loss prose, the hormone clinical-history footer and the injury blurb. All of it goes.
+   `MobilityView.jsx`'s header (one person's rehab framing) is reworded generically too (found
+   by the Reality Checker).
+4. The four Recovery sections render only when vitals are present (inside the `if (!today)`
+   branch). 4a keeps that gating and 4b lifts it, so the empty panels do not show when vitals are
+   missing.
+5. **The `logs-*` chunk survives 4a**, because RecoveryView (`LIPID_REF`) and JournalView still
+   import `logs.js`. It still ships slice 5's `DECISION_LOG`, `HYPOTHESES` and
+   `CONFIDENCE_MIGRATION`, which contain bodyweight, intake and expenditure figures. So "no health
+   record in any shipped chunk" is not fully true until slice 5 merges. Acceptance 2 still holds:
+   it covers the deleted exports.
+6. Production check on 2026-11-07: `sw.js` precaches `assets/logs-*.js` and the chunk returns 200
+   without auth. Its `.js.map` returns 403 (`sourcemap: 'hidden'`), so source maps are not a live
+   leak. Old Vercel deployments and installed PWAs keep the old chunk until Scott removes them
+   (outside the repo).
+
+### Build brief (summary of the approved spec)
+
+1. **`constants/logs.js`**:
+   - Delete `bpLog`, `bloodsLog`, `NIGGLES`, `mobilityLog`, `nutritionLog`, `HORMONE_REF` and every
+     personal comment.
+   - Rewrite `LIPID_REF` as five rows `{marker,target,unit,color,source}` sharing one AACB
+     `source: {name,url}`.
+   - Leave the Journal exports untouched.
+2. **`views/RecoveryView.jsx`**:
+   - Delete the sleep callout and the data-status note.
+   - Each of the four sections keeps its card and heading and gains a local, non-exported
+     `EmptyPanel`. Niggles is renamed `INJURY WATCH`.
+   - Bloods keeps the `LIPID_REF` rows ("limit …") plus one source link.
+   - Drop the `bpCategory` import. The function stays, with its tests, for 4b.
+3. **`views/MobilityView.jsx`**: delete the whole tracking block (header, streak callout, list,
+   "report in chat" footer).
+4. **`views/OverviewView.jsx`**:
+   - The Nutrition card becomes heading + "No nutrition log yet." The rows, the MacroFactor label
+     and both calibrated-figure prose blocks go.
+   - Only the `assessMacro`/`macroColor`/`NUTRITION_TARGETS`/`nutritionLog` imports are removed;
+     the definitions are left for slice 8.
+5. **`constants/mobility.js`**: header comment only.
+6. **Tests**:
+   - `RecoveryView` empty states (`it.each`) and the lipid rows plus source link.
+   - Mobility: the tracking block is absent.
+   - Overview: the empty nutrition line, and no MacroFactor.
+   - `constants/__tests__/logs.test.js`: every row has a source, the rows are pinned, and no
+     removed export remains.
+   - `__tests__/noHealthLogs.test.js`: the slice 2 guard pattern, case-sensitive, with
+     concatenated needles.
+7. **Acceptance 2** is a one-off proof, not committed:
+   - A scratch script loads the deleted exports from `0d8c204`, collects every string of 4+
+     characters, and adds deleted JSX prose lines from the diff.
+   - It keeps only strings that are *distinctive*: at base they appear in no built file other than
+     the `logs` chunk and the three views' chunks.
+   - It counts how many of those appear anywhere in `dist/` at base and at HEAD, printing counts
+     only.
+   - Committing hashes of the literals was rejected, because short, low-entropy values can be
+     brute-forced back from a hash.
+
+### Test plan (criterion → proof)
+
+| # | Criterion | Proof |
+|---|---|---|
+| 1 | `git grep` clean in `web/src` | `noHealthLogs.test.js`, plus the grep in the PR body |
+| 2 | No deleted literal in built output | Count-only proof: base build (positive control) against HEAD build |
+| 3 | Empty states for the four Recovery sections | `RecoveryView.test.jsx` `it.each` |
+| 4 | Test no longer imports the deleted exports | `RecoveryView.test.jsx:18`; the guard scans tests too |
+| 5 | Every retained range carries a source | `constants/__tests__/logs.test.js` |
+| 6 | Coverage not lowered; `check:colours` passes | Before/after table in the PR body |
+
+Out of scope:
+- Schema and DB reads (4b).
+- Re-entering BP rows (D9, MCP lane).
+- History rewrite (D11).
+- Journal exports (5).
+- The Nutrition section and its helpers (8).
+- `MOBILITY_ROUTINES` and the `MOBILITY_STREAK_NOTE` export (10).
+- Design-sync docs (12) and `architecture.md` (11).
+
+### Stage 6 verdicts
+
+- **Code Reviewer: APPROVE.** The one condition is that Scott verifies the five AACB rows and the
+  URL against the PDF before merge. The rest are nits:
+  - the Overview empty line duplicates `EmptyPanel`'s style (slice 8 rewrites that card);
+  - section titles are styled `<div>`s (the app-wide pattern);
+  - `AACB_LIPID_2018` is exported but only used locally.
+- **Reality Checker: fix-then-ship.** No blockers.
+  - *Should-fix 1:* injury framing in `MobilityView.jsx`'s header. **Fixed.**
+  - *Should-fix 2–3:* criteria 2 and 6 must be worded with their qualifiers. They are, in the PR
+    body: "thresholds met, no floor lowered", not "coverage not lowered".
+  - *Should-fix 4:* the story claim must be scoped. Personal data remains in the slice 5 Journal
+    exports, including a Google Drive file ID for a personal sheet (Scott: check that file's
+    sharing), and in `constants/coaching.js` `ADAPTIVE_RULES[].origin`, rendered by OverviewView
+    (slice 8).
+  - *Nice-to-have:* the guard comment overclaimed. **Reworded.**
+  - *Parked for 4b:* `bpCategory` has no source and mislabels a high-systolic / normal-diastolic
+    reading as "High-normal" (`sys < 140 || dia < 90`).
+  - The guard was positive-controlled on the base tree (the offenders test fails there).
+- Orchestrator change after Stage 5: the `RecoveryView` empty-state `it.each` is scoped to each card
+  with `within` (from the Test Results Analyzer). A mutation test swapping two labels failed 2 tests;
+  the restored file passes.

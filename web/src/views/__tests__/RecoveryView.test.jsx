@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import React from 'react';
 import {
   RHR_DEFAULT as RHR_BASELINE,
@@ -9,13 +9,13 @@ import {
 } from '../../utils/recoveryAnalytics.js';
 
 // Vitals now come from useVitals, not the static recoveryLog constant.
-// LIPID_REF / HORMONE_REF / NIGGLES / bpLog / bloodsLog stay real.
+// LIPID_REF stays real.
 const useVitalsMock = vi.fn();
 vi.mock('../../hooks/useVitals.js', () => ({
   useVitals: () => useVitalsMock(),
 }));
 
-import { LIPID_REF, HORMONE_REF, NIGGLES } from '../../constants/logs.js';
+import { LIPID_REF } from '../../constants/logs.js';
 import RecoveryView from '../RecoveryView.jsx';
 
 const day = (over = {}) => ({
@@ -79,7 +79,7 @@ describe('RecoveryView', () => {
     expect(screen.getByText(/READINESS ·/)).toBeInTheDocument();
     expect(screen.getByText(/RESTING HR TREND/)).toBeInTheDocument();
     expect(screen.getByText(/BLOOD PRESSURE/)).toBeInTheDocument();
-    expect(screen.getByText(/NIGGLES · INJURY WATCH/)).toBeInTheDocument();
+    expect(screen.getByText(/INJURY WATCH/)).toBeInTheDocument();
     expect(screen.getByText(/BLOODS · LIPID PANEL/)).toBeInTheDocument();
   });
 
@@ -123,21 +123,36 @@ describe('RecoveryView', () => {
     expect(screen.getByText(/READINESS ·/)).toBeInTheDocument();
   });
 
-  it('renders the lipid and hormone reference panels from constants', () => {
+  it.each([
+    ['BLOOD PRESSURE', 'No blood pressure readings yet.'],
+    ['BLOODS · LIPID PANEL', 'No lipid results yet.'],
+    ['HORMONE PANEL', 'No hormone results yet.'],
+    ['INJURY WATCH', 'No injuries logged yet.'],
+  ])('renders the %s heading over its own empty panel', (heading, label) => {
+    renderView();
+    const card = screen.getByText(heading).parentElement;
+    expect(within(card).getByText(label)).toBeInTheDocument();
+    expect(screen.getAllByText(label)).toHaveLength(1);
+  });
+
+  it('renders each lipid decision limit from LIPID_REF', () => {
     renderView();
     for (const m of LIPID_REF) {
       expect(screen.getByText(m.marker)).toBeInTheDocument();
     }
-    for (const h of HORMONE_REF) {
-      expect(screen.getByText(h.marker)).toBeInTheDocument();
-    }
   });
 
-  it('renders each tracked niggle', () => {
+  it('links the lipid decision limits to their published source', () => {
     renderView();
-    for (const n of NIGGLES) {
-      expect(screen.getByText(n.area)).toBeInTheDocument();
-    }
+    const link = screen.getByRole('link', { name: LIPID_REF[0].source.name });
+    expect(link).toHaveAttribute('href', LIPID_REF[0].source.url);
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.getAttribute('rel')).toMatch(/noopener/);
+  });
+
+  it('shows no pending placeholders for health records', () => {
+    renderView();
+    expect(screen.queryByText(/pending/i)).not.toBeInTheDocument();
   });
 
   it('exercises the positive-TSB narrative branch', () => {

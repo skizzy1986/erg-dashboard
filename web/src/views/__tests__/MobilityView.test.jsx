@@ -3,14 +3,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import MobilityView from '../MobilityView.jsx';
 
 describe('MobilityView', () => {
-  it('renders the routines library and tracking sections', () => {
+  it('renders the routines library', () => {
     render(<MobilityView />);
     expect(
       screen.getByText(/MOBILITY — a training pillar/i)
     ).toBeInTheDocument();
     expect(screen.getByText('ROUTINES · ON HAND')).toBeInTheDocument();
     expect(screen.getByText('Foam Roll / Soft Tissue')).toBeInTheDocument();
-    expect(screen.getByText('RECENT · TRACKED')).toBeInTheDocument();
+    expect(screen.queryByText('RECENT · TRACKED')).not.toBeInTheDocument();
+    expect(screen.queryByText(/in chat/i)).not.toBeInTheDocument();
   });
 
   it('expands and collapses a routine to reveal its blocks', () => {
