@@ -17,3 +17,7 @@ Closes #<!-- issue number — links the PR to its issue so merging closes it and
 - [ ] Visual change: none — or a screenshot/baseline diff is attached and reviewed here
 - [ ] Stays inside the property boundary: colour hexes = #183 · box metrics = S6 ·
       type = S-1 (see DESIGN.md)
+- [ ] Touches `/squat`'s static graph (`web/src/squat/**`, `web/src/anatomy/**`,
+      `RouteRoot.jsx`): no — or the five squat figures from `npm run build && npm run size`
+      (squat entry · squat total · squat 3D · squat data · largest precached file) are
+      pasted below, re-measured on this branch, never quoted from a doc (see docs/ROADMAP.md)

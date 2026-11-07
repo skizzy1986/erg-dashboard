@@ -156,15 +156,16 @@ muscles and carries a patent note).
   public chunk. Before any real user beyond invitation, get a proper read on the Privacy
   Act's health-service position (secondary sources only so far).
 
-## Bundle baseline — measured 2026-11-07 at `0d8c204`
+## Bundle baseline — measured 2026-11-07 at `bdac9fb` (after slice 4a, #447)
 
 Re-measure with `npm run build && npm run size` before any PR that touches `/squat`'s
-static graph; never quote this table as current.
+static graph; never quote this table as current. The PR template asks for the five squat
+figures in the body of every such PR (R7, #436).
 
 | Budget | Measured | Ceiling | Spare |
 |---|---|---|---|
 | Dashboard entry | 146.8 KB | 150 KB | 3.2 KB |
-| Dashboard total | 382.0 KB | 400 KB | 18.0 KB |
+| Dashboard total | 377.5 KB | 400 KB | 22.5 KB |
 | Squat entry | 116.4 KB | 117 KB | **0.6 KB** |
 | Squat total | 27.6 KB | 30 KB | 2.4 KB |
 | Squat 3D | 138.2 KB | 145 KB | 6.8 KB |
