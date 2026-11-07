@@ -1,6 +1,6 @@
 name: Project board
 
-# Reads and moves items on the "Split IQ" board (users/skizzy1986/projects/1).
+# Reads, moves and populates items on the "Split IQ" board (users/skizzy1986/projects/1).
 #
 # Cloud Claude Code sessions cannot reach Projects v2: GraphQL is blocked and
 # user-scoped REST is refused. They can dispatch a workflow through the
@@ -8,18 +8,32 @@ name: Project board
 # the ADD_TO_PROJECT_PAT secret with add-to-project.yml, because GITHUB_TOKEN
 # cannot reach a user-owned project. See docs/CLOUD_ENVIRONMENT.md.
 #
+# Actions:
+#   list    print the board (status plus the roadmap fields where they exist)
+#   move    set one item's Status column
+#   fields  create the roadmap fields if they are missing (idempotent):
+#           Horizon (single select), Size (single select), Start (date), Target (date)
+#   set     bulk-assign field values, one item per line of `assignments`:
+#             433|Horizon=H0 Foundations|Size=S|Start=2026-11-07|Target=2026-12-19
+#           Any field on the board works, Status included. Single-select values
+#           are matched by option name; dates are YYYY-MM-DD.
+#
 # `status` is a string, not a choice: a choice input is always rendered with a
 # selected value, so `list` runs would carry a meaningless status. It is
 # validated against the board's live option names instead, which also keeps it
 # correct if a column is renamed.
+#
+# GitHub keeps at most ONE pending run per concurrency group, so queuing several
+# dispatches at once cancels all but the last pending one. Dispatch one at a
+# time and wait, or use `set` with many lines in a single run.
 
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: list the board, or move one item
+        description: list the board, move one item, create the roadmap fields, or set field values
         type: choice
-        options: [list, move]
+        options: [list, move, fields, set]
         required: true
         default: list
       item:
@@ -28,6 +42,10 @@ on:
         required: false
       status:
         description: 'target column (move only): Backlog, Ready, In progress, In review, Done'
+        type: string
+        required: false
+      assignments:
+        description: 'set only: one line per item, `<number>|<Field>=<value>|<Field>=<value>…`'
         type: string
         required: false
 
@@ -40,12 +58,13 @@ concurrency:
 jobs:
   board:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
       ACTION: ${{ inputs.action }}
       ITEM: ${{ inputs.item }}
       STATUS: ${{ inputs.status }}
+      ASSIGNMENTS: ${{ inputs.assignments }}
       # "@me" = the PAT's owner (skizzy1986). A named login makes gh look up
       # user-vs-org first, which fails with "unknown owner type" on this token.
       OWNER: "@me"
@@ -69,6 +88,10 @@ jobs:
               exit 1
             fi
           fi
+          if [ "$ACTION" = "set" ] && [ -z "$ASSIGNMENTS" ]; then
+            echo "::error::set needs assignments = one line per item."
+            exit 1
+          fi
 
       - name: Run
         run: |
@@ -79,12 +102,54 @@ jobs:
           NOACCESS="Could not read Split IQ (project $NUMBER) with ADD_TO_PROJECT_PAT; see the gh error above."
 
           PID=$(gh project view "$NUMBER" --owner "$OWNER" --format json --jq .id) || fail "$NOACCESS"
-          FIELD=$(gh project field-list "$NUMBER" --owner "$OWNER" --format json \
-            --jq '.fields[] | select(.name == "Status")') || fail "$NOACCESS"
+          FIELDS=$(gh project field-list "$NUMBER" --owner "$OWNER" -L 100 --format json) || fail "$NOACCESS"
+          FIELD=$(jq -c '.fields[] | select(.name == "Status")' <<<"$FIELDS")
           if [ -z "$PID" ] || [ -z "$FIELD" ]; then
             fail "Could not resolve project $OWNER/$NUMBER or its Status field."
           fi
           FID=$(jq -r .id <<<"$FIELD")
+
+          # item_id <number>: adds the issue/PR to the board if absent (item-add is
+          # idempotent and returns the existing item otherwise) and prints its id.
+          item_id() {
+            local url
+            url=$(gh api "repos/$REPO/issues/$1" --jq .html_url) || fail "No issue or PR #$1 in $REPO."
+            gh project item-add "$NUMBER" --owner "$OWNER" --url "$url" --format json --jq .id \
+              || fail "Could not add #$1 to the board (PAT needs project write)."
+          }
+
+          # set_field <item_id> <field name> <value>: resolves the field by name and
+          # the value by the field's type. Single-select values match an option name.
+          set_field() {
+            local iid="$1" name="$2" value="$3" f fid type oid
+            f=$(jq -c --arg n "$name" '.fields[] | select(.name == $n)' <<<"$FIELDS")
+            [ -n "$f" ] || fail "No field named '$name' on the board. Run action=fields first, or check the spelling."
+            fid=$(jq -r .id <<<"$f")
+            type=$(jq -r '.type' <<<"$f")
+            case "$type" in
+              ProjectV2SingleSelectField)
+                oid=$(jq -r --arg v "$value" '.options[] | select(.name == $v) | .id' <<<"$f")
+                if [ -z "$oid" ]; then
+                  fail "'$value' is not an option of '$name'. Valid: $(jq -r '[.options[].name] | join(", ")' <<<"$f")"
+                fi
+                gh project item-edit --id "$iid" --project-id "$PID" --field-id "$fid" --single-select-option-id "$oid" >/dev/null
+                ;;
+              ProjectV2Field)
+                # field-list does not report the data type, so infer it from the value:
+                # an ISO date sets a date field, a bare number a number field, else text.
+                if [[ "$value" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+                  gh project item-edit --id "$iid" --project-id "$PID" --field-id "$fid" --date "$value" >/dev/null
+                elif [[ "$value" =~ ^-?[0-9]+([.][0-9]+)?$ ]]; then
+                  gh project item-edit --id "$iid" --project-id "$PID" --field-id "$fid" --number "$value" >/dev/null
+                else
+                  gh project item-edit --id "$iid" --project-id "$PID" --field-id "$fid" --text "$value" >/dev/null
+                fi
+                ;;
+              *)
+                fail "Field '$name' has type $type, which this workflow does not set (iterations are UI-only)."
+                ;;
+            esac
+          }
 
           if [ "$ACTION" = "list" ]; then
             ORDER='["Backlog","Ready","In progress","In review","Done"]'
@@ -97,9 +162,9 @@ jobs:
             TABLE=$(jq -r --argjson order "$ORDER" '
                 def rank: (.status // "") as $s
                   | ($order | index($s)) // (if $s == "" then 99 else 98 end);
-                ["| # | Type | Title | Status |", "|---|---|---|---|"]
+                ["| # | Type | Title | Status | Horizon | Size | Start | Target |", "|---|---|---|---|---|---|---|---|"]
                 + (.items | sort_by(rank, (.content.number // 0)) | map(
-                    "| \(.content.number // "-") | \(.content.type // "-") | \((.title // "") | gsub("\\|"; "\\|")) | \(.status // "(none)") |"
+                    "| \(.content.number // "-") | \(.content.type // "-") | \((.title // "") | gsub("\\|"; "\\|")) | \(.status // "(none)") | \(.horizon // "") | \(.size // "") | \(.start // "") | \(.target // "") |"
                   ))
                 | .[]' <<<"$ITEMS")
             report "### Split IQ board ($SHOWN of $TOTAL items)"
@@ -108,14 +173,58 @@ jobs:
             exit 0
           fi
 
+          if [ "$ACTION" = "fields" ]; then
+            ensure() {
+              local name="$1" type="$2" opts="${3:-}"
+              if jq -e --arg n "$name" '.fields[] | select(.name == $n)' <<<"$FIELDS" >/dev/null; then
+                report "- $name: exists"
+                return
+              fi
+              if [ -n "$opts" ]; then
+                gh project field-create "$NUMBER" --owner "$OWNER" --name "$name" --data-type "$type" --single-select-options "$opts" >/dev/null \
+                  || fail "Could not create field '$name'."
+              else
+                gh project field-create "$NUMBER" --owner "$OWNER" --name "$name" --data-type "$type" >/dev/null \
+                  || fail "Could not create field '$name'."
+              fi
+              report "- $name: created ($type${opts:+: $opts})"
+            }
+            report "### Roadmap fields"
+            ensure "Horizon" SINGLE_SELECT "H0 Foundations,H1 Squat,H2 Movements,H3 Coach surfaces,Maintenance"
+            ensure "Size" SINGLE_SELECT "S,M,L"
+            ensure "Start" DATE
+            ensure "Target" DATE
+            exit 0
+          fi
+
+          if [ "$ACTION" = "set" ]; then
+            report "### Field assignments"
+            while IFS= read -r line; do
+              line="${line%$'\r'}"
+              [ -z "${line// }" ] && continue
+              IFS='|' read -r -a parts <<<"$line"
+              num="${parts[0]// /}"
+              [[ "$num" =~ ^[0-9]+$ ]] || fail "Bad line (needs a leading issue number): $line"
+              iid=$(item_id "$num")
+              summary=""
+              for kv in "${parts[@]:1}"; do
+                [ -z "$kv" ] && continue
+                name="${kv%%=*}"; value="${kv#*=}"
+                [ "$name" != "$kv" ] || fail "Bad assignment (needs Field=value): $kv"
+                set_field "$iid" "$name" "$value"
+                summary="$summary $name=$value"
+              done
+              report "- #$num:$summary"
+            done <<<"$ASSIGNMENTS"
+            exit 0
+          fi
+
           OID=$(jq -r --arg s "$STATUS" '.options[] | select(.name == $s) | .id' <<<"$FIELD")
           if [ -z "$OID" ]; then
             VALID=$(jq -r '[.options[].name] | join(", ")' <<<"$FIELD")
             fail "Unknown status. Valid: $VALID"
           fi
-          URL=$(gh api "repos/$REPO/issues/$ITEM" --jq .html_url) || fail "No issue or PR #$ITEM in $REPO."
-          ITEM_ID=$(gh project item-add "$NUMBER" --owner "$OWNER" --url "$URL" --format json --jq .id) \
-            || fail "Could not add #$ITEM to the board (PAT needs project write)."
+          ITEM_ID=$(item_id "$ITEM")
           gh project item-edit --id "$ITEM_ID" --project-id "$PID" --field-id "$FID" \
             --single-select-option-id "$OID" >/dev/null || fail "Could not set the Status of #$ITEM."
           report "#$ITEM -> $STATUS"
