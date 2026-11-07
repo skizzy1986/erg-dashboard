@@ -158,6 +158,42 @@ GitHub has no trigger for "triaged" or "branch created", so those two moves stay
 Cloud sessions read the board and make the two manual moves through
 `.github/workflows/project-board.yml` — see [`docs/CLOUD_ENVIRONMENT.md`](docs/CLOUD_ENVIRONMENT.md).
 
+### Roadmap fields (added 2026-11-07)
+
+Four custom fields carry the product roadmap ([`docs/ROADMAP.md`](docs/ROADMAP.md), epic
+#432) onto the board, so a **Roadmap** layout can draw it:
+
+| Field | Type | Values | Meaning |
+|---|---|---|---|
+| **Horizon** | single select | `H0 Foundations` · `H1 Squat` · `H2 Movements` · `H3 Coach surfaces` · `Maintenance` | Which roadmap horizon the item belongs to; `Maintenance` is everything that is not roadmap work |
+| **Size** | single select | `S` · `M` · `L` | ≤ half a day · ≈ a day · 2+ days, the roadmap's own scale |
+| **Start** / **Target** | date | `YYYY-MM-DD` | The **horizon's planning window**, not a per-item commitment: H0 2026-11-07 → 2026-12-19, H1 2026-11-21 → 2027-02-28. Later horizons get dates when they are approved. |
+
+`project-board.yml` grew two actions for them. `fields` creates any of the four that is
+missing (idempotent). `set` takes one line per item and sets any field by name, Status
+included, in a single run — which matters because **the concurrency group keeps only one
+pending run**, so several dispatches queued at once cancel all but the last:
+
+```
+433|Horizon=H0 Foundations|Size=S|Start=2026-11-07|Target=2026-12-19|Status=Ready
+```
+
+`list` now prints the four columns beside Status.
+
+### Views worth having (owner clicks; views cannot be created through the API)
+
+1. **Board** by Status — the existing view; the day-to-day answer to "what's happening".
+2. **Roadmap** — layout *Roadmap*, date fields *Start → Target*, group by **Horizon**,
+   markers on *Target*. Filter `-horizon:Maintenance` so only roadmap work draws.
+3. **Epic tree** — layout *Table*, group by **Parent issue**, columns Status · Horizon ·
+   Size · Target. Sub-issues of #412 and #432 fall into their epics automatically.
+4. **Now** — layout *Board*, filter `status:Ready,"In progress","In review"`, group by
+   Status, sorted by Horizon. The short list for a 30-minute gap.
+
+The built-in *Auto-add sub-issues* workflow (on) means a new sub-issue of an epic lands
+on the board with its parent set; give it a Horizon and Size with `set` and it appears in
+every view above.
+
 > **Built-in workflows (configured 2026-11-05, *Project → ⋯ → Workflows*).**
 > **On:** Auto-add to project (repo `erg-dashboard`, filter `is:issue,pr is:open`) ·
 > Item added to project (issues + PRs → Backlog) · Item reopened (→ Backlog) ·

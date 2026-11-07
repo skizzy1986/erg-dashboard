@@ -321,11 +321,19 @@ A cloud session cannot reach the board directly:
 
 | Inputs | Effect |
 |---|---|
-| `action=list` | Prints the board as a table, in column order |
+| `action=list` | Prints the board as a table, in column order, with the Horizon / Size / Start / Target columns |
 | `action=move item=<n> status=<column>` | Adds issue/PR `<n>` to the board if needed and sets its Status |
+| `action=fields` | Creates the roadmap fields (Horizon, Size, Start, Target) if missing; idempotent |
+| `action=set assignments=<lines>` | One line per item, `433\|Horizon=H0 Foundations\|Size=S\|Start=2026-11-07\|Target=2026-12-19\|Status=Ready`; sets any field by name in one run |
 
 Read the result with `actions_list`, `actions_get` and `get_job_logs`. The table is in the
 job log and in the job summary.
+
+**Dispatch one run at a time.** The workflow's concurrency group keeps only one *pending*
+run: eight `move` dispatches queued together on 2026-11-07 ran two and cancelled six
+(runs 34–39). Wait for each run to finish, or put every change in one `set` run. A
+background `until` loop polling `gh api repos/<owner>/<repo>/actions/workflows/project-board.yml/runs?per_page=1`
+works for the wait (that read path was reachable on 2026-11-07, despite the caveat below).
 
 The board's built-in workflows handle every automatic move (see `WORKFLOW.md`). This
 workflow exists so a session can read the board and make the two manual moves: to Ready,
@@ -333,8 +341,10 @@ and to In progress.
 
 Verified 2026-11-05: `action=list` (run 41988480375) printed the full board with real
 Status values, so the token, the `@me` owner and the `gh project` JSON shapes
-(`.items[].status`, `.items[].content`, `.fields[].options[]`) all hold. `move` has not run
-yet; its `item-add` → `.id` step is the one part still unconfirmed.
+(`.items[].status`, `.items[].content`, `.fields[].options[]`) all hold. Verified
+2026-11-07: `move` (runs 33–44, Backlog → Ready) and `fields` (run 45, created Horizon,
+Start and Target; Size already existed) both work, so `item-add` → `.id` and
+`field-create` hold too.
 
 Caveats:
 

@@ -1,5 +1,7 @@
 # Roadmap: candidate PRs
 
+> Squat-tool candidate PRs only. The product roadmap that sequences these against the second movement and the coach/athlete surfaces is the repo-root [`docs/ROADMAP.md`](../../../docs/ROADMAP.md) (epic #432); items 2–10 here map to its R9, R19–R24 and the parked list.
+
 Ordered by how much each one improves trust in the numbers per unit of work. Each item lists the reason, scope and done criteria. Keep PRs small: one item per PR, and split the larger ones.
 
 ## 1. Pipeline hygiene (done, #402)
