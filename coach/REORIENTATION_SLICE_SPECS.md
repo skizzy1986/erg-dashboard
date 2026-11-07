@@ -426,7 +426,7 @@ Out: `.github/workflows/claude.yml` and its secret; `CLAUDE.md`, `README.md`, `s
 > the Story stage was skipped — the issue carries the story and six criteria and the epic's Gate 1
 > covers it. Stage 1 research (Codebase Onboarding Engineer, sonnet) and Stage 3 spec (Workflow
 > Architect, opus) read-only, tree clean after each. Build (Frontend Developer, opus) frontend only —
-> the slice is schema-free. Delivered as a draft PR on branch `claude/zen-bell-amrpso`.
+> the slice is schema-free. Delivered as draft PR #448 on branch `claude/zen-bell-amrpso`.
 > **Privacy: this section describes the data by shape only.**
 
 ### Research corrections to the issue
