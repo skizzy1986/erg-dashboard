@@ -21,9 +21,10 @@
 
 | | |
 |---|---|
-| **Pipeline position** | **Stage 2 (Story / Roadmap) at GATE 1.** Nothing past this gate runs until Scott decides D1–D11 (§7 below). |
-| **Classification** | Strategy work, not a feature. Stages 3–7 of the chain (spec, build, review, ship) do not apply to this packet; they apply **per approved roadmap item** afterwards. |
-| **How to continue** | Reply in the session, or comment on the draft PR with decisions by number ("D1 accept, D2 deadlift, …" and "go on R1–R18"). The next step after Gate 1 is: move the approved roadmap to its home (D11), open one roadmap epic issue plus one sub-issue per approved item, then `/orchestrate <item>` one at a time. |
+| **Pipeline position** | **GATE 1 PASSED 2026-11-07** (Scott: "D1–D11 accept your recommendations, go on R1–R18"). The approved roadmap is [`docs/ROADMAP.md`](../ROADMAP.md) (D11); this packet is the Gate 1 record and does not change further. |
+| **Tracking** | Epic [#432](https://github.com/skizzy1986/erg-dashboard/issues/432). New sub-issues: R1 #433, R2 #434, R4 #435, R7 #436, R9 #437, R10 #438, R11 #439, R12 #440, R13 #441, R14 #442, R15 #443, R16 #444, R17 #445, R18 #446. Existing: R3 #416, R5 #428, R6 #417–#425, R8 #407. H2/H3 (R19–R32) not yet approved, gated on #433. |
+| **Classification** | Strategy work, not a feature. Stages 3–7 of the chain (spec, build, review, ship) do not apply to this packet; they apply **per approved roadmap item**, each via `/orchestrate <item>` with its own Gate 2 and Gate 3. |
+| **How to continue** | Pick an issue from #432 in dependency order (H0 first: #416, #434, #429 → #435, #428) and run `/orchestrate <issue>`. Give the agents this packet's research appendices. |
 | **Models** | Research stages on sonnet (skill pins); synthesis on sonnet (skill pins the Product Manager). The orchestrator amended, it did not rewrite. |
 
 ## Orchestrator amendments to the Product Manager's packet
