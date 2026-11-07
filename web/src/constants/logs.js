@@ -1,41 +1,4 @@
 import { THEME } from './theme.js';
-// ── BLOODS / CHOLESTEROL LOG ──────────────────────────────────
-// Lipid panel for GP cardiovascular review. Populate when results return.
-// Weight loss (130→94kg) typically improves the whole profile.
-// Reference ranges are general (AU) — GP interprets against your risk profile.
-
-export const bloodsLog = [
-  // awaiting first panel — populate: { date, total, ldl, hdl, trig }
-];
-
-// MOBILITY_ROUTINES = the library (routines on hand). mobilityLog =
-// the tracking (consistency as a visible pillar).
-export const mobilityLog = [
-  // Tracked like erg/strength. Log type + duration + a note. Builds
-  // the consistency picture — mobility is a pillar, so its dropout
-  // is a flag (rehab needs the prep work done, not skipped).
-  {
-    date: '6/18/26',
-    type: 'prep',
-    label: 'Pre-session prime',
-    duration: '6min',
-    note: 'Before AM erg. Glute bridges + leg swings — hamstring felt good, no tightness.',
-  },
-  {
-    date: '6/17/26',
-    type: 'prep',
-    label: 'Pre-session prime',
-    duration: '7min',
-    note: 'Before squat. Full hip/t-spine open. Left glute activated well pre-lift.',
-  },
-  {
-    date: '6/16/26',
-    type: 'foam',
-    label: 'Soft tissue',
-    duration: '12min',
-    note: "Evening. Lats + glutes + hamstrings. Left side tight after the week's volume — eased with time.",
-  },
-];
 
 // ── DECISION LEDGER — the "why" behind every fork ─────────────
 // The narrative spine. State tells WHAT, rules tell HOW we think,
@@ -278,102 +241,6 @@ export const RULE_FIRING_HISTORY = [
   { date: '6/13', fired: [] },
 ];
 
-// ── NUTRITION LOG ─────────────────────────────────────────────
-export const nutritionLog = [
-  {
-    date: '6/8',
-    dayType: 'two-a-day',
-    cal: 2929,
-    protein: 218,
-    fat: 98,
-    carbs: 284,
-    burn: 3026,
-  },
-  {
-    date: '6/9',
-    dayType: 'two-a-day',
-    cal: 3281,
-    protein: 193,
-    fat: 129,
-    carbs: 319,
-    burn: 3225,
-  },
-  {
-    date: '6/10',
-    dayType: 'two-a-day',
-    cal: 2911,
-    protein: 228,
-    fat: 101,
-    carbs: 393,
-    burn: 3285,
-  },
-  {
-    date: '6/11',
-    dayType: 'rest',
-    cal: 3212,
-    protein: 208,
-    fat: 113,
-    carbs: 387,
-    burn: 2895,
-  },
-  {
-    date: '6/12',
-    dayType: 'two-a-day',
-    cal: 3516,
-    protein: 239,
-    fat: 146,
-    carbs: 276,
-    burn: null,
-  },
-  {
-    date: '6/14',
-    dayType: 'two-a-day',
-    cal: 2464,
-    protein: 229,
-    fat: 74,
-    carbs: 194,
-    burn: 3140,
-    weight: 95.0,
-    note: "AM weight 95.0kg (true scale > MacroFactor's lagging 93.4 trend). Protein excellent. Vs real ~3,140 TDEE = ~675 deficit (NOT the surplus MacroFactor's broken 1,509 target implies — app still lowballing expenditure ~1,200).",
-  },
-];
-
-// ── RECOVERY METRICS ──────────────────────────────────────────
-// From Fitbit Charge 6: RHR, HRV (overnight), sleep duration/score.
-// ⚠️ SEED VALUES ARE PLACEHOLDERS — replace with real Fitbit data.
-
-// ── BLOOD PRESSURE LOG ────────────────────────────────────────
-// On 75mg irbesartan daily. ~36kg weight loss (130kg → 94kg) over past year.
-// Building a clean record for GP medication review. NOT medical advice —
-// medication changes are a doctor's decision, never self-directed.
-// Best data = morning, seated, 5min rest, pre-coffee, pre-training.
-export const bpLog = [
-  {
-    date: '6/12 PM',
-    sys: 111,
-    dia: 73,
-    pulse: 75,
-    context: 'evening, clean',
-    clean: true,
-  },
-  {
-    date: '6/11 AM',
-    sys: 120,
-    dia: 78,
-    pulse: 91,
-    context: 'post-cannabis — pulse elevated, not a clean resting reading',
-    clean: false,
-  },
-  {
-    date: '6/10',
-    sys: 131,
-    dia: 70,
-    pulse: 63,
-    context: 'post-gym + coffee',
-    clean: false,
-  },
-];
-
 // ── CONFIDENCE MIGRATION — estimates hardening to measured ────
 export const CONFIDENCE_MIGRATION = [
   {
@@ -413,73 +280,61 @@ export const LIPID_REF = [
   {
     marker: 'Total Cholesterol',
     unit: 'mmol/L',
-    target: '< 5.5',
+    target: '≤ 5.5',
     color: THEME.accent,
+    source:
+      'Australasian Association of Clinical Biochemists, Guideline for Harmonisation of Lipid Reporting (2018)',
   },
   {
     marker: "LDL ('bad')",
     unit: 'mmol/L',
-    target: '< 2.0',
+    target: '≤ 3.0',
     color: THEME.warning,
+    source:
+      'Australasian Association of Clinical Biochemists, Guideline for Harmonisation of Lipid Reporting (2018)',
   },
   {
     marker: "HDL ('good')",
     unit: 'mmol/L',
-    target: '> 1.0',
+    target: '≥ 1.0 (men) / ≥ 1.2 (women)',
     color: THEME.positive,
+    source:
+      'Australasian Association of Clinical Biochemists, Guideline for Harmonisation of Lipid Reporting (2018)',
   },
   {
     marker: 'Triglycerides',
     unit: 'mmol/L',
-    target: '< 1.7',
+    target: '≤ 2.0',
     color: THEME.caution,
+    source:
+      'Australasian Association of Clinical Biochemists, Guideline for Harmonisation of Lipid Reporting (2018)',
   },
 ];
 
 // ── HORMONE PANEL ─────────────────────────────────────────────
-// Context: prior testicular cancer + orchiectomy (one testicle).
-// Clinically relevant reason to test — request via GP, ask for
-// ENDOCRINOLOGIST referral given oncology history. Morning, fasted,
-// rested day. TRT (if ever) is a specialist decision, never self-directed.
 export const HORMONE_REF = [
   {
     marker: 'Total Testosterone',
-    note: 'Core marker. Morning draw essential — peaks early AM.',
+    note: 'Fasting morning measurement with an accurate assay is the initial test; repeat it to confirm.',
+    source:
+      'Endocrine Society, Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)',
   },
   {
     marker: 'Free Testosterone',
-    note: "The bioavailable fraction — what's actually usable.",
+    note: 'Measured when total testosterone is near the lower limit of normal or SHBG may be altered.',
+    source:
+      'Endocrine Society, Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)',
   },
-  { marker: 'SHBG', note: 'Binds testosterone; affects free levels.' },
+  {
+    marker: 'SHBG',
+    note: 'Conditions that alter SHBG are a reason to measure free testosterone.',
+    source:
+      'Endocrine Society, Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)',
+  },
   {
     marker: 'LH / FSH',
-    note: 'Pituitary signals — locate where any issue sits (testicular vs central).',
-  },
-  {
-    marker: 'Oestradiol',
-    note: 'If indicated. Balance matters, not just testosterone.',
-  },
-];
-
-// ── NIGGLES / INJURY WATCH ────────────────────────────────────
-// Track proactively. Not medical advice — professional guidance leads.
-export const NIGGLES = [
-  {
-    area: 'Left hamstring / glute',
-    status: 'Rehab — physio-led',
-    color: THEME.caution,
-    detail:
-      'Year-old injury (running/soccer). Felt in hamstring + referring to glute. PHYSIO ASSESSED — prescribed stretches + RDLs as rehab. RDLs are therapeutic here, not a risk.',
-    watch:
-      "Follow physio's load/range/tempo over generic progression. Loading should leave it better or neutral, never progressively worse. Keep prescribed stretches. Periodic physio review as RDL load climbs. Flag if erg catch (deep compression) provokes it.",
-  },
-  {
-    area: 'Right shoulder',
-    status: 'Improving — form fix working',
-    color: THEME.positive,
-    detail:
-      "Twinge during plank/side bridge (6/10), likely positioning + fast core-volume ramp. 6/12: pain-free at 1:50 plank WITH 'press forearms down' cue (engages serratus, offloads cuff). Form was the issue more than volume.",
-    watch:
-      'Keep the forearm-press cue on all planks/bridges. Build holds while pain-free; drop to 60s if it twinges. Elbow under shoulder, glutes squeezed. Unilateral lateral raises addressing the L/R strength gap.',
+    note: 'Help distinguish primary (testicular) from secondary (pituitary-hypothalamic) hypogonadism.',
+    source:
+      'Endocrine Society, Testosterone Therapy in Men With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)',
   },
 ];

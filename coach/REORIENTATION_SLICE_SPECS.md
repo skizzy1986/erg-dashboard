@@ -418,3 +418,121 @@ GitHub comments unless asked); work on the session-assigned branch.
 Out: `.github/workflows/claude.yml` and its secret; `CLAUDE.md`, `README.md`, `steward/SKILL.md`,
 `architecture.md`, `supabase-patterns.md` (slice 11, #424); `strava-connect/index.ts:22`;
 `noCoachClient.test.js`; tests for `vitals-sync` (#312 stays open).
+
+## Slice 4a — #416 — health data out of source and out of the bundle
+
+> `/orchestrate #416`, 2026-11-07, `main` at `0071b54`. Session:
+> https://claude.ai/code/session_018vVjPxo5CqyWkngXbpBq99. Classified as a bug fix (privacy, P1), so
+> the Story stage was skipped — the issue carries the story and six criteria and the epic's Gate 1
+> covers it. Stage 1 research (Codebase Onboarding Engineer, sonnet) and Stage 3 spec (Workflow
+> Architect, opus) read-only, tree clean after each. Build (Frontend Developer, opus) frontend only —
+> the slice is schema-free. Delivered as a draft PR on branch `claude/zen-bell-amrpso`.
+> **Privacy: this section describes the data by shape only.**
+
+### Research corrections to the issue
+
+- `bpCategory` is not in `logs.js`; it is `utils/formatting.js:53` with its own tests, and stays.
+- `logs.js` also held four journal exports (`DECISION_LOG`, `HYPOTHESES`, `RULE_FIRING_HISTORY`,
+  `CONFIDENCE_MIGRATION`) read only by `JournalView`. Not named by the issue; slice 5 deletes the
+  tab. So the `logs-*.js` chunk **shrinks, it does not disappear**, and it still carries personal
+  bodyweight, energy, sleep and HRV figures from those exports until slice 5 lands.
+- Personal content the issue did not name, in the same leak class: a hardcoded "data status note"
+  in `RecoveryView.jsx` (RHR/HRV/baseline figures), the hormone-section referral narrative, two
+  header status chips stating a care status, the bloods italic note, personal sentences in the BP
+  footer, and the Overview nutrition prose after the log rows (energy-expenditure and deficit
+  figures). All ruled **in** at Gate 2.
+- The epic plan's slice-4a line listed `HORMONE_REF` for deletion; the issue keeps it with a
+  `source`. The issue wins; the plan line is amended in the same PR.
+- Acceptance 1 (`git grep` for `NIGGLES` empty) could not pass while the heading
+  `NIGGLES · INJURY WATCH` survived, and a comment in `constants/mobility.js:6-7` named
+  `mobilityLog`. Both ruled at Gate 2: heading renamed `INJURY WATCH`; one-line comment fix.
+- No `check:colours` allowlist entry touches the edited files; none of them held a hex.
+
+### Gate 2 status
+
+**APPROVED by Scott 2026-11-07 ("Go")**, recommendations standing: (1) rename the heading to
+`INJURY WATCH`; (2) the scope clarifications above are in; (3) delete the Overview nutrition prose
+in 4a, card shell stays for slice 8; (4) Build verifies the reference sources.
+
+### Build brief (summary of the approved spec)
+
+- `constants/logs.js`: delete `bpLog` (3 rows: date/sys/dia/pulse/context/clean), `bloodsLog`
+  (0 rows), `NIGGLES` (2 rows: area/status/color/detail/watch), `mobilityLog` (3 rows:
+  date/type/label/duration/note), `nutritionLog` (6 rows: date/dayType/cal/protein/fat/carbs/burn,
+  one with note/weight) and every comment block attached to them, including the one above
+  `HORMONE_REF`. Keep the `THEME` import, the journal exports, and the two reference tables with a
+  `source` string on every row.
+- `views/RecoveryView.jsx`: imports cut to `LIPID_REF, HORMONE_REF`; `bpCategory` import dropped;
+  header comment rewritten; sleep callout and data-status note deleted; BP, bloods, hormone and
+  injury sections each render an italic muted "No … recorded yet." line in the `ErgView.jsx:824`
+  style, headings unchanged except the rename; source lines rendered under each reference list
+  from a `Set` over `row.source` (`Source: …`), never typed into JSX.
+- `views/MobilityView.jsx`: log rows → empty-state line; header, streak note and footer kept.
+- `views/OverviewView.jsx`: nutrition rows and prose → empty-state line; `assessMacro`,
+  `macroColor`, `NUTRITION_TARGETS`, `nutritionLog` imports dropped; card shell, title, caption
+  and tracking note kept for slice 8.
+- `constants/mobility.js:6-7`: one-line comment. Nothing else (slice 10).
+- No new component, helper or constant; `THEME` tokens only; no schema; no doc edits beyond
+  `coach/`.
+
+### Reference tables after verification (published values, not personal data)
+
+Sandbox `curl` and `WebFetch` are DNS-blocked for the guideline hosts, so no agent in the pipeline
+opened a guideline page. Verification was by `WebSearch` quoted passages, corroborated
+independently by the orchestrator. **Scott: open the two documents once and confirm.**
+
+- `LIPID_REF` (4 rows), single source *Australasian Association of Clinical Biochemists, Guideline
+  for Harmonisation of Lipid Reporting (2018)*: total cholesterol ≤ 5.5 (was < 5.5), LDL ≤ 3.0
+  (was < 2.0), HDL ≥ 1.0 men / ≥ 1.2 women (was > 1.0), triglycerides ≤ 2.0 fasting (was < 1.7),
+  all mmol/L. The guideline calls these flagging **decision limits**, not reference intervals or
+  action limits, so the row label changed from "target" to "limit" at Gate 3.
+- `HORMONE_REF` (4 rows, was 5), single source *Endocrine Society, Testosterone Therapy in Men
+  With Hypogonadism: An Endocrine Society Clinical Practice Guideline (2018)* (Bhasin et al., JCEM
+  103(5):1715–44): total and free testosterone notes corroborated from the guideline's own
+  recommendations; SHBG and LH/FSH notes rest on secondary summaries of it; the oestradiol row was
+  **removed** — no supporting passage found.
+
+### Test plan (criterion → proof)
+
+| # | Criterion | Proof |
+|---|---|---|
+| 1 | No removed identifier in `web/src` | `git grep -nwE 'bpLog\|bloodsLog\|mobilityLog\|nutritionLog\|NIGGLES' -- web/src` → empty. |
+| 2 | No deleted literal in any built chunk | Scratchpad probe (not committed): literals from the deleted ranges of `0071b54`, minus any still in live source, scanned over every `dist/assets/*.js`. Branch build: 45 probes, 0 chunks hit. Control build of `0071b54`: same 45 probes, 3 chunks hit (Overview, Recovery, logs). BP field keys absent from every branch chunk. |
+| 3 | Empty-state tests, four Recovery sections | `RecoveryView.test.jsx`: `shows an empty blood pressure panel`, `… lipid panel above the reference list`, `… hormone panel`, `… niggles panel`. |
+| 4 | Test file imports no deleted export | Import line is `LIPID_REF, HORMONE_REF`; the niggles-iteration test deleted. |
+| 5 | Every retained range carries a source | New `constants/__tests__/logs.test.js` (3 tests: non-empty `source` string on every row, ≥ 1 row, lipid row shape); the Recovery reference-list test also asserts each distinct rendered `Source:` line. |
+| 6 | Coverage not lowered; `check:colours` passes | Before (`main`) 92.64 / 85.01 / 89.36 / 93.28, after 92.61 / 85.21 / 89.33 / 93.26 (stmts/branches/funcs/lines): hundredths down on three measures from deleting 691 covered lines, branches up, thresholds 89/85/80 unchanged and met. `check:colours`: 23 literals, all tokenised or allowlisted. |
+
+Also added: `MobilityView.test.jsx` `says no mobility sessions are recorded yet`;
+`OverviewView.test.jsx` `shows an empty nutrition panel`. Full suite 124 files / 1557 tests
+(main: 123 / 1549). Bundle: entry 146.8 / 150 KB unchanged, total 378.4 / 400 (was 382.0),
+`logs-*.js` 22.2 kB raw / 9.8 KB gzip (was 23.8 / 10.7), precache 50 entries (was 51).
+
+### Stage 6 verdicts and Gate 3
+
+- **Test Results Analyzer: adequate.** Three of the four Recovery empty-state tests use an
+  unscoped `getByText`, so they prove the string renders once, not under which heading; the source
+  test guards shape, not meaning. Both left for slice 4b, which rewrites these tests against a
+  mocked hook anyway.
+- **Code Reviewer: APPROVE.** Should-fix: "target" → "limit"; the Mobility header paragraph named
+  an injury, side and rehab history. Nits: HDL string wording, a roster reference in the lipid prep
+  note, `toBeGreaterThan(0)` in the ordering test.
+- **Reality Checker: fix-then-ship.** Re-ran the probe one literal at a time (45/45 detected on
+  the control, 0 on the branch). Headline: the story is only partly met until slices 5 and 10.
+  Wanted the "limit" rename in this PR and the source-verification caveat in the PR body.
+- **Gate 3, Scott 2026-11-07: "Ship"** with the two recommended fixes: (1) "target" → "limit";
+  (2) the Mobility header paragraph generalised. Both applied in the main thread; suite, lint,
+  format, build, size, colours and probe re-run green on the final tree.
+
+### Found on the way (not this slice)
+
+- Personal content still in tracked source after 4a, by file and shape: `constants/logs.js` journal
+  exports (slice 5); `constants/mobility.js` lines 3, 15, 31, 37, 50, 58, 79, 117, 123, 146, 151
+  (slice 10 — a side-specific rehab site, two clinician references); `OverviewView.jsx` nutrition
+  caption and cadence note (slice 8); `RecoveryView.jsx` lipid prep note roster reference (slice 9
+  or 4b); keyword hits in `App.jsx:166-168`, `constants/coaching.js:115-117`,
+  `constants/nutrition.js`, `views/ProgramView.jsx:1481` (unaudited; slices 5/7/9).
+- `vite.config.js` emits hidden source maps on Vercel production builds; whether they are served
+  with `sourcesContent` was not checked. Matters for the slice 5 and 10 residuals.
+- No GitHub comment was posted on #412 or #416 (session rule); the residual list lives here and in
+  the PR body.

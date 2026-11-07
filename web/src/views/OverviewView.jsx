@@ -11,7 +11,6 @@ import WorkoutItem from '../components/WorkoutItem.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import LoadTooltip from '../components/LoadTooltip.jsx';
 import { deriveTargets, tsbBand } from '../utils/trainingLoad.js';
-import { assessMacro, macroColor } from '../utils/formatting.js';
 import {
   getRosterMode,
   logEntriesForDate,
@@ -25,9 +24,7 @@ import {
   autoregulate,
 } from '../utils/analysis.js';
 import { HR130_POWER } from '../constants/trainingConfig.js';
-import { NUTRITION_TARGETS } from '../constants/nutrition.js';
 import { PHASE_CONTEXT } from '../constants/schedule.js';
-import { nutritionLog } from '../constants/logs.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
@@ -1150,181 +1147,8 @@ export default function OverviewView({
             Share MacroFactor screenshot to update
           </div>
         </div>
-        {nutritionLog
-          .slice(-2)
-          .reverse()
-          .map((day, i) => {
-            const t = NUTRITION_TARGETS[day.dayType];
-            const calS = assessMacro(day.cal, t.cal);
-            const proS = assessMacro(day.protein, t.protein);
-            const fatS = assessMacro(day.fat, t.fat);
-            const carS = assessMacro(day.carbs, t.carbs);
-            const isToday = i === 0;
-            return (
-              <div
-                key={day.date}
-                style={{
-                  marginBottom: 8,
-                  padding: '10px 12px',
-                  background: isToday ? THEME.surfaceAlt : THEME.field,
-                  borderRadius: 4,
-                  border: `1px solid ${isToday ? alpha(THEME.critical, '30') : THEME.divider}`,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: THEME.textStrong,
-                    }}
-                  >
-                    {day.date}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      color: THEME.muted,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    {day.dayType === 'two-a-day'
-                      ? 'TWO-A-DAY'
-                      : day.dayType === 'training'
-                        ? 'TRAINING'
-                        : 'REST'}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4,1fr)',
-                    gap: 4,
-                  }}
-                >
-                  {[
-                    ['CAL', day.cal, `${t.cal[0]}–${t.cal[1]}`, calS],
-                    [
-                      'PRO',
-                      `${day.protein}g`,
-                      `${t.protein[0]}–${t.protein[1]}g`,
-                      proS,
-                    ],
-                    ['FAT', `${day.fat}g`, `${t.fat[0]}–${t.fat[1]}g`, fatS],
-                    [
-                      'CARB',
-                      `${day.carbs}g`,
-                      `${t.carbs[0]}–${t.carbs[1]}g`,
-                      carS,
-                    ],
-                  ].map(([label, val, target, status]) => (
-                    <div
-                      key={label}
-                      style={{
-                        background: THEME.raised,
-                        borderRadius: 3,
-                        padding: '6px 6px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 8,
-                          color: THEME.muted,
-                          letterSpacing: 1,
-                          marginBottom: 2,
-                        }}
-                      >
-                        {label}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: macroColor(status),
-                        }}
-                      >
-                        {val}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 8,
-                          color: THEME.textDim,
-                          marginTop: 1,
-                        }}
-                      >
-                        {target}
-                      </div>
-                      <div style={{ fontSize: 10, marginTop: 1 }}>{status}</div>
-                    </div>
-                  ))}
-                </div>
-                {day.burn &&
-                  (() => {
-                    const net = day.cal - day.burn;
-                    const netColor =
-                      Math.abs(net) <= 300
-                        ? THEME.caution
-                        : net < 0
-                          ? THEME.positive
-                          : THEME.warning;
-                    return (
-                      <div
-                        style={{
-                          marginTop: 8,
-                          paddingTop: 8,
-                          borderTop: `1px solid ${THEME.divider}`,
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <span style={{ fontSize: 9, color: THEME.muted }}>
-                          Intake {day.cal} − burn ~{day.burn} (±15%)
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: netColor,
-                          }}
-                        >
-                          {net > 0 ? '+' : ''}
-                          {net}{' '}
-                          <span style={{ fontSize: 9, color: THEME.muted }}>
-                            {Math.abs(net) <= 300
-                              ? '~maintenance'
-                              : net < 0
-                                ? 'deficit'
-                                : 'surplus'}
-                          </span>
-                        </span>
-                      </div>
-                    );
-                  })()}
-              </div>
-            );
-          })}
-        <div
-          style={{
-            fontSize: 10,
-            color: THEME.muted,
-            lineHeight: 1.6,
-            borderTop: `1px solid ${THEME.divider}`,
-            paddingTop: 10,
-          }}
-        >
-          ✅{' '}
-          <span style={{ color: THEME.positive }}>Expenditure confirmed:</span>{' '}
-          Fitbit device data (2,650–4,050/day) matches the bottom-up model
-          (~3,140 avg) — two independent methods agree. MacroFactor's 1,948
-          estimate is ~1,200 kcal low. Eat at maintenance during calibration,
-          then 0.3kg/week deficit (~2,800/day avg). Protein 190g constant.
+        <div style={{ fontSize: 10, color: THEME.muted, fontStyle: 'italic' }}>
+          No nutrition data recorded yet.
         </div>
         <div
           style={{

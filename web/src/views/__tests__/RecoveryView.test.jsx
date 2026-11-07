@@ -9,13 +9,13 @@ import {
 } from '../../utils/recoveryAnalytics.js';
 
 // Vitals now come from useVitals, not the static recoveryLog constant.
-// LIPID_REF / HORMONE_REF / NIGGLES / bpLog / bloodsLog stay real.
+// LIPID_REF / HORMONE_REF stay real.
 const useVitalsMock = vi.fn();
 vi.mock('../../hooks/useVitals.js', () => ({
   useVitals: () => useVitalsMock(),
 }));
 
-import { LIPID_REF, HORMONE_REF, NIGGLES } from '../../constants/logs.js';
+import { LIPID_REF, HORMONE_REF } from '../../constants/logs.js';
 import RecoveryView from '../RecoveryView.jsx';
 
 const day = (over = {}) => ({
@@ -79,7 +79,7 @@ describe('RecoveryView', () => {
     expect(screen.getByText(/READINESS ·/)).toBeInTheDocument();
     expect(screen.getByText(/RESTING HR TREND/)).toBeInTheDocument();
     expect(screen.getByText(/BLOOD PRESSURE/)).toBeInTheDocument();
-    expect(screen.getByText(/NIGGLES · INJURY WATCH/)).toBeInTheDocument();
+    expect(screen.getByText('INJURY WATCH')).toBeInTheDocument();
     expect(screen.getByText(/BLOODS · LIPID PANEL/)).toBeInTheDocument();
   });
 
@@ -131,13 +131,42 @@ describe('RecoveryView', () => {
     for (const h of HORMONE_REF) {
       expect(screen.getByText(h.marker)).toBeInTheDocument();
     }
+    for (const ref of [LIPID_REF, HORMONE_REF]) {
+      for (const source of new Set(ref.map((r) => r.source))) {
+        expect(
+          screen.getAllByText(`Source: ${source}`).length
+        ).toBeGreaterThanOrEqual(1);
+      }
+    }
   });
 
-  it('renders each tracked niggle', () => {
+  it('shows an empty blood pressure panel', () => {
     renderView();
-    for (const n of NIGGLES) {
-      expect(screen.getByText(n.area)).toBeInTheDocument();
-    }
+    expect(
+      screen.getByText('No blood pressure readings recorded yet.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows an empty lipid panel above the reference list', () => {
+    renderView();
+    const empty = screen.getByText('No lipid results recorded yet.');
+    const firstMarker = screen.getByText(LIPID_REF[0].marker);
+    expect(
+      empty.compareDocumentPosition(firstMarker) &
+        document.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('shows an empty hormone panel', () => {
+    renderView();
+    expect(
+      screen.getByText('No hormone results recorded yet.')
+    ).toBeInTheDocument();
+  });
+
+  it('shows an empty niggles panel', () => {
+    renderView();
+    expect(screen.getByText('No niggles recorded yet.')).toBeInTheDocument();
   });
 
   it('exercises the positive-TSB narrative branch', () => {

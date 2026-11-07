@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { mobilityLog } from '../constants/logs.js';
 import {
   MOBILITY_ROUTINES,
   MOBILITY_STREAK_NOTE,
@@ -33,9 +32,9 @@ export default function MobilityView() {
           🧘 MOBILITY — a training pillar
         </div>
         <div style={{ fontSize: 11, color: THEME.textSubtle, lineHeight: 1.6 }}>
-          Not accessory work. With the left hamstring/glute rehab, mobility is
-          load-bearing for staying healthy enough to train. The pre-session
-          prime especially — it's rehab activation disguised as a warm-up.
+          Not accessory work. Mobility is load-bearing for staying healthy
+          enough to train, and the pre-session prime doubles as activation
+          before the main lift.
         </div>
       </div>
 
@@ -246,64 +245,8 @@ export default function MobilityView() {
       >
         {MOBILITY_STREAK_NOTE}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {mobilityLog.map((m, i) => {
-          const r = MOBILITY_ROUTINES.find((x) => x.id === m.type);
-          const col = r ? r.color : THEME.neutralAccent;
-          return (
-            <div
-              key={i}
-              style={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderLeft: `3px solid ${col}`,
-                borderRadius: 6,
-                padding: '11px 14px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 4,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 9,
-                  }}
-                >
-                  <span style={{ fontSize: 14 }}>{r ? r.icon : '•'}</span>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: THEME.textStrong,
-                    }}
-                  >
-                    {m.label}
-                  </div>
-                </div>
-                <div style={{ fontSize: 10, color: THEME.muted }}>
-                  {m.date} · {m.duration}
-                </div>
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: THEME.textSubtle,
-                  lineHeight: 1.5,
-                  paddingLeft: 23,
-                }}
-              >
-                {m.note}
-              </div>
-            </div>
-          );
-        })}
+      <div style={{ fontSize: 10, color: THEME.muted, fontStyle: 'italic' }}>
+        No mobility sessions recorded yet.
       </div>
       <div
         style={{

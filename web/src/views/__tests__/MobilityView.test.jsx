@@ -13,6 +13,13 @@ describe('MobilityView', () => {
     expect(screen.getByText('RECENT · TRACKED')).toBeInTheDocument();
   });
 
+  it('says no mobility sessions are recorded yet', () => {
+    render(<MobilityView />);
+    expect(
+      screen.getByText('No mobility sessions recorded yet.')
+    ).toBeInTheDocument();
+  });
+
   it('expands and collapses a routine to reveal its blocks', () => {
     render(<MobilityView />);
     const routine = screen.getByText('Foam Roll / Soft Tissue');

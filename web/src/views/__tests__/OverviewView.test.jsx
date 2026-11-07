@@ -166,6 +166,14 @@ describe('OverviewView', () => {
     expect(container.textContent.length).toBeGreaterThan(200);
   });
 
+  it('shows an empty nutrition panel', () => {
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText('NUTRITION STATUS')).toBeInTheDocument();
+    expect(
+      screen.getByText('No nutrition data recorded yet.')
+    ).toBeInTheDocument();
+  });
+
   it('renders the fresh (positive-TSB) narrative', () => {
     const { container } = render(
       <OverviewView
