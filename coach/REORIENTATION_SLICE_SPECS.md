@@ -378,10 +378,10 @@ GitHub comments unless asked); work on the session-assigned branch.
 | Vitest / coverage | 123 files, 1,549 tests; lines 93.28 / branches 85.01 / functions 89.36 (floors 89 / 80 / 85). No `web/src` change. |
 | Deno (what `ci-functions` runs) | 28 / 35 / 246 passed. |
 | Bundle | ±0.0 KB on every budget. |
-| `apply_migration('013_drop_coach_messages')` | *Pending* — first call timed out awaiting Scott's confirmation of the destructive statement. |
-| `to_regclass('public.coach_messages')` | *Pending.* |
-| Function list | *Pending* Scott's delete — expect `vitals-import` v22, `vitals-import-api` v16, `vitals-sync` v4 ACTIVE and no `coach-chat`. |
-| Advisors diff | *Pending.* Expected: the `auth_rls_initplan` finding on `coach_messages_owner` goes; nothing new. |
+| `apply_migration('013_drop_coach_messages')` | **Applied 2026-11-07 04:01 UTC** (ledger `20261107040151 013_drop_coach_messages`). The first call, 2026-11-06, timed out awaiting Scott's confirmation and left no ledger entry; re-checked before the retry (no `013_*` row, 43 rows, no dependants). |
+| `to_regclass('public.coach_messages')` | **null.** No `coach_messages*` policy or index remains; no function body names the table. |
+| Function list | **`coach-chat` absent** after Scott's dashboard delete (2026-11-07). The other three ACTIVE; each version number went up by one (v23 / v17 / v5) with `ezbr_sha256` and `updated_at` unchanged — same code bundle, no redeploy by this slice; inferred to be the platform renumbering on delete. |
+| Advisors diff | **As expected.** Performance: `auth_rls_initplan` 18 → 17 (only `coach_messages_owner` gone); nothing new. Security: unchanged from the post-`011` baseline. |
 
 ### Test plan (criterion → proof)
 
@@ -410,7 +410,9 @@ GitHub comments unless asked); work on the session-assigned branch.
 - `011_revoke_security_definer_execute` (merged #323) had never been applied: six `SECURITY
   DEFINER` functions, `backup_snapshot()` among them, were executable with the public anon key.
   Scott approved; applied 2026-11-06 and read back (anon/authenticated EXECUTE false on all six;
-  both advisor lints cleared). The drift and the default-privilege root cause are #429.
+  both advisor lints cleared). Both crons ran clean afterwards (`daily-db-snapshot` 18:00 UTC;
+  `vitals-api-import` 03:00 UTC, `upsert_vital` 204 via the service role). The drift and the
+  default-privilege root cause are #429.
 - Backup coverage omits `coach_log`, `anchors`, `exercises`, `exercise_media`, `bp_readings`: #428.
 
 Out: `.github/workflows/claude.yml` and its secret; `CLAUDE.md`, `README.md`, `steward/SKILL.md`,
