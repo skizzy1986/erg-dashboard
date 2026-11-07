@@ -302,3 +302,119 @@ every remaining item is carried by the PR body or by a read-back after merge.
 
 Out: `coach-chat`, `coach_messages`, the secret (slice 3); the coach rail; `CLAUDE.md` and
 `training-science.md` (slice 11); design-sync docs (slice 12); `check-bundle-size.mjs:22`.
+
+---
+
+## Slice 3 — #415 — retire the coach backend
+
+> `/orchestrate slice 3 #415`, 2026-11-06, `main` at `79f5629`. Session:
+> https://claude.ai/code/session_018vVjPzP7cQhyS2sVtgJGd3. Story skipped (epic Gate 1 covers it;
+> D5–D7). Stage 1 delta research (Codebase Onboarding Engineer, sonnet) and Stage 3 spec (Workflow
+> Architect, opus) both read-only, tree clean after each. Build (Backend Architect, opus) repo-only;
+> every production step run by the orchestrator. Delivered as draft PR #430 on branch
+> `ccr-5fb65e44-6mm5ey`.
+
+### Precondition failure and Scott's waiver
+
+The plan's precondition — the latest `backup_snapshots` row contains `coach_messages` with a count
+matching live — **failed, structurally**. Live read-back 2026-11-06: `public.backup_snapshot()`
+(live-only; no migration defines it) hardcodes eight tables (`sessions`, `vitals`,
+`strength_workouts`, `strength_sets`, `templates`, `template_exercises`, `workout_assignments`,
+`exercise_prefs`); `coach_messages` is in none of the 30 retained snapshots (oldest 2026-10-07);
+`run_backup_snapshot()` keeps only the latest 30 rows, so even a one-off snapshot would have been a
+30-day window, not a copy. Live count 43 rows, Jun–Aug 2026.
+
+The orchestrator stopped. **Scott, 2026-11-06: "Drop without a copy"** — the D5 condition is
+waived and the rows accepted as lost. **And: "Yes, undeploy in the build"** (D6). The coverage gap
+is filed as #428.
+
+### Gate 2 status
+
+**APPROVED by Scott 2026-11-06** ("Approve, go to build"; dashboard steps "now, while you
+build"). Orchestrator amendments to the brief: the issue comment on #415 dropped (session rule: no
+GitHub comments unless asked); work on the session-assigned branch.
+
+### Research corrections to the plan
+
+1. **No MCP tool deletes an edge function** (`deploy`/`get`/`list` only; no `supabase` CLI, no
+   management token). The undeploy is Scott's dashboard step (Edge Functions → coach-chat →
+   Delete), read back with `list_edge_functions`. A stub redeploy would leave it listed and is
+   ruled out.
+2. The dangling comment is `vitals-sync/index.ts:16-18`, not `:18`; `strava-sync/index.ts:16` is
+   right. `strava-connect/index.ts:22` ("incident #301 … killed the Coach tab") is history and
+   stays.
+3. `coach-chat/index.ts` never touches `coach_messages`, so the undeploy and the drop are
+   independent. No `supabase/config.toml` exists. `ci-functions` hardcodes three test files and
+   never named coach-chat, so it verifies nothing about the deletion.
+4. No CI job's path filter covers both `web/**` and `supabase/functions/**` — the guard needs its
+   own workflow (the `zone-bands.yml` / `context7-rule.yml` lesson).
+
+### Build brief (summary of the approved spec)
+
+- **Guard:** `web/scripts/check-no-llm-path.mjs` (`npm run check:no-llm`) + `.github/workflows/no-llm-path.yml`,
+  job-level `dorny/paths-filter` on `web/**`, `supabase/functions/**` and itself. `git grep -n -I -i -F`
+  over tracked files for `api.anthropic.com` and `ANTHROPIC_API_KEY` (needles concatenated to avoid
+  self-match). Self-tests its matcher on a temp-dir canary and asserts both roots are tracked
+  before scanning. Not a required check until Scott adds it to the ruleset.
+- **Migration 013:** bare `DROP TABLE public.coach_messages;` — no `CASCADE` (an unexpected
+  dependant must fail loudly), no `IF EXISTS` (an already-missing table is a surprise worth
+  seeing). Rollback recreates structure only, against the live read-back, and its header carries
+  the waiver.
+- **Order:** read-only Phase A (schema, dependants, advisors, migration ledger) → repo build with a
+  negative then positive guard run → production (Scott's undeploy; `apply_migration` named
+  `013_drop_coach_messages`) → read-backs → PR leaves draft. Gate 3 judges read-back evidence.
+- **Comments:** `vitals-sync` and `strava-sync` point at the functions sharing the CORS list; the
+  header strings are byte-identical.
+
+### Evidence
+
+| Check | Result |
+|---|---|
+| Live schema vs `002` (before drop) | **Match.** Columns; `coach_messages_pkey`; `coach_messages_role_check`; FK `coach_messages_user_id_fkey` → `auth.users(id)`; RLS on, not forced; policy `coach_messages_owner` PERMISSIVE FOR ALL to public, USING + WITH CHECK `auth.uid() = user_id`; index `coach_messages_user_created`; no triggers, no publication; default grants. |
+| Dependants (inbound FK, views, functions, cron) | None. `backup_snapshot()` does not reference the table. |
+| Migration ledger before apply | No `013_*` entry (also after the first, timed-out call). |
+| Guard, before deleting `coach-chat/` | exit 1, exactly 5 hits in `coach-chat/index.ts` (:4, :73, :75, :76, :134). |
+| Guard, after | exit 0 — 475 tracked files, none naming the host or key. CI job `No LLM API host or key in web or functions` green on #430. |
+| Vitest / coverage | 123 files, 1,549 tests; lines 93.28 / branches 85.01 / functions 89.36 (floors 89 / 80 / 85). No `web/src` change. |
+| Deno (what `ci-functions` runs) | 28 / 35 / 246 passed. |
+| Bundle | ±0.0 KB on every budget. |
+| `apply_migration('013_drop_coach_messages')` | **Applied 2026-11-07 04:01 UTC** (ledger `20261107040151 013_drop_coach_messages`). The first call, 2026-11-06, timed out awaiting Scott's confirmation and left no ledger entry; re-checked before the retry (no `013_*` row, 43 rows, no dependants). |
+| `to_regclass('public.coach_messages')` | **null.** No `coach_messages*` policy or index remains; no function body names the table. |
+| Function list | **`coach-chat` absent** after Scott's dashboard delete (2026-11-07). The other three ACTIVE; each version number went up by one (v23 / v17 / v5) with `ezbr_sha256` and `updated_at` unchanged — same code bundle, no redeploy by this slice; inferred to be the platform renumbering on delete. |
+| Advisors diff | **As expected.** Performance: `auth_rls_initplan` 18 → 17 (only `coach_messages_owner` gone); nothing new. Security: unchanged from the post-`011` baseline. |
+
+### Test plan (criterion → proof)
+
+| # | Criterion (as amended by the waiver) | Proof |
+|---|---|---|
+| 1 | Waiver recorded; the backup does not depend on the table | This section, the epic's D5 supersede note, the rollback header, the PR body; dependants query (0 rows) before and after the drop. |
+| 2 | `coach-chat` absent, the other three ACTIVE | `list_edge_functions` after Scott's delete, versions unchanged. |
+| 3 | 013 applied via named `apply_migration`; table gone | The call; `list_migrations` shows it; `to_regclass` null. |
+| 4 | A guard fails on the host or key in `web/` or `supabase/functions/` | Negative and positive runs above; canary self-test every run; CI check green. |
+| 5 | `ci-functions` green, with the disclaimer | `CI — Edge Functions` green on #430; disclaimer verbatim in the PR body. |
+| 6 | Secret removed | Scott's PR checkbox (not repo-verifiable). |
+
+### Stage 6 verdicts
+
+- **Code Reviewer: APPROVE.** Finding 1 (`pull-requests: read` missing for paths-filter) refuted
+  by CI — the filter step and the guard job both ran green on `ae55ae0`. Finding 2 (repo delete is
+  not an undeploy) is the pending dashboard step. Low/nits: the guard's needles are narrow by
+  design; no unit test (none of the five sibling `check-*.mjs` has one).
+- **Reality Checker: fix-then-ship.** Blocker B1: do not merge until rows 2 and 3 are read back —
+  merging first would recreate the #429 drift in both directions. S1: write these records in the
+  PR (this section). S2: re-check the ledger and re-count rows immediately before the retry.
+  S3: the guard is advisory until required.
+
+### Found on the way (not this slice)
+
+- `011_revoke_security_definer_execute` (merged #323) had never been applied: six `SECURITY
+  DEFINER` functions, `backup_snapshot()` among them, were executable with the public anon key.
+  Scott approved; applied 2026-11-06 and read back (anon/authenticated EXECUTE false on all six;
+  both advisor lints cleared). Both crons ran clean afterwards (`daily-db-snapshot` 18:00 UTC;
+  `vitals-api-import` 03:00 UTC, `upsert_vital` 204 via the service role). The drift and the
+  default-privilege root cause are #429.
+- Backup coverage omits `coach_log`, `anchors`, `exercises`, `exercise_media`, `bp_readings`: #428.
+
+Out: `.github/workflows/claude.yml` and its secret; `CLAUDE.md`, `README.md`, `steward/SKILL.md`,
+`architecture.md`, `supabase-patterns.md` (slice 11, #424); `strava-connect/index.ts:22`;
+`noCoachClient.test.js`; tests for `vitals-sync` (#312 stays open).
