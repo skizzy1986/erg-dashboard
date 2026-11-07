@@ -60,7 +60,31 @@ The PM text below is verbatim. These corrections and additions are mine, with ev
    `workout-anatomy.com`, `visualbody.net`, `smpl-x.is.tue.mpg.de`, `smpl.is.tue.mpg.de`
    and their `www.` forms) to that environment. For open-ended research, start the session
    on the unrestricted **Full** environment instead; SplitIQ stays exact-host for build work.
-   The primary-page re-check addendum is in §6a below.
+   One more practical finding: even with the hosts allowed, the agents' `WebFetch` tool
+   failed at DNS (`ENOTFOUND`) because it does not go through the session's HTTPS proxy,
+   while `curl` through the proxy returned 200 from every host. Future research passes
+   should fetch with `curl` (or a shell-capable agent), not `WebFetch`. The re-check
+   below was done that way by the orchestrator.
+
+## 6a. Addendum — primary-page re-check (2026-11-07)
+
+All five pages were fetched directly through the proxy on 2026-11-07 and read as text.
+Quotes are verbatim from the page; nothing here is from a search summary.
+
+| Check | What the page says | Changes anything? |
+|---|---|---|
+| **Muscle & Motion** — methodology (`/strength-training-app/`, `/about-us/`, `/faq/`) | "It shows primary and secondary muscle activation with detailed anatomical animations." "Full access to our scientifically backed exercises library, all featuring anatomical analysis." About: "Our team comprises a unique blend of physical therapists, movement expert[s] … accurate, visually engaging content." **No page states whether activation is EMG-based, modelled or illustrative; the string "EMG" does not occur in any of the three pages' text.** | No. Uncovered-ground items 1–2 stand: the closest paid product publishes no provenance for its activation display. |
+| **Muscle & Motion** — pricing (`/pricing/`) | Strength app **US$15/month or US$89/year** ("Instead of $180", "$7.42/month, billed annually"); a second app tier at US$12/month or US$69/year; US$300 items (courses / institutional, not itemised here). Free sign-up gives "approximately 25% of the videos". Client workout app is free; plan tiers allow 2 / 25 / 100 clients. | Confirms the research's official figures; the G2 per-month figures were wrong. |
+| **workout-anatomy.com** | Live, but the server returns a 6 KB JavaScript shell with no rendered content. Meta description: "Interactive 3D exercise anatomy atlas and kinesiology reference tool. Explore muscle activation maps, joint angle biomechanics, and 5-stage kinetic exercise motion sequences." **No pricing and no provenance statement in the fetched HTML.** What it actually shows is **unverified** without running its JavaScript. | Not yet. It claims "muscle activation maps"; whether they are modelled with provenance is the one open question against item 1. Worth a manual look in a browser (five minutes). |
+| **visualbody.net** | Live. "Free 3D Fitness App & Health Calculators", "$0 Forever Free". "3D muscle anatomy atlas visualizes 600+ exercise variations with precise line-of-pull mapping, pennation angle analysis." Formulas named are Epley, Brzycki, Mifflin-St Jeor. **No mention of activation or EMG anywhere; no provenance for the anatomy data.** Also an "algorithmic progressive overload" engine that "prescribes corrective joint mobility exercises". | No. It is a free atlas plus calculators plus a prescription engine, not a modelled-activation view. It is a useful example of what VISION rules out (prescription, "clinical-grade" claims with no sourcing). |
+| **TrainingPeaks** — pricing (redirects to `/pricing/for-athletes/`) | Premium **US$19.95/month, US$49.00/quarter, US$134.99/year** ("$11.25/month, billed annually"). No AUD on the page. Higher monthly tiers of US$149 / 229 / 359 appear on the page but are not identified in the fetched text (**uncertain** what they are). | Confirms the research's figure. Only a commercial lens (D4) would care. |
+| **SMPL / SMPL-X model licence** (`modellicense.html` on both sites) | "To use the Model & Software for the sole purpose of performing non-commercial scientific research, non-commercial education, or non-commercial artistic projects … Any other use, in particular any use for commercial … purposes is prohibited. This includes, without limitation, incorporation in a commercial product." And: "The Data & Software may not be reproduced, modified and/or made available in any form to any third party without Max-Planck's prior written permission." Commercial licensing "through Meshcapade.com". | Strengthens the not-to-build line. Even as a non-commercial hobby, **"made available in any form to any third party" and the No Distribution clause rule out shipping SMPL model data in a public web app.** |
+| **SMPL-X Body licence** (`bodylicense.html`) | "SMPL-X Body is a subset of SMPL-X Model which excludes the shape blendshapes … contains a 3D mesh, a skeleton rig, pose blendshapes and dynamic blendshapes." "SMPL-X Body is licensed under the Creative Commons Attribution 4.0 International License." Patent note: MPG owns US10395411B2 and pending EP/WO applications. | A distributable skinned *body surface* exists under CC BY 4.0. It has no muscles, so it does not replace BodyParts3D; it is only relevant to the parked "clothed body with x-ray mode" idea, and the patent note should be read before any use. |
+
+**Net effect on the packet.** Nothing in §1, §5 or D1 changes. Item 1 of the research's
+"Uncovered ground" now rests on two direct reads (Muscle & Motion, VisualBody Lab) and one
+unresolved JavaScript app (Workout Anatomy). Reddit threads, the OAIC primary position and
+the app-store policy texts were not in this re-check and remain secondary-only.
 5. **The PM did not read `docs/squat/RESEARCH_BRIEF.md` §6** (its search tool was
    unavailable). R12's "movement config object" therefore rests on `NEW_MOVEMENT.md`'s
    one-line summary. The Spec stage for R12 must read §6 first.

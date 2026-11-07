@@ -264,3 +264,26 @@
 ## Source list
 
 All URLs above were seen via WebSearch on 2026-11-07. No page was successfully fetched directly. Additional URLs cited inline are the sources for each claim.
+
+---
+
+## Addendum — primary-page re-check (2026-11-07, orchestrator)
+
+After the hosts were allowed, the five blocked checks were re-run by fetching each page
+directly through the session proxy with `curl` and reading it as text (the agents'
+`WebFetch` tool bypasses the proxy and fails at DNS). Findings, with verbatim quotes, are in
+[`ROADMAP_PACKET_2026-11-07.md`](ROADMAP_PACKET_2026-11-07.md) §6a. In short:
+
+- **Muscle & Motion** publishes no methodology for its activation display ("EMG" occurs
+  nowhere in the strength, about or FAQ pages). Official pricing: US$15/month or
+  US$89/year for the Strength app; free sign-up gives about 25% of videos.
+- **workout-anatomy.com** is a JavaScript shell whose meta description claims "muscle
+  activation maps"; content, pricing and provenance are unverified without a browser.
+- **visualbody.net** is a free atlas plus calculators plus a prescription engine; no
+  activation or EMG claim, no anatomy provenance.
+- **TrainingPeaks** Premium: US$19.95/month, US$49.00/quarter, US$134.99/year.
+- **SMPL / SMPL-X model**: non-commercial only, and "may not be … made available in any
+  form to any third party"; **SMPL-X Body** (mesh, rig, pose blendshapes; no shape
+  blendshapes, no muscles) is CC BY 4.0, with a patent note.
+
+"Uncovered ground" items 1–2 and the Recommendation stand unchanged.
