@@ -145,3 +145,29 @@ create policy "Users can manage their own rows"
   on <table> for all
   using (auth.uid() = user_id);
 ```
+
+## Migrations
+
+- **Naming:** `supabase/migrations/NNN_snake_case.sql` — three digits, the next
+  free number. The `011` collision is grandfathered; no new collision is allowed.
+- **Rollback:** `NNN_name_rollback.sql` alongside the forward file, required from
+  014 on. Its header says **NOT auto-applied** and gives the order of operations.
+- **Apply** via Supabase MCP `apply_migration` with `name` exactly equal to the
+  file stem. DDL never goes through `execute_sql`. Read back every apply: the
+  `list_migrations` row, a SELECT proving the change, and the security advisor.
+- **Manifest:** `supabase/migrations/manifest.json` reconciles every forward file
+  as `applied` (with the live version), `mirror`, `unapplied` (with reason) or
+  `pending`. A PR that adds a file adds its entry; `npm run check:migrations`
+  validates it. Merged is not done — see `WORKFLOW.md` § Database migrations.
+- **EXECUTE rule (since 014):** new functions created by `postgres` are
+  executable only by the owner and `service_role`. Client RPCs, and helpers
+  evaluated under the caller's role (generated columns, CHECK, index expressions,
+  RLS helpers), need an explicit
+  `grant execute on function … to authenticated` (plus `anon` only when an
+  unauthenticated path needs it) in their own migration. `create or replace`
+  keeps the ACL; `drop` + `create` loses it, so re-grant after one. SECURITY
+  DEFINER functions still revoke/grant explicitly and pin `search_path`.
+- **After any `create extension` run as `postgres`,** read back the security
+  advisor and the new functions' ACLs: 014's global revoke applies to every
+  schema `postgres` creates functions in, so an extension's functions are born
+  without PUBLIC EXECUTE and may need explicit grants.

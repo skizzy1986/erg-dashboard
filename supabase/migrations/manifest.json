@@ -1,0 +1,276 @@
+{
+  "$comment": "Reconciles every file in supabase/migrations/ against production: applied (with its live version), mirror (repo reconstruction of live state built outside tracked migrations), unapplied (intentionally not applied, with a reason) or pending (merged, awaiting apply). liveOnly lists live rows with no file. Checked by web/scripts/check-migrations.mjs; see WORKFLOW.md § Database migrations.",
+  "schemaVersion": 1,
+  "project": "swdrueaserjzhuxnzmeu",
+  "files": [
+    {
+      "file": "000_initial_schema.sql",
+      "status": "mirror",
+      "note": "Reconstruction of the pre-tracking base tables (sessions, vitals, exercises). sessions/exercises predate migration tracking; vitals was created live by create_vitals_table. Not faithful: types sessions.date as date, live is text M/D/YY.",
+      "related": ["20260621115135"]
+    },
+    {
+      "file": "001_enable_rls.sql",
+      "status": "mirror",
+      "note": "Owner RLS on sessions/vitals plus the exercises read policy; the live equivalent was built under other names.",
+      "related": ["20260619235836"]
+    },
+    {
+      "file": "002_coach_messages.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20260625165710",
+          "name": "002_coach_messages"
+        }
+      ],
+      "note": "Table later dropped by 013."
+    },
+    {
+      "file": "003_add_vitals_columns.sql",
+      "status": "mirror",
+      "note": "vitals.source / sleep_score. No live counterpart identified; the columns were added outside tracked migrations."
+    },
+    {
+      "file": "004_vitals_column_renames.sql",
+      "status": "mirror",
+      "note": "Syncs the repo to the live vitals unit-suffix renames, readiness/soreness/notes and the 7-arg upsert_vital. Live upsert_vital has 11 args (see liveOnly 005_vitals_activity_columns).",
+      "related": ["20260621115135", "20260622031616", "20260622031638"]
+    },
+    {
+      "file": "005_rename_sessions_columns.sql",
+      "status": "mirror",
+      "note": "watts→avg_watts, distance→distance_m. NOT the live row named 005_vitals_activity_columns, which is unrelated and has no file.",
+      "related": ["20260619235836"]
+    },
+    {
+      "file": "006_context_store.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20260701134834",
+          "name": "context_store_coach_log_and_anchors"
+        }
+      ],
+      "note": "Header records the live name."
+    },
+    {
+      "file": "007_strength_subsystem.sql",
+      "status": "mirror",
+      "note": "Backfill of the strength subsystem built live via Cowork/MCP, reproduced from pg_catalog.",
+      "related": [
+        "20260620122709",
+        "20260620122747",
+        "20260620225816",
+        "20260620231523",
+        "20260622043728",
+        "20260622043757",
+        "20260622045110",
+        "20260622045846",
+        "20260622061329",
+        "20260629081912"
+      ]
+    },
+    {
+      "file": "008_sessions_date_iso.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20260821154335",
+          "name": "sessions_date_iso"
+        },
+        {
+          "version": "20260821155509",
+          "name": "sessions_date_iso_pin_search_path"
+        }
+      ],
+      "note": "Applied in two steps; the second pinned search_path."
+    },
+    {
+      "file": "009_sessions_benchmark_key.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20260821170735",
+          "name": "sessions_benchmark_key"
+        }
+      ]
+    },
+    {
+      "file": "010_sessions_status_constraint.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20260823071356",
+          "name": "sessions_status_constraint"
+        }
+      ]
+    },
+    {
+      "file": "011_revoke_security_definer_execute.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20261106105922",
+          "name": "011_revoke_security_definer_execute"
+        }
+      ],
+      "note": "Merged in #323, hand-applied 2026-11-06 (#429).",
+      "issue": 429
+    },
+    {
+      "file": "011_sessions_strava_activity_id.sql",
+      "status": "unapplied",
+      "reason": "Strava integration not deployed; apply together with 012 when #54 ships.",
+      "issue": 54
+    },
+    {
+      "file": "012_strava_integration.sql",
+      "status": "unapplied",
+      "reason": "Depends on 011_sessions_strava_activity_id; Strava integration not deployed.",
+      "issue": 54
+    },
+    {
+      "file": "013_drop_coach_messages.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20261107040151",
+          "name": "013_drop_coach_messages"
+        }
+      ]
+    },
+    {
+      "file": "014_revoke_default_function_execute.sql",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20261109010647",
+          "name": "014_revoke_default_function_execute"
+        }
+      ],
+      "note": "Root-cause fix for #429. Applied 2026-11-09 01:06 UTC as postgres via apply_migration (#451); read-back in the PR body.",
+      "issue": 429
+    }
+  ],
+  "liveOnly": [
+    {
+      "version": "20260619235836",
+      "name": "sessions_integration_columns_and_owner_rls",
+      "note": "Pre-repo-discipline sessions columns + owner RLS; approximated by 001/005"
+    },
+    {
+      "version": "20260620000422",
+      "name": "sessions_add_source_column",
+      "note": "sessions.source; duplicated later by add_source_column_to_sessions"
+    },
+    {
+      "version": "20260620122709",
+      "name": "strength_logger_schema",
+      "note": "Strength subsystem (Cowork); mirrored by 007"
+    },
+    {
+      "version": "20260620122747",
+      "name": "strength_logger_views_and_rollup",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260620225816",
+      "name": "strength_templates_and_assignments",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260620231523",
+      "name": "strength_coach_suggestions_and_performance_views",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260621115135",
+      "name": "create_vitals_table",
+      "note": "vitals created live; approximated by 000/004"
+    },
+    {
+      "version": "20260622031616",
+      "name": "vitals_user_date_unique",
+      "note": "UNIQUE(user_id,date) for upsert; approximated by 004"
+    },
+    {
+      "version": "20260622031638",
+      "name": "vitals_upsert_coalesce_fn",
+      "note": "upsert_vital; approximated by 004"
+    },
+    {
+      "version": "20260622043728",
+      "name": "exercise_media_phase1",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260622043757",
+      "name": "exercise_media_harden_function",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260622045110",
+      "name": "exercise_with_media_add_images",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260622045846",
+      "name": "exercise_prefs",
+      "note": "Mirrored by 007"
+    },
+    {
+      "version": "20260622061329",
+      "name": "wo004_strength_templates",
+      "note": "Work-order era seed/templates; mirrored by 007"
+    },
+    {
+      "version": "20260622062540",
+      "name": "enable_cron_and_net_for_vitals_import",
+      "note": "pg_cron + pg_net; schedules are copy-paste SQL in the vitals-import READMEs, not migrations"
+    },
+    {
+      "version": "20260622173542",
+      "name": "backup_snapshots_infra",
+      "note": "backup_snapshots table + backup_snapshot()/run_backup_snapshot(); no file",
+      "issue": 428
+    },
+    {
+      "version": "20260622173551",
+      "name": "schedule_daily_backup",
+      "note": "cron job daily-db-snapshot; no file",
+      "issue": 428
+    },
+    {
+      "version": "20260623013027",
+      "name": "wo007_work_orders_and_shape_gate",
+      "note": "Work-order era (deprecated system); no file"
+    },
+    {
+      "version": "20260623152837",
+      "name": "add_source_column_to_sessions",
+      "note": "Second sessions.source migration; no file"
+    },
+    {
+      "version": "20260629075627",
+      "name": "005_vitals_activity_columns",
+      "note": "Google-Health activity columns + 11-arg upsert_vital. Number collides with file 005 but is unrelated; no file"
+    },
+    {
+      "version": "20260629081912",
+      "name": "add_timed_exercise_columns",
+      "note": "template_exercises timed columns; mirrored by 007"
+    },
+    {
+      "version": "20261106035559",
+      "name": "bp_readings",
+      "note": "Reorientation epic; no file. Backup coverage gap tracked in #428",
+      "issue": 428
+    },
+    {
+      "version": "20261106035601",
+      "name": "vitals_nutrition_intake",
+      "note": "Reorientation epic; no file"
+    }
+  ]
+}

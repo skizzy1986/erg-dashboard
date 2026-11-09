@@ -242,6 +242,36 @@ You don't have to remember: the **Doctrine SHA guard**
 `main` and opens/updates a single tracking issue carrying the new SHA. Close the
 issue once Coach has superseded the anchor.
 
+## Database migrations
+
+- **Merged is not done.** A migration PR is done only when the migration is
+  applied to production, read back, recorded in
+  `supabase/migrations/manifest.json`, and the read-back is pasted in the PR body.
+  #429 is what happens otherwise: a merged migration sat unapplied and nothing
+  noticed.
+- **Apply** with the Supabase MCP `apply_migration` tool, `name` exactly the file
+  stem (`014_revoke_default_function_execute`, not a paraphrase), in Plan mode
+  (see `docs/CLOUD_ENVIRONMENT.md`). Scott approves every apply. Rollback files are
+  never applied automatically.
+- **Order.** After Gate 3 approval and green CI: apply from the final reviewed SQL,
+  flip the manifest entry to `applied` with the version `list_migrations` reports,
+  push, paste the read-back, merge. If the PR must merge first, the entry lands as
+  `pending`, and the nightly drift check flags it until a follow-up PR flips it.
+- **Read-back contents:** the `list_migrations` row; a `SELECT` proving the change
+  took; the security advisor summary; the role the apply ran as
+  (`select current_user`).
+- **Naming and rollback.** `NNN_snake_case.sql` with the next free number, and
+  `NNN_…_rollback.sql` alongside it (enforced from 014 on).
+- **Two guards.** `Migrations manifest is consistent` runs on every PR that touches
+  migrations; it has no DB access, so it checks the manifest against the files only.
+  The nightly drift check (`docs/routines/migration-drift-check.md`) compares the
+  manifest with production and opens the issue titled
+  `chore(db): production migrations drifted from supabase/migrations/manifest.json`.
+  Fix drift by applying the migration or correcting the manifest — never by
+  weakening the check.
+
+Unlike the `doctrine_sha` Routine, this scheduled task's prompt is committed.
+
 ## Project-management agents
 
 The Agency agent library is installed (see `.claude/agents/`). The most useful

@@ -156,9 +156,11 @@ Use `/refactor` to run each extraction step safely.
 
 ## Supabase Schema
 
-**14 tables, 23 migrations** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
-2026-07-01. The core calendar, the strength subsystem (Cowork-built, now in active
-coach use), and the context store (Code↔Coach shared memory, added by #94):
+**14 tables** (project `swdrueaserjzhuxnzmeu`, ap-northeast-1) as of
+2026-07-01. Migrations are reconciled file-by-file, applied or intentionally not, in
+`supabase/migrations/manifest.json`; do not quote a count here. The core calendar,
+the strength subsystem (Cowork-built, now in active coach use), and the context
+store (Code↔Coach shared memory, added by #94):
 
 | Table               | Purpose                                                         |
 |---------------------|-----------------------------------------------------------------|
