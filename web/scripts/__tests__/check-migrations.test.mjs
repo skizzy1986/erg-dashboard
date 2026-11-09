@@ -1,6 +1,13 @@
 // @vitest-environment node
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -21,7 +28,7 @@ const webRoot = resolve(here, '../..');
 const repoRoot = resolve(webRoot, '..');
 const migrationsDir = join(repoRoot, 'supabase/migrations');
 const scriptPath = join(webRoot, 'scripts/check-migrations.mjs');
-const fixturePath = join(here, 'fixtures/live-migrations-2026-11-07.json');
+const fixturePath = join(here, 'fixtures/live-migrations-2026-11-09.json');
 
 const V1 = '20260101000000';
 const V2 = '20260202000000';
@@ -574,28 +581,17 @@ describe('the real manifest', () => {
     );
   });
 
-  it('reconciles against the 2026-11-07 live snapshot', () => {
+  it('reconciles against the 2026-11-09 live snapshot', () => {
     const { rows } = parseLive(readFileSync(fixturePath, 'utf8'));
     const { drift, counts } = diffLive(realManifest, rows);
     // Discipline: the fixture is a verbatim `list_migrations` result. When
     // production changes — any other file applied, any live row added — refresh
     // the fixture from list_migrations in the SAME PR. This test is meant to
-    // fail until you do; do not widen the tolerance below to get it green.
-    //
-    // The single tolerated exception is 014, which this snapshot predates:
-    // today it is pending (pending-not-applied); once applied and flipped, its
-    // version is absent from this snapshot (applied-missing-live). Either way
-    // it is one item, and only for 014.
-    const FILE_014 = '014_revoke_default_function_execute.sql';
-    const for014 = drift.filter((d) => d.file === FILE_014);
-    const rest = drift.filter((d) => d.file !== FILE_014);
-    expect(rest).toEqual([]);
-    expect(for014.length).toBeLessThanOrEqual(1);
-    for (const d of for014) {
-      expect(['pending-not-applied', 'applied-missing-live']).toContain(d.kind);
-    }
-    expect(counts.live).toBe(31);
-    expect(counts.byFile).toBe(8);
+    // fail until you do; do not add a tolerance here to get it green — the
+    // last one (for 014 while it was pending) was removed when 014 was applied.
+    expect(drift).toEqual([]);
+    expect(counts.live).toBe(32);
+    expect(counts.byFile).toBe(9);
     expect(counts.liveOnly).toBe(23);
   });
 });
@@ -609,20 +605,42 @@ describe('CLI', () => {
     expect(out.startsWith('check:migrations: manifest OK')).toBe(true);
   });
 
+  it('exits 0 in --live mode against the current snapshot', () => {
+    const out = execFileSync(
+      process.execPath,
+      [scriptPath, '--live', fixturePath],
+      {
+        cwd: repoRoot,
+        encoding: 'utf8',
+      }
+    );
+    expect(out).toContain('check:migrations: live OK');
+  });
+
   it('exits 1 on drift in --live mode', () => {
+    // The #429 incident shape: 011 is marked applied but production lacks it.
+    const { rows } = parseLive(readFileSync(fixturePath, 'utf8'));
+    const without011 = rows.filter(
+      (r) => r.name !== '011_revoke_security_definer_execute'
+    );
+    const dir = mkdtempSync(join(tmpdir(), 'check-migrations-'));
+    const driftPath = join(dir, 'live.json');
+    writeFileSync(driftPath, JSON.stringify({ migrations: without011 }));
     let error;
     try {
-      execFileSync(process.execPath, [scriptPath, '--live', fixturePath], {
+      execFileSync(process.execPath, [scriptPath, '--live', driftPath], {
         cwd: repoRoot,
         stdio: 'pipe',
         encoding: 'utf8',
       });
     } catch (e) {
       error = e;
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
     expect(error?.status).toBe(1);
     expect(error.stderr).toContain('Migration drift DETECTED');
-    expect(error.stderr).toContain('drift-kinds: pending-not-applied');
+    expect(error.stderr).toContain('drift-kinds: applied-missing-live');
   });
 
   it('exits 2 on an unreadable --live file', () => {
