@@ -20,6 +20,7 @@
     "check:colours": "node scripts/check-colour-literals.mjs",
     "check:context7": "node scripts/check-context7.mjs",
     "check:no-llm": "node scripts/check-no-llm-path.mjs",
+    "check:migrations": "node scripts/check-migrations.mjs",
     "prepare": "husky"
   },
   "lint-staged": {

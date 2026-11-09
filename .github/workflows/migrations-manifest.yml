@@ -1,0 +1,64 @@
+name: Migrations manifest
+
+# supabase/migrations/manifest.json records, file by file, which migrations are
+# applied in production, which are deliberately not, and which live rows have
+# no file. #429 is why: a merged migration sat unapplied and nothing noticed.
+#
+# This is a separate workflow rather than a step in ci-web.yml, for the same
+# reason context7-rule.yml is: ci-web.yml's `changes` filter is scoped to
+# 'web/**', so a PR touching only supabase/migrations/** triggers no gate at
+# all — the check would never fire on the files it exists to protect.
+#
+# CI has no database access, so this checks the manifest's INTERNAL
+# consistency only: every file accounted for once, statuses well formed,
+# versions unique, rollback and naming conventions held. Whether production
+# actually matches is checked nightly by the scheduled task in
+# docs/routines/migration-drift-check.md (`--live` mode of the same script).
+#
+# The script imports nothing outside node builtins, so this needs a checkout and
+# node — no npm ci. It enumerates files with `git ls-files`, so the checkout
+# must keep its .git directory (the default).
+#
+# Path filtering is at the JOB level, never workflow-level `on.paths`: a
+# workflow that never triggers reports NOTHING, so as a required check it
+# strands the PR on "Expected — waiting for status", whereas a job skipped by
+# an `if:` reports "skipped", which branch protection counts as passing.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrations-manifest-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect migration inputs
+    runs-on: ubuntu-latest
+    outputs:
+      migrations: ${{ steps.filter.outputs.migrations }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            migrations:
+              - 'supabase/migrations/**'
+              - 'web/scripts/check-migrations.mjs'
+              - '.github/workflows/migrations-manifest.yml'
+
+  check:
+    name: Migrations manifest is consistent
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: node web/scripts/check-migrations.mjs
