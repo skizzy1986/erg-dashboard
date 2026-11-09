@@ -103,7 +103,7 @@ most likely to be stale.**
 |---|---|
 | Required status checks | **`Lint & Format`, `Test & Coverage`, `Build`, `CodeQL`, `Validate PR title (Conventional Commits)`, `Review dependency changes`, `Deno Tests`, `Zone bands match derivePaceZones`, `Build Debug APK`, `Context7 rule reaches every workflow`** — those ten, and nothing else. `CodeQL` is emitted by the GitHub Advanced Security app and is a **different check-run** from `codeql.yml`'s job `Analyze (JavaScript/TypeScript)`; the ruleset binds the former. |
 | Advisory — red does **not** block merge | `Lighthouse`, `Playwright Smoke`, `Playwright Visual`. Still fix them; just do not report them as blocking. |
-| Reports but is not required | `Build Web Assets`, `Seer Code Review`, `Vercel Preview Comments`, `Analyze (JavaScript/TypeScript)`, `Label by changed paths`, `add-to-project`, `Flag steward skill staleness`, `Enable auto-merge`, `Hooks pass their smoke test` (`hook-smoke-test.yml`, added 2026-11-05), and every `Detect …` filter job. Red here does not block either — but see the `Build Web Assets` trap below. |
+| Reports but is not required | `Build Web Assets`, `Seer Code Review`, `Vercel Preview Comments`, `Analyze (JavaScript/TypeScript)`, `Label by changed paths`, `add-to-project`, `Flag steward skill staleness`, `Enable auto-merge`, `Hooks pass their smoke test` (`hook-smoke-test.yml`, added 2026-11-05), `Migrations manifest is consistent` (`migrations-manifest.yml`, added by #451 — not in the ruleset until Scott adds it, so a red run there does not yet block), and every `Detect …` filter job. Red here does not block either — but see the `Build Web Assets` trap below. |
 | Also enforced | a PR before merging · branches up to date before merging · force pushes blocked **on `main` only**, so `--force-with-lease` on your own feature branch is fine |
 | Not enforced | linear history. Squash with `(#N)` is convention, not a gate. |
 
@@ -142,6 +142,8 @@ it guards live in `.claude/skills/**` and the repo-root `CLAUDE.md` (#325). Veri
 the required set; the `Zone bands` row it does carry is now correctly a gate (#311).
 
 ## Verified against
+
+The *Reports but is not required* row re-verified on 2026-11-09 against `.github/workflows/migrations-manifest.yml` as added by #451: it reports `Detect migration inputs` (covered by the `Detect …` clause) and `Migrations manifest is consistent`, and the ruleset query below had not been re-run for it, so the required set is still assumed to be the same ten until it is.
 
 The `pipeline/**` row re-verified on 2026-11-05 against `.github/workflows/ci-pipeline.yml` as added by #406 and the first `Pipeline tests` run on that PR (`d2022b6`: 3 stage-pin failures, golden green).
 
