@@ -48,9 +48,11 @@ and implemented, pure and fixture-tested, in `web/src/anatomy/utils/`.
 
 ## What's still squat-specific
 
-- **The depth parameter itself.** `S` is "standing → bottom" with a Lowering/Drive
-  direction. A press or a lunge needs its own phase definition (`anatomy/utils/depth.js`
-  `derivePhase`, `PHASE_CHIPS`).
+- **The rep timeline itself.** The controls run on `meta.rep` time: depth is `rep.s[frame]`,
+  the phase is `rep.ph[frame]` named through `squat/constants/phases.js` `PHASES`, and
+  direction flips at the depth peak (`anatomy/utils/rep.js` `directionAt`). A press or a
+  lunge needs its own phase codes and names, and a movement whose load does not peak at
+  maximum depth needs a different direction rule.
 - **Equipment.** The scene always builds a barbell from `meta.bar` on the thorax frame,
   sized in `anatomy/constants/sceneStyle.js`. A dumbbell, kettlebell or bodyweight
   movement needs this made optional or data-driven.

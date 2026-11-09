@@ -212,17 +212,25 @@ describe('TimeControls', () => {
       expect(slider()).toHaveValue('2.02');
     });
 
-    it('keeps to wall-clock time when ticks arrive late, and waits when early', () => {
+    it('keeps to elapsed time when ticks arrive late, and waits when early', () => {
+      // vi.setSystemTime moves Date but not the faked performance.now, so the
+      // monotonic clock is skewed directly.
+      const realNow = window.performance.now.bind(window.performance);
+      let skew = 0;
+      const spy = vi
+        .spyOn(window.performance, 'now')
+        .mockImplementation(() => realNow() + skew);
       render(<Harness />);
       fireEvent.click(playButton());
       // A slow frame: 100 ms pass before the next tick can run.
-      vi.setSystemTime(Date.now() + 100);
+      skew = 100;
       act(() => vi.advanceTimersByTime(20));
       expect(slider()).toHaveValue('0.12');
       // A clock that has not reached the next frame yet: no tick.
-      vi.setSystemTime(Date.now() - 50);
+      skew = 50;
       act(() => vi.advanceTimersByTime(20));
       expect(slider()).toHaveValue('0.12');
+      spy.mockRestore();
     });
 
     it('never autoplays, and leaves no timer behind on unmount', () => {

@@ -98,15 +98,16 @@ export function useAnatomyViewState(rep, initialT) {
   }, [info, initialT]);
 
   // setInterval, not rAF, and nothing runs while paused. Each tick advances by
-  // the frames of wall-clock time elapsed, not by one: a device that cannot
-  // render at 50 Hz skips frames rather than playing the rep in slow motion.
-  // The tick reads the current frame inside the reducer.
+  // the frames of elapsed time, not by one: a device that cannot render at
+  // 50 Hz skips frames rather than playing the rep in slow motion. The clock is
+  // window.performance.now(), which is monotonic, so a wall-clock step backwards
+  // cannot stall playback. The tick reads the current frame inside the reducer.
   useEffect(() => {
     if (!state.playing || !info) return;
     const ms = info.dt * 1000;
-    let due = Date.now();
+    let due = window.performance.now();
     const id = setInterval(() => {
-      const delta = Math.floor((Date.now() - due) / ms);
+      const delta = Math.floor((window.performance.now() - due) / ms);
       if (delta < 1) return;
       due += delta * ms;
       dispatch({ type: 'tick', delta, last: info.last });

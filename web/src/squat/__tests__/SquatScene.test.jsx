@@ -263,6 +263,33 @@ describe('SquatApp 3D stage', () => {
     expect(loadScene).toHaveBeenCalledTimes(1);
   });
 
+  it('scrubs the rep from the manifest alone when the 3D engine never loads', async () => {
+    const { loadScene, instances } = fakeScene();
+    loadScene.mockImplementationOnce(() =>
+      Promise.reject(new Error('chunk 404'))
+    );
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    await screen.findByRole('alert');
+    expect(instances).toHaveLength(0);
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    expect(slider).toBeEnabled();
+    fireEvent.change(slider, { target: { value: '2.44' } });
+    expect(screen.getByTestId('depth-readout')).toHaveTextContent(
+      '2.44 s · Drive · 89% depth · drive'
+    );
+    expect(slider).toHaveAttribute(
+      'aria-valuetext',
+      'Drive, 2.44 s, 89% depth, modelled'
+    );
+    const chips = within(screen.getByRole('group', { name: 'Jump to phase' }));
+    expect(chips.getByRole('button', { name: 'Drive' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    await waitFor(() => expect(window.location.hash).toBe('#t=2.44&paused'));
+  });
+
   it('does not report an import failure while offline', async () => {
     Object.defineProperty(window.navigator, 'onLine', {
       configurable: true,
