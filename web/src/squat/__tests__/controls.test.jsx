@@ -1,3 +1,6 @@
+import { useLayoutEffect } from 'react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   act,
   fireEvent,
@@ -7,11 +10,11 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import DepthControls, {
-  depthPercent,
+import TimeControls, {
+  readoutText,
   valueText,
   WAITING_TEXT,
-} from '../components/DepthControls.jsx';
+} from '../components/TimeControls.jsx';
 import CameraControls, {
   CAMERA_WAITING,
   cameraKey,
@@ -25,170 +28,349 @@ import {
   useAnatomyViewState,
   viewReducer,
 } from '../hooks/useAnatomyViewState.js';
+import { PHASES } from '../constants/phases.js';
 
-const NS = 41;
+const REP = JSON.parse(
+  readFileSync(
+    join(process.cwd(), 'src/squat/assets/squat-manifest.json'),
+    'utf8'
+  )
+).meta.rep;
+const LAST = REP.s.length - 1;
 
 // The real hook behind the real controls, so keyboard → state → readout is
-// exercised end to end.
-function Harness({ ns = NS }) {
-  const view = useAnatomyViewState(ns);
-  return <DepthControls view={view} />;
+// exercised end to end. `probe.view` exposes the hook's value to assertions.
+const probe = {};
+function Harness({ rep = REP, initialT }) {
+  const view = useAnatomyViewState(rep, initialT);
+  useLayoutEffect(() => {
+    probe.view = view;
+  });
+  return <TimeControls view={view} />;
 }
 
-const slider = () => screen.getByRole('slider', { name: 'Depth' });
+const slider = () => screen.getByRole('slider', { name: 'Rep time' });
 const readout = () => screen.getByTestId('depth-readout').textContent;
+const chips = () =>
+  within(screen.getByRole('group', { name: 'Jump to phase' }));
+const playButton = () => screen.getByRole('button', { name: /^(Play|Pause)$/ });
 
-describe('DepthControls', () => {
-  it('starts standing, with a full aria-valuetext', () => {
-    render(<Harness />);
-    expect(slider()).toHaveAttribute(
-      'aria-valuetext',
-      'Standing, 0% depth, modelled'
-    );
-    expect(slider()).toHaveAttribute('max', '40');
-    expect(readout()).toBe('Depth 0% · Standing · lowering — modelled');
-  });
+const START = '0.00 s · Setup and brace · 0% depth · lowering — modelled';
+const END = '3.68 s · Lockout · 0% depth · drive — modelled';
 
-  it('moves with the slider and names the phase', () => {
+describe('TimeControls', () => {
+  it('AC1: starts at 0.00 s and ends at 3.68 s, and the two read differently', () => {
     render(<Harness />);
-    fireEvent.change(slider(), { target: { value: '26' } });
-    expect(readout()).toBe('Depth 65% · Descent · lowering — modelled');
-    expect(slider()).toHaveAttribute(
-      'aria-valuetext',
-      'Descent, 65% depth, modelled'
-    );
-  });
-
-  it('pins PageUp/PageDown to ±5 and Home/End to the ends', () => {
-    render(<Harness />);
-    fireEvent.keyDown(slider(), { key: 'PageUp' });
-    expect(slider()).toHaveValue('5');
-    fireEvent.keyDown(slider(), { key: 'PageUp' });
-    fireEvent.keyDown(slider(), { key: 'PageDown' });
-    expect(slider()).toHaveValue('5');
+    expect(readout()).toBe(START);
     fireEvent.keyDown(slider(), { key: 'End' });
-    expect(slider()).toHaveValue('40');
-    expect(readout()).toMatch(/Bottom/);
-    fireEvent.keyDown(slider(), { key: 'PageUp' });
-    expect(slider()).toHaveValue('40');
-    fireEvent.keyDown(slider(), { key: 'Home' });
-    expect(slider()).toHaveValue('0');
-    fireEvent.keyDown(slider(), { key: 'PageDown' });
-    expect(slider()).toHaveValue('0');
-    fireEvent.keyDown(slider(), { key: 'a' });
-    expect(slider()).toHaveValue('0');
+    expect(readout()).toBe(END);
+    expect(START).not.toBe(END);
+    expect(readoutText(probe.view)).toBe(END);
   });
 
-  it('steps along the rep and turns at the bottom', async () => {
+  it('AC2: is a rep-time slider in seconds with a full aria-valuetext', () => {
+    render(<Harness />);
+    expect(slider()).toHaveAttribute('min', '0');
+    expect(slider()).toHaveAttribute('max', '3.68');
+    expect(slider()).toHaveAttribute('step', '0.02');
+    expect(slider()).toHaveValue('0.00');
+    fireEvent.change(slider(), { target: { value: '2.44' } });
+    expect(slider()).toHaveAttribute(
+      'aria-valuetext',
+      'Drive, 2.44 s, 89% depth, modelled'
+    );
+    expect(slider().getAttribute('aria-valuetext')).toBe(valueText(probe.view));
+  });
+
+  it('AC3: there is no depth slider, and the drive never reads as lowering', async () => {
     const user = userEvent.setup();
-    render(<Harness ns={3} />);
+    render(<Harness />);
+    expect(screen.queryByRole('slider', { name: 'Depth' })).toBeNull();
+    act(() => probe.view.setFrame(REP.s.indexOf(Math.max(...REP.s))));
+    let prev = probe.view.pct;
     const fwd = screen.getByRole('button', { name: 'Step forward' });
-    await user.click(fwd);
-    await user.click(fwd);
-    expect(readout()).toMatch(/Bottom · lowering/);
-    await user.click(fwd);
-    expect(readout()).toMatch(/Bottom · drive/);
-    await user.click(fwd);
-    expect(readout()).toMatch(/50% · Drive · drive/);
+    while (probe.view.frame < LAST) {
+      await user.click(fwd);
+      expect(probe.view.pct).toBeLessThanOrEqual(prev);
+      expect(readout()).not.toMatch(/lowering/);
+      prev = probe.view.pct;
+    }
+    expect(readout()).toBe(END);
     await user.click(screen.getByRole('button', { name: 'Step back' }));
-    expect(readout()).toMatch(/Bottom · drive/);
+    expect(slider()).toHaveValue('3.66');
   });
 
-  it('switches direction as a radio group, by click and by arrow', async () => {
+  it('AC4: the pressed chip always names the frame’s phase, and chips land on band starts', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    const lowering = screen.getByRole('radio', { name: 'Lowering' });
-    const drive = screen.getByRole('radio', { name: 'Drive' });
-    expect(lowering).toHaveAttribute('aria-checked', 'true');
-    expect(drive).toHaveAttribute('tabindex', '-1');
-    await user.click(drive);
-    expect(readout()).toMatch(/Lockout · drive/);
-    fireEvent.keyDown(drive, { key: 'ArrowLeft' });
-    expect(lowering).toHaveAttribute('aria-checked', 'true');
-    expect(lowering).toHaveFocus();
-    fireEvent.keyDown(lowering, { key: 'Enter' });
-    expect(lowering).toHaveAttribute('aria-checked', 'true');
-  });
-
-  it('jumps to a phase, with aria-pressed on the current one', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    const chip = (name) =>
-      within(screen.getByRole('group', { name: 'Jump to phase' })).getByRole(
-        'button',
-        { name }
+    for (let f = 0; f <= LAST; f++) {
+      act(() => probe.view.setFrame(f));
+      const pressed = chips()
+        .getAllByRole('button')
+        .filter((b) => b.getAttribute('aria-pressed') === 'true');
+      expect(pressed).toHaveLength(1);
+      expect(slider().getAttribute('aria-valuetext')).toMatch(
+        new RegExp(`^${pressed[0].textContent}, `)
       );
-    expect(chip('Standing')).toHaveAttribute('aria-pressed', 'true');
-    await user.click(chip('Drive'));
-    expect(readout()).toBe('Depth 50% · Drive · drive — modelled');
-    expect(chip('Drive')).toHaveAttribute('aria-pressed', 'true');
-    await user.click(chip('Bottom'));
-    expect(readout()).toBe('Depth 100% · Bottom · drive — modelled');
-    await user.click(chip('Standing'));
-    expect(readout()).toMatch(/Standing · lowering/);
+    }
+    const starts = ['0.00', '0.58', '2.02', '2.32', '3.14'];
+    for (const p of PHASES) {
+      await user.click(chips().getByRole('button', { name: p.name }));
+      expect(slider()).toHaveValue(starts[p.index]);
+      expect(chips().getByRole('button', { name: p.name })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      );
+    }
   });
 
-  it('keeps its frame, disabled with a reason, until the sample count is known', async () => {
+  it('AC5: direction is a readout, not a control', () => {
+    render(<Harness />);
+    expect(screen.queryByRole('radiogroup', { name: 'Direction' })).toBeNull();
+    expect(screen.queryAllByRole('radio')).toHaveLength(0);
+    expect(readout()).toMatch(/lowering|drive/);
+  });
+
+  it('pins PageUp/PageDown to ±5 frames and Home/End to the ends', () => {
+    render(<Harness />);
+    fireEvent.keyDown(slider(), { key: 'PageUp' });
+    expect(slider()).toHaveValue('0.10');
+    fireEvent.keyDown(slider(), { key: 'PageUp' });
+    fireEvent.keyDown(slider(), { key: 'PageDown' });
+    expect(slider()).toHaveValue('0.10');
+    fireEvent.keyDown(slider(), { key: 'End' });
+    expect(slider()).toHaveValue('3.68');
+    fireEvent.keyDown(slider(), { key: 'PageUp' });
+    expect(slider()).toHaveValue('3.68');
+    fireEvent.keyDown(slider(), { key: 'Home' });
+    expect(slider()).toHaveValue('0.00');
+    fireEvent.keyDown(slider(), { key: 'PageDown' });
+    expect(slider()).toHaveValue('0.00');
+    fireEvent.keyDown(slider(), { key: 'a' });
+    expect(slider()).toHaveValue('0.00');
+  });
+
+  it('seeds once from an initial time and snaps it to a frame', () => {
+    const { rerender } = render(<Harness initialT={2.45} />);
+    expect(slider()).toHaveValue('2.46');
+    expect(probe.view.moved).toBe(false);
+    rerender(<Harness initialT={1} />);
+    expect(slider()).toHaveValue('2.46');
+  });
+
+  describe('playback', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('plays one frame per dt, pauses, and holds', () => {
+      render(<Harness />);
+      expect(playButton()).toHaveTextContent('Play');
+      expect(screen.getByTestId('depth-readout')).toHaveAttribute(
+        'aria-live',
+        'polite'
+      );
+      fireEvent.click(playButton());
+      expect(playButton()).toHaveTextContent('Pause');
+      expect(screen.getByTestId('depth-readout')).toHaveAttribute(
+        'aria-live',
+        'off'
+      );
+      act(() => vi.advanceTimersByTime(200));
+      expect(slider()).toHaveValue('0.20');
+      fireEvent.click(playButton());
+      expect(playButton()).toHaveTextContent('Play');
+      act(() => vi.advanceTimersByTime(200));
+      expect(slider()).toHaveValue('0.20');
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('stops at the end without looping, and restarts from the end at 0', () => {
+      render(<Harness />);
+      fireEvent.click(playButton());
+      act(() => vi.advanceTimersByTime(5000));
+      expect(slider()).toHaveValue('3.68');
+      expect(playButton()).toHaveTextContent('Play');
+      expect(vi.getTimerCount()).toBe(0);
+      act(() => vi.advanceTimersByTime(1000));
+      expect(slider()).toHaveValue('3.68');
+      fireEvent.click(playButton());
+      expect(slider()).toHaveValue('0.00');
+      act(() => vi.advanceTimersByTime(40));
+      expect(slider()).toHaveValue('0.04');
+    });
+
+    it('a scrub or a chip during play pauses it', () => {
+      render(<Harness />);
+      fireEvent.click(playButton());
+      act(() => vi.advanceTimersByTime(100));
+      fireEvent.change(slider(), { target: { value: '1.00' } });
+      expect(playButton()).toHaveTextContent('Play');
+      fireEvent.click(playButton());
+      fireEvent.click(chips().getByRole('button', { name: 'Bottom' }));
+      expect(playButton()).toHaveTextContent('Play');
+      act(() => vi.advanceTimersByTime(200));
+      expect(slider()).toHaveValue('2.02');
+    });
+
+    it('keeps to wall-clock time when ticks arrive late, and waits when early', () => {
+      render(<Harness />);
+      fireEvent.click(playButton());
+      // A slow frame: 100 ms pass before the next tick can run.
+      vi.setSystemTime(Date.now() + 100);
+      act(() => vi.advanceTimersByTime(20));
+      expect(slider()).toHaveValue('0.12');
+      // A clock that has not reached the next frame yet: no tick.
+      vi.setSystemTime(Date.now() - 50);
+      act(() => vi.advanceTimersByTime(20));
+      expect(slider()).toHaveValue('0.12');
+    });
+
+    it('never autoplays, and leaves no timer behind on unmount', () => {
+      const { unmount } = render(<Harness />);
+      act(() => vi.advanceTimersByTime(5000));
+      expect(slider()).toHaveValue('0.00');
+      fireEvent.click(playButton());
+      expect(vi.getTimerCount()).toBe(1);
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+  });
+
+  it('AC10: keeps its frame, disabled with a reason, until the rep is known', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(<Harness ns={null} />);
+    const { rerender } = render(<Harness rep={null} />);
     expect(slider()).toBeDisabled();
     expect(slider()).toHaveAccessibleDescription(WAITING_TEXT);
     expect(slider()).toHaveAttribute('aria-valuetext', WAITING_TEXT);
     expect(readout()).toBe(WAITING_TEXT);
-    for (const name of ['Step back', 'Step forward']) {
+    for (const name of ['Step back', 'Play', 'Step forward']) {
       expect(screen.getByRole('button', { name })).toBeDisabled();
     }
-    for (const r of screen.getAllByRole('radio')) expect(r).toBeDisabled();
-    const chips = within(
-      screen.getByRole('group', { name: 'Jump to phase' })
-    ).getAllByRole('button');
-    expect(chips).toHaveLength(5);
-    for (const c of chips) {
+    const all = chips().getAllByRole('button');
+    expect(all).toHaveLength(5);
+    for (const c of all) {
       expect(c).toBeDisabled();
       expect(c).toHaveAttribute('aria-pressed', 'false');
     }
-    // A disabled control ignores the keys it would otherwise pin.
+    // A disabled control ignores the keys it would otherwise pin, and the
+    // hook's actions are no-ops with no rep to index.
     fireEvent.keyDown(slider(), { key: 'End' });
     await user.click(screen.getByRole('button', { name: 'Step forward' }));
+    act(() => {
+      probe.view.setFrame(10);
+      probe.view.setTime(1);
+      probe.view.step(1);
+      probe.view.jumpToPhase(2);
+      probe.view.play();
+      probe.view.pause();
+    });
+    expect(probe.view.playing).toBe(false);
+    expect(probe.view.moved).toBe(false);
 
-    rerender(<Harness ns={NS} />);
+    rerender(<Harness rep={REP} />);
     expect(slider()).toBeEnabled();
-    expect(slider()).toHaveValue('0');
+    expect(slider()).toHaveValue('0.00');
     expect(slider()).not.toHaveAttribute('aria-describedby');
-    expect(readout()).toBe('Depth 0% · Standing · lowering — modelled');
+    expect(readout()).toBe(START);
     expect(screen.getByRole('button', { name: 'Step forward' })).toBeEnabled();
   });
 
-  it('formats percent and value text', () => {
-    expect(depthPercent(20, 41)).toBe(50);
-    expect(valueText('Bottom', 40, 41)).toBe('Bottom, 100% depth, modelled');
+  it('stays disabled, without throwing, on a rep it cannot index', () => {
+    render(<Harness rep={{ ...REP, ph: REP.ph.slice(1) }} />);
+    expect(slider()).toBeDisabled();
+    expect(readout()).toBe(WAITING_TEXT);
   });
 });
 
 describe('viewReducer', () => {
   const s0 = {
-    sample: 3,
-    direction: 'lowering',
+    frame: 3,
+    playing: false,
+    moved: false,
     layers: { muscles: true, skeleton: true },
+    heatmap: false,
   };
-  it('ignores unknown actions, directions, phases and layers', () => {
+  const playing = { ...s0, playing: true };
+  const starts = [0, 29, 101, 116, 157];
+
+  it('returns the same state for actions it cannot apply', () => {
     expect(viewReducer(s0, { type: 'nope' })).toBe(s0);
-    expect(viewReducer(s0, { type: 'direction', direction: 'up' })).toBe(s0);
-    expect(viewReducer(s0, { type: 'phase', name: 'Nope', ns: NS })).toBe(s0);
+    expect(viewReducer(s0, { type: 'phase', code: 9, starts })).toBe(s0);
+    expect(viewReducer(s0, { type: 'phase', code: 1 })).toBe(s0);
+    expect(viewReducer(s0, { type: 'pause' })).toBe(s0);
+    expect(viewReducer(s0, { type: 'tick', last: LAST })).toBe(s0);
     expect(viewReducer(s0, { type: 'layer', name: 'body', on: true })).toBe(s0);
   });
-  it('clamps samples and toggles layers', () => {
-    expect(viewReducer(s0, { type: 'sample', sample: 99, ns: NS }).sample).toBe(
-      40
+
+  it('clamps frames and steps', () => {
+    expect(
+      viewReducer(s0, { type: 'frame', frame: 999, last: LAST }).frame
+    ).toBe(LAST);
+    expect(
+      viewReducer(s0, { type: 'frame', frame: -3, last: LAST }).frame
+    ).toBe(0);
+    expect(viewReducer(s0, { type: 'step', delta: -9, last: LAST }).frame).toBe(
+      0
     );
+    expect(
+      viewReducer(s0, { type: 'seed', frame: 999, last: LAST }).frame
+    ).toBe(LAST);
+  });
+
+  it('stops the tick on the last frame', () => {
+    expect(
+      viewReducer({ ...playing, frame: LAST - 1 }, { type: 'tick', last: LAST })
+    ).toMatchObject({ frame: LAST, playing: false });
+    expect(viewReducer(playing, { type: 'tick', last: LAST })).toMatchObject({
+      frame: 4,
+      playing: true,
+    });
+    expect(
+      viewReducer(playing, { type: 'tick', delta: 6, last: LAST })
+    ).toMatchObject({ frame: 9, playing: true });
+    expect(
+      viewReducer(playing, { type: 'tick', delta: 999, last: LAST })
+    ).toMatchObject({ frame: LAST, playing: false });
+  });
+
+  it('marks user moves, but not the seed', () => {
+    expect(viewReducer(s0, { type: 'seed', frame: 5, last: LAST }).moved).toBe(
+      false
+    );
+    for (const a of [
+      { type: 'frame', frame: 5, last: LAST },
+      { type: 'step', delta: 1, last: LAST },
+      { type: 'play', last: LAST },
+      { type: 'phase', code: 2, starts },
+    ]) {
+      expect(viewReducer(s0, a).moved).toBe(true);
+    }
+    expect(viewReducer(playing, { type: 'pause' })).toMatchObject({
+      playing: false,
+      moved: true,
+    });
+  });
+
+  it('toggles layers and the heatmap', () => {
     expect(
       viewReducer(s0, { type: 'layer', name: 'skeleton', on: false }).layers
     ).toEqual({ muscles: true, skeleton: false });
+    expect(viewReducer(s0, { type: 'heatmap', on: 1 }).heatmap).toBe(true);
   });
-  it('derives s from the sample count', () => {
-    const { result } = renderHook(() => useAnatomyViewState(41));
-    act(() => result.current.setSample(10));
-    expect(result.current.s).toBe(0.25);
+
+  it('derives depth, phase and direction from the rep', () => {
+    const { result } = renderHook(() => useAnatomyViewState(REP));
+    act(() => result.current.setFrame(122));
+    expect(result.current).toMatchObject({
+      ready: true,
+      frames: 185,
+      s: REP.s[122],
+      pct: 89,
+      phaseCode: 3,
+      phase: 'Drive',
+      direction: 'drive',
+    });
+    expect(result.current.t).toBeCloseTo(2.44, 10);
   });
 });
 

@@ -112,8 +112,10 @@ describe('SquatApp 3D stage', () => {
     await waitFor(() =>
       expect(status()).toHaveTextContent('Loading 3D engine')
     );
-    // Depth works from the manifest before the scene exists.
-    expect(screen.getByRole('slider', { name: 'Depth' })).toBeInTheDocument();
+    // Rep time works from the manifest before the scene exists.
+    expect(
+      screen.getByRole('slider', { name: 'Rep time' })
+    ).toBeInTheDocument();
     // Present from the first paint so nothing below moves, but inert.
     const camera = screen.getByRole('group', { name: 'Camera controls' });
     expect(camera).toHaveAttribute('aria-disabled', 'true');
@@ -171,10 +173,10 @@ describe('SquatApp 3D stage', () => {
     await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
     const ctl = instances[0];
 
-    fireEvent.change(screen.getByRole('slider', { name: 'Depth' }), {
-      target: { value: '20' },
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
     });
-    expect(ctl.setDepth).toHaveBeenLastCalledWith(0.5);
+    expect(ctl.setDepth).toHaveBeenLastCalledWith(manifest.meta.rep.s[50]);
 
     await user.click(screen.getByRole('switch', { name: 'Skeleton' }));
     expect(ctl.setLayers).toHaveBeenLastCalledWith({
@@ -337,21 +339,68 @@ describe('SquatApp 3D stage', () => {
     expect(cam.orbit).toHaveBeenCalledWith((15 * Math.PI) / 180, 0);
   });
 
-  it('keeps depth, direction and layers out of the URL', async () => {
+  it('writes t and paused when a scrub settles, never on load', async () => {
     const user = userEvent.setup();
     const { loadScene } = fakeScene();
     render(<SquatApp loadScene={loadScene} />);
     await finishDownload();
     await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
-    const before = window.location.href;
-    fireEvent.change(screen.getByRole('slider', { name: 'Depth' }), {
-      target: { value: '30' },
-    });
-    await user.click(screen.getByRole('radio', { name: 'Drive' }));
+    // Loading, and a layer switch, leave the URL alone.
     await user.click(screen.getByRole('switch', { name: 'Muscles' }));
-    await user.click(screen.getByRole('button', { name: 'Step forward' }));
+    await new Promise((r) => setTimeout(r, 300));
     expect(window.location.hash).toBe('');
-    expect(window.location.href).toBe(before);
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
+    });
+    await waitFor(() => expect(window.location.hash).toBe('#t=1.00&paused'));
+    await user.click(screen.getByRole('switch', { name: 'Skeleton' }));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(window.location.hash).toBe('#t=1.00&paused');
+  });
+
+  it('opens a deep link on its frame and keeps the muscle through a scrub', async () => {
+    const slug = 'soleus';
+    window.history.replaceState(null, '', `/squat#t=2.44&m=${slug}`);
+    const { loadScene, instances } = fakeScene();
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    expect(instances[0].setDepth).toHaveBeenLastCalledWith(
+      manifest.meta.rep.s[122]
+    );
+    const chips = screen.getByRole('group', { name: 'Jump to phase' });
+    expect(
+      within(chips).getByRole('button', { name: 'Drive' })
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(window.location.hash).toBe(`#t=2.44&m=${slug}`);
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
+    });
+    await waitFor(() =>
+      expect(window.location.hash).toBe(`#t=1.00&m=${slug}&paused`)
+    );
+  });
+
+  it('clamps and snaps a hand-written time to the timeline', async () => {
+    window.history.replaceState(null, '', '/squat#t=99');
+    const { loadScene } = fakeScene();
+    const { unmount } = render(<SquatApp loadScene={loadScene} />);
+    // The time control works from the manifest alone; no download needed.
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    await waitFor(() => expect(slider).toHaveValue('3.68'));
+    const chips = screen.getByRole('group', { name: 'Jump to phase' });
+    expect(
+      within(chips).getByRole('button', { name: 'Lockout' })
+    ).toHaveAttribute('aria-pressed', 'true');
+    unmount();
+
+    window.history.replaceState(null, '', '/squat#t=2.45');
+    render(<SquatApp loadScene={fakeScene().loadScene} />);
+    await waitFor(() =>
+      expect(screen.getByRole('slider', { name: 'Rep time' })).toHaveValue(
+        '2.46'
+      )
+    );
   });
 
   it('reports a build failure', async () => {

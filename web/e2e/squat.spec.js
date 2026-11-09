@@ -197,14 +197,15 @@ for (const scheme of ['light', 'dark']) {
       // Render on demand: once damping settles, no frames while idle.
       const idle = await settledFrames(page);
 
-      const slider = page.getByRole('slider', { name: 'Depth' });
+      const slider = page.getByRole('slider', { name: 'Rep time' });
       const readout = page.getByTestId('depth-readout');
-      await expect(readout).toHaveText(/Depth 0% · Standing/);
+      await expect(readout).toHaveText(/0\.00 s · Setup and brace · 0% depth/);
       await slider.focus();
       await page.keyboard.press('End');
-      await expect(readout).toHaveText(/Depth 100% · Bottom/);
-      await page.keyboard.press('PageDown');
-      await expect(readout).toHaveText(/Depth 88% · Descent/);
+      await expect(readout).toHaveText(/3\.68 s · Lockout · 0% depth · drive/);
+      // End leaves depth at 0, as it started; the bottom actually moves it.
+      await page.getByRole('button', { name: 'Bottom', exact: true }).click();
+      await expect(readout).toHaveText(/2\.02 s · Bottom/);
       await expect.poll(() => frames(page)).toBeGreaterThan(idle);
 
       await page
@@ -297,6 +298,35 @@ test('a #m= deep link selects on load; a dead one says so and is dropped', async
   expect(errors).toEqual([]);
 });
 
+test('a #t= deep link opens on its frame, and Play runs to lockout and stops', async ({
+  page,
+}) => {
+  const errors = await openReady(page, `${DEBUG}#t=2.44&paused`);
+  const readout = page.getByTestId('depth-readout');
+  await expect(readout).toHaveText(/2\.44 s · Drive/);
+  await expect(
+    page
+      .getByRole('group', { name: 'Jump to phase' })
+      .getByRole('button', { name: 'Drive' })
+  ).toHaveAttribute('aria-pressed', 'true');
+  // Opening a link does not rewrite it.
+  expect(new URL(page.url()).hash).toBe('#t=2.44&paused');
+  expect(await axe(page)).toEqual([]);
+
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Pause', exact: true })
+  ).toBeVisible();
+  await expect(readout).toHaveText(/3\.68 s · Lockout/, { timeout: 10_000 });
+  await expect(
+    page.getByRole('button', { name: 'Play', exact: true })
+  ).toBeVisible();
+  // Stopped, not looping: the render loop goes idle again.
+  await settledFrames(page);
+  await expect.poll(() => new URL(page.url()).hash).toBe('#t=3.68&paused');
+  expect(errors).toEqual([]);
+});
+
 test('the filter never adds a history entry, and the heatmap redraws', async ({
   page,
 }) => {
@@ -326,10 +356,10 @@ test('the canvas is hidden from assistive tech and skipped by Tab', async ({
   await expect(canvas).toHaveAttribute('aria-hidden', 'true');
   expect(await canvas.evaluate((el) => el.tabIndex)).toBe(-1);
   // The last control before the stage, then Tab: focus lands on the first
-  // control after it — the depth slider — never on the canvas.
+  // control after it — the rep-time slider — never on the canvas.
   await page.getByRole('button', { name: 'Metrics and targets' }).focus();
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('slider', { name: 'Depth' })).toBeFocused();
+  await expect(page.getByRole('slider', { name: 'Rep time' })).toBeFocused();
   expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe(
     'CANVAS'
   );
@@ -361,9 +391,7 @@ test('a hidden tab draws nothing, and drawing resumes when visible', async ({
     document.dispatchEvent(new Event('visibilitychange'));
   });
   const before = await frames(page);
-  const slider = page.getByRole('slider', { name: 'Depth' });
-  await slider.focus();
-  await page.keyboard.press('End');
+  await page.getByRole('button', { name: 'Bottom', exact: true }).click();
   await expect(page.getByTestId('depth-readout')).toHaveText(/Bottom/);
   // The setter asked for a frame; the hidden page must not have drawn it.
   expect(await settledFrames(page)).toBe(before);
@@ -513,14 +541,14 @@ test.describe('phone 390 px layout', () => {
       timeout: PAINT_TIMEOUT,
     });
     // The controls are laid out from the first paint, disabled.
-    await expect(page.getByRole('slider', { name: 'Depth' })).toBeDisabled();
+    await expect(page.getByRole('slider', { name: 'Rep time' })).toBeDisabled();
     await expect(
       page.getByRole('button', { name: 'Front (anterior) view' })
     ).toBeDisabled();
     const atFirstPaint = await formCheckTop();
 
     gates.manifestOpen();
-    await expect(page.getByRole('slider', { name: 'Depth' })).toBeEnabled();
+    await expect(page.getByRole('slider', { name: 'Rep time' })).toBeEnabled();
     const withData = await formCheckTop();
 
     gates.sceneOpen();

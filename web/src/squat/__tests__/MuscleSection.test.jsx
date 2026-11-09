@@ -100,13 +100,13 @@ async function openList() {
 }
 
 describe('the muscle section in the page', () => {
-  it('sits between the depth controls and the phase strip', async () => {
+  it('sits between the time controls and the phase strip', async () => {
     await openList();
     const section = screen
       .getByRole('heading', { level: 2, name: 'Every muscle in the lift' })
       .closest('section');
     const depth = screen
-      .getByRole('heading', { name: 'Depth' })
+      .getByRole('heading', { name: 'Rep time' })
       .closest('section');
     const phases = screen
       .getByRole('heading', { name: 'The rep in five phases' })
@@ -229,20 +229,22 @@ describe('the muscle section in the page', () => {
     expect(document.body.innerHTML).not.toContain('onerror');
   });
 
-  it('the band follows depth and direction; the list does not re-render per step', async () => {
+  it('the band follows rep time; the list does not re-render per step', async () => {
     const user = userEvent.setup();
     await openList();
     await user.click(screen.getByRole('option', { name: 'Gluteus maximus' }));
     expect(screen.getByTestId('muscle-band')).toHaveTextContent(
-      /Low at 0% depth, lowering \(Standing\)/
+      /Low at 0% depth, lowering \(Setup and brace\)/
     );
-    fireEvent.change(screen.getByRole('slider', { name: 'Depth' }), {
-      target: { value: '40' },
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '2.20' },
     });
     expect(screen.getByTestId('muscle-band')).toHaveTextContent(
-      /Moderate at 100% depth, lowering \(Bottom\)/
+      /at 100% depth, drive \(Bottom\)/
     );
-    await user.click(screen.getByRole('radio', { name: 'Drive' }));
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '2.60' },
+    });
     expect(screen.getByTestId('muscle-band')).toHaveTextContent(/drive/);
     // The peak line is depth-independent — that is its job.
     expect(screen.getByTestId('muscle-peak')).toHaveTextContent(
@@ -332,12 +334,12 @@ describe('the muscle section in the page', () => {
       screen.getByRole('switch', { name: 'Activation heatmap' })
     );
     const first = ctl.setActivation.mock.calls.length;
-    fireEvent.change(screen.getByRole('slider', { name: 'Depth' }), {
-      target: { value: '40' },
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '2.20' },
     });
     expect(ctl.setActivation.mock.calls.length).toBeGreaterThan(first);
     expect([...ctl.setActivation.mock.calls.at(-1)[0]]).toEqual([
-      ...activationAt(manifest.meta.muscles, 1, 'lowering'),
+      ...activationAt(manifest.meta.muscles, manifest.meta.rep.s[110], 'drive'),
     ]);
   });
 

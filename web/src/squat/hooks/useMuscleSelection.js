@@ -8,8 +8,8 @@ import { findBySlug } from '../utils/muscleIndex.js';
  * shared link, a Back press and a click all take the same path.
  *
  * Selection is URL state, which is exactly why it is not in
- * useAnatomyViewState: depth, direction and layers deliberately leave the hash
- * empty, and SquatScene.test.jsx pins that.
+ * useAnatomyViewState: of the view, only the settled rep time reaches the
+ * hash (written by SquatApp), and SquatScene.test.jsx pins that.
  */
 export function useMuscleSelection({ index, hash, setHash }) {
   const slug = hash.m;
