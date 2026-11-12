@@ -1,6 +1,6 @@
 import { THEME } from '../../constants/theme.js';
 import { SPACE } from '../../constants/tokens.js';
-import { card, microLabel, srOnly } from './ui.js';
+import { microLabel, srOnly } from './ui.js';
 
 export const LAYERS_WAITING = 'Layer switches work once the 3D model is drawn.';
 
@@ -17,6 +17,7 @@ export default function ViewOptions({
   heatmap = false,
   onHeatmap,
   disabled = false,
+  compact = false,
 }) {
   // Not appended to LAYERS: that constant is the scene's meshes, and the
   // heatmap is a colouring mode over whichever of them are showing.
@@ -29,16 +30,23 @@ export default function ViewOptions({
       disabled={disabled}
       aria-describedby={disabled ? 'layers-waiting' : undefined}
       style={{
-        ...card,
         margin: 0,
-        padding: SPACE.lg,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: SPACE.lg,
-        alignItems: 'center',
+        padding: 0,
+        border: 'none',
+        minWidth: 0,
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        columnGap: SPACE.md,
       }}
     >
-      <legend style={{ ...microLabel, padding: `0 ${SPACE.xs}px` }}>
+      {/* The phone bar's Show tab is the visible name there. */}
+      <legend
+        style={
+          compact
+            ? srOnly
+            : { ...microLabel, padding: 0, marginBottom: SPACE.xs }
+        }
+      >
         Show
       </legend>
       {disabled && (
@@ -50,6 +58,8 @@ export default function ViewOptions({
         <label
           key={id}
           style={{
+            // The heatmap's longer name takes the whole second row.
+            gridColumn: id === 'heatmap' ? '1 / -1' : undefined,
             display: 'inline-flex',
             alignItems: 'center',
             gap: SPACE.sm,

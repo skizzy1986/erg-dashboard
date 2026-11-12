@@ -85,7 +85,21 @@ async function finishDownload() {
 
 const status = () => screen.getByTestId('load-status');
 
+// These tests drive the scene through its controls, so they run on the desktop
+// rail, where every group is on screen; the phone bar's tabs are covered in
+// StageControls.test.jsx.
+const WIDE = '(min-width: 761px)';
+function wideScreen() {
+  window.matchMedia = (q) => ({
+    matches: q === WIDE,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+}
+
 beforeEach(() => {
+  wideScreen();
   mocks.workers.length = 0;
   captureError.mockClear();
   globalThis.fetch = vi
@@ -93,7 +107,10 @@ beforeEach(() => {
     .mockResolvedValue({ ok: true, json: () => Promise.resolve(manifest) });
   window.history.replaceState(null, '', '/squat');
 });
-afterEach(() => window.localStorage.clear());
+afterEach(() => {
+  window.localStorage.clear();
+  delete window.matchMedia;
+});
 
 describe('SquatApp 3D stage', () => {
   it('loads the engine, builds once, and hides the status after the first frame', async () => {
@@ -189,8 +206,8 @@ describe('SquatApp 3D stage', () => {
     );
     expect(ctl.camera.preset).toHaveBeenCalledWith('front');
 
-    await user.click(screen.getByRole('button', { name: /Switch to Light/ }));
-    await user.click(screen.getByRole('button', { name: /Switch to Dark/ }));
+    // Desktop header: the segmented theme control, not the phone's cycler.
+    await user.click(screen.getByRole('button', { name: 'Dark' }));
     expect(ctl.setPalette).toHaveBeenLastCalledWith(
       scenePalette('dark'),
       expect.objectContaining({ shadowMapSize: expect.any(Number) })

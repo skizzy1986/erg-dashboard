@@ -245,7 +245,9 @@ for (const scheme of ['light', 'dark']) {
       await page.keyboard.press('ArrowDown');
       expect(new URL(page.url()).hash).toBe('');
       await page.keyboard.press('Enter');
-      expect(new URL(page.url()).hash).toBe('#m=adductor-minimus');
+      await expect
+        .poll(() => new URL(page.url()).hash)
+        .toBe('#m=adductor-minimus');
       await expect(page.getByTestId('muscle-band')).toContainText(
         'Indicative estimate, not EMG.'
       );
@@ -257,7 +259,9 @@ for (const scheme of ['light', 'dark']) {
       await expect(listbox.getByRole('option').nth(2)).toBeFocused();
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press('Enter');
-      expect(new URL(page.url()).hash).toBe('#m=rectus-femoris');
+      await expect
+        .poll(() => new URL(page.url()).hash)
+        .toBe('#m=rectus-femoris');
       // The one role sentence that used to cite EMG, two lines above the card's
       // own "not EMG" caveat (docs/squat/PROVENANCE.md).
       await expect(
@@ -355,11 +359,12 @@ test('the canvas is hidden from assistive tech and skipped by Tab', async ({
   await expect(canvas).toHaveCount(1);
   await expect(canvas).toHaveAttribute('aria-hidden', 'true');
   expect(await canvas.evaluate((el) => el.tabIndex)).toBe(-1);
-  // The last control before the stage, then Tab: focus lands on the first
-  // control after it — the rep-time slider — never on the canvas.
-  await page.getByRole('button', { name: 'Metrics and targets' }).focus();
+  // The last control before the stage (the header's link), then Tab: focus
+  // lands on the first control after it — the rail's first button — never
+  // on the canvas. Stage, then rail, then the page below.
+  await page.getByRole('link', { name: /Open SplitIQ/ }).focus();
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('slider', { name: 'Rep time' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Step back' })).toBeFocused();
   expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe(
     'CANVAS'
   );
@@ -542,6 +547,8 @@ test.describe('phone 390 px layout', () => {
     });
     // The controls are laid out from the first paint, disabled.
     await expect(page.getByRole('slider', { name: 'Rep time' })).toBeDisabled();
+    // The camera presets sit behind the phone bar's View tab.
+    await page.getByRole('button', { name: 'View', exact: true }).click();
     await expect(
       page.getByRole('button', { name: 'Front (anterior) view' })
     ).toBeDisabled();
@@ -606,6 +613,134 @@ for (const width of [360, 390]) {
         expect(await smallTargets(page, '[role="dialog"]'), pane).toEqual([]);
       }
       expect(await noHorizontalScroll(page)).toBe(true);
+    });
+  });
+}
+
+// PR C, model as hero (docs/squat/HERO_STAGE_SPEC.md). Every tool for the
+// model is on screen without scrolling, at both reference viewports: on a
+// phone after opening the bar's tab that holds it.
+const PHASE_NAMES = [
+  'Setup and brace',
+  'Lowering',
+  'Bottom',
+  'Drive',
+  'Lockout',
+];
+const PRESETS = [
+  'Front (anterior) view',
+  'Back (posterior) view',
+  'Left side (lateral) view',
+  'Right side (lateral) view',
+];
+
+function heroTools(page) {
+  const pills = page.getByRole('group', { name: 'Jump to phase' });
+  return [
+    [null, 'Play', page.getByRole('button', { name: 'Play', exact: true })],
+    [null, 'Rep time', page.getByRole('slider', { name: 'Rep time' })],
+    [null, 'Step back', page.getByRole('button', { name: 'Step back' })],
+    [null, 'Step forward', page.getByRole('button', { name: 'Step forward' })],
+    ...PHASE_NAMES.map((n) => [
+      'Rep',
+      n,
+      pills.getByRole('button', { name: n, exact: true }),
+    ]),
+    ...PRESETS.map((n) => ['View', n, page.getByRole('button', { name: n })]),
+    ['View', 'Reset', page.getByRole('button', { name: 'Reset' })],
+    // The switch input is 24 px by design; its label is the target.
+    [
+      'Show',
+      'Activation heatmap',
+      page.locator('label', {
+        has: page.getByRole('switch', { name: 'Activation heatmap' }),
+      }),
+    ],
+  ];
+}
+
+for (const [label, viewport, phone] of [
+  ['desktop 1280 × 720', { width: 1280, height: 720 }, false],
+  ['phone 390 × 844', { width: 390, height: 844 }, true],
+]) {
+  test.describe(`hero stage — ${label}`, () => {
+    test.use(
+      phone ? { viewport, hasTouch: true, isMobile: true } : { viewport }
+    );
+
+    test('every tool is reachable without scrolling, at 44 px (criteria 16, 17)', async ({
+      page,
+    }) => {
+      const errors = await openReady(page);
+      const innerHeight = await page.evaluate(() => window.innerHeight);
+      for (const [tab, name, control] of heroTools(page)) {
+        if (phone && tab) {
+          const button = page.getByRole('button', { name: tab, exact: true });
+          if ((await button.getAttribute('aria-expanded')) !== 'true') {
+            await button.click();
+          }
+        }
+        await expect(control, name).toBeVisible();
+        const box = await control.boundingBox();
+        expect(box.y + box.height, `${name} bottom`).toBeLessThanOrEqual(
+          innerHeight
+        );
+        expect(Math.round(box.width), `${name} width`).toBeGreaterThanOrEqual(
+          44
+        );
+        expect(Math.round(box.height), `${name} height`).toBeGreaterThanOrEqual(
+          44
+        );
+        expect(await page.evaluate(() => window.scrollY), name).toBe(0);
+      }
+      expect(await noHorizontalScroll(page)).toBe(true);
+      expect(await smallTargets(page)).toEqual([]);
+      expect(await axe(page)).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+
+    test('the stage is the hero, and the page below stays reachable (criteria 15, 18)', async ({
+      page,
+    }) => {
+      await openReady(page);
+      const stage = await page
+        .getByRole('region', { name: '3D model' })
+        .boundingBox();
+      if (phone) {
+        expect(stage.width).toBe(390);
+        expect(stage.height).toBeGreaterThanOrEqual(0.5 * 844);
+      } else {
+        expect(stage.width).toBeGreaterThanOrEqual(0.6 * 1280);
+        expect(stage.height).toBeGreaterThanOrEqual(520);
+        // Fills the viewport below the header, less the hero's padding.
+        expect(stage.y + stage.height).toBeGreaterThanOrEqual(720 - 16 - 1);
+      }
+      // Docked: the rail sits beside the stage on desktop, the bar under it on
+      // a phone (criterion 17).
+      const rail = await page
+        .getByRole('region', { name: 'Controls' })
+        .boundingBox();
+      if (phone) {
+        expect(rail.y).toBeGreaterThanOrEqual(stage.y + stage.height - 1);
+      } else {
+        expect(rail.x).toBeGreaterThanOrEqual(stage.x + stage.width - 1);
+        expect(rail.y).toBeLessThan(stage.y + stage.height);
+      }
+      // The hero is sized from HEADER_HEIGHT in SquatHeader.jsx; this is the
+      // only place the real rendered height is checked against it.
+      const header = await page.locator('header').first().boundingBox();
+      expect(header.height).toBe(phone ? 57 : 59);
+      // Keyboard-reachable below the fold: Tab walks from the last rail
+      // control down into the page until it reaches the muscle listbox.
+      await page.getByRole('slider', { name: 'Rep time' }).focus();
+      let reached = false;
+      for (let i = 0; i < 40 && !reached; i++) {
+        await page.keyboard.press('Tab');
+        reached = await page.evaluate(
+          () => !!document.activeElement?.closest('[role="listbox"]')
+        );
+      }
+      expect(reached).toBe(true);
     });
   });
 }

@@ -5,7 +5,7 @@ import { alpha } from '../../utils/themeCss.js';
 import LoadStatus from './LoadStatus.jsx';
 import CapabilityNotice from './CapabilityNotice.jsx';
 import SceneError from './SceneError.jsx';
-import { card, microLabel } from './ui.js';
+import { card } from './ui.js';
 
 // The data's stage while it downloads, then the scene's own. One status
 // region throughout, so assistive tech hears one continuous story.
@@ -17,9 +17,11 @@ function overlayStage(data, scene) {
 }
 
 /**
- * The stage card. `hostRef` is where the scene appends its own canvas; the
- * overlays sit above it in the same box, absolutely placed, so nothing moves
- * when the first frame lands.
+ * The stage: the hero of the page. On desktop a card that fills its grid cell;
+ * on a phone a full-bleed area that grows above the docked control bar.
+ * `hostRef` is where the scene appends its own canvas; the overlays sit above
+ * it in the same box, absolutely placed, so nothing moves when the first frame
+ * lands.
  */
 export default function SquatStage({
   capabilities,
@@ -27,6 +29,8 @@ export default function SquatStage({
   scene,
   hostRef,
   wide,
+  title = null,
+  children = null,
 }) {
   const blocked = !capabilities.webgl || data.stage === 'unsupported';
   const sceneFailed =
@@ -35,13 +39,36 @@ export default function SquatStage({
   const stage = overlayStage(data, scene);
   const drawn = stage === 'ready' && !sceneFailed;
 
+  const framing = (
+    <span
+      style={{
+        fontFamily: FONT.sans,
+        fontSize: 11,
+        fontWeight: 700,
+        lineHeight: 1.3,
+        background: THEME.surface,
+        color: THEME.modelled,
+        border: `1px solid ${THEME.border}`,
+        borderRadius: RADIUS.pill,
+        padding: `${SPACE.xxs}px ${SPACE.sm}px`,
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
+      Modelled, not measured
+    </span>
+  );
+
   return (
     <section
       aria-label="3D model"
       style={{
-        ...card,
+        ...(wide ? card : { boxSizing: 'border-box' }),
         position: 'relative',
-        minHeight: wide ? 520 : 'min(58vh, 460px)',
+        // Desktop stretches to the hero row; the phone flexes above the bar,
+        // which keeps its own height, so this floor is the canvas's alone.
+        ...(wide ? { minHeight: 520 } : { flex: '1 1 auto', minHeight: 240 }),
+        minWidth: 0,
         overflow: 'hidden',
         background: `radial-gradient(120% 90% at 50% 0%, ${THEME.surface} 0%, ${THEME.surfaceAlt} 60%, ${alpha(THEME.accent, '12')} 100%)`,
       }}
@@ -53,38 +80,43 @@ export default function SquatStage({
           style={{ position: 'absolute', inset: 0 }}
         />
       )}
-      <span
+      {/* The h1 first in DOM order, then the framing chip; both opaque, as
+          they sit over the moving model. On a phone the two side by side
+          would collide, and stacked they cover the bar, so the chip moves to
+          the bottom corner. */}
+      <div
         style={{
-          ...microLabel,
           position: 'absolute',
-          top: SPACE.md,
-          left: SPACE.lg,
+          top: wide ? SPACE.lg : SPACE.md,
+          left: wide ? SPACE.lg : SPACE.md,
+          right: wide ? SPACE.lg : SPACE.md,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: SPACE.sm,
+          // Above the status layer, so a message never paints over them.
+          zIndex: 1,
           pointerEvents: 'none',
         }}
       >
-        3D model
-      </span>
-      <span
-        style={{
-          position: 'absolute',
-          top: SPACE.sm,
-          right: SPACE.md,
-          fontFamily: FONT.sans,
-          fontSize: 11,
-          fontWeight: 700,
-          lineHeight: 1.3,
-          // Opaque, not a tint: it sits over the moving model, and a
-          // see-through chip would put its ink on whatever passes beneath.
-          background: THEME.surface,
-          color: THEME.modelled,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: RADIUS.pill,
-          padding: `${SPACE.xxs}px ${SPACE.sm}px`,
-          pointerEvents: 'none',
-        }}
-      >
-        Modelled, not measured
-      </span>
+        {title && (
+          <div
+            style={{
+              background: THEME.surface,
+              border: `1px solid ${THEME.border}`,
+              borderRadius: RADIUS.md,
+              padding: wide
+                ? `${SPACE.sm}px ${SPACE.lg}px ${SPACE.md}px`
+                : `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px`,
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            {title}
+          </div>
+        )}
+        {wide && framing}
+      </div>
       <div
         style={{
           position: 'absolute',
@@ -112,6 +144,20 @@ export default function SquatStage({
           />
         )}
       </div>
+      {!wide && (
+        <div
+          style={{
+            position: 'absolute',
+            right: SPACE.md,
+            bottom: SPACE.md,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        >
+          {framing}
+        </div>
+      )}
+      {children}
     </section>
   );
 }

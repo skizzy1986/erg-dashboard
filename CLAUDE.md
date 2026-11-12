@@ -361,16 +361,21 @@ and **SQUAT_TOTAL** (squat-only files, minus the 3D chunk) are gated separately,
 **SQUAT_3D** (files reachable only through `anatomy/scene/createAnatomyScene.js`: three.js
 + the scene) has its own line, and **SQUAT_DATA** caps the
 anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
-file over Workbox's 2 MiB ceiling. Measured 2026-11-05 after squat PR2b-i (the muscle
-panel): **entry 146.8 / 150, total 385.6 / 400, squat entry 116.4 / 117, squat total
-27.6 / 30, squat 3D 138.2 / 145 KB**, data 2.20 MB. `SQUAT_TOTAL` was raised 26 → 30 in
-that change, from the measured 27.6 KB: squat total is the loose ceiling by the
-script's own definition — never precached, `CacheFirst` at runtime, stripped from the APK
-— so those bytes are on nobody's first paint. **`SQUAT_ENTRY` is the one to watch: 0.6 KB
-spare.** The muscle list is deliberately not lazy-loaded (the canvas is `aria-hidden`
-with `tabindex="-1"`, so the list is the model's accessible substitute and must not sit
-behind a chunk that can fail to fetch), so the next change to `/squat`'s static graph
-needs either a trim or Scott's decision on the 117 ceiling.
+file over Workbox's 2 MiB ceiling. Measured 2026-11-12 after squat PR C (#470, the
+model-as-hero layout): **entry 147.3 / 150, total 377.9 / 400, squat entry 118.0 / 120,
+squat total 29.2 / 30, squat 3D 138.2 / 145 KB**, data 2.20 MB. `SQUAT_ENTRY` was raised
+117 → 120 in that change (measured + ~2 KB), on Scott's Gate-2 rule for the hero-stage
+work (`docs/squat/HERO_STAGE_SPEC.md`): raise squat budgets to the measured figure plus
+~2 KB with a dated comment, and never relax the dashboard's 150. `SQUAT_TOTAL` was raised
+26 → 30 the same way in PR2b-i: it is the loose ceiling by the script's own definition —
+never precached, `CacheFirst` at runtime, stripped from the APK — so those bytes are on
+nobody's first paint. **`SQUAT_TOTAL` is now the one to watch: 0.8 KB spare**, and
+squat-only static code counts against both it and `SQUAT_ENTRY` (2.0 KB spare). PR B's
+strain panel is expected to exceed it; Scott has agreed that raise at PR B time, under
+the same rule, unless the squat-entry trim (#467) lands first. The muscle list is
+deliberately not lazy-loaded (the canvas is `aria-hidden` with `tabindex="-1"`, so the
+list is the model's accessible substitute and must not sit behind a chunk that can fail
+to fetch).
 `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
 
 **Squat-only JS is `squat-` prefixed, never precached, and cached at runtime instead** — a

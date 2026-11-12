@@ -105,7 +105,15 @@ const MAX_TOTAL_GZIP_KB = 400;
 // SQUAT_ENTRY is the tight gate and it still passes, at 116.4 of 117 — but
 // that is 0.6 KB spare, measured, and the next change of any size will fail
 // it. Raising it is not this PR's call.
-const MAX_SQUAT_ENTRY_GZIP_KB = 117;
+//
+// PR C (model as hero, docs/squat/HERO_STAGE_SPEC.md) re-measured 2026-11-12:
+// SQUAT_ENTRY 116.6 -> 118.0 KB, SQUAT_TOTAL 27.8 -> 29.2 KB, the dashboard
+// entry unchanged (147.3 -> 147.3). The growth is the docked controls rail, the
+// phone bar's Rep | View | Show disclosure and the transport icons, which
+// replace three stacked cards and the intro's button row. The bundle rule
+// approved by Scott at Gate 2 sets the ceiling to the measured figure rounded
+// up, plus ~2 KB: 118 + 2 = 120.
+const MAX_SQUAT_ENTRY_GZIP_KB = 120;
 const MAX_SQUAT_TOTAL_GZIP_KB = 30;
 // three.js (r187, tree-shaken) + OrbitControls + the anatomy scene and posing
 // maths. Measured 2026-11-04 at 138.0 KB; ~5% headroom, because a

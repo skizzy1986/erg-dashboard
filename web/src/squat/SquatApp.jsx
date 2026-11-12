@@ -16,11 +16,9 @@ import { useMuscleSelection } from './hooks/useMuscleSelection.js';
 import { buildMuscleIndex, filterMuscles } from './utils/muscleIndex.js';
 import { activationOf, bandOf, peakBandOf } from './utils/activation.js';
 import { loadSceneModule } from '../anatomy/scene/loadScene.js';
-import SquatHeader from './components/SquatHeader.jsx';
+import SquatHeader, { HEADER_HEIGHT } from './components/SquatHeader.jsx';
 import SquatStage from './components/SquatStage.jsx';
-import TimeControls from './components/TimeControls.jsx';
-import CameraControls from './components/CameraControls.jsx';
-import ViewOptions from './components/ViewOptions.jsx';
+import StageControls from './components/StageControls.jsx';
 import MuscleList from './components/MuscleList.jsx';
 import MuscleCard from './components/MuscleCard.jsx';
 import HeatmapLegend from './components/HeatmapLegend.jsx';
@@ -48,8 +46,11 @@ const COARSE_QUERY = '(pointer: coarse)';
 // own useMediaQuery: importing the dashboard hook here split it into a shared
 // chunk on the dashboard's first paint (+0.3 KB of entry, measured).
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+// Plus the notch inset the header pads its top with.
+const headerHeight = (wide) =>
+  `(${HEADER_HEIGHT[wide ? 'wide' : 'compact']}px + env(safe-area-inset-top, 0px))`;
 
-function usePageMeta(resolved) {
+function usePageMeta(resolved, wide) {
   useEffect(() => {
     const prevTitle = document.title;
     let meta = document.querySelector('meta[name="description"]');
@@ -68,6 +69,17 @@ function usePageMeta(resolved) {
       else meta.setAttribute('content', prevDesc ?? '');
     };
   }, []);
+
+  // The header is sticky, so anything scrolled into view (a focused control,
+  // a muscle card) must stop below it, not under it (WCAG 2.4.11).
+  useEffect(() => {
+    const root = document.documentElement.style;
+    const prev = root.scrollPaddingTop;
+    root.scrollPaddingTop = `calc${headerHeight(wide)}`;
+    return () => {
+      root.scrollPaddingTop = prev;
+    };
+  }, [wide]);
 
   // data-theme sits on the tool root, but the document behind it (overscroll,
   // the iOS status bar) would stay on the light ground. Values, not THEME: the
@@ -301,7 +313,7 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
   const capabilities = useCapabilities();
   const [hash, setHash] = useSquatHashState();
   const data = useAnatomyData({ manifestUrl, capabilities });
-  usePageMeta(resolved);
+  usePageMeta(resolved, wide);
   const coarsePointer = useMediaQuery(COARSE_QUERY);
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
   const view = useAnatomyViewState(data.manifest?.meta.rep ?? null, hash.t);
@@ -374,167 +386,177 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
         onThemeChange={setPreference}
         compact={!wide}
       />
-      <main
-        style={{
-          flex: 1,
-          width: '100%',
-          maxWidth: 1200,
-          margin: '0 auto',
-          padding: `${wide ? SPACE.xxl : SPACE.xl}px ${gutter}px ${SPACE.xxl}px`,
-          boxSizing: 'border-box',
-        }}
-      >
+      <main style={{ flex: 1, width: '100%' }}>
         <div
-          style={{ marginBottom: wide ? SPACE.xl : SPACE.lg, maxWidth: 720 }}
-        >
-          <span style={microLabel}>Coaching model</span>
-          <h1
-            style={{
-              margin: `${SPACE.xs}px 0 ${SPACE.sm}px`,
-              fontSize: wide ? 40 : 30,
-              fontWeight: 700,
-              letterSpacing: wide ? -1 : -0.5,
-              lineHeight: 1.1,
-              color: THEME.text,
-            }}
-          >
-            High-bar back squat
-          </h1>
-          <p
-            style={{
-              margin: 0,
-              fontSize: wide ? 16 : 15,
-              lineHeight: 1.55,
-              color: THEME.textSubtle,
-            }}
-          >
-            Reference rep: 85 kg lifter, 100 kg bar (about 80–85% 1RM),
-            touch-and-go.
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: SPACE.sm,
-              marginTop: SPACE.lg,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => openGuide('phases')}
-              style={primaryButton}
-            >
-              Coaching guide
-            </button>
-            <button
-              type="button"
-              onClick={() => openGuide('metrics')}
-              style={secondaryButton}
-            >
-              Metrics and targets
-            </button>
-          </div>
-        </div>
-
-        <div
+          data-testid="squat-hero"
           style={
             wide
               ? {
                   display: 'grid',
-                  gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 380px)',
-                  gap: SPACE.xl,
-                  alignItems: 'start',
+                  gridTemplateColumns:
+                    'minmax(0, 1fr) clamp(260px, 26vw, 320px)',
+                  gap: SPACE.md,
+                  width: '100%',
+                  maxWidth: 1600,
+                  margin: '0 auto',
+                  padding: `${SPACE.lg}px ${SPACE.xl}px`,
+                  boxSizing: 'border-box',
+                  // A floor, not a fixed height: on a short window the rail
+                  // grows the row rather than clipping its last controls.
+                  // Border-box, so the floor includes the vertical padding.
+                  minHeight: `max(${520 + 2 * SPACE.lg}px, calc(100svh - ${headerHeight(wide)}))`,
                 }
-              : { display: 'flex', flexDirection: 'column', gap: SPACE.lg }
+              : {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: `calc(100svh - ${headerHeight(wide)})`,
+                  minHeight: 460,
+                  background: THEME.surfaceAlt,
+                }
           }
+        >
+          <SquatStage
+            capabilities={capabilities}
+            data={data}
+            scene={scene}
+            hostRef={hostRef}
+            wide={wide}
+            title={
+              <>
+                {wide && (
+                  <span style={{ ...microLabel, display: 'block' }}>
+                    Coaching model
+                  </span>
+                )}
+                <h1
+                  style={{
+                    margin: 0,
+                    fontSize: wide ? 40 : 30,
+                    fontWeight: 700,
+                    letterSpacing: wide ? -1 : -0.5,
+                    lineHeight: 1.1,
+                    color: THEME.text,
+                  }}
+                >
+                  High-bar back squat
+                </h1>
+              </>
+            }
+          />
+          <StageControls
+            view={view}
+            camera={scene.camera}
+            cameraDisabled={scene.status !== 'ready'}
+            sceneBlocked={sceneBlocked}
+            wide={wide}
+            onGuide={openGuide}
+          />
+        </div>
+
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            padding: `${SPACE.xl}px ${gutter}px ${SPACE.xxl}px`,
+            boxSizing: 'border-box',
+          }}
         >
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               gap: SPACE.md,
-              minWidth: 0,
+              marginBottom: SPACE.xl,
             }}
           >
-            <SquatStage
-              capabilities={capabilities}
-              data={data}
-              scene={scene}
-              hostRef={hostRef}
-              wide={wide}
-            />
-            <TimeControls view={view} />
-            {/* Rendered from the first paint, disabled until the model is
-                drawn, so nothing below them moves when it is. Where the 3D
-                view cannot exist at all they are left out from the start. */}
-            {!sceneBlocked && (
-              <>
-                <CameraControls
-                  camera={scene.camera}
-                  disabled={scene.status !== 'ready'}
-                />
-                <ViewOptions
-                  layers={view.layers}
-                  onLayer={view.setLayer}
-                  heatmap={view.heatmap}
-                  onHeatmap={view.setHeatmap}
-                  disabled={scene.status !== 'ready'}
-                />
-              </>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 720,
+                fontSize: wide ? 16 : 15,
+                lineHeight: 1.55,
+                color: THEME.textSubtle,
+              }}
+            >
+              Reference rep: 85 kg lifter, 100 kg bar (about 80–85% 1RM),
+              touch-and-go.
+            </p>
+            {/* On desktop these live in the rail's footer; the phone bar
+                keeps to the model's own tools, so they sit here. */}
+            {!wide && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.sm }}>
+                <button
+                  type="button"
+                  onClick={() => openGuide('phases')}
+                  style={primaryButton}
+                >
+                  Coaching guide
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openGuide('metrics')}
+                  style={secondaryButton}
+                >
+                  Metrics and targets
+                </button>
+              </div>
             )}
           </div>
+
           <FormCheck
             summary={summary}
             kv={summary?.kv}
             unavailable={data.stage === 'error' && !summary}
           />
-        </div>
 
-        <MuscleSection
-          regions={regions}
-          total={index.all.length}
-          matches={matches}
-          query={query}
-          onQuery={setQuery}
-          selection={selection}
-          band={band}
-          peak={peak}
-          percent={view.pct}
-          phase={view.phase}
-          direction={view.direction}
-          heatmap={view.heatmap && scene.status === 'ready'}
-          wide={wide}
-          loading={!data.manifest && data.stage !== 'error'}
-          failed={!data.manifest && data.stage === 'error'}
-        />
+          <MuscleSection
+            regions={regions}
+            total={index.all.length}
+            matches={matches}
+            query={query}
+            onQuery={setQuery}
+            selection={selection}
+            band={band}
+            peak={peak}
+            percent={view.pct}
+            phase={view.phase}
+            direction={view.direction}
+            heatmap={view.heatmap && scene.status === 'ready'}
+            wide={wide}
+            loading={!data.manifest && data.stage !== 'error'}
+            failed={!data.manifest && data.stage === 'error'}
+          />
 
-        <PhaseStrip onOpen={openGuide} wide={wide} />
+          <PhaseStrip onOpen={openGuide} wide={wide} />
 
-        <p
-          style={{
-            margin: `${SPACE.xl}px 0 0`,
-            padding: SPACE.md,
-            borderRadius: RADIUS.sm,
-            border: `1px solid ${THEME.divider}`,
-            // On a surface, not the page ground: accent on bg is 3.2:1 in
-            // light, short of AA for this 12 px link (contrastPairs.js).
-            background: THEME.surface,
-            fontSize: 12,
-            lineHeight: 1.55,
-            color: THEME.textSubtle,
-          }}
-        >
-          Every value on this page comes from a modelled reference rep, not a
-          recording. Muscle activation is estimated from joint moments, not
-          measured.{' '}
-          <button
-            type="button"
-            onClick={() => openGuide('method')}
-            style={{ ...linkButton, ...touchLink }}
+          <p
+            style={{
+              margin: `${SPACE.xl}px 0 0`,
+              padding: SPACE.md,
+              borderRadius: RADIUS.sm,
+              border: `1px solid ${THEME.divider}`,
+              // On a surface, not the page ground: accent on bg is 3.2:1 in
+              // light, short of AA for this 12 px link (contrastPairs.js).
+              background: THEME.surface,
+              fontSize: 12,
+              lineHeight: 1.55,
+              color: THEME.textSubtle,
+            }}
           >
-            Method and limits
-          </button>
-        </p>
+            Every value on this page comes from a modelled reference rep, not a
+            recording. Muscle activation is estimated from joint moments, not
+            measured.{' '}
+            <button
+              type="button"
+              onClick={() => openGuide('method')}
+              style={{ ...linkButton, ...touchLink }}
+            >
+              Method and limits
+            </button>
+          </p>
+        </div>
       </main>
       <AttributionFooter
         onSources={() => openGuide('sources')}
