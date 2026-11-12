@@ -391,6 +391,12 @@ unposted cleanly, so a session shows Scott the exact text and where it will go, 
 dispatches only on his reply. The weekly *SplitIQ Discussion drafts* scheduled task is the
 standing caller.
 
+**The one automatic writer.** `.github/workflows/discussion-shipped.yml` is not dispatched
+by a session. It runs when a PR merges into `main` and posts a fixed "Shipped: #PR closed
+#issue" reply on the Discussion an issue names with a `Discussion:` line. It is the only
+Discussions write with no approval step; `WORKFLOW.md`, *Ideas that start in Discussions*,
+has the convention.
+
 **Author.** With no extra setup the post is authored by `github-actions[bot]`. To post as
 Scott, add the repo secret `DISCUSSIONS_PAT`: a fine-grained PAT limited to this repository
 with **Discussions: read and write**. The workflow prefers it when present.

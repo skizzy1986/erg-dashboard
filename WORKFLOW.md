@@ -41,6 +41,36 @@ A good issue has:
 
 Priority is **relative and re-sorted often** — it's a stack rank, not a promise.
 
+### Ideas that start in Discussions
+
+Ideas and prototypes arrive in [Discussions](https://github.com/skizzy1986/erg-dashboard/discussions),
+not as issues. One worth building is **promoted**: it becomes an issue here, and the thread
+is told so. The loop closes itself when the work ships.
+
+1. **Promote.** Write the issue as usual, titled as an outcome ("When this ships, a user
+   can…") with acceptance criteria, and put this line on its own in the body:
+
+   ```
+   Discussion: https://github.com/skizzy1986/erg-dashboard/discussions/<n>
+   ```
+
+   `Discussion: #<n>` works too. Then reply on the thread with the issue link. The weekly
+   *SplitIQ Discussion drafts* task drafts both and does them on Scott's `promote` reply.
+2. **Build.** Branch, PR and merge as below. The PR closes the issue the normal way
+   (`Closes #<issue>`). A PR with no issue can carry the `Discussion:` line itself.
+3. **Ship.** When that PR merges into `main`, `.github/workflows/discussion-shipped.yml`
+   replies on the thread: "Shipped: #PR closed #issue…". Nobody has to remember to.
+
+That reply is the **one** Discussions write that posts without Scott approving the text. It
+is a fixed template whose only variables are the PR and issue numbers. Everything else
+written to Discussions goes through `post-discussion.yml` on his say-so
+(see [`docs/CLOUD_ENVIRONMENT.md`](docs/CLOUD_ENVIRONMENT.md)).
+
+Only a line that *starts* with `Discussion:` counts. Linking a thread anywhere else in an
+issue or PR is a reference and triggers nothing. To re-send a missed reply, or to see what
+a merged PR would post, dispatch `discussion-shipped.yml` with `pr=<number>`, adding
+`dry_run=true` for the second.
+
 ## 2. One branch per issue
 
 Cut every branch from a freshly-fetched `origin/main`:
