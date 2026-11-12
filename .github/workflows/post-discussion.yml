@@ -1,0 +1,119 @@
+name: Post discussion
+
+# Creates one GitHub Discussion from a dispatch.
+#
+# Cloud Claude Code sessions cannot create a Discussion themselves: GraphQL is
+# blocked ("GitHub GraphQL is not available from Claude Code sessions") and the
+# REST API has no create route (POST /repos/{owner}/{repo}/discussions is a 404;
+# only the list is readable). They can dispatch a workflow, so this job makes
+# the one GraphQL call on their behalf. See docs/CLOUD_ENVIRONMENT.md.
+#
+# This workflow cannot tell an approved post from an unapproved one. The
+# approval rule lives with the caller: the weekly "SplitIQ Discussion drafts"
+# scheduled task shows Scott the drafts and dispatches only on his reply.
+#
+# Author: DISCUSSIONS_PAT, if that secret exists, posts as the token's owner.
+# Without it the job falls back to GITHUB_TOKEN and the post is authored by
+# github-actions[bot].
+#
+# `category` is a string, not a choice, and is checked against the live
+# category slugs, so a renamed or added category needs no change here and a
+# wrong slug fails with the list of valid ones.
+#
+# A title that matches one of the 50 newest discussions is refused, so a
+# retried dispatch cannot post the same thing twice.
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'category slug: announcements, ideas, show-and-tell, q-a'
+        type: string
+        required: true
+      title:
+        description: discussion title
+        type: string
+        required: true
+      body:
+        description: discussion body (Markdown)
+        type: string
+        required: true
+      dry_run:
+        description: resolve the category and run the duplicate check, but do not post
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  discussions: write
+
+concurrency:
+  group: post-discussion
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.DISCUSSIONS_PAT || github.token }}
+      CATEGORY: ${{ inputs.category }}
+      TITLE: ${{ inputs.title }}
+      BODY: ${{ inputs.body }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Post
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TITLE//[[:space:]]/}" ] || [ -z "${BODY//[[:space:]]/}" ]; then
+            echo "::error::title and body must both be non-empty."
+            exit 1
+          fi
+
+          meta=$(gh api graphql \
+            -f owner="${REPO%/*}" -f name="${REPO#*/}" \
+            -f query='
+              query($owner: String!, $name: String!) {
+                repository(owner: $owner, name: $name) {
+                  id
+                  discussionCategories(first: 25) { nodes { id slug } }
+                  discussions(first: 50, orderBy: { field: CREATED_AT, direction: DESC }) {
+                    nodes { title url }
+                  }
+                }
+              }')
+
+          repo_id=$(jq -r '.data.repository.id' <<<"$meta")
+          cat_id=$(jq -r --arg s "$CATEGORY" \
+            '.data.repository.discussionCategories.nodes[] | select(.slug == $s) | .id' <<<"$meta")
+          if [ -z "$cat_id" ]; then
+            slugs=$(jq -r '[.data.repository.discussionCategories.nodes[].slug] | join(", ")' <<<"$meta")
+            echo "::error::No category with slug '$CATEGORY'. Valid slugs: $slugs"
+            exit 1
+          fi
+
+          existing=$(jq -r --arg t "$TITLE" \
+            '[.data.repository.discussions.nodes[] | select(.title == $t) | .url] | first // empty' <<<"$meta")
+          if [ -n "$existing" ]; then
+            echo "::error::A discussion with this title already exists: $existing"
+            exit 1
+          fi
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run: category '$CATEGORY' resolved, no duplicate title, nothing posted." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          url=$(gh api graphql \
+            -f repo="$repo_id" -f cat="$cat_id" -f title="$TITLE" -f body="$BODY" \
+            -f query='
+              mutation($repo: ID!, $cat: ID!, $title: String!, $body: String!) {
+                createDiscussion(input: { repositoryId: $repo, categoryId: $cat, title: $title, body: $body }) {
+                  discussion { url }
+                }
+              }' \
+            --jq '.data.createDiscussion.discussion.url')
+
+          echo "Posted: $url" | tee -a "$GITHUB_STEP_SUMMARY"

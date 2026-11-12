@@ -363,6 +363,34 @@ credentials` in `add-to-project`. It is the same secret `add-to-project.yml` use
 `GITHUB_TOKEN` cannot reach a user-owned project. Without the secret the workflow fails with
 a clear error.
 
+## Posting a Discussion from a cloud session
+
+A cloud session can read Discussions but cannot create one:
+
+- `gh api "repos/skizzy1986/erg-dashboard/discussions?per_page=30"` lists them over REST
+  (verified 2026-11-12).
+- GraphQL is blocked, and REST has no create route: `POST /repos/{owner}/{repo}/discussions`
+  returned 404 on 2026-11-12. The `gh api graphql` recipe in the `/collaborate` skill works
+  from a collaborator's own machine, not from here.
+
+**Workaround: `.github/workflows/post-discussion.yml`.** Dispatch it with
+`actions_run_trigger` (workflow `post-discussion.yml`, ref `main`) and inputs `category` (a
+slug: `announcements`, `ideas`, `show-and-tell`, `q-a`), `title` and `body`. Add
+`dry_run=true` to resolve the category and run the duplicate-title check without posting.
+Read the result back from the REST list above: the new post's `html_url` is the receipt.
+
+**Approval lives with the caller, not the workflow.** A Discussion is public and cannot be
+unposted cleanly, so a session shows Scott the exact title, category and body and
+dispatches only on his reply. The weekly *SplitIQ Discussion drafts* scheduled task is the
+standing caller.
+
+**Author.** With no extra setup the post is authored by `github-actions[bot]`. To post as
+Scott, add the repo secret `DISCUSSIONS_PAT`: a fine-grained PAT limited to this repository
+with **Discussions: read and write**. The workflow prefers it when present.
+
+Not yet verified end to end: a workflow can only be dispatched once it is on `main`, so
+the first run after merge should be a `dry_run=true`.
+
 ## Releases from a cloud session
 
 The session's proxy refuses the release API (`gh release create` → 403), so a cloud
