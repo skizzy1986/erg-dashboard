@@ -27,24 +27,18 @@ ideas should go.
 
 ## 1. What you're looking at
 
-One repository, **two products** sharing one Vite build:
+SplitIQ is one app: **a training app where the movements explain themselves.**
+[`VISION.md`](../../VISION.md) says what it is for and what it deliberately won't do.
 
-| Product | Route | Auth | What it is |
+| Part | Route | Auth | What it is |
 |---|---|---|---|
-| **Erg dashboard** | `/` | Supabase login | Scott's personal rowing/strength/cycling training system (load analytics, PM5 Bluetooth, AI coach). Personal — you'll need your own Supabase project to run it. |
-| **Squat tool** | `/squat` | **none** | A public, no-login coaching tool: a 3D modelled high-bar back squat with muscles, depth control, coaching guide and form check. **This is the part you're here for.** |
+| **Anatomy engine** | — | — | [`web/src/anatomy/`](../../web/src/anatomy): a movement-neutral 3D runtime (posing, skinning, colour and camera maths). It is the spine: every movement is built on it. |
+| **Squat tool** | `/squat` | **none** | The first product on the engine: a public, no-login, 3D modelled high-bar back squat with muscles, depth and time controls, a coaching guide and a form check. **This is the part you're here for.** |
+| **Training log** | `/` | Supabase login | The context around the movements: sessions, strength logging and a load model that doesn't claim more than it can support. You need your own Supabase project to run it, and you don't need it for `/squat`. |
 
-The squat tool is epic [#382](https://github.com/skizzy1986/erg-dashboard/issues/382),
-built in slices:
-
-| Slice | Status | What |
-|---|---|---|
-| PR1 ([#383](https://github.com/skizzy1986/erg-dashboard/pull/383)) | ✅ merged | Route, data loading (gzip worker), guide content, theme, licensing, bundle gates |
-| PR2a ([#385](https://github.com/skizzy1986/erg-dashboard/pull/385)) | ✅ merged | three.js 3D scene, posing runtime, depth/camera/layer controls |
-| PR2b | next | Muscle list, selection, x-ray, activation heatmap, `m=` deep link |
-| PR3 | planned | Playback timeline, charts with data tables, live metrics + form check |
-| PR4 | planned | Measured-rep importer (OpenCap `.mot` / CSV) |
-| PR5 | planned | Phone polish, visual baselines, Lighthouse |
+**Where it's going** lives in two places, so this page doesn't repeat it: the roadmap epic
+[#432](https://github.com/skizzy1986/erg-dashboard/issues/432), and the H1 table under
+[The horizons](../ROADMAP.md#the-horizons) in `docs/ROADMAP.md`.
 
 The issue and PR threads are the best history of *why* things are the way they are —
 each PR description carries its decisions, review trail and follow-ups.
@@ -142,8 +136,11 @@ Research → Story → **Gate 1** → Spec → **Gate 2** → Build + tests → 
 Review (two independent judges) → **Gate 3** → PR. Scott approves at each gate. The
 pipeline is defined in [`.claude/skills/orchestrate/SKILL.md`](../../.claude/skills/orchestrate/SKILL.md)
 and explained in [`FACTORY.md`](../../FACTORY.md) and [`WORKFLOW.md`](../../WORKFLOW.md).
-[`CLAUDE.md`](../../CLAUDE.md) is the project briefing every agent session reads
-(it also contains Scott's training context — it's a personal project).
+
+Read [`VISION.md`](../../VISION.md) first: it says what SplitIQ is for.
+[`CLAUDE.md`](../../CLAUDE.md) is the project briefing every agent session reads, and it
+is authoritative on how the repo *works*: architecture, CI gates, the agent pipeline.
+Where the two disagree on what SplitIQ is for, `VISION.md` wins.
 
 If you use Claude Code yourself, it will pick up `CLAUDE.md` and the skills in
 `.claude/skills/` automatically when you open your fork.
@@ -172,11 +169,18 @@ main point of your access.
 
 Please don't open issues directly for ideas — the Issues list is the live backlog.
 
-**Where good ideas would land right now** (from the epic's follow-up backlog):
-a fault library with a "ghost" overlay, low-bar and front squat variants, load and
-tempo controls, measured-band overlays from lab data, sharing/embeds for coaches, a
-printable coaching card, a fully clothed SplitIQ-branded body with an x-ray mode, and
-**new movements** — see [`NEW_MOVEMENT.md`](NEW_MOVEMENT.md).
+**Where good ideas would land.** [`docs/ROADMAP.md`](../ROADMAP.md) is the map:
+
+- **H2 and H3**, under [The horizons](../ROADMAP.md#the-horizons): further flagship
+  movements, and the coach and athlete surfaces.
+- **"Parked, signal needed"**, the paragraph straight after the H3 table: ideas held
+  until there is evidence someone wants them. **This is where your ideas count as
+  signal.** If you would use one of them, say so in 💡 Ideas.
+- **[What we are not building](../ROADMAP.md#what-we-are-not-building)**, and why. Worth
+  a read before you sketch something big.
+
+**New movements** are welcome: see [`NEW_MOVEMENT.md`](NEW_MOVEMENT.md).
+<!-- TODO(R12, #440): point to the movement-config doc here once it lands. -->
 
 ---
 
