@@ -81,7 +81,21 @@ async function finishDownload() {
 const options = () => screen.getAllByRole('option');
 const filter = () => screen.getByRole('searchbox', { name: /Filter muscles/ });
 
+// These tests drive the scene through its controls, so they run on the desktop
+// rail, where every group is on screen; the phone bar's tabs are covered in
+// StageControls.test.jsx.
+const WIDE = '(min-width: 761px)';
+function wideScreen() {
+  window.matchMedia = (q) => ({
+    matches: q === WIDE,
+    media: q,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+}
+
 beforeEach(() => {
+  wideScreen();
   mocks.caps = { webgl: true, decompression: true, worker: true };
   mocks.workers.length = 0;
   globalThis.fetch = vi
@@ -89,7 +103,10 @@ beforeEach(() => {
     .mockResolvedValue({ ok: true, json: () => Promise.resolve(manifest) });
   window.history.replaceState(null, '', '/squat');
 });
-afterEach(() => window.localStorage.clear());
+afterEach(() => {
+  window.localStorage.clear();
+  delete window.matchMedia;
+});
 
 async function openList() {
   const scene = fakeScene();

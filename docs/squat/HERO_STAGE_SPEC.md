@@ -262,6 +262,37 @@ PR C is mostly a move. It adds the rail and the phone disclosure, and removes th
 
 ## PR A — director camera and autoplay (criteria 1–7, 20, 21, 24)
 
+> **Pending amendment (2026-11-12, after Scott tried the #469 prototype).** Relayed by
+> the partner session, not yet confirmed in Scott's own words, so confirm at PR A's gate
+> before building. The rest of this section was written before it and is superseded where
+> they conflict.
+>
+> 1. **Two modes only, Director and Fixed.** The show-off mode is dropped.
+> 2. **Director becomes a slow drift, not per-phase keyframes.** Scott called the
+>    keyframed cut "too schizophrenic": no per-phase reframing, no cuts. The prototype
+>    (`web/src/squat/lab/directorShot.js` at `f1e7da6` on
+>    `claude/wizardly-turing-x66gd8`) is a pure `directorView(info, frame, loops)` with
+>    one drift every 3 reps (~11 s). It wanders ±0.32 rad in azimuth around three-quarter
+>    front, ±0.05 in polar and ±0.25 in radius, with peak orbit about 10°/s (the test
+>    holds it under 15°/s). `loops` carries the drift across the 184 → 0 loop. The
+>    look-at point follows the hips only partway (0.80 → 0.64 m).
+> 3. **Criteria 2, 4 and 7 need rewording.** Criterion 2 becomes "continuous drift" in
+>    place of per-phase poses. Criterion 7's frontal view at the bottom either moves to a
+>    Fixed preset or to muscle focus, or is dropped. That is Scott's call.
+> 4. **Candidate additions, in PR A or a follow-up (Scott to choose):**
+>    - Damped follow (`smoothDamp`, 0.5 s smooth time; snaps under reduced motion).
+>    - Muscle focus (`focusOf`/`framedOn`). Director pushes in on the selected muscle;
+>      Fixed gets a "Frame muscle" button.
+>    - Tap-to-pick through three's Raycaster. Only a drag over 6 px, a pinch or a wheel
+>      hands the camera to the user, which refines criterion 5's trigger.
+>    - `OrbitControls.zoomToCursor` (built into r187).
+> 5. **Libraries were weighed and none imported.** camera-controls is 12.3 KB gzipped
+>    against ~7 KB spare in the 3D chunk. A BokehPass depth of field is too heavy for
+>    phone GPUs. The prototype costs +1.4 KB on SQUAT_3D (139.6 / 145).
+> 6. **Open detail:** whether the drift keeps moving through the 0.7 s lockout hold.
+>
+> `cam` and the autoplay rules are unchanged.
+
 ### Camera API: a superset of R11's (#439), nothing parallel
 
 R11 defines the following (R11 spec L287-297, on `claude/gallant-lovelace-dlozfp`):

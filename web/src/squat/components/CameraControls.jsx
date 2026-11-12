@@ -1,6 +1,6 @@
 import { THEME } from '../../constants/theme.js';
-import { SPACE } from '../../constants/tokens.js';
-import { card, microLabel, secondaryButton, srOnly } from './ui.js';
+import { RADIUS, SPACE } from '../../constants/tokens.js';
+import { microLabel, secondaryButton, srOnly } from './ui.js';
 
 export const CAMERA_WAITING =
   'Camera controls work once the 3D model is drawn.';
@@ -12,7 +12,7 @@ const ZOOM_OUT = 1.15;
 const button = {
   ...secondaryButton,
   minWidth: 44,
-  padding: `${SPACE.sm}px ${SPACE.md}px`,
+  padding: `${SPACE.sm}px ${SPACE.xs}px`,
 };
 
 // The region's own keys. OrbitControls' keyboard handling is never switched
@@ -38,7 +38,11 @@ export function cameraKey(key) {
   }
 }
 
-export default function CameraControls({ camera, disabled = false }) {
+export default function CameraControls({
+  camera,
+  disabled = false,
+  compact = false,
+}) {
   const onKeyDown = (e) => {
     if (disabled) return;
     const action = cameraKey(e.key);
@@ -65,25 +69,30 @@ export default function CameraControls({ camera, disabled = false }) {
       tabIndex={disabled ? -1 : 0}
       onKeyDown={onKeyDown}
       style={{
-        ...card,
-        padding: SPACE.lg,
         display: 'flex',
         flexDirection: 'column',
         gap: SPACE.sm,
+        borderRadius: RADIUS.sm,
       }}
     >
+      {/* On the phone bar the View tab names the group and arrows have no
+          keyboard to come from, so both stay for assistive tech only. */}
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: SPACE.md,
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-        }}
+        style={
+          compact
+            ? srOnly
+            : {
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: SPACE.sm,
+                flexWrap: 'wrap',
+                alignItems: 'baseline',
+              }
+        }
       >
-        <h2 id="camera-title" style={{ ...microLabel, margin: 0 }}>
+        <h3 id="camera-title" style={{ ...microLabel, margin: 0 }}>
           Camera controls
-        </h2>
+        </h3>
         <span
           id="camera-keys"
           style={{ fontSize: 12, lineHeight: 1.5, color: THEME.textSubtle }}
@@ -96,15 +105,13 @@ export default function CameraControls({ camera, disabled = false }) {
           </span>
         )}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: SPACE.xs }}>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => camera.reset()}
-          style={style}
-        >
-          Reset
-        </button>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+          gap: SPACE.xs,
+        }}
+      >
         {presets.map(([id, label, name]) => (
           <button
             key={id}
@@ -119,12 +126,11 @@ export default function CameraControls({ camera, disabled = false }) {
         ))}
         <button
           type="button"
-          aria-label="Zoom in"
           disabled={disabled}
-          onClick={() => camera.zoom(ZOOM_IN)}
-          style={style}
+          onClick={() => camera.reset()}
+          style={{ ...style, gridColumn: 'span 2' }}
         >
-          +
+          Reset
         </button>
         <button
           type="button"
@@ -134,6 +140,15 @@ export default function CameraControls({ camera, disabled = false }) {
           style={style}
         >
           −
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          disabled={disabled}
+          onClick={() => camera.zoom(ZOOM_IN)}
+          style={style}
+        >
+          +
         </button>
       </div>
     </div>

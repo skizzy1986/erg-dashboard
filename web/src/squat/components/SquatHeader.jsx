@@ -135,6 +135,13 @@ function ThemeSegmented({ preference, onThemeChange }) {
   );
 }
 
+// The header's rendered height, which /squat's hero fills the viewport below
+// and the document's scroll-padding clears. The 56 px row holds on a phone; on
+// desktop the segmented control (44 px buttons + 2 × 2 px padding + 2 × 1 px
+// border = 50) plus the row's 2 × 4 px padding stretches it to 58. Each adds
+// the 1 px bottom rule. Change the row or the controls and change this.
+export const HEADER_HEIGHT = { wide: 59, compact: 57 };
+
 export function Wordmark({ size = 15 }) {
   // The SPLITIQ treatment the sign-in screen uses: bold caps, tracked, in the
   // positive ink.
