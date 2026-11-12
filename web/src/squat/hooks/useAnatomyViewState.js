@@ -9,8 +9,9 @@ import { PHASES } from '../constants/phases.js';
 
 // What the 3D view is showing: a frame of the reference rep, whether it is
 // playing, which layers are on, and whether the activation heatmap is
-// colouring them. Only the time reaches the URL hash, written by SquatApp
-// once a move settles; `moved` is what keeps the first load from writing it.
+// colouring them. Of these, only the time is written to the URL hash, by
+// SquatApp once a move settles; `moved` is what keeps the first load, and a
+// link applied on arrival, from writing it back.
 //
 // `heatmap` is a sibling of `layers`, not a member: layers are meshes and
 // setLayers' contract is {muscles, skeleton, body}, while the heatmap is a
@@ -27,8 +28,20 @@ const clampFrame = (n, last) => Math.max(0, Math.min(last, Math.round(n)));
 
 export function viewReducer(state, action) {
   switch (action.type) {
-    case 'seed':
-      return { ...state, frame: clampFrame(action.frame, action.last) };
+    // A link arriving: the whole view becomes the link. Never playing, and
+    // not a user move, so nothing is written back over the link just opened.
+    case 'link':
+      return {
+        ...state,
+        frame:
+          action.frame === undefined
+            ? state.frame
+            : clampFrame(action.frame, action.last),
+        layers: action.layers ?? state.layers,
+        heatmap: action.heatmap ?? state.heatmap,
+        playing: false,
+        moved: false,
+      };
     case 'frame':
       return {
         ...state,
@@ -75,27 +88,50 @@ export function viewReducer(state, action) {
   }
 }
 
+const layersOf = (hide) => ({
+  muscles: !hide?.includes('muscles'),
+  skeleton: !hide?.includes('skeleton'),
+});
+
+const NO_LINK = { arrival: 0, t: null, hide: null, heat: false };
+
 /**
- * `rep` is the manifest's meta.rep (null until it loads); `initialT` the
- * hash's t, applied once when the rep arrives. Later hash edits are not
- * followed.
+ * `rep` is the manifest's meta.rep (null until it loads). `link` is the hash's
+ * view keys plus its `arrival` count (useSquatHashState): the view starts as
+ * the link, and becomes the link again each time a new one arrives. Its own
+ * hash writes are not arrivals, so they are never fed back.
  */
-export function useAnatomyViewState(rep, initialT) {
-  const [state, dispatch] = useReducer(viewReducer, INITIAL);
+export function useAnatomyViewState(rep, link = NO_LINK) {
+  const [state, dispatch] = useReducer(viewReducer, link, (l) => ({
+    ...INITIAL,
+    layers: layersOf(l.hide),
+    heatmap: !!l.heat,
+  }));
   const info = useMemo(() => repInfo(rep, PHASES.length), [rep]);
 
-  const seeded = useRef(false);
+  // Read in the effect below, which keys on the arrival alone.
+  const latest = useRef(link);
   useEffect(() => {
-    if (seeded.current || !info) return;
-    seeded.current = true;
-    if (typeof initialT === 'number') {
-      dispatch({
-        type: 'seed',
-        frame: frameAt(info, initialT),
-        last: info.last,
-      });
-    }
-  }, [info, initialT]);
+    latest.current = link;
+  });
+  // Which arrival the layers, and the time, were last applied for. Layers
+  // apply at once; the time waits for the rep, which it needs to snap to a
+  // frame. The initial state already holds arrival 0's layers.
+  const applied = useRef({ layers: link.arrival, seek: null });
+  useEffect(() => {
+    const l = latest.current;
+    const a = applied.current;
+    const layersDue = a.layers !== l.arrival;
+    const seekDue = !!info && a.seek !== l.arrival;
+    if (!layersDue && !seekDue) return;
+    a.layers = l.arrival;
+    if (seekDue) a.seek = l.arrival;
+    dispatch({
+      type: 'link',
+      ...(layersDue && { layers: layersOf(l.hide), heatmap: !!l.heat }),
+      ...(seekDue && { frame: frameAt(info, l.t ?? 0), last: info.last }),
+    });
+  }, [info, link.arrival]);
 
   // setInterval, not rAF, and nothing runs while paused. Each tick advances by
   // the frames of elapsed time, not by one: a device that cannot render at
