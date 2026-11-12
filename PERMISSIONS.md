@@ -11,7 +11,7 @@ named below. Anyone not named here is covered by `LICENSE` alone.
 
 **Granted by:** Scott (copyright holder), 2026-11-04.
 **Granted to:** Paul, an invited collaborator on this repository. GitHub username:
-*to be added when his account is created*.
+[`allstarfitnesswa-del`](https://github.com/allstarfitnesswa-del).
 
 ### What Paul may do
 For **personal, non-commercial** purposes, Paul may:
