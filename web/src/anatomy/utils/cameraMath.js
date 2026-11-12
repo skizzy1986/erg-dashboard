@@ -85,3 +85,19 @@ export function tweenSpherical(from, to, k) {
     azimuth: from.azimuth + shortestTurn(from.azimuth, to.azimuth) * e,
   };
 }
+
+/**
+ * Critically damped follow (the SmoothDamp form camera-controls also uses):
+ * moves `current` toward `target` over roughly `smoothTime` seconds with no
+ * overshoot. `state.v` carries the velocity between calls. Returns the new
+ * value.
+ */
+export function smoothDamp(current, target, state, smoothTime, dt) {
+  const omega = 2 / Math.max(1e-4, smoothTime);
+  const x = omega * dt;
+  const decay = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = current - target;
+  const temp = (state.v + omega * change) * dt;
+  state.v = (state.v - omega * temp) * decay;
+  return target + (change + temp) * decay;
+}

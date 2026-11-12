@@ -39,12 +39,14 @@ function fakeScene() {
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
       setEmphasis: vi.fn(),
+      focusOf: vi.fn(() => ({ centre: [0.1, 0.9, 0.1], radius: 0.12 })),
       camera: {
         reset: vi.fn(),
         preset: vi.fn(),
         orbit: vi.fn(),
         zoom: vi.fn(),
         set: vi.fn(),
+        follow: vi.fn(),
         onUser: (fn) => {
           listeners.add(fn);
           return () => listeners.delete(fn);
@@ -93,7 +95,7 @@ describe('SquatLab (/squat?lab)', () => {
     expect(
       await screen.findByRole('button', { name: 'Pause' })
     ).toBeInTheDocument();
-    await waitFor(() => expect(ctl.camera.set).toHaveBeenCalled());
+    await waitFor(() => expect(ctl.camera.follow).toHaveBeenCalled());
     const panel = screen.getByTestId('strain-panel');
     expect(within(panel).getAllByRole('button')).toHaveLength(3);
     expect(panel.textContent).toMatch(/not EMG/);
@@ -114,11 +116,12 @@ describe('SquatLab (/squat?lab)', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Front' }));
     expect(ctl.camera.preset).toHaveBeenCalledWith('front');
-    ctl.camera.set.mockClear();
+    ctl.camera.follow.mockClear();
     await user.click(screen.getByRole('button', { name: 'Drive' }));
-    expect(ctl.camera.set).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Show-off' }));
-    expect(ctl.camera.set).toHaveBeenCalled();
+    expect(ctl.camera.follow).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Director' }));
+    expect(ctl.camera.follow).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Show-off' })).toBeNull();
   });
 
   it('picking a top muscle emphasises only that muscle', async () => {
@@ -134,6 +137,18 @@ describe('SquatLab (/squat?lab)', () => {
       expect(instances[0].setEmphasis.mock.calls.at(-1)[0]).toHaveLength(1)
     );
     expect(window.location.hash).toMatch(/m=/);
+    // Director pushes in on the picked muscle.
+    await user.click(screen.getByRole('button', { name: 'Director' }));
+    await waitFor(() =>
+      expect(instances[0].camera.follow.mock.calls.at(-1)[1]).toEqual([
+        0.1, 0.9, 0.1,
+      ])
+    );
+    await user.click(screen.getByRole('button', { name: 'Fixed' }));
+    await user.click(screen.getByRole('button', { name: 'Frame muscle' }));
+    expect(instances[0].camera.follow.mock.calls.at(-1)[1]).toEqual([
+      0.1, 0.9, 0.1,
+    ]);
     await user.click(screen.getByRole('button', { name: 'Heatmap' }));
     expect(screen.queryByTestId('strain-panel')).toBeNull();
   });

@@ -35,6 +35,8 @@ import {
   fromOffset,
   orbit as orbitBy,
   PRESET_AZIMUTH,
+  shortestTurn,
+  smoothDamp,
   toOffset,
   tweenSpherical,
   zoom as zoomBy,
@@ -253,8 +255,9 @@ export function createAnatomyScene({
     const makeSet = (geo, mid, tw, mirrored, frame) => {
       const col = new Float32Array(mid.length * 3);
       geo.setAttribute('color', new BufferAttribute(col, 3));
-      colourSets.push({ geo, mid, tw, col });
-      addMesh(
+      const set = { geo, mid, tw, col, mesh: null };
+      colourSets.push(set);
+      set.mesh = addMesh(
         geo,
         muscleMat,
         mirrored ? layers.muscles[0] : layers.muscles[2],
@@ -429,7 +432,67 @@ export function createAnatomyScene({
 
     let tween = null;
     let motionReduced = reducedMotion;
+    // A goal the camera eases toward every frame (camera.follow), rather than
+    // a fixed-length tween: the goal may move while it is being chased.
+    const FOLLOW_SECONDS = 0.5;
+    let follow = null;
+    let followAt = null;
+    const vel = {
+      r: { v: 0 },
+      p: { v: 0 },
+      a: { v: 0 },
+      x: { v: 0 },
+      y: { v: 0 },
+      z: { v: 0 },
+    };
+    function stepFollow(now) {
+      const dt =
+        followAt === null ? 1 / 60 : Math.min(0.1, (now - followAt) / 1000);
+      followAt = now;
+      const cur = currentView();
+      const goal = follow.view;
+      const azGoal = cur.azimuth + shortestTurn(cur.azimuth, goal.azimuth);
+      const next = {
+        radius: smoothDamp(cur.radius, goal.radius, vel.r, FOLLOW_SECONDS, dt),
+        polar: smoothDamp(cur.polar, goal.polar, vel.p, FOLLOW_SECONDS, dt),
+        azimuth: smoothDamp(cur.azimuth, azGoal, vel.a, FOLLOW_SECONDS, dt),
+      };
+      if (follow.at) {
+        controls.target.set(
+          smoothDamp(
+            controls.target.x,
+            follow.at[0],
+            vel.x,
+            FOLLOW_SECONDS,
+            dt
+          ),
+          smoothDamp(
+            controls.target.y,
+            follow.at[1],
+            vel.y,
+            FOLLOW_SECONDS,
+            dt
+          ),
+          smoothDamp(controls.target.z, follow.at[2], vel.z, FOLLOW_SECONDS, dt)
+        );
+      }
+      place(next);
+      const settled =
+        Math.abs(next.radius - goal.radius) < 1e-4 &&
+        Math.abs(next.polar - goal.polar) < 1e-4 &&
+        Math.abs(shortestTurn(next.azimuth, goal.azimuth)) < 1e-4 &&
+        (!follow.at ||
+          controls.target.distanceTo(new Vector3(...follow.at)) < 1e-4);
+      if (settled) stopFollow();
+      return !settled;
+    }
+    function stopFollow() {
+      follow = null;
+      followAt = null;
+      for (const k in vel) vel[k].v = 0;
+    }
     function goTo(view, { resetTarget = false } = {}) {
+      stopFollow();
       if (resetTarget) controls.target.copy(target);
       if (motionReduced) {
         tween = null;
@@ -495,6 +558,7 @@ export function createAnatomyScene({
         writeColours();
       }
       let more = false;
+      if (follow && stepFollow(now)) more = true;
       if (tween) {
         if (tween.start === null) tween.start = now;
         const k = (now - tween.start) / cam.tweenMs;
@@ -521,6 +585,7 @@ export function createAnatomyScene({
     const userListeners = new Set();
     const onControlsStart = () => {
       tween = null;
+      stopFollow();
       for (const fn of userListeners) fn();
     };
     controls.addEventListener('start', onControlsStart);
@@ -605,6 +670,38 @@ export function createAnatomyScene({
         pendingHeat = true;
         invalidate();
       },
+      // Where muscle `i` is at the current pose: centre and radius in world
+      // space, from its right-side (or midline) mesh. null if it has no
+      // vertices.
+      focusOf(i) {
+        if (pendingS !== null && pendingS !== posedS) applyPose(pendingS);
+        scene.updateMatrixWorld();
+        const c = new Vector3();
+        const pts = [];
+        const v = new Vector3();
+        for (const set of colourSets) {
+          const pos = set.geo.attributes.position.array;
+          const idx = set.mid;
+          for (let k = 0; k < idx.length; k++) {
+            if (idx[k] !== i) continue;
+            v.set(pos[k * 3], pos[k * 3 + 1], pos[k * 3 + 2]);
+            v.applyMatrix4(set.mesh.matrixWorld);
+            pts.push(v.x, v.y, v.z);
+            c.add(v);
+          }
+        }
+        const n = pts.length / 3;
+        if (!n) return null;
+        c.divideScalar(n);
+        let r = 0;
+        for (let k = 0; k < pts.length; k += 3) {
+          r = Math.max(
+            r,
+            Math.hypot(pts[k] - c.x, pts[k + 1] - c.y, pts[k + 2] - c.z)
+          );
+        }
+        return { centre: [c.x, c.y, c.z], radius: r };
+      },
       // A Set of muscle indices to keep in colour, or null for all.
       setEmphasis(indices = null) {
         const next = indices && indices.length ? new Set(indices) : null;
@@ -643,8 +740,29 @@ export function createAnatomyScene({
         zoom: (f) =>
           goTo(zoomBy(currentView(), f, cam.minDistance, cam.maxDistance)),
         // Snaps, no tween: the caller drives it frame by frame.
+        // Eases toward a goal that may keep moving (the Director's drift).
+        // `at` is a look-at height (number) or a point [x, y, z]; a height
+        // keeps the target on the body's vertical axis.
+        follow: (view, at) => {
+          tween = null;
+          const point =
+            typeof at === 'number'
+              ? [target.x, at, target.z]
+              : Array.isArray(at)
+                ? at
+                : null;
+          if (motionReduced) {
+            stopFollow();
+            if (point) controls.target.set(...point);
+            place(view);
+          } else {
+            follow = { view, at: point };
+          }
+          invalidate();
+        },
         set: (view, targetY) => {
           tween = null;
+          stopFollow();
           if (typeof targetY === 'number') controls.target.y = targetY;
           place(view);
           invalidate();

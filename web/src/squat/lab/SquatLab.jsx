@@ -36,8 +36,9 @@ import { toggle } from '../components/TimeControls.jsx';
 import { microLabel, mono, srOnly } from '../components/ui.js';
 import {
   cameraFor,
+  DRIFT,
+  framedOn,
   portraitPullback,
-  shotFor,
   targetHeight,
 } from './directorShot.js';
 import { STRAIN_TITLE, topMuscles } from './strainFocus.js';
@@ -50,7 +51,6 @@ const LOOP_HOLD_MS = 700;
 
 export const CAMERA_MODES = [
   { id: 'director', name: 'Director' },
-  { id: 'showoff', name: 'Show-off' },
   { id: 'manual', name: 'Fixed' },
 ];
 const PRESETS = [
@@ -196,6 +196,7 @@ function Dock({
   onPlay,
   onPause,
   onUserTime,
+  onFrame,
   wide,
 }) {
   const last = view.ready ? view.frames - 1 : 1;
@@ -347,6 +348,21 @@ function Dock({
               {name}
             </button>
           ))}
+          {onFrame && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onFrame}
+              style={{
+                ...toggle(false, disabled),
+                minHeight: 36,
+                padding: `${SPACE.xs}px ${SPACE.sm}px`,
+                fontSize: 12,
+              }}
+            >
+              Frame muscle
+            </button>
+          )}
           <span style={{ fontSize: 11, color: THEME.textSubtle }}>
             Drag to orbit, pinch or scroll to zoom.
           </span>
@@ -446,10 +462,15 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
     play();
   }, [sceneReady, reducedMotion, play]);
 
-  // Loop: hold on lockout, then go again.
+  // Loop: hold on lockout, then go again. The count lets the Director's
+  // drift carry on across the loop instead of rewinding with the rep.
+  const [loops, setLoops] = useState(0);
   useEffect(() => {
     if (!loop || view.playing || !info || view.frame !== info.last) return;
-    const id = setTimeout(play, LOOP_HOLD_MS);
+    const id = setTimeout(() => {
+      setLoops((n) => n + 1);
+      play();
+    }, LOOP_HOLD_MS);
     return () => clearTimeout(id);
   }, [loop, view.playing, view.frame, info, play]);
 
@@ -464,13 +485,25 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
   // exactly what playback shows at that frame.
   useEffect(() => {
     if (!sceneReady) return;
-    const v = cameraFor(mode, info, view.frame, view.s);
-    if (!v) return;
+    const drift = cameraFor(mode, info, view.frame, loops);
+    if (!drift) return;
+    const focus = selectedI === null ? null : camera.focusOf(selectedI);
+    const { view: v, at } = framedOn(drift, focus);
     const el = hostRef.current;
     const aspect = el?.clientHeight ? el.clientWidth / el.clientHeight : 1;
     const radius = Math.min(6, v.radius * portraitPullback(aspect));
-    camera.set({ ...v, radius }, targetHeight(view.s));
-  }, [sceneReady, mode, info, view.frame, view.s, camera]);
+    camera.follow({ ...v, radius }, at ?? targetHeight(view.s));
+  }, [sceneReady, mode, info, view.frame, view.s, loops, selectedI, camera]);
+
+  // In Fixed, framing a muscle is one deliberate move, then the user drives.
+  const frameSelected = () => {
+    if (selectedI === null) return;
+    const { view: v, at } = framedOn(
+      { azimuth: DRIFT.azimuth, polar: DRIFT.polar, radius: DRIFT.radius },
+      camera.focusOf(selectedI)
+    );
+    camera.follow(v, at);
+  };
 
   // Screen readers hear the top three once per phase, not every frame.
   const topNames = top.map((i) => muscles[i].name).join(', ');
@@ -505,7 +538,6 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
   const raw = selection.muscle
     ? activationOf(muscles[selection.muscle.i], view.s, view.direction)
     : null;
-  const shot = mode === 'director' ? shotFor(view.phaseCode) : null;
   const gutter = wide ? SPACE.lg : SPACE.sm;
 
   return (
@@ -574,17 +606,6 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
                 >
                   {view.phase}
                 </div>
-                {shot && wide && (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: THEME.textSubtle,
-                      marginTop: SPACE.xs,
-                    }}
-                  >
-                    Camera: {shot.why}
-                  </div>
-                )}
               </div>
             )}
             {view.heatmap && top.length > 0 && sceneReady && (
@@ -631,6 +652,7 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
                   onPlay={onPlay}
                   onPause={onPause}
                   onUserTime={onUserTime}
+                  onFrame={selectedI === null ? null : frameSelected}
                   wide={wide}
                 />
               </div>

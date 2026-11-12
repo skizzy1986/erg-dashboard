@@ -178,6 +178,8 @@ export function useAnatomyScene({
       orbit: (dAz, dPol) => ctlRef.current?.camera.orbit(dAz, dPol),
       zoom: (f) => ctlRef.current?.camera.zoom(f),
       set: (view, targetY) => ctlRef.current?.camera.set?.(view, targetY),
+      follow: (view, at) => ctlRef.current?.camera.follow?.(view, at),
+      focusOf: (i) => ctlRef.current?.focusOf?.(i) ?? null,
       onUser: (fn) => ctlRef.current?.camera.onUser?.(fn) ?? (() => {}),
     }),
     []
