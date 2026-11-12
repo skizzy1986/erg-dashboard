@@ -113,8 +113,19 @@ const MAX_TOTAL_GZIP_KB = 400;
 // replace three stacked cards and the intro's button row. The bundle rule
 // approved by Scott at Gate 2 sets the ceiling to the measured figure rounded
 // up, plus ~2 KB: 118 + 2 = 120.
-const MAX_SQUAT_ENTRY_GZIP_KB = 120;
-const MAX_SQUAT_TOTAL_GZIP_KB = 30;
+//
+// R11 share-a-view (#439) re-measured 2026-11-12, against PR C's head:
+// SQUAT_ENTRY 118.0 -> 120.2 KB (+2.2), SQUAT_TOTAL 29.2 -> 31.8 KB (+2.6),
+// SQUAT_3D 138.2 -> 138.4 KB. The growth is the URL grammar (cam, hide, heat,
+// the t cap), the pose maths, the Copy link control and its clipboard
+// fallback. The hash parser moved out of utils/squatRoute.js into the tool,
+// so the shared index chunk shrank (91,113 -> 90,755 B) and the dashboard
+// entry dropped 147.3 -> 146.9 KB. Squat-only static code counts against
+// both squat gates, so both were exceeded. Scott's raise rule at R11 Gate 2:
+// the measured figure plus ~2 KB, rounded to a whole KB. Entry 120.2 + 2 =
+// 122; total 31.8 + 2 = 34. The dashboard's 150 is not touched.
+const MAX_SQUAT_ENTRY_GZIP_KB = 122;
+const MAX_SQUAT_TOTAL_GZIP_KB = 34;
 // three.js (r187, tree-shaken) + OrbitControls + the anatomy scene and posing
 // maths. Measured 2026-11-04 at 138.0 KB; ~5% headroom, because a
 // three.js bump is the likeliest way this grows and should be noticed.

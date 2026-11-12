@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import manifestUrl from './assets/squat-manifest.json?url';
 import { THEME } from '../constants/theme.js';
 import { DARK, LIGHT } from '../constants/themeValues.js';
@@ -14,11 +14,13 @@ import { useAnatomyViewState } from './hooks/useAnatomyViewState.js';
 import { useAnatomyScene } from './hooks/useAnatomyScene.js';
 import { useMuscleSelection } from './hooks/useMuscleSelection.js';
 import { buildMuscleIndex, filterMuscles } from './utils/muscleIndex.js';
+import { camToPose, shareState, shareUrl } from './utils/squatHash.js';
 import { activationOf, bandOf, peakBandOf } from './utils/activation.js';
 import { loadSceneModule } from '../anatomy/scene/loadScene.js';
 import SquatHeader, { HEADER_HEIGHT } from './components/SquatHeader.jsx';
 import SquatStage from './components/SquatStage.jsx';
 import StageControls from './components/StageControls.jsx';
+import ShareLink from './components/ShareLink.jsx';
 import MuscleList from './components/MuscleList.jsx';
 import MuscleCard from './components/MuscleCard.jsx';
 import HeatmapLegend from './components/HeatmapLegend.jsx';
@@ -311,12 +313,36 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
   const wide = useMediaQuery(WIDE_QUERY);
   const { preference, resolved, setPreference } = useSquatTheme();
   const capabilities = useCapabilities();
-  const [hash, setHash] = useSquatHashState();
+  const [hash, setHash, arrival] = useSquatHashState();
   const data = useAnatomyData({ manifestUrl, capabilities });
   usePageMeta(resolved, wide);
   const coarsePointer = useMediaQuery(COARSE_QUERY);
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
-  const view = useAnatomyViewState(data.manifest?.meta.rep ?? null, hash.t);
+  const view = useAnatomyViewState(data.manifest?.meta.rep ?? null, {
+    arrival,
+    t: hash.t,
+    hide: hash.hide,
+    heat: hash.heat,
+  });
+  // A link's camera and layers stay in the address bar only while the screen
+  // still shows them: the user changing one clears its key, so the next time
+  // write never publishes a view that is no longer there. With no 3D there
+  // is nothing to change them, so they survive a re-share from that device.
+  const clearCam = useCallback(() => setHash({ cam: null }), [setHash]);
+  const controlsView = useMemo(
+    () => ({
+      ...view,
+      setLayer: (name, on) => {
+        view.setLayer(name, on);
+        setHash({ hide: null });
+      },
+      setHeatmap: (on) => {
+        view.setHeatmap(on);
+        setHash({ heat: false });
+      },
+    }),
+    [view, setHash]
+  );
   const hostRef = useRef(null);
   // From the capabilities alone, so it is known at the first paint: waiting
   // for data.stage === 'unsupported' would remove the controls after they
@@ -336,6 +362,9 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
     reducedMotion,
     coarsePointer,
     loadScene,
+    pose: camToPose(hash.cam),
+    arrival,
+    onUserCamera: clearCam,
   });
 
   const muscles = data.manifest?.meta.muscles;
@@ -361,6 +390,23 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
   const peak = selection.muscle
     ? peakBandOf(muscles[selection.muscle.i])
     : null;
+
+  // Built at the press, from the live view: the camera is read from the
+  // scene there and then, not from the address bar's settled write.
+  const getLink = () =>
+    shareUrl(
+      window.location.origin,
+      shareState({
+        frame: view.frame,
+        t: view.t,
+        m: selection.slug,
+        tab: hash.tab,
+        layers: view.layers,
+        heatmap: view.heatmap,
+        scenePose: scene.status === 'ready' ? scene.camera.pose() : null,
+        carriedCam: hash.cam,
+      })
+    );
 
   const openGuide = (pane) => setHash({ guide: pane });
   const closeGuide = () => setHash({ guide: null });
@@ -444,12 +490,15 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
             }
           />
           <StageControls
-            view={view}
+            view={controlsView}
             camera={scene.camera}
             cameraDisabled={scene.status !== 'ready'}
             sceneBlocked={sceneBlocked}
             wide={wide}
             onGuide={openGuide}
+            share={
+              <ShareLink getLink={getLink} ready={view.ready} wide={wide} />
+            }
           />
         </div>
 

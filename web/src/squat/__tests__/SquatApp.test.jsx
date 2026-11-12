@@ -149,6 +149,54 @@ describe('SquatApp', () => {
     expect(within(controls).queryByRole('switch')).toBeNull();
   });
 
+  // R11 criterion 1, on both layouts and with or without WebGL.
+  it.each([
+    ['phone', false, true],
+    ['phone, no WebGL', false, false],
+    ['desktop', true, true],
+    ['desktop, no WebGL', true, false],
+  ])(
+    'lays Copy link out from the first paint, disabled until the data loads (%s)',
+    async (_label, wide, webgl) => {
+      mocks.caps = { webgl, decompression: true, worker: true };
+      window.matchMedia = (q) => ({
+        matches: wide && q === '(min-width: 761px)',
+        addEventListener() {},
+        removeEventListener() {},
+      });
+      try {
+        render(<SquatApp />);
+        // On a phone it sits in the closed Share tab: mounted, but hidden.
+        const copy = screen.getByRole('button', {
+          name: 'Copy link to this view',
+          hidden: !wide,
+        });
+        expect(copy).toBeDisabled();
+        expect(screen.getByTestId('share-status')).toHaveAttribute(
+          'role',
+          'status'
+        );
+        const controls = screen.getByRole('region', { name: 'Controls' });
+        expect(controls).toContainElement(copy);
+        if (wide) {
+          // The third rail footer button, beside the guide buttons.
+          expect(copy.parentElement).toBe(
+            within(controls).getByRole('button', { name: 'Coaching guide' })
+              .parentElement
+          );
+        } else {
+          expect(
+            within(controls).getByRole('button', { name: 'Share' })
+          ).toHaveAttribute('aria-expanded', 'false');
+        }
+        // The manifest alone readies it: no 3D is needed to share.
+        await waitFor(() => expect(copy).toBeEnabled());
+      } finally {
+        delete window.matchMedia;
+      }
+    }
+  );
+
   it('opens the method pane from the modelled-values note', async () => {
     const user = userEvent.setup();
     render(<SquatApp />);

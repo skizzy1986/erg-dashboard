@@ -105,6 +105,46 @@ describe('useSquatHashState', () => {
     });
     expect(result.current[0]).toMatchObject({ tab: 'force', paused: true });
   });
+
+  // R11 (criterion 8): own writes are never arrivals; a hashchange always is.
+  it('counts hashchanges as arrivals, and never its own writes', () => {
+    const { result } = renderHook(() => useSquatHashState());
+    expect(result.current[2]).toBe(0);
+    act(() => result.current[1]({ t: 1, paused: true }));
+    act(() => result.current[1]({ cam: { az: 10, pol: 50, dist: 2 } }));
+    expect(window.location.hash).toBe('#t=1.00&paused&cam=10,50,2.00');
+    expect(result.current[2]).toBe(0);
+    act(() => {
+      window.history.replaceState(null, '', '/squat#cam=20,30,1.00&heat');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect(result.current[2]).toBe(1);
+    expect(result.current[0]).toMatchObject({
+      t: null,
+      cam: { az: 20, pol: 30, dist: 1 },
+      heat: true,
+    });
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    expect(result.current[2]).toBe(2);
+  });
+
+  it('returns the same state, and writes nothing, for a patch that changes nothing', () => {
+    window.history.replaceState(null, '', '/squat#t=1.00&paused');
+    const replace = vi.spyOn(window.history, 'replaceState');
+    const { result } = renderHook(() => useSquatHashState());
+    const before = result.current[0];
+    act(() => result.current[1]({ cam: null, hide: null, heat: false }));
+    act(() => result.current[1]({ t: 1, paused: true }));
+    expect(result.current[0]).toBe(before);
+    expect(replace).not.toHaveBeenCalled();
+    // A state change whose formatted hash is the same writes nothing either.
+    act(() => result.current[1]({ t: 1.001 }));
+    expect(result.current[0]).not.toBe(before);
+    expect(replace).not.toHaveBeenCalled();
+    act(() => result.current[1]({ heat: true }));
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(window.location.hash).toBe('#t=1.00&paused&heat');
+  });
 });
 
 describe('capabilities', () => {

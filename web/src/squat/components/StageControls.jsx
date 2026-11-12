@@ -17,7 +17,7 @@ const rule = {
   margin: `${SPACE.md}px 0`,
 };
 
-const footerButton = {
+export const footerButton = {
   ...secondaryButton,
   fontSize: 12,
   padding: `${SPACE.sm}px ${SPACE.xs}px`,
@@ -99,19 +99,18 @@ export default function StageControls({
             {showGroup}
           </>
         )}
-        {share && (
-          <>
-            <div style={rule} />
-            {share}
-          </>
-        )}
+        {/* Share is a third footer button, not a row of its own: at
+            1280 × 720 the rail has 11 px to spare above the footer, and a
+            row would push the footer below the fold. Its message and field
+            are laid over the rail above the footer (position: relative). */}
         <div
           style={{
+            position: 'relative',
             marginTop: 'auto',
             paddingTop: SPACE.md,
             borderTop: `1px solid ${THEME.divider}`,
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gridTemplateColumns: `repeat(${share ? 3 : 2}, minmax(0, 1fr))`,
             gap: SPACE.xs,
           }}
         >
@@ -129,6 +128,7 @@ export default function StageControls({
           >
             Metrics and targets
           </button>
+          {share}
         </div>
       </section>
     );

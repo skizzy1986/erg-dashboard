@@ -41,8 +41,8 @@ const LAST = REP.s.length - 1;
 // The real hook behind the real controls, so keyboard → state → readout is
 // exercised end to end. `probe.view` exposes the hook's value to assertions.
 const probe = {};
-function Harness({ rep = REP, initialT }) {
-  const view = useAnatomyViewState(rep, initialT);
+function Harness({ rep = REP, link }) {
+  const view = useAnatomyViewState(rep, link);
   useLayoutEffect(() => {
     probe.view = view;
   });
@@ -150,12 +150,68 @@ describe('TimeControls', () => {
     expect(slider()).toHaveValue('0.00');
   });
 
-  it('seeds once from an initial time and snaps it to a frame', () => {
-    const { rerender } = render(<Harness initialT={2.45} />);
+  // R11 (criterion 8) replaces R8's "seeds once": the view follows each new
+  // link arrival, and only arrivals — a re-render with other values is not one.
+  it('applies each arrival, not each render, and snaps the time to a frame', () => {
+    const link = (arrival, t, hide = null, heat = false) => ({
+      arrival,
+      t,
+      hide,
+      heat,
+    });
+    const { rerender } = render(<Harness link={link(0, 2.45)} />);
     expect(slider()).toHaveValue('2.46');
     expect(probe.view.moved).toBe(false);
-    rerender(<Harness initialT={1} />);
+    rerender(<Harness link={link(0, 1, ['skeleton'], true)} />);
     expect(slider()).toHaveValue('2.46');
+    expect(probe.view.layers.skeleton).toBe(true);
+    rerender(<Harness link={link(1, 1, ['skeleton'], true)} />);
+    expect(slider()).toHaveValue('1.00');
+    expect(probe.view).toMatchObject({
+      layers: { muscles: true, skeleton: false },
+      heatmap: true,
+      moved: false,
+      playing: false,
+    });
+    // An arrival without t lands on frame 0, and resets what it omits.
+    rerender(<Harness link={link(2, null)} />);
+    expect(slider()).toHaveValue('0.00');
+    expect(probe.view.layers).toEqual({ muscles: true, skeleton: true });
+    expect(probe.view.heatmap).toBe(false);
+  });
+
+  it('starts with the link’s layers and heatmap, before the rep has loaded', () => {
+    const { result, rerender } = renderHook(
+      ({ rep }) =>
+        useAnatomyViewState(rep, {
+          arrival: 0,
+          t: 1,
+          hide: ['muscles'],
+          heat: true,
+        }),
+      { initialProps: { rep: null } }
+    );
+    expect(result.current).toMatchObject({
+      ready: false,
+      layers: { muscles: false, skeleton: true },
+      heatmap: true,
+    });
+    rerender({ rep: REP });
+    expect(result.current.frame).toBe(50);
+  });
+
+  it('a link arriving during playback stops it on the new time', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <Harness link={{ arrival: 0, t: null, hide: null, heat: false }} />
+    );
+    await user.click(playButton());
+    expect(probe.view.playing).toBe(true);
+    rerender(
+      <Harness link={{ arrival: 1, t: 2.44, hide: null, heat: false }} />
+    );
+    expect(probe.view).toMatchObject({ playing: false, moved: false });
+    expect(slider()).toHaveValue('2.44');
   });
 
   describe('playback', () => {
@@ -321,8 +377,10 @@ describe('viewReducer', () => {
       0
     );
     expect(
-      viewReducer(s0, { type: 'seed', frame: 999, last: LAST }).frame
+      viewReducer(s0, { type: 'link', frame: 999, last: LAST }).frame
     ).toBe(LAST);
+    // A link with no frame keeps the frame it has.
+    expect(viewReducer(s0, { type: 'link' }).frame).toBe(3);
   });
 
   it('stops the tick on the last frame', () => {
@@ -341,10 +399,25 @@ describe('viewReducer', () => {
     ).toMatchObject({ frame: LAST, playing: false });
   });
 
-  it('marks user moves, but not the seed', () => {
-    expect(viewReducer(s0, { type: 'seed', frame: 5, last: LAST }).moved).toBe(
-      false
-    );
+  it('marks user moves, but not a link', () => {
+    expect(
+      viewReducer(
+        { ...playing, moved: true },
+        {
+          type: 'link',
+          frame: 5,
+          last: LAST,
+          layers: { muscles: false, skeleton: true },
+          heatmap: true,
+        }
+      )
+    ).toEqual({
+      frame: 5,
+      playing: false,
+      moved: false,
+      layers: { muscles: false, skeleton: true },
+      heatmap: true,
+    });
     for (const a of [
       { type: 'frame', frame: 5, last: LAST },
       { type: 'step', delta: 1, last: LAST },

@@ -656,6 +656,12 @@ function heroTools(page) {
         has: page.getByRole('switch', { name: 'Activation heatmap' }),
       }),
     ],
+    // R11: the rail footer's third button on desktop, the Share tab on a phone.
+    [
+      'Share',
+      'Copy link',
+      page.getByRole('button', { name: 'Copy link to this view' }),
+    ],
   ];
 }
 
@@ -744,3 +750,213 @@ for (const [label, viewport, phone] of [
     });
   });
 }
+
+// R11 share-a-view (#439), criterion 16. Chromium only (this config), which is
+// the one engine that grants clipboard-write as a permission.
+const COPY = 'Copy link to this view';
+const G5 =
+  '#t=2.44&m=vastus-lateralis&paused&cam=90,85,2.50&hide=skeleton&heat';
+const DEG = 180 / Math.PI;
+const camOf = (hash) => {
+  const m = /cam=(-?[\d.]+),([\d.]+),([\d.]+)/.exec(hash);
+  return m && { az: Number(m[1]), pol: Number(m[2]), dist: Number(m[3]) };
+};
+// Within a degree and a centimetre of the link's camera.
+function expectPose(pose, cam) {
+  const dAz = ((((pose.azimuth * DEG - cam.az) % 360) + 540) % 360) - 180;
+  expect(Math.abs(dAz)).toBeLessThanOrEqual(1);
+  expect(Math.abs(pose.polar * DEG - cam.pol)).toBeLessThanOrEqual(1);
+  expect(Math.abs(pose.radius - cam.dist)).toBeLessThanOrEqual(0.01);
+}
+const readClipboard = (page) =>
+  page.evaluate(() => navigator.clipboard.readText());
+
+test('a copied view reopens exactly, with no query string (criterion 16a)', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const errors = await openReady(page, DEBUG);
+  await page.getByRole('button', { name: 'Front (anterior) view' }).click();
+  await page.getByRole('switch', { name: 'Skeleton' }).click();
+  await page.getByRole('switch', { name: 'Activation heatmap' }).click();
+  await page.getByRole('option', { name: 'Soleus' }).click();
+  await page.getByRole('slider', { name: 'Rep time' }).focus();
+  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
+  const before = await page.evaluate(() => window.history.length);
+  await page.getByRole('button', { name: COPY }).click();
+  await expect(page.getByTestId('share-status')).toHaveText('Link copied.');
+  const link = await readClipboard(page);
+  const url = new URL(link);
+  expect(link).not.toContain('?');
+  expect(url.pathname).toBe('/squat');
+  expect(url.hash).toBe(
+    '#t=0.10&m=soleus&paused&cam=90,85,3.60&hide=skeleton&heat'
+  );
+  // Copy adds no history entry.
+  expect(await page.evaluate(() => window.history.length)).toBe(before);
+
+  // The probe flag is the one addition: a link has no query string.
+  await openReady(page, `${DEBUG}${url.hash}`);
+  await expect(page.getByTestId('depth-readout')).toHaveText(/^0\.10 s/);
+  await expect(page.getByRole('option', { name: 'Soleus' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+  await expect(page.getByRole('switch', { name: 'Muscles' })).toBeChecked();
+  await expect(
+    page.getByRole('switch', { name: 'Skeleton' })
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole('switch', { name: 'Activation heatmap' })
+  ).toBeChecked();
+  expectPose(
+    await page.evaluate(() => window.__anatomyDebug.pose()),
+    camOf(url.hash)
+  );
+  // Opening a link does not rewrite it, and never starts playback.
+  expect(new URL(page.url()).hash).toBe(url.hash);
+  await expect(
+    page.getByRole('button', { name: 'Play', exact: true })
+  ).toBeVisible();
+  // The recipient gets the full tool, framing and attribution included
+  // (criterion 15): there is no chrome-less shared view.
+  await expect(page.getByText('Modelled, not measured')).toBeVisible();
+  await expect(page.getByRole('link', { name: /BodyParts3D/ })).toBeAttached();
+  expect(await axe(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+for (const [label, viewport, scheme] of [
+  ['desktop, light', { width: 1280, height: 720 }, 'light'],
+  ['desktop, dark', { width: 1280, height: 720 }, 'dark'],
+  ['phone 360, light', { width: 360, height: 800 }, 'light'],
+  ['phone 390, dark', { width: 390, height: 844 }, 'dark'],
+]) {
+  test.describe(`share, clipboard refused — ${label}`, () => {
+    const phone = viewport.width < 761;
+    test.use(
+      phone
+        ? { viewport, colorScheme: scheme, hasTouch: true, isMobile: true }
+        : { viewport, colorScheme: scheme }
+    );
+
+    test('falls back to a selected link field (criteria 3, 14, 16b)', async ({
+      page,
+    }) => {
+      // Without a grant Chromium would still allow the write through the
+      // click's activation, so the refusal is forced to make it certain.
+      await page.addInitScript(() => {
+        navigator.clipboard.writeText = () =>
+          Promise.reject(new window.DOMException('denied', 'NotAllowedError'));
+      });
+      const errors = await openReady(page);
+      if (phone)
+        await page.getByRole('button', { name: 'Share', exact: true }).click();
+      // Idle: axe-clean, and nothing laid out for the status yet.
+      expect(await axe(page)).toEqual([]);
+      const railTop = phone
+        ? null
+        : (await page.getByRole('region', { name: 'Controls' }).boundingBox())
+            .y;
+      await page.getByRole('button', { name: COPY }).click();
+      const field = page.getByRole('textbox', { name: 'Link to this view' });
+      await expect(field).toBeVisible();
+      await expect(field).toBeFocused();
+      await expect(page.getByTestId('share-status')).toHaveText(
+        'The browser blocked copying. The link is selected below.'
+      );
+      const value = await field.inputValue();
+      expect(value).toBe(`${new URL(page.url()).origin}/squat`);
+      expect(
+        await field.evaluate((el) => [el.selectionStart, el.selectionEnd])
+      ).toEqual([0, value.length]);
+      // The desktop panel overlays the rail: the rail does not move and the
+      // page does not scroll.
+      if (!phone) {
+        expect(
+          (await page.getByRole('region', { name: 'Controls' }).boundingBox()).y
+        ).toBe(railTop);
+        const panel = await page.getByTestId('share-panel').boundingBox();
+        const rail = await page
+          .getByRole('region', { name: 'Controls' })
+          .boundingBox();
+        expect(panel.x).toBeGreaterThanOrEqual(rail.x);
+        expect(panel.x + panel.width).toBeLessThanOrEqual(rail.x + rail.width);
+        expect(panel.y + panel.height).toBeLessThanOrEqual(720);
+      }
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+      expect(await smallTargets(page)).toEqual([]);
+      expect(await noHorizontalScroll(page)).toBe(true);
+      expect(await axe(page)).toEqual([]);
+
+      await page.keyboard.press('Escape');
+      await expect(field).toBeHidden();
+      await expect(page.getByRole('button', { name: COPY })).toBeFocused();
+      expect(errors).toEqual([]);
+    });
+  });
+}
+
+test('a link pasted into an open tool updates the whole view (criteria 8, 14, 16c)', async ({
+  page,
+}) => {
+  const errors = await openReady(page, `${DEBUG}#t=2.44&paused`);
+  const before = await page.evaluate(() => window.history.length);
+  const next = '#t=1.00&cam=-90,80,2.00&hide=muscles';
+  await page.evaluate((h) => {
+    window.location.hash = h;
+  }, next);
+  await expect(page.getByTestId('depth-readout')).toHaveText(/^1\.00 s/);
+  await expect(page.getByRole('switch', { name: 'Muscles' })).not.toBeChecked();
+  await expect(page.getByRole('switch', { name: 'Skeleton' })).toBeChecked();
+  expectPose(
+    await page.evaluate(() => window.__anatomyDebug.pose()),
+    camOf(next)
+  );
+  // The test's own hash assignment is one history entry; the tool adds none
+  // on top of it, and writes nothing back.
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.history.length)).toBe(before + 1);
+  expect(new URL(page.url()).hash).toBe(next);
+  expect(errors).toEqual([]);
+});
+
+test('without WebGL, a link keeps its camera and layers through a re-share (criteria 9, 16d)', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.addInitScript(() => {
+    const proto = window.HTMLCanvasElement.prototype;
+    const original = proto.getContext;
+    proto.getContext = function (kind, ...rest) {
+      if (/^(webgl|webgl2|experimental-webgl)$/.test(kind)) return null;
+      return original.call(this, kind, ...rest);
+    };
+  });
+  const errors = [];
+  page.on('pageerror', (err) => errors.push(String(err)));
+  await page.goto(`/squat${G5}`, { timeout: PAINT_TIMEOUT });
+  await expect(
+    page.getByRole('note', { name: '3D view unavailable' })
+  ).toBeVisible({ timeout: PAINT_TIMEOUT });
+  await expect(page.getByTestId('depth-readout')).toHaveText(
+    /^2\.44 s · Drive/,
+    {
+      timeout: PAINT_TIMEOUT,
+    }
+  );
+  await expect(
+    page.getByRole('option', { name: 'Vastus lateralis' })
+  ).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.getByRole('group', { name: 'Camera controls' })
+  ).toHaveCount(0);
+  await page.getByRole('button', { name: COPY }).click();
+  await expect(page.getByTestId('share-status')).toHaveText('Link copied.');
+  expect(new URL(await readClipboard(page)).hash).toBe(G5);
+  expect(new URL(page.url()).hash).toBe(G5);
+  expect(await axe(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});
