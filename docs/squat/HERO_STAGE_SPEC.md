@@ -108,8 +108,14 @@ Right: the **`StageControls` rail**, one card at full hero height. It is a flex 
 3. Phase pills
 4. Camera group (reset/presets + zoom; the Director selector arrives in PR A)
 5. Show switches
-6. **Share slot** (empty until R11)
-7. Footer row: "Coaching guide" and "Metrics and targets", moved from the intro
+6. **Share slot**: R11 (#439) placed it as a **third button in the footer row** (item 7),
+   not a row of its own. Measured at 1280×720 on PR C's built head, the rail had 11 px of
+   slack above its footer; a Share row (rule, spacing and a 44 px button, about 57 px)
+   pushed the footer below the fold. The footer grid goes to three columns when `share`
+   is present. The status line and the fallback link field sit in a panel laid over the
+   bottom of the rail, just above the footer, so the rail's layout never changes.
+7. Footer row: "Coaching guide" and "Metrics and targets", moved from the intro, plus
+   R11's "Copy link" when the share slot has content
 
 Below the fold, inside `main` (max 1200): the intro sentence as a lead paragraph, then FormCheck full-width, MuscleSection, PhaseStrip, the disclaimer and AttributionFooter. Their content is unchanged; only their position moves.
 
@@ -135,10 +141,10 @@ New `squat/components/StageControls.jsx` is the only controls container; it repl
 | `view` | object | yes | `useAnatomyViewState` result |
 | `camera` | object | yes | `scene.camera` |
 | `cameraDisabled` | bool | yes | |
-| `sceneBlocked` | bool | yes | omits the camera group and layer switches; the Share slot then renders after the time controls |
+| `sceneBlocked` | bool | yes | omits the camera group and layer switches |
 | `wide` | bool | yes | |
 | `onGuide(pane)` | func | yes | |
-| `share` | node | no | R11's Share control |
+| `share` | node | no | R11's Share control. Desktop: the third footer column (the footer is `position: relative`, so the control's overlay panel anchors to it). Phone: the **Share** tab, in flow. With no 3D, desktop keeps the footer placement and the phone groups are Rep and Share. |
 | `children` | node | no | slot for PR A's camera-mode selector |
 
 It owns the phone disclosure state with `useState('rep')`.

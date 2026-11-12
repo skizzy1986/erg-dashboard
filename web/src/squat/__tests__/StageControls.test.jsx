@@ -121,6 +121,46 @@ describe('StageControls on desktop (criterion 17)', () => {
   });
 });
 
+// R11 Gate 2 (G2-1): at 1280 × 720 the rail had 11 px of slack above its
+// footer, so Share joins the footer as a third button instead of a row.
+describe('the share slot on desktop', () => {
+  it('is a third footer column, after the guide buttons, with no rule of its own', () => {
+    const { rerender } = render(<Harness wide />);
+    const footer = tab('Coaching guide').parentElement;
+    expect(footer.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
+    const rules = () =>
+      [...rail().querySelectorAll('div')].filter(
+        (d) => d.style.borderTop && !d.style.display
+      ).length;
+    const before = rules();
+    rerender(
+      <Harness
+        wide
+        share={<button data-testid="share-slot">Copy link</button>}
+      />
+    );
+    expect(footer.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
+    expect(screen.getByTestId('share-slot').parentElement).toBe(footer);
+    expect(footer.lastElementChild).toBe(screen.getByTestId('share-slot'));
+    // The overlay panel is positioned against the footer.
+    expect(footer.style.position).toBe('relative');
+    expect(rules()).toBe(before);
+  });
+
+  it('stays in the footer without a 3D view', () => {
+    render(
+      <Harness
+        wide
+        sceneBlocked
+        share={<button data-testid="share-slot">Copy link</button>}
+      />
+    );
+    expect(screen.getByTestId('share-slot').parentElement).toBe(
+      tab('Coaching guide').parentElement
+    );
+  });
+});
+
 describe('StageControls on a phone (criterion 19)', () => {
   it('keeps play and the slider in the bar, and opens Rep by default', () => {
     render(<Harness />);
@@ -214,6 +254,16 @@ describe('StageControls without a 3D view (criterion 21)', () => {
       pills.compareDocumentPosition(screen.getByTestId('share-slot')) &
         FOLLOWING
     ).toBeTruthy();
+  });
+
+  it('on a phone, with Share, the groups are Rep and Share', async () => {
+    const user = userEvent.setup();
+    render(<Harness sceneBlocked share={<button>Copy link</button>} />);
+    expect(tab('Rep')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.queryByRole('button', { name: 'View' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Show' })).toBeNull();
+    await user.click(tab('Share'));
+    expect(screen.getByRole('button', { name: 'Copy link' })).toBeVisible();
   });
 
   it('on a phone, a lone group needs no tabs and is simply shown', () => {

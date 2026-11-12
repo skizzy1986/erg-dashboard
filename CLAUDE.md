@@ -361,18 +361,21 @@ and **SQUAT_TOTAL** (squat-only files, minus the 3D chunk) are gated separately,
 **SQUAT_3D** (files reachable only through `anatomy/scene/createAnatomyScene.js`: three.js
 + the scene) has its own line, and **SQUAT_DATA** caps the
 anatomy stream (`squat-anatomy-*.bin`, ≤ 2.3 MB, never precached) and fails any precached
-file over Workbox's 2 MiB ceiling. Measured 2026-11-12 after squat PR C (#470, the
-model-as-hero layout): **entry 147.3 / 150, total 377.9 / 400, squat entry 118.0 / 120,
-squat total 29.2 / 30, squat 3D 138.2 / 145 KB**, data 2.20 MB. `SQUAT_ENTRY` was raised
-117 → 120 in that change (measured + ~2 KB), on Scott's Gate-2 rule for the hero-stage
-work (`docs/squat/HERO_STAGE_SPEC.md`): raise squat budgets to the measured figure plus
-~2 KB with a dated comment, and never relax the dashboard's 150. `SQUAT_TOTAL` was raised
-26 → 30 the same way in PR2b-i: it is the loose ceiling by the script's own definition —
-never precached, `CacheFirst` at runtime, stripped from the APK — so those bytes are on
-nobody's first paint. **`SQUAT_TOTAL` is now the one to watch: 0.8 KB spare**, and
-squat-only static code counts against both it and `SQUAT_ENTRY` (2.0 KB spare). PR B's
-strain panel is expected to exceed it; Scott has agreed that raise at PR B time, under
-the same rule, unless the squat-entry trim (#467) lands first. The muscle list is
+file over Workbox's 2 MiB ceiling. Measured 2026-11-12 after R11 share-a-view (#439):
+**entry 146.9 / 150, total 377.5 / 400, squat entry 120.2 / 122, squat total 31.8 / 34,
+squat 3D 138.4 / 145 KB**, data 2.20 MB. R11 moved the hash parser out of
+`utils/squatRoute.js` into the tool, so the dashboard entry *dropped* 0.4 KB (147.3 →
+146.9) while both squat gates grew (entry +2.2, total +2.6 KB: squat-only static code
+counts against both). Both squat ceilings were raised in that change, `SQUAT_ENTRY`
+120 → 122 and `SQUAT_TOTAL` 30 → 34, on Scott's Gate-2 rule (first applied in PR C,
+#470, which took `SQUAT_ENTRY` 117 → 120; `docs/squat/HERO_STAGE_SPEC.md`): raise a
+squat budget to the measured figure plus ~2 KB, rounded to a whole KB, with a dated
+comment, and never relax the dashboard's 150. `SQUAT_TOTAL` is the loose ceiling by the
+script's own definition — never precached, `CacheFirst` at runtime, stripped from the
+APK — so those bytes are on nobody's first paint. **Spare after R11: squat entry 1.8 KB,
+squat total 2.2 KB.** PR B's strain panel is expected to exceed one or both; Scott has
+agreed that raise at PR B time, under the same rule, unless the squat-entry trim (#467)
+lands first. The muscle list is
 deliberately not lazy-loaded (the canvas is `aria-hidden` with `tabindex="-1"`, so the
 list is the model's accessible substitute and must not sit behind a chunk that can fail
 to fetch).

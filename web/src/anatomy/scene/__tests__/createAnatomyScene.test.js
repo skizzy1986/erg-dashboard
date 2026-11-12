@@ -11,6 +11,7 @@ import {
 } from '../../utils/sceneColours.js';
 import { viewArray } from '../../utils/arrays.js';
 import { sceneStyle } from '../../constants/sceneStyle.js';
+import { fromOffset } from '../../utils/cameraMath.js';
 
 // jsdom has no WebGL, so the real renderer is swapped for a recorder. The rest
 // of three (geometry, materials, lights, the scene graph) and OrbitControls
@@ -63,13 +64,14 @@ const buffer = raw.buffer.slice(
   raw.byteOffset + raw.byteLength
 );
 
-const build = (container) =>
+const build = (container, extra = {}) =>
   createAnatomyScene({
     container,
     manifest,
     buffer,
     palette: scenePalette('dark'),
     style: sceneStyle('dark'),
+    ...extra,
   });
 
 let container;
@@ -362,6 +364,140 @@ describe('setActivation on a built scene', () => {
       expect([...a]).toEqual([...darkAnatomy[i]])
     );
     expect(darkHeat.length).toBe(4);
+    ctl.dispose();
+  });
+});
+
+// R11 (#439): the camera API a shared link drives. Real three and real
+// OrbitControls; only the renderer is a recorder.
+describe('the camera pose API', () => {
+  const CAM = sceneStyle('dark').camera;
+  const LINK = { radius: 2.5, polar: 1.2, azimuth: -1 };
+
+  function frameDriver() {
+    const q = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      q.push(cb);
+      return q.length;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    let now = 0;
+    return (ms = 0) => {
+      now += ms;
+      for (const cb of q.splice(0)) cb(now);
+    };
+  }
+  // Where the camera is, as the renderer's own camera argument reports it.
+  const drawnPose = (renderer, call = 0) => {
+    const [, camera] = renderer.render.mock.calls[call];
+    return fromOffset(
+      camera.position.clone().sub({ x: 0, y: 0.8, z: 0 }).toArray()
+    );
+  };
+  const close = (a, b) => {
+    expect(a.radius).toBeCloseTo(b.radius, 6);
+    expect(a.polar).toBeCloseTo(b.polar, 6);
+    expect(a.azimuth).toBeCloseTo(b.azimuth, 6);
+  };
+
+  it('draws its very first frame at the initial pose, not at home', () => {
+    const drive = frameDriver();
+    const ctl = build(container, { initialPose: LINK });
+    drive();
+    const renderer = fake.renderers[0];
+    expect(renderer.render).toHaveBeenCalledTimes(1);
+    close(drawnPose(renderer), LINK);
+    expect(ctl.camera.pose()).toMatchObject({ home: false });
+    close(ctl.camera.pose(), LINK);
+    ctl.dispose();
+  });
+
+  it('is home without an initial pose, at the default angles', () => {
+    const ctl = build(container);
+    const pose = ctl.camera.pose();
+    expect(pose.home).toBe(true);
+    expect(pose.polar).toBeCloseTo(CAM.defaultPolar, 6);
+    expect(pose.azimuth).toBeCloseTo(CAM.defaultAzimuth, 6);
+    ctl.dispose();
+  });
+
+  it('clamps an out-of-range initial pose, and keeps it clamped after controls.update()', () => {
+    const drive = frameDriver();
+    const ctl = build(container, {
+      initialPose: { radius: 99, polar: 3, azimuth: 0.5 },
+    });
+    drive();
+    const drawn = drawnPose(fake.renderers[0]);
+    expect(drawn.radius).toBeCloseTo(CAM.maxDistance, 6);
+    expect(drawn.polar).toBeCloseTo(CAM.maxPolar, 6);
+    ctl.dispose();
+  });
+
+  it('setPose places at once, quietly; null is home', () => {
+    const drive = frameDriver();
+    const onUserCamera = vi.fn();
+    const ctl = build(container, { onUserCamera });
+    drive();
+    ctl.camera.setPose(LINK);
+    close(ctl.camera.pose(), LINK);
+    expect(ctl.camera.pose().home).toBe(false);
+    drive();
+    close(drawnPose(fake.renderers[0], 1), LINK);
+    ctl.camera.setPose({ radius: 0.1, polar: 0, azimuth: 7 });
+    expect(ctl.camera.pose().radius).toBeCloseTo(CAM.minDistance, 6);
+    expect(ctl.camera.pose().polar).toBeCloseTo(CAM.minPolar, 6);
+    ctl.camera.setPose(null);
+    expect(ctl.camera.pose().home).toBe(true);
+    expect(ctl.camera.pose().polar).toBeCloseTo(CAM.defaultPolar, 6);
+    expect(onUserCamera).not.toHaveBeenCalled();
+    ctl.dispose();
+  });
+
+  it('every user move reports itself; Reset is home again, the rest are not', () => {
+    frameDriver();
+    const onUserCamera = vi.fn();
+    const ctl = build(container, { onUserCamera });
+    ctl.camera.preset('front');
+    expect(ctl.camera.pose().home).toBe(false);
+    ctl.camera.reset();
+    expect(ctl.camera.pose().home).toBe(true);
+    ctl.camera.orbit(0.1, 0);
+    expect(ctl.camera.pose().home).toBe(false);
+    ctl.camera.reset();
+    ctl.camera.zoom(0.9);
+    expect(ctl.camera.pose().home).toBe(false);
+    ctl.camera.preset('nowhere');
+    expect(onUserCamera).toHaveBeenCalledTimes(5);
+    ctl.dispose();
+  });
+
+  it('a gesture on the canvas (controls start) clears home and reports', () => {
+    frameDriver();
+    const onUserCamera = vi.fn();
+    const ctl = build(container, { onUserCamera });
+    const canvas = container.querySelector('canvas');
+    canvas.dispatchEvent(new window.WheelEvent('wheel', { deltaY: 10 }));
+    expect(onUserCamera).toHaveBeenCalledTimes(1);
+    expect(ctl.camera.pose().home).toBe(false);
+    ctl.dispose();
+  });
+
+  it('mid-tween, pose() is the destination', () => {
+    const drive = frameDriver();
+    const ctl = build(container);
+    drive();
+    ctl.camera.preset('front');
+    drive(CAM.tweenMs / 4);
+    drive(CAM.tweenMs / 4);
+    const pose = ctl.camera.pose();
+    expect(pose.azimuth).toBeCloseTo(Math.PI / 2, 6);
+    expect(pose.polar).toBeCloseTo(Math.PI / 2 - CAM.presetPolarOffset, 6);
+    ctl.dispose();
+  });
+
+  it('exposes pose() on the e2e probe', () => {
+    const ctl = build(container, { initialPose: LINK });
+    close(window.__anatomyDebug.pose(), LINK);
     ctl.dispose();
   });
 });

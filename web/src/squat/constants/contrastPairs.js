@@ -70,4 +70,12 @@ export const PAIRS = [
   { fg: 'text', ground: 'surface', where: 'depth readout, layer switches' },
   { fg: 'textSubtle', ground: 'surface', where: 'camera key legend 12 px' },
   { fg: 'surface', ground: 'accent', where: 'pressed phase chip' },
+  // Share (R11): the rail footer, its overlay panel and the phone Share tab
+  // are all on surface; the fallback link field is on field.
+  {
+    fg: 'text',
+    ground: 'surface',
+    where: 'share status 13 px, share button',
+  },
+  { fg: 'text', ground: 'field', where: 'share link field' },
 ];

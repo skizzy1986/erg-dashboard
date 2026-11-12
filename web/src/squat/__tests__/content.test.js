@@ -25,6 +25,7 @@ import { REFERENCES } from '../constants/references.js';
 import { MV_TABLE } from '../constants/velocityTable.js';
 import { ATTRIBUTION } from '../constants/attribution.js';
 import { DATA_ASSET } from '../constants/dataAsset.js';
+import * as SHARE from '../constants/share.js';
 import { summariseRep } from '../utils/repSummary.js';
 
 const ROOT = process.cwd();
@@ -354,5 +355,21 @@ describe('knee flexion text agrees with the modelled rep', () => {
     const deg = Number.parseInt(modelled, 10);
     expect(deg).toBeGreaterThan(124);
     expect(deg).toBeLessThanOrEqual(124 + 7);
+  });
+});
+
+// R11 (criterion 15): the share UI makes no measured or recorded claim. The
+// recipient lands on the full tool, with its "Modelled, not measured" label.
+describe('share strings', () => {
+  const strings = Object.entries(SHARE).filter(
+    ([, v]) => typeof v === 'string'
+  );
+
+  it('are all scanned', () => {
+    expect(strings.length).toBeGreaterThanOrEqual(9);
+  });
+
+  it.each(strings)('%s claims nothing measured or recorded', (_k, text) => {
+    expect(text).not.toMatch(/measur|record/i);
   });
 });

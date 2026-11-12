@@ -17,13 +17,15 @@ import { captureError } from '../../utils/sentry.js';
 import { scenePalette } from '../../anatomy/utils/sceneColours.js';
 import { useAnatomyScene } from '../hooks/useAnatomyScene.js';
 import { reloadPage } from '../utils/reloadPage.js';
+import { camToPose } from '../utils/squatHash.js';
 
 // The 3D view's lifecycle inside the real app shell. three.js never loads
 // here: the `loadScene` seam hands SquatApp a fake scene factory that records
 // what the hook asks of it. The real scene needs WebGL and is covered by e2e.
-const mocks = vi.hoisted(() => ({ workers: [] }));
+const mocks = vi.hoisted(() => ({ workers: [], caps: null }));
 vi.mock('../hooks/useCapabilities.js', () => ({
-  useCapabilities: () => ({ webgl: true, decompression: true, worker: true }),
+  useCapabilities: () =>
+    mocks.caps ?? { webgl: true, decompression: true, worker: true },
 }));
 vi.mock('../workers/createAnatomyWorker.js', () => ({
   createAnatomyWorker: () => {
@@ -45,6 +47,8 @@ const buffer = raw.buffer.slice(
   raw.byteOffset + raw.byteLength
 );
 
+const HOME = { radius: 3.6, polar: 1.32, azimuth: 0.92 };
+
 function fakeScene() {
   const instances = [];
   const factory = vi.fn((opts) => {
@@ -58,11 +62,15 @@ function fakeScene() {
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
+      // R11: the pose the scene reports, settable by a test (`ctl.pose`).
+      pose: { ...HOME, home: true },
       camera: {
         reset: vi.fn(),
         preset: vi.fn(),
         orbit: vi.fn(),
         zoom: vi.fn(),
+        pose: vi.fn(() => ctl.pose),
+        setPose: vi.fn(),
       },
       dispose: vi.fn(() => canvas.remove()),
     };
@@ -100,6 +108,7 @@ function wideScreen() {
 
 beforeEach(() => {
   wideScreen();
+  mocks.caps = null;
   mocks.workers.length = 0;
   captureError.mockClear();
   globalThis.fetch = vi
@@ -140,6 +149,9 @@ describe('SquatApp 3D stage', () => {
       expect(b).toBeDisabled();
     }
     expect(screen.getByRole('switch', { name: 'Muscles' })).toBeDisabled();
+    // "Loading 3D engine" shows for an idle scene too, so it can render
+    // before the effect that calls loadScene() has run.
+    await waitFor(() => expect(loadScene).toHaveBeenCalled());
     act(() => resolveLoad());
     await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
     expect(factory).toHaveBeenCalledTimes(1);
@@ -597,5 +609,302 @@ describe('useAnatomyScene directly', () => {
       result.current.camera.zoom(0.9);
     }).not.toThrow();
     expect(loadScene).not.toHaveBeenCalled();
+  });
+});
+
+// R11 share-a-view (#439), inside the real app shell.
+describe('share a view', () => {
+  const G5 =
+    '#t=2.44&m=vastus-lateralis&paused&cam=90,85,2.50&hide=skeleton&heat';
+  const copyButton = () =>
+    screen.getByRole('button', { name: 'Copy link to this view' });
+  async function openOn(hash, { scene = true } = {}) {
+    window.history.replaceState(null, '', `/squat${hash}`);
+    const fake = fakeScene();
+    render(<SquatApp loadScene={fake.loadScene} />);
+    if (scene) {
+      await finishDownload();
+      await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    }
+    await waitFor(() => expect(copyButton()).toBeEnabled());
+    return fake;
+  }
+  const near = (a, b) => {
+    expect(a.radius).toBeCloseTo(b.radius, 9);
+    expect(a.polar).toBeCloseTo(b.polar, 9);
+    expect(a.azimuth).toBeCloseTo(b.azimuth, 9);
+  };
+
+  it('builds the link from the live view at the press, camera included (criterion 2)', async () => {
+    userEvent.setup();
+    const { instances } = await openOn('');
+    const write = vi.spyOn(window.navigator.clipboard, 'writeText');
+    instances[0].pose = {
+      ...camToPose({ az: -90, pol: 80, dist: 2 }),
+      home: false,
+    };
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
+    });
+    // Synchronously, in the click itself: before the 250 ms settle write.
+    fireEvent.click(copyButton());
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(window.location.hash).toBe('');
+    expect(write.mock.calls[0][0]).toBe(
+      `${window.location.origin}/squat#t=1.00&paused&cam=-90,80,2.00`
+    );
+    expect(instances[0].camera.pose).toHaveBeenCalled();
+    expect(await screen.findByTestId('share-status')).toHaveTextContent(
+      'Link copied.'
+    );
+  });
+
+  it('a link opened into an open tool updates the whole view (criterion 8)', async () => {
+    const { instances } = await openOn('#t=1.00&paused');
+    const ctl = instances[0];
+    expect(ctl.opts.initialPose).toBeNull();
+    act(() => {
+      window.history.replaceState(
+        null,
+        '',
+        '/squat#t=2.44&cam=-90,80,2.00&hide=muscles&heat'
+      );
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    await waitFor(() => expect(slider).toHaveValue('2.44'));
+    expect(screen.getByRole('switch', { name: 'Muscles' })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Skeleton' })).toBeChecked();
+    expect(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    ).toBeChecked();
+    expect(ctl.camera.setPose).toHaveBeenCalledTimes(1);
+    near(
+      ctl.camera.setPose.mock.calls[0][0],
+      camToPose({ az: -90, pol: 80, dist: 2 })
+    );
+    // A link without cam sends the camera home.
+    act(() => {
+      window.history.replaceState(null, '', '/squat#t=1.00');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    await waitFor(() => expect(slider).toHaveValue('1.00'));
+    expect(ctl.camera.setPose).toHaveBeenLastCalledWith(null);
+    expect(screen.getByRole('switch', { name: 'Muscles' })).toBeChecked();
+    // Nothing is written back over the link just opened.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(window.location.hash).toBe('#t=1.00');
+  });
+
+  it('a link that arrives while the engine loads is the first frame, not a jump (criterion 8)', async () => {
+    window.history.replaceState(null, '', '/squat#t=1.00&paused');
+    const { factory, loadScene, instances } = fakeScene();
+    let resolveLoad;
+    loadScene.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          resolveLoad = () => r({ createAnatomyScene: factory });
+        })
+    );
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    await waitFor(() => expect(loadScene).toHaveBeenCalled());
+    act(() => {
+      window.history.replaceState(
+        null,
+        '',
+        '/squat#t=2.44&cam=-90,80,2.00&hide=skeleton'
+      );
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    await waitFor(() => expect(slider).toHaveValue('2.44'));
+    await act(async () => resolveLoad());
+    await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    expect(instances).toHaveLength(1);
+    near(
+      instances[0].opts.initialPose,
+      camToPose({ az: -90, pol: 80, dist: 2 })
+    );
+    // Built at the link's pose, so the arrival is not applied a second time.
+    expect(instances[0].camera.setPose).not.toHaveBeenCalled();
+    expect(screen.getByRole('switch', { name: 'Skeleton' })).not.toBeChecked();
+  });
+
+  it('a link that arrives before the rep data sets its layers at once and its time once loaded', async () => {
+    const { loadScene } = fakeScene();
+    render(<SquatApp loadScene={loadScene} />);
+    act(() => {
+      window.history.replaceState(null, '', '/squat#t=2.44&hide=muscles');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect(screen.getByRole('switch', { name: 'Muscles' })).not.toBeChecked();
+    await finishDownload();
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    await waitFor(() => expect(slider).toHaveValue('2.44'));
+    expect(screen.getByRole('switch', { name: 'Muscles' })).not.toBeChecked();
+  });
+
+  it('Retry after a failed build rebuilds at the link camera still in the address bar', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/squat#cam=-90,80,2.00');
+    const { factory, loadScene, instances } = fakeScene();
+    factory.mockImplementationOnce(() => {
+      throw new Error('no context');
+    });
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    await screen.findByRole('alert');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    expect(instances).toHaveLength(1);
+    near(
+      instances[0].opts.initialPose,
+      camToPose({ az: -90, pol: 80, dist: 2 })
+    );
+  });
+
+  it('a link pasted while a scrub is settling is not overwritten by the old time', async () => {
+    await openOn('');
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
+    });
+    const link = '#t=2.44&paused&cam=-90,80,2.00&hide=muscles';
+    act(() => {
+      window.history.replaceState(null, '', `/squat${link}`);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('slider', { name: 'Rep time' })).toHaveValue(
+        '2.44'
+      )
+    );
+    await new Promise((r) => setTimeout(r, 300));
+    expect(window.location.hash).toBe(link);
+  });
+
+  it('a hashchange during playback stops it on the new time', async () => {
+    const user = userEvent.setup();
+    await openOn('');
+    await user.click(screen.getByRole('button', { name: 'Play', exact: true }));
+    act(() => {
+      window.history.replaceState(null, '', '/squat#t=2.44&paused');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('slider', { name: 'Rep time' })).toHaveValue(
+        '2.44'
+      )
+    );
+    expect(
+      screen.getByRole('button', { name: 'Play', exact: true })
+    ).toBeInTheDocument();
+  });
+
+  it('builds the first frame at a linked camera: no default pose first', async () => {
+    const { instances } = await openOn('#cam=90,85,2.50');
+    near(
+      instances[0].opts.initialPose,
+      camToPose({ az: 90, pol: 85, dist: 2.5 })
+    );
+    expect(instances[0].camera.setPose).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['without WebGL', { webgl: false, decompression: true, worker: true }],
+    ['when the 3D chunk fails', null],
+  ])(
+    'restores time and muscle, and re-shares camera and layers unchanged, %s (criterion 9)',
+    async (_label, caps) => {
+      const user = userEvent.setup();
+      mocks.caps = caps;
+      window.history.replaceState(null, '', `/squat${G5}`);
+      const { loadScene } = fakeScene();
+      loadScene.mockImplementation(() =>
+        Promise.reject(new Error('chunk 404'))
+      );
+      render(<SquatApp loadScene={loadScene} />);
+      if (!caps) {
+        await finishDownload();
+        await screen.findByRole('alert');
+      }
+      await waitFor(() => expect(copyButton()).toBeEnabled());
+      await waitFor(() =>
+        expect(screen.getByTestId('depth-readout')).toHaveTextContent(
+          '2.44 s · Drive'
+        )
+      );
+      expect(
+        screen.getByRole('option', { name: /Vastus lateralis/ })
+      ).toHaveAttribute('aria-selected', 'true');
+      if (caps) {
+        expect(
+          screen.queryByRole('group', { name: 'Camera controls' })
+        ).toBeNull();
+        expect(screen.queryByRole('group', { name: 'Show' })).toBeNull();
+        expect(screen.queryByRole('alert')).toBeNull();
+      }
+      await user.click(copyButton());
+      expect(await window.navigator.clipboard.readText()).toBe(
+        `${window.location.origin}/squat${G5}`
+      );
+      expect(window.location.hash).toBe(G5);
+    }
+  );
+
+  it('clears a link’s camera and layer keys when the user changes them (criterion 10)', async () => {
+    const user = userEvent.setup();
+    const push = vi.spyOn(window.history, 'pushState');
+    const { instances } = await openOn(G5);
+    // A scrub with the camera untouched keeps cam.
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
+    });
+    await waitFor(() =>
+      expect(window.location.hash).toBe(
+        '#t=1.00&m=vastus-lateralis&paused&cam=90,85,2.50&hide=skeleton&heat'
+      )
+    );
+    act(() => instances[0].opts.onUserCamera());
+    expect(window.location.hash).toBe(
+      '#t=1.00&m=vastus-lateralis&paused&hide=skeleton&heat'
+    );
+    await user.click(screen.getByRole('switch', { name: 'Skeleton' }));
+    expect(window.location.hash).toBe('#t=1.00&m=vastus-lateralis&paused&heat');
+    await user.click(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    );
+    expect(window.location.hash).toBe('#t=1.00&m=vastus-lateralis&paused');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('never puts the muscle filter text in a link (criterion 13)', async () => {
+    const user = userEvent.setup();
+    await openOn('');
+    await user.type(
+      screen.getByRole('searchbox', { name: /Filter muscles/ }),
+      'glutes'
+    );
+    await user.click(copyButton());
+    const link = await window.navigator.clipboard.readText();
+    expect(link).toBe(`${window.location.origin}/squat`);
+    expect(link).not.toMatch(/glutes/);
+  });
+
+  it('copies the frame on screen during playback, and playback carries on', async () => {
+    const user = userEvent.setup();
+    await openOn('#t=1.00&paused');
+    await user.click(screen.getByRole('button', { name: 'Play', exact: true }));
+    await act(() => new Promise((r) => setTimeout(r, 120)));
+    const shown = screen.getByRole('slider', { name: 'Rep time' }).value;
+    fireEvent.click(copyButton());
+    const link = await act(() => window.navigator.clipboard.readText());
+    expect(link).toBe(`${window.location.origin}/squat#t=${shown}&paused`);
+    expect(
+      screen.getByRole('button', { name: 'Pause', exact: true })
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'Pause', exact: true })
+    );
   });
 });

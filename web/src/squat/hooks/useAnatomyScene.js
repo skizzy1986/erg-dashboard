@@ -18,6 +18,11 @@ const isOffline = () =>
  *
  * StrictMode-safe: every build is paired with its own dispose, and a build
  * that resolves after its effect was torn down disposes itself.
+ *
+ * `pose` is a shared link's camera (null for the home view), built in as the
+ * first frame's pose and re-applied each time a new link `arrival`s; the
+ * scene's own moves never count as one. `onUserCamera` is told whenever the
+ * user moves the camera.
  */
 export function useAnatomyScene({
   containerRef,
@@ -29,15 +34,34 @@ export function useAnatomyScene({
   reducedMotion,
   coarsePointer = false,
   loadScene = loadSceneModule,
+  pose = null,
+  arrival = 0,
+  onUserCamera,
 }) {
   const [state, setState] = useState({ status: 'idle', errorKind: null });
   const [attempt, setAttempt] = useState(0);
   const [controller, setController] = useState(null);
   // Read at build time only; later changes go through the setters below.
-  const latest = useRef({ view, themeName, reducedMotion });
-  useEffect(() => {
-    latest.current = { view, themeName, reducedMotion };
+  const latest = useRef({
+    view,
+    themeName,
+    reducedMotion,
+    pose,
+    arrival,
+    onUserCamera,
   });
+  useEffect(() => {
+    latest.current = {
+      view,
+      themeName,
+      reducedMotion,
+      pose,
+      arrival,
+      onUserCamera,
+    };
+  });
+  // The arrival whose camera the live scene shows.
+  const appliedArrival = useRef(arrival);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -61,7 +85,13 @@ export function useAnatomyScene({
         // A tick so "Building 3D model" paints before the synchronous build.
         timer = setTimeout(() => {
           if (cancelled) return;
-          const { view: v, themeName: t, reducedMotion: rm } = latest.current;
+          const {
+            view: v,
+            themeName: t,
+            reducedMotion: rm,
+            pose: p,
+            arrival: a,
+          } = latest.current;
           try {
             ctl = mod.createAnatomyScene({
               container,
@@ -71,6 +101,8 @@ export function useAnatomyScene({
               style: sceneStyle(t),
               reducedMotion: rm,
               coarsePointer,
+              initialPose: p,
+              onUserCamera: () => latest.current.onUserCamera?.(),
               onFirstFrame: () => {
                 if (!cancelled) setState({ status: 'ready', errorKind: null });
               },
@@ -84,6 +116,7 @@ export function useAnatomyScene({
             });
             ctl.setDepth(v.s);
             ctl.setLayers(v.layers);
+            appliedArrival.current = a;
             setController(ctl);
           } catch (error) {
             captureError(error, {
@@ -130,6 +163,12 @@ export function useAnatomyScene({
   ]);
 
   useEffect(() => {
+    if (!controller || appliedArrival.current === arrival) return;
+    appliedArrival.current = arrival;
+    controller.camera.setPose(latest.current.pose);
+  }, [controller, arrival]);
+
+  useEffect(() => {
     controller?.setDepth(view.s);
   }, [controller, view.s]);
 
@@ -172,6 +211,8 @@ export function useAnatomyScene({
       preset: (name) => ctlRef.current?.camera.preset(name),
       orbit: (dAz, dPol) => ctlRef.current?.camera.orbit(dAz, dPol),
       zoom: (f) => ctlRef.current?.camera.zoom(f),
+      // {radius, polar, azimuth, home}, or null with no scene to ask.
+      pose: () => ctlRef.current?.camera.pose?.() ?? null,
     }),
     []
   );

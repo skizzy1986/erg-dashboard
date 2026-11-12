@@ -80,6 +80,11 @@ const debugEnabled = () => {
  *
  * Renders on demand only: a frame is requested by a setter, a resize, the
  * controls or a running camera tween, and none while the page is hidden.
+ *
+ * `initialPose` ({radius, polar, azimuth}, e.g. from a shared link) is placed
+ * instead of the home view before the first frame, so a linked view never
+ * flashes the default first. `onUserCamera` fires on every camera move the
+ * user makes (a gesture, Reset, a preset, orbit, zoom), never on setPose.
  */
 export function createAnatomyScene({
   container,
@@ -92,6 +97,8 @@ export function createAnatomyScene({
   onFirstFrame,
   onContextLost,
   onContextRestored,
+  initialPose = null,
+  onUserCamera,
 }) {
   const meta = manifest.meta;
   const A = (name) => viewArray(manifest, buffer, name);
@@ -422,7 +429,15 @@ export function createAnatomyScene({
       );
       camera.lookAt(controls.target);
     };
-    place(homeView());
+    const cleanView = (p) => ({
+      ...orbitBy(p, 0, 0, cam.minPolar, cam.maxPolar),
+      radius: clampDistance(p.radius, cam.minDistance, cam.maxDistance),
+    });
+    // True while the camera is where the page opens it: a copied link then
+    // omits the camera. A flag, not a float compare: the home radius depends
+    // on the aspect, and the first placement is made at aspect 1.
+    let home = !initialPose;
+    place(initialPose ? cleanView(initialPose) : homeView());
 
     let tween = null;
     let motionReduced = reducedMotion;
@@ -470,6 +485,7 @@ export function createAnatomyScene({
           renderer.render(scene, camera);
           return canvas.toDataURL('image/png');
         },
+        pose: () => cameraApi.pose(),
       };
     }
 
@@ -517,6 +533,8 @@ export function createAnatomyScene({
     // A user drag cancels a running preset tween rather than fighting it.
     const onControlsStart = () => {
       tween = null;
+      home = false;
+      onUserCamera?.();
     };
     controls.addEventListener('start', onControlsStart);
     cleanups.push(() => controls.removeEventListener('start', onControlsStart));
@@ -572,6 +590,38 @@ export function createAnatomyScene({
 
     invalidate();
 
+    const userMove = (view, opts, atHome = false) => {
+      home = atHome;
+      goTo(view, opts);
+      onUserCamera?.();
+    };
+    const cameraApi = {
+      reset: () => userMove(homeView(), { resetTarget: true }, true),
+      preset: (name) => {
+        if (!(name in PRESET_AZIMUTH)) return;
+        userMove({
+          radius: currentView().radius,
+          polar: Math.PI / 2 - cam.presetPolarOffset,
+          azimuth: PRESET_AZIMUTH[name],
+        });
+      },
+      orbit: (dAz, dPol) =>
+        userMove(orbitBy(currentView(), dAz, dPol, cam.minPolar, cam.maxPolar)),
+      zoom: (f) =>
+        userMove(zoomBy(currentView(), f, cam.minDistance, cam.maxDistance)),
+      // Mid-tween, the destination: the view the user chose, not a blend.
+      pose: () => ({ ...(tween ? tween.to : currentView()), home }),
+      // A link's view, applied at once (time and layers change at once too).
+      // null is the home view. Not a user move: onUserCamera stays quiet.
+      setPose: (pose) => {
+        tween = null;
+        controls.target.copy(target);
+        home = !pose;
+        place(pose ? cleanView(pose) : homeView());
+        invalidate();
+      },
+    };
+
     return {
       canvas,
       poser,
@@ -609,21 +659,7 @@ export function createAnatomyScene({
         }
         invalidate();
       },
-      camera: {
-        reset: () => goTo(homeView(), { resetTarget: true }),
-        preset: (name) => {
-          if (!(name in PRESET_AZIMUTH)) return;
-          goTo({
-            radius: currentView().radius,
-            polar: Math.PI / 2 - cam.presetPolarOffset,
-            azimuth: PRESET_AZIMUTH[name],
-          });
-        },
-        orbit: (dAz, dPol) =>
-          goTo(orbitBy(currentView(), dAz, dPol, cam.minPolar, cam.maxPolar)),
-        zoom: (f) =>
-          goTo(zoomBy(currentView(), f, cam.minDistance, cam.maxDistance)),
-      },
+      camera: cameraApi,
       dispose() {
         if (disposed) return;
         disposed = true;
