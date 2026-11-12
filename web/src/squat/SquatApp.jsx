@@ -18,7 +18,7 @@ import { activationOf, bandOf, peakBandOf } from './utils/activation.js';
 import { loadSceneModule } from '../anatomy/scene/loadScene.js';
 import SquatHeader from './components/SquatHeader.jsx';
 import SquatStage from './components/SquatStage.jsx';
-import DepthControls, { depthPercent } from './components/DepthControls.jsx';
+import TimeControls from './components/TimeControls.jsx';
 import CameraControls from './components/CameraControls.jsx';
 import ViewOptions from './components/ViewOptions.jsx';
 import MuscleList from './components/MuscleList.jsx';
@@ -188,7 +188,7 @@ function PhaseStrip({ onOpen, wide }) {
  * and 118 rows need their own scroll region.
  *
  * Its DOM position is deliberate — the depth and direction the card's band
- * depends on are established by DepthControls above it.
+ * depends on are established by TimeControls above it.
  */
 function MuscleSection({
   regions,
@@ -304,7 +304,7 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
   usePageMeta(resolved);
   const coarsePointer = useMediaQuery(COARSE_QUERY);
   const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
-  const view = useAnatomyViewState(data.manifest?.meta.S.length ?? null);
+  const view = useAnatomyViewState(data.manifest?.meta.rep ?? null, hash.t);
   const hostRef = useRef(null);
   // From the capabilities alone, so it is known at the first paint: waiting
   // for data.stage === 'unsupported' would remove the controls after they
@@ -334,6 +334,14 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
     [index, query]
   );
   const selection = useMuscleSelection({ index, hash, setHash });
+  // The rep time rides in the hash once a move settles, so a link reopens on
+  // the same frame. Never while playing, and never before the user has moved
+  // anything: a plain load leaves the URL alone.
+  useEffect(() => {
+    if (!view.ready || !view.moved || view.playing) return;
+    const id = setTimeout(() => setHash({ t: view.t, paused: true }), 250);
+    return () => clearTimeout(id);
+  }, [view.ready, view.moved, view.playing, view.t, setHash]);
   const raw = selection.muscle
     ? activationOf(muscles[selection.muscle.i], view.s, view.direction)
     : null;
@@ -455,7 +463,7 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
               hostRef={hostRef}
               wide={wide}
             />
-            <DepthControls view={view} />
+            <TimeControls view={view} />
             {/* Rendered from the first paint, disabled until the model is
                 drawn, so nothing below them moves when it is. Where the 3D
                 view cannot exist at all they are left out from the start. */}
@@ -491,7 +499,7 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
           selection={selection}
           band={band}
           peak={peak}
-          percent={view.ns ? depthPercent(view.sample, view.ns) : 0}
+          percent={view.pct}
           phase={view.phase}
           direction={view.direction}
           heatmap={view.heatmap && scene.status === 'ready'}

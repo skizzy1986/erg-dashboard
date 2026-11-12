@@ -138,14 +138,14 @@ describe('useMuscleSelection', () => {
 
 describe('useAnatomyViewState heatmap', () => {
   it('is off by default and a sibling of layers, never inside them', () => {
-    const { result } = renderHook(() => useAnatomyViewState(41));
+    const { result } = renderHook(() => useAnatomyViewState(null));
     expect(result.current.heatmap).toBe(false);
     expect(result.current.layers).toEqual({ muscles: true, skeleton: true });
     expect(result.current.layers.heatmap).toBeUndefined();
   });
 
   it('toggles without disturbing the layers', () => {
-    const { result } = renderHook(() => useAnatomyViewState(41));
+    const { result } = renderHook(() => useAnatomyViewState(null));
     act(() => result.current.setHeatmap(true));
     expect(result.current.heatmap).toBe(true);
     expect(result.current.layers).toEqual({ muscles: true, skeleton: true });
@@ -154,7 +154,7 @@ describe('useAnatomyViewState heatmap', () => {
   });
 
   it('coerces whatever it is handed to a boolean', () => {
-    const { result } = renderHook(() => useAnatomyViewState(41));
+    const { result } = renderHook(() => useAnatomyViewState(null));
     act(() => result.current.setHeatmap('yes'));
     expect(result.current.heatmap).toBe(true);
     act(() => result.current.setHeatmap(undefined));
@@ -162,7 +162,7 @@ describe('useAnatomyViewState heatmap', () => {
   });
 
   it('is ignored by the layer action, which only knows meshes', () => {
-    const { result } = renderHook(() => useAnatomyViewState(41));
+    const { result } = renderHook(() => useAnatomyViewState(null));
     act(() => result.current.setLayer('heatmap', true));
     expect(result.current.heatmap).toBe(false);
     expect(result.current.layers.heatmap).toBeUndefined();

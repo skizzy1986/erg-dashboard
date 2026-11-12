@@ -69,5 +69,5 @@ export const PAIRS = [
   { fg: 'text', ground: 'surfaceAlt', where: '3D scene error 13 px' },
   { fg: 'text', ground: 'surface', where: 'depth readout, layer switches' },
   { fg: 'textSubtle', ground: 'surface', where: 'camera key legend 12 px' },
-  { fg: 'surface', ground: 'accent', where: 'pressed phase chip, direction' },
+  { fg: 'surface', ground: 'accent', where: 'pressed phase chip' },
 ];

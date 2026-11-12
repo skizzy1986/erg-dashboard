@@ -63,6 +63,7 @@ tool's React UI stays in `web/src/squat/`.
 - `muscles[k]`: `name`, `role`, `tendon`, `act = [lowering[41], drive[41]]` uint8 (÷255 → 0–1, **estimated**, not EMG), `len[41]` (musculotendon path length, % of standing), `mode`.
 - `readout[41]`: `knee`, `hip`, `ankle`, `lumbar`, `lean`, `shin`, `thigh`, `depth` (cm), `bar` (mm), `bx`, `cop` (% foot from heel), `lord`, `klat` (cm), `Mhip`, `Mknee`, `Mank` (static, per leg, N·m), `Mlum` (static L5/S1).
 - `rep`: timeline at `dt = 0.02 s` with `s[]`, `ph[]` (0 brace, 1 lowering, 2 bottom, 3 drive, 4 lockout), `v[]`, `f[]`; summary `t_bottom`, `ecc`, `con`, `trans`, `mcv`, `vpk`, `vecc`, `fpk`, `fmin`.
+  The page's time control scrubs this timeline (`anatomy/utils/rep.js`): depth, phase and direction (lowering before the first maximum of `s`, drive from it) all come from `rep.s[frame]`/`rep.ph[frame]`.
 - `arm`: `er`, `elev`, `plane`, `elbow`, `wrist`, `grip` (cm), `retraction`.
 - `bw` 85, `mbar` 100.
 
