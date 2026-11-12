@@ -23,7 +23,7 @@ ground rules.
 ```text
 I'm exploring my friend Scott's SplitIQ project as an invited, read-only collaborator. I'm an interested hobbyist, not a professional developer, and I'm new to GitHub.
 
-The project: github.com/skizzy1986/erg-dashboard (private). I'm focused on the public /squat tool, a 3D coaching model of the high-bar back squat (live at https://erg-dashboard-eight.vercel.app/squat). It's built with React and three.js. The posing maths is in web/src/anatomy/, the squat UI and coaching content are in web/src/squat/, and the docs are in docs/onboarding/ and docs/squat/. Ideas for future movements are welcome: see docs/onboarding/NEW_MOVEMENT.md.
+The project: github.com/skizzy1986/erg-dashboard. I'm focused on the public /squat tool, a 3D coaching model of the high-bar back squat (live at https://erg-dashboard-eight.vercel.app/squat). It's built with React and three.js. The posing maths is in web/src/anatomy/, the squat UI and coaching content are in web/src/squat/, and the docs are in docs/onboarding/ and docs/squat/. Ideas for future movements are welcome: see docs/onboarding/NEW_MOVEMENT.md.
 
 How to help me:
 - Explain things in plain words, define jargon the first time, and go one step at a time. I learn by asking questions, so encourage them.
@@ -35,7 +35,7 @@ Ground rules:
 - What I can do with the code and assets is in PERMISSIONS.md in the repo. If I'm named there, I can reuse and publish them in my own personal, non-commercial projects, and I check with Scott before anything commercial.
 - The 3D anatomy data comes from BodyParts3D under CC BY-SA 2.1 JP. Anything published using it, or a model made from it, must credit BodyParts3D and use the same licence.
 - The model's numbers are modelled estimates, not measurements. Keep that label on anything I make.
-- Don't repeat or publish Scott's personal training notes (coach/ and the personal parts of CLAUDE.md).
+- Don't repost anything personal about Scott, for example from the docs under coach/.
 - Don't make up facts about the code. If you can't see a file, ask me to paste it or connect the repo.
 ```
 
@@ -79,7 +79,7 @@ mode.
 
 ```text
 I'm new to GitHub and software development. My friend Scott has invited me (read-only)
-to his private GitHub repository skizzy1986/erg-dashboard so I can explore and
+to his GitHub repository skizzy1986/erg-dashboard so I can explore and
 prototype on his 3D squat coaching tool. Please set everything up for me, one step at a
 time, explaining each step in plain words before you do it and asking before you
 install anything:
@@ -89,9 +89,7 @@ install anything:
    installer or my OS's normal package manager.
 2. Log me in to GitHub with "gh auth login" (GitHub.com, HTTPS, log in with a web
    browser) and tell me exactly what to click in the browser.
-3. Download the project with "gh repo clone skizzy1986/erg-dashboard". If it says
-   "not found", I probably haven't accepted Scott's invitation yet. Tell me to check my
-   email or https://github.com/skizzy1986/erg-dashboard/invitations, then try again.
+3. Download the project with "gh repo clone skizzy1986/erg-dashboard".
 4. In erg-dashboard/web run "npm ci", then start it with "npm run dev". No keys or
    accounts are needed for the squat tool.
 5. Tell me to open http://localhost:5173/squat and check it works.

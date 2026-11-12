@@ -186,5 +186,6 @@ figures in the body of every such PR (R7, #436).
 | D9 | `SQUAT_TOTAL` may rise to measured + ~2 KB for lazy charts; `SQUAT_ENTRY` held |
 | D10 | H2 is gated on R1 |
 | D11 | This file is the roadmap; the pipeline's `docs/ROADMAP.md` stays as the squat candidate-PR list |
+| D12 | 2026-11-13: Docs-only PRs sit outside D6's two-open-PR fence |
 
 A changed decision is a new row here with the date, not an edit to the old one.
