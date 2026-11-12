@@ -1,16 +1,24 @@
 name: Post discussion
 
-# Creates one GitHub Discussion from a dispatch.
+# Creates one GitHub Discussion, or one reply on an existing Discussion, from a
+# dispatch.
 #
-# Cloud Claude Code sessions cannot create a Discussion themselves: GraphQL is
+# Cloud Claude Code sessions cannot write to Discussions themselves: GraphQL is
 # blocked ("GitHub GraphQL is not available from Claude Code sessions") and the
-# REST API has no create route (POST /repos/{owner}/{repo}/discussions is a 404;
-# only the list is readable). They can dispatch a workflow, so this job makes
-# the one GraphQL call on their behalf. See docs/CLOUD_ENVIRONMENT.md.
+# REST API has no write route (POST /repos/{owner}/{repo}/discussions is a 404;
+# the list and each thread's comments are readable). They can dispatch a
+# workflow, so this job makes the one GraphQL call on their behalf. See
+# docs/CLOUD_ENVIRONMENT.md.
 #
 # This workflow cannot tell an approved post from an unapproved one. The
 # approval rule lives with the caller: the weekly "SplitIQ Discussion drafts"
 # scheduled task shows Scott the drafts and dispatches only on his reply.
+#
+# Two modes, chosen by `reply_to`:
+#   empty      new Discussion: needs `category`, `title` and `body`
+#   a number   reply on that Discussion: needs `body` only; `category` and
+#              `title` are ignored. The reply is a top-level comment, which in
+#              Q&A is what GitHub treats as an answer.
 #
 # Author: DISCUSSIONS_PAT, if that secret exists, posts as the token's owner.
 # Without it the job falls back to GITHUB_TOKEN and the post is authored by
@@ -18,28 +26,34 @@ name: Post discussion
 #
 # `category` is a string, not a choice, and is checked against the live
 # category slugs, so a renamed or added category needs no change here and a
-# wrong slug fails with the list of valid ones.
+# wrong slug fails with the list of valid ones. It is not `required`, because a
+# reply has no category; the script checks it instead.
 #
-# A title that matches one of the 50 newest discussions is refused, so a
-# retried dispatch cannot post the same thing twice.
+# A retried dispatch cannot post the same thing twice: a new Discussion is
+# refused when its title matches one of the 50 newest, and a reply is refused
+# when its body matches one of the thread's 50 newest comments.
 
 on:
   workflow_dispatch:
     inputs:
       category:
-        description: 'category slug: announcements, ideas, show-and-tell, q-a'
+        description: 'new Discussion only. Category slug: announcements, ideas, show-and-tell, q-a'
         type: string
-        required: true
+        required: false
       title:
-        description: discussion title
+        description: new Discussion only. The title
         type: string
-        required: true
+        required: false
       body:
-        description: discussion body (Markdown)
+        description: body of the Discussion or of the reply (Markdown)
         type: string
         required: true
+      reply_to:
+        description: reply only. Number of the Discussion to reply on; leave empty to create a new Discussion
+        type: string
+        required: false
       dry_run:
-        description: resolve the category and run the duplicate check, but do not post
+        description: run every check, but do not post
         type: boolean
         required: false
         default: false
@@ -60,6 +74,7 @@ jobs:
       CATEGORY: ${{ inputs.category }}
       TITLE: ${{ inputs.title }}
       BODY: ${{ inputs.body }}
+      REPLY_TO: ${{ inputs.reply_to }}
       DRY_RUN: ${{ inputs.dry_run }}
       REPO: ${{ github.repository }}
     steps:
@@ -67,8 +82,74 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -z "${TITLE//[[:space:]]/}" ] || [ -z "${BODY//[[:space:]]/}" ]; then
-            echo "::error::title and body must both be non-empty."
+          if [ -z "${BODY//[[:space:]]/}" ]; then
+            echo "::error::body must be non-empty."
+            exit 1
+          fi
+
+          if [ -n "$REPLY_TO" ]; then
+            if ! [[ "$REPLY_TO" =~ ^[0-9]+$ ]]; then
+              echo "::error::reply_to must be a Discussion number, got '$REPLY_TO'."
+              exit 1
+            fi
+
+            if ! meta=$(gh api graphql \
+              -f owner="${REPO%/*}" -f name="${REPO#*/}" -F number="$REPLY_TO" \
+              -f query='
+                query($owner: String!, $name: String!, $number: Int!) {
+                  repository(owner: $owner, name: $name) {
+                    discussion(number: $number) {
+                      id
+                      url
+                      locked
+                      comments(last: 50) { nodes { body url } }
+                    }
+                  }
+                }'); then
+              echo "::error::Could not read Discussion #$REPLY_TO. Is the number right?"
+              exit 1
+            fi
+
+            discussion_id=$(jq -r '.data.repository.discussion.id // empty' <<<"$meta")
+            if [ -z "$discussion_id" ]; then
+              echo "::error::No Discussion with number $REPLY_TO."
+              exit 1
+            fi
+            if [ "$(jq -r '.data.repository.discussion.locked' <<<"$meta")" = "true" ]; then
+              echo "::error::Discussion #$REPLY_TO is locked."
+              exit 1
+            fi
+
+            existing=$(jq -r --arg b "$BODY" '
+              def trim: gsub("\r"; "") | gsub("^\\s+|\\s+$"; "");
+              [.data.repository.discussion.comments.nodes[] | select((.body | trim) == ($b | trim)) | .url]
+              | first // empty' <<<"$meta")
+            if [ -n "$existing" ]; then
+              echo "::error::This reply is already on the thread: $existing"
+              exit 1
+            fi
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run: Discussion #$REPLY_TO found, not locked, no duplicate reply, nothing posted." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+
+            url=$(gh api graphql \
+              -f discussion="$discussion_id" -f body="$BODY" \
+              -f query='
+                mutation($discussion: ID!, $body: String!) {
+                  addDiscussionComment(input: { discussionId: $discussion, body: $body }) {
+                    comment { url }
+                  }
+                }' \
+              --jq '.data.addDiscussionComment.comment.url')
+
+            echo "Replied: $url" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ -z "${TITLE//[[:space:]]/}" ] || [ -z "${CATEGORY//[[:space:]]/}" ]; then
+            echo "::error::A new Discussion needs category and title. To reply on an existing one, set reply_to."
             exit 1
           fi
 
