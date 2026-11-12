@@ -377,12 +377,13 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
   const selection = useMuscleSelection({ index, hash, setHash });
   // The rep time rides in the hash once a move settles, so a link reopens on
   // the same frame. Never while playing, and never before the user has moved
-  // anything: a plain load leaves the URL alone.
+  // anything: a plain load leaves the URL alone. A link arriving cancels a
+  // pending write, so the old time is never written over the new link.
   useEffect(() => {
     if (!view.ready || !view.moved || view.playing) return;
     const id = setTimeout(() => setHash({ t: view.t, paused: true }), 250);
     return () => clearTimeout(id);
-  }, [view.ready, view.moved, view.playing, view.t, setHash]);
+  }, [view.ready, view.moved, view.playing, view.t, setHash, arrival]);
   const raw = selection.muscle
     ? activationOf(muscles[selection.muscle.i], view.s, view.direction)
     : null;

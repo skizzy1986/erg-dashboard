@@ -242,7 +242,9 @@ describe('copy, then open: every key round-trips', () => {
       expect(
         screen.getByRole('button', { name: 'Play', exact: true })
       ).toBeInTheDocument(),
-    tab: (s, hash) => expect(parseSquatHash(hash).tab).toBe(s.tab),
+    // R11 gives `tab` no meaning on screen; restoring it means the reopened
+    // address bar still carries it.
+    tab: (s) => expect(parseSquatHash(window.location.hash).tab).toBe(s.tab),
     m: () =>
       expect(screen.getByRole('option', { name: /Soleus/ })).toHaveAttribute(
         'aria-selected',

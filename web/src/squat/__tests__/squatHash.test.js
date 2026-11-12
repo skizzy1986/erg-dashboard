@@ -282,6 +282,36 @@ describe('fixed point: the cleaned value is what gets re-emitted', () => {
     const once = reformat(h);
     expect(reformat(once)).toBe(once);
   });
+
+  // The mixed corpus above rarely forms a camera the grammar accepts, so the
+  // clamp-and-round path gets its own corpus of grammar-valid triples.
+  function validCams(n) {
+    let seed = 0xca3;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    const num = (max) => {
+      const whole = String(Math.floor(rnd() * (max + 1)));
+      const places = Math.floor(rnd() * 5);
+      return places
+        ? `${whole}.${String(Math.floor(rnd() * 10 ** places)).padStart(places, '0')}`
+        : whole;
+    };
+    return Array.from(
+      { length: n },
+      () => `#cam=${rnd() < 0.5 ? '-' : ''}${num(9999)},${num(999)},${num(99)}`
+    );
+  }
+
+  it.each(validCams(200))('%s', (h) => {
+    const cam = parseSquatHash(h).cam;
+    expect(cam).not.toBeNull();
+    const once = reformat(h);
+    expect(once).toMatch(/^#cam=-?\d+,\d+,\d+\.\d{2}$/);
+    expect(reformat(once)).toBe(once);
+    expect(parseSquatHash(once).cam).toEqual(cam);
+  });
 });
 
 describe('shareState and shareUrl (criteria 5, 13)', () => {

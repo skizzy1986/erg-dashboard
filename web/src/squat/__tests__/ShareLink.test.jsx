@@ -108,6 +108,25 @@ describe('copying (criteria 2, 3, 4)', () => {
     }
   });
 
+  it('keeps a refusal message up while the field is open, past four seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<ShareLink getLink={() => LINK} ready wide={false} />);
+      vi.spyOn(window.navigator, 'clipboard', 'get').mockReturnValue({
+        writeText: () =>
+          Promise.reject(new window.DOMException('no', 'NotAllowedError')),
+      });
+      fireEvent.click(button());
+      await act(async () => {});
+      expect(statusLine()).toHaveTextContent(SHARE_BLOCKED);
+      act(() => vi.advanceTimersByTime(SHARE_COPIED_MS * 3));
+      expect(statusLine()).toHaveTextContent(SHARE_BLOCKED);
+      expect(field()).toHaveValue(LINK);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('refused: opens the field, focused and fully selected, unreported', async () => {
     const { user } = setup();
     refuse('NotAllowedError');

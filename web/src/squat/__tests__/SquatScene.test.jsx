@@ -149,6 +149,9 @@ describe('SquatApp 3D stage', () => {
       expect(b).toBeDisabled();
     }
     expect(screen.getByRole('switch', { name: 'Muscles' })).toBeDisabled();
+    // "Loading 3D engine" shows for an idle scene too, so it can render
+    // before the effect that calls loadScene() has run.
+    await waitFor(() => expect(loadScene).toHaveBeenCalled());
     act(() => resolveLoad());
     await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
     expect(factory).toHaveBeenCalledTimes(1);
@@ -691,6 +694,93 @@ describe('share a view', () => {
     // Nothing is written back over the link just opened.
     await new Promise((r) => setTimeout(r, 300));
     expect(window.location.hash).toBe('#t=1.00');
+  });
+
+  it('a link that arrives while the engine loads is the first frame, not a jump (criterion 8)', async () => {
+    window.history.replaceState(null, '', '/squat#t=1.00&paused');
+    const { factory, loadScene, instances } = fakeScene();
+    let resolveLoad;
+    loadScene.mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          resolveLoad = () => r({ createAnatomyScene: factory });
+        })
+    );
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    await waitFor(() => expect(loadScene).toHaveBeenCalled());
+    act(() => {
+      window.history.replaceState(
+        null,
+        '',
+        '/squat#t=2.44&cam=-90,80,2.00&hide=skeleton'
+      );
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    await waitFor(() => expect(slider).toHaveValue('2.44'));
+    await act(async () => resolveLoad());
+    await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    expect(instances).toHaveLength(1);
+    near(
+      instances[0].opts.initialPose,
+      camToPose({ az: -90, pol: 80, dist: 2 })
+    );
+    // Built at the link's pose, so the arrival is not applied a second time.
+    expect(instances[0].camera.setPose).not.toHaveBeenCalled();
+    expect(screen.getByRole('switch', { name: 'Skeleton' })).not.toBeChecked();
+  });
+
+  it('a link that arrives before the rep data sets its layers at once and its time once loaded', async () => {
+    const { loadScene } = fakeScene();
+    render(<SquatApp loadScene={loadScene} />);
+    act(() => {
+      window.history.replaceState(null, '', '/squat#t=2.44&hide=muscles');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect(screen.getByRole('switch', { name: 'Muscles' })).not.toBeChecked();
+    await finishDownload();
+    const slider = screen.getByRole('slider', { name: 'Rep time' });
+    await waitFor(() => expect(slider).toHaveValue('2.44'));
+    expect(screen.getByRole('switch', { name: 'Muscles' })).not.toBeChecked();
+  });
+
+  it('Retry after a failed build rebuilds at the link camera still in the address bar', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/squat#cam=-90,80,2.00');
+    const { factory, loadScene, instances } = fakeScene();
+    factory.mockImplementationOnce(() => {
+      throw new Error('no context');
+    });
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    await screen.findByRole('alert');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    expect(instances).toHaveLength(1);
+    near(
+      instances[0].opts.initialPose,
+      camToPose({ az: -90, pol: 80, dist: 2 })
+    );
+  });
+
+  it('a link pasted while a scrub is settling is not overwritten by the old time', async () => {
+    await openOn('');
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '1.00' },
+    });
+    const link = '#t=2.44&paused&cam=-90,80,2.00&hide=muscles';
+    act(() => {
+      window.history.replaceState(null, '', `/squat${link}`);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    await waitFor(() =>
+      expect(screen.getByRole('slider', { name: 'Rep time' })).toHaveValue(
+        '2.44'
+      )
+    );
+    await new Promise((r) => setTimeout(r, 300));
+    expect(window.location.hash).toBe(link);
   });
 
   it('a hashchange during playback stops it on the new time', async () => {
