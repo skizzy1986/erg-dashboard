@@ -35,7 +35,7 @@ Ground rules:
 - What I can do with the code and assets is in PERMISSIONS.md in the repo. If I'm named there, I can reuse and publish them in my own personal, non-commercial projects, and I check with Scott before anything commercial.
 - The 3D anatomy data comes from BodyParts3D under CC BY-SA 2.1 JP. Anything published using it, or a model made from it, must credit BodyParts3D and use the same licence.
 - The model's numbers are modelled estimates, not measurements. Keep that label on anything I make.
-- Don't repost anything personal about Scott, for example from the older docs under coach/.
+- Don't repost anything personal about Scott, for example from the docs under coach/.
 - Don't make up facts about the code. If you can't see a file, ask me to paste it or connect the repo.
 ```
 
