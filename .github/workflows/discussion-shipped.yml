@@ -1,0 +1,201 @@
+name: Discussion shipped
+
+# When a pull request merges into the default branch, tells the Discussion the
+# work came from.
+#
+# The idea loop: an idea in Discussions is promoted to an issue, and the issue
+# carries one line naming its thread,
+#
+#     Discussion: https://github.com/<owner>/<repo>/discussions/<n>
+#
+# (`Discussion: #<n>` also works). When the PR that closes that issue merges,
+# this job posts one fixed reply on the thread. A PR with no issue can carry
+# the line in its own body. See WORKFLOW.md, "Ideas that start in Discussions".
+#
+# This is the ONE Discussions write that runs without Scott approving the text
+# (his decision, 2026-11-13). That is acceptable only because the reply is a
+# fixed template stating a fact: the only things interpolated are the PR number
+# and the issue number, both read from the API. Keep it that way. Anything
+# free-text belongs in post-discussion.yml, behind an approval.
+#
+# pull_request_target, not pull_request: under pull_request a PR from a
+# collaborator's fork gets a read-only GITHUB_TOKEN, so the reply could not be
+# posted. pull_request_target runs THIS file from the default branch with the
+# repo's own token. That is safe here because the job never checks out or runs
+# the PR's code, and never puts PR or issue text into a shell command or into
+# the reply. Do not add a checkout step to this workflow.
+#
+# Only a line that STARTS with "Discussion:" counts. A discussion link anywhere
+# else in a body is a reference, not a claim that the work came from that
+# thread, and must not trigger a "shipped" reply there.
+#
+# Idempotent: the reply carries a hidden marker naming the PR, and a thread
+# that already has that marker is skipped, so a re-run never posts twice.
+#
+# workflow_dispatch re-runs the job for one merged PR (for a missed event) and
+# offers a dry run.
+
+on:
+  pull_request_target:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: number of an already-merged pull request
+        type: string
+        required: true
+      dry_run:
+        description: find the threads and run every check, but do not post
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  discussions: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: discussion-shipped-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  reply:
+    name: Tell the thread it shipped
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.DISCUSSIONS_PAT || github.token }}
+      PR: ${{ github.event.pull_request.number || inputs.pr }}
+      DRY_RUN: ${{ inputs.dry_run || false }}
+      REPO: ${{ github.repository }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Reply on the linked Discussions
+        run: |
+          set -euo pipefail
+
+          if ! [[ "$PR" =~ ^[0-9]+$ ]]; then
+            echo "::error::pr must be a pull request number, got '$PR'."
+            exit 1
+          fi
+          owner="${REPO%/*}"
+          name="${REPO#*/}"
+
+          if ! pr_json=$(gh api graphql \
+            -f owner="$owner" -f name="$name" -F number="$PR" \
+            -f query='
+              query($owner: String!, $name: String!, $number: Int!) {
+                repository(owner: $owner, name: $name) {
+                  pullRequest(number: $number) {
+                    merged
+                    baseRefName
+                    body
+                    closingIssuesReferences(first: 20) {
+                      nodes { number body repository { nameWithOwner } }
+                    }
+                  }
+                }
+              }'); then
+            echo "::error::Could not read pull request #$PR."
+            exit 1
+          fi
+
+          if [ "$(jq -r '.data.repository.pullRequest.merged' <<<"$pr_json")" != "true" ]; then
+            echo "::error::Pull request #$PR is not merged."
+            exit 1
+          fi
+          base=$(jq -r '.data.repository.pullRequest.baseRefName' <<<"$pr_json")
+          if [ "$base" != "$DEFAULT_BRANCH" ]; then
+            echo "Pull request #$PR merged into '$base', not '$DEFAULT_BRANCH'. Nothing to do." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # One "<discussion> <issue>" pair per thread; issue is 0 when the line
+          # was on the PR itself. A thread named by an issue wins over the same
+          # thread named by the PR, so the reply can cite the issue.
+          threads=$(jq -r --arg repo "$REPO" '
+            def threads:
+              [ (. // "") | gsub("\r"; "") | split("\n")[]
+                | select(test("^\\s*(?:[-*]\\s+)?(?:\\*\\*)?discussion(?:\\*\\*)?\\s*:"; "i"))
+                | ( capture("github\\.com/" + $repo + "/discussions/(?<n>[0-9]+)"; "i")
+                    // capture("#(?<n>[0-9]+)") )
+                | .n | tonumber ];
+            .data.repository.pullRequest as $pr
+            | [ ( $pr.closingIssuesReferences.nodes[]
+                  | select(.repository.nameWithOwner == $repo)
+                  | .number as $issue
+                  | (.body | threads)[] | { d: ., issue: $issue } ),
+                ( ($pr.body | threads)[] | { d: ., issue: 0 } ) ]
+            | group_by(.d)
+            | map(sort_by(.issue == 0) | .[0])
+            | .[] | "\(.d) \(.issue)"' <<<"$pr_json")
+
+          if [ -z "$threads" ]; then
+            echo "No 'Discussion:' line on pull request #$PR or the issues it closes. Nothing to do." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          marker="<!-- discussion-shipped pr=$PR -->"
+
+          # Read the pairs on fd 3 so nothing inside the loop can swallow them from stdin.
+          while read -r discussion issue <&3; do
+            if ! d_json=$(gh api graphql \
+              -f owner="$owner" -f name="$name" -F number="$discussion" \
+              -f query='
+                query($owner: String!, $name: String!, $number: Int!) {
+                  repository(owner: $owner, name: $name) {
+                    discussion(number: $number) {
+                      id
+                      locked
+                      comments(last: 100) { nodes { body } }
+                    }
+                  }
+                }'); then
+              echo "::warning::Discussion #$discussion could not be read; skipped."
+              continue
+            fi
+
+            discussion_id=$(jq -r '.data.repository.discussion.id // empty' <<<"$d_json")
+            if [ -z "$discussion_id" ]; then
+              echo "::warning::No Discussion with number $discussion; skipped."
+              continue
+            fi
+            if [ "$(jq -r '.data.repository.discussion.locked' <<<"$d_json")" = "true" ]; then
+              echo "::warning::Discussion #$discussion is locked; skipped."
+              continue
+            fi
+            already=$(jq -r --arg m "$marker" \
+              '[.data.repository.discussion.comments.nodes[] | select(.body | contains($m))] | length' <<<"$d_json")
+            if [ "$already" != "0" ]; then
+              echo "Discussion #$discussion already has the shipped reply for #$PR; skipped." | tee -a "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            if [ "$issue" != "0" ]; then
+              first="Shipped: #$PR closed #$issue, the issue this thread became. It is merged to \`$DEFAULT_BRANCH\`."
+            else
+              first="Shipped: #$PR, which came out of this thread, is merged to \`$DEFAULT_BRANCH\`."
+            fi
+            body=$(printf '%s\n\n%s\n\n%s' \
+              "$first" \
+              "If it doesn't do what this thread had in mind, reply here." \
+              "$marker")
+
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run: would reply on Discussion #$discussion: $first" | tee -a "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+
+            url=$(gh api graphql \
+              -f discussion="$discussion_id" -f body="$body" \
+              -f query='
+                mutation($discussion: ID!, $body: String!) {
+                  addDiscussionComment(input: { discussionId: $discussion, body: $body }) {
+                    comment { url }
+                  }
+                }' \
+              --jq '.data.addDiscussionComment.comment.url')
+            echo "Replied on Discussion #$discussion: $url" | tee -a "$GITHUB_STEP_SUMMARY"
+          done 3<<<"$threads"
