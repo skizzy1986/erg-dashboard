@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import manifestUrl from './assets/squat-manifest.json?url';
 import { THEME } from '../constants/theme.js';
 import { DARK, LIGHT } from '../constants/themeValues.js';
@@ -294,8 +294,24 @@ function MuscleSection({
   );
 }
 
+// Prototype layout at /squat?lab, in its own chunk so /squat pays nothing.
+const SquatLab = lazy(() => import('./lab/SquatLab.jsx'));
+const isLab = () =>
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).has('lab');
+
+export default function SquatRoute(props) {
+  if (isLab())
+    return (
+      <Suspense fallback={null}>
+        <SquatLab {...props} />
+      </Suspense>
+    );
+  return <SquatApp {...props} />;
+}
+
 // `loadScene` is the seam to the three.js chunk; tests pass a fake scene.
-export default function SquatApp({ loadScene = loadSceneModule } = {}) {
+function SquatApp({ loadScene = loadSceneModule } = {}) {
   const wide = useMediaQuery(WIDE_QUERY);
   const { preference, resolved, setPreference } = useSquatTheme();
   const capabilities = useCapabilities();

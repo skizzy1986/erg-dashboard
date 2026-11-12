@@ -135,7 +135,7 @@ export default [
     // drive browser events jsdom provides beyond the app-wide list above.
     // The anatomy posing tests read the same files.
     files: [
-      'src/squat/__tests__/**/*.{js,jsx}',
+      'src/squat/**/__tests__/**/*.{js,jsx}',
       'src/anatomy/**/__tests__/**/*.{js,jsx}',
     ],
     languageOptions: {

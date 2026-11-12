@@ -129,6 +129,27 @@ export function heatColours(muscles, weights, stops, tendon) {
   return out;
 }
 
+/**
+ * Ghost every muscle not in `keep` (a Set of muscle indices): each colour is
+ * pulled most of the way to its own luminance grey, so emphasis reads as
+ * "faded", never as a lower step on the heat ramp. Mutates and returns `cols`.
+ */
+export function fadeExcept(cols, keep, amount = 0.82) {
+  if (!keep) return cols;
+  const n = cols.length / 3;
+  for (let i = 0; i < n; i++) {
+    if (keep.has(i)) continue;
+    const r = cols[i * 3];
+    const g = cols[i * 3 + 1];
+    const b = cols[i * 3 + 2];
+    const y = 0.3 * r + 0.59 * g + 0.11 * b;
+    cols[i * 3] = r + (y - r) * amount;
+    cols[i * 3 + 1] = g + (y - g) * amount;
+    cols[i * 3 + 2] = b + (y - b) * amount;
+  }
+  return cols;
+}
+
 /** The scene's palette for a theme, from the anatomy* tokens. */
 export function scenePalette(themeName) {
   const p = themeName === 'dark' ? DARK : LIGHT;

@@ -24,6 +24,7 @@ import { viewArray } from '../utils/arrays.js';
 import { dequantise } from '../utils/dequantise.js';
 import { createPoser } from '../utils/poseModel.js';
 import {
+  fadeExcept,
   heatColours,
   muscleColours,
   writeVertexColours,
@@ -332,6 +333,7 @@ export function createAnatomyScene({
     let pal = palette;
     let st = style;
     let heat = null;
+    let emphasis = null;
 
     function applyLights(p, style0) {
       const lt = style0.lights;
@@ -354,6 +356,7 @@ export function createAnatomyScene({
       const mc = heat
         ? heatColours(meta.muscles, heat, pal.heat, pal.tendon)
         : muscleColours(meta.muscles, pal, st.jitter);
+      fadeExcept(mc, emphasis);
       const blend = heat ? st.tendonBlendHeat : st.tendonBlend;
       for (const set of colourSets) {
         writeVertexColours(set.col, set.mid, set.tw, mc, pal.tendon, blend);
@@ -515,8 +518,10 @@ export function createAnatomyScene({
       controls.removeEventListener('change', onControlsChange)
     );
     // A user drag cancels a running preset tween rather than fighting it.
+    const userListeners = new Set();
     const onControlsStart = () => {
       tween = null;
+      for (const fn of userListeners) fn();
     };
     controls.addEventListener('start', onControlsStart);
     cleanups.push(() => controls.removeEventListener('start', onControlsStart));
@@ -600,6 +605,20 @@ export function createAnatomyScene({
         pendingHeat = true;
         invalidate();
       },
+      // A Set of muscle indices to keep in colour, or null for all.
+      setEmphasis(indices = null) {
+        const next = indices && indices.length ? new Set(indices) : null;
+        const same =
+          next === emphasis ||
+          (next &&
+            emphasis &&
+            next.size === emphasis.size &&
+            [...next].every((i) => emphasis.has(i)));
+        if (same) return;
+        emphasis = next;
+        pendingHeat = true;
+        invalidate();
+      },
       setReducedMotion(reduced) {
         motionReduced = reduced;
         controls.enableDamping = !reduced;
@@ -623,6 +642,18 @@ export function createAnatomyScene({
           goTo(orbitBy(currentView(), dAz, dPol, cam.minPolar, cam.maxPolar)),
         zoom: (f) =>
           goTo(zoomBy(currentView(), f, cam.minDistance, cam.maxDistance)),
+        // Snaps, no tween: the caller drives it frame by frame.
+        set: (view, targetY) => {
+          tween = null;
+          if (typeof targetY === 'number') controls.target.y = targetY;
+          place(view);
+          invalidate();
+        },
+        // Called when the user starts a drag, pinch or wheel.
+        onUser: (fn) => {
+          userListeners.add(fn);
+          return () => userListeners.delete(fn);
+        },
       },
       dispose() {
         if (disposed) return;

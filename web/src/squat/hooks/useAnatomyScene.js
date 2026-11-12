@@ -29,6 +29,7 @@ export function useAnatomyScene({
   reducedMotion,
   coarsePointer = false,
   loadScene = loadSceneModule,
+  emphasis = null,
 }) {
   const [state, setState] = useState({ status: 'idle', errorKind: null });
   const [attempt, setAttempt] = useState(0);
@@ -156,6 +157,10 @@ export function useAnatomyScene({
   }, [controller, activation]);
 
   useEffect(() => {
+    controller?.setEmphasis?.(emphasis);
+  }, [controller, emphasis]);
+
+  useEffect(() => {
     controller?.setReducedMotion(reducedMotion);
   }, [controller, reducedMotion]);
 
@@ -172,6 +177,8 @@ export function useAnatomyScene({
       preset: (name) => ctlRef.current?.camera.preset(name),
       orbit: (dAz, dPol) => ctlRef.current?.camera.orbit(dAz, dPol),
       zoom: (f) => ctlRef.current?.camera.zoom(f),
+      set: (view, targetY) => ctlRef.current?.camera.set?.(view, targetY),
+      onUser: (fn) => ctlRef.current?.camera.onUser?.(fn) ?? (() => {}),
     }),
     []
   );

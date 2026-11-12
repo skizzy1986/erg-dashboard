@@ -27,6 +27,8 @@ export default function SquatStage({
   scene,
   hostRef,
   wide,
+  fill = false,
+  children = null,
 }) {
   const blocked = !capabilities.webgl || data.stage === 'unsupported';
   const sceneFailed =
@@ -43,6 +45,9 @@ export default function SquatStage({
         position: 'relative',
         minHeight: wide ? 520 : 'min(58vh, 460px)',
         overflow: 'hidden',
+        ...(fill
+          ? { height: '100%', minHeight: 0, borderRadius: 0, border: 'none' }
+          : {}),
         background: `radial-gradient(120% 90% at 50% 0%, ${THEME.surface} 0%, ${THEME.surfaceAlt} 60%, ${alpha(THEME.accent, '12')} 100%)`,
       }}
     >
@@ -112,6 +117,7 @@ export default function SquatStage({
           />
         )}
       </div>
+      {children}
     </section>
   );
 }
