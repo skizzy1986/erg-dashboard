@@ -365,22 +365,29 @@ a clear error.
 
 ## Posting a Discussion from a cloud session
 
-A cloud session can read Discussions but cannot create one:
+A cloud session can read Discussions but cannot write to them:
 
-- `gh api "repos/skizzy1986/erg-dashboard/discussions?per_page=30"` lists them over REST
-  (verified 2026-11-12).
-- GraphQL is blocked, and REST has no create route: `POST /repos/{owner}/{repo}/discussions`
+- `gh api "repos/skizzy1986/erg-dashboard/discussions?per_page=30"` lists them over REST,
+  and `.../discussions/<n>/comments` lists a thread's comments (both verified 2026-11-12).
+  Both need the repository attached to the session; without it they return 403.
+- GraphQL is blocked, and REST has no write route: `POST /repos/{owner}/{repo}/discussions`
   returned 404 on 2026-11-12. The `gh api graphql` recipe in the `/collaborate` skill works
   from a collaborator's own machine, not from here.
 
 **Workaround: `.github/workflows/post-discussion.yml`.** Dispatch it with
-`actions_run_trigger` (workflow `post-discussion.yml`, ref `main`) and inputs `category` (a
-slug: `announcements`, `ideas`, `show-and-tell`, `q-a`), `title` and `body`. Add
-`dry_run=true` to resolve the category and run the duplicate-title check without posting.
-Read the result back from the REST list above: the new post's `html_url` is the receipt.
+`actions_run_trigger` (workflow `post-discussion.yml`, ref `main`). It has two modes:
+
+| Inputs | Effect |
+|---|---|
+| `category=<slug> title=<text> body=<markdown>` | Creates a Discussion. Slugs: `announcements`, `ideas`, `show-and-tell`, `q-a`. A title matching one of the 50 newest is refused. |
+| `reply_to=<number> body=<markdown>` | Posts a top-level comment on that Discussion (in Q&A, that is an answer). A body matching one of the thread's 50 newest comments is refused, and so is a locked thread. |
+| either, plus `dry_run=true` | Runs every check and posts nothing. |
+
+Read the result back from the REST calls above: the new post's `html_url`, or the reply's
+text in the thread's comments, is the receipt.
 
 **Approval lives with the caller, not the workflow.** A Discussion is public and cannot be
-unposted cleanly, so a session shows Scott the exact title, category and body and
+unposted cleanly, so a session shows Scott the exact text and where it will go, and
 dispatches only on his reply. The weekly *SplitIQ Discussion drafts* scheduled task is the
 standing caller.
 
@@ -388,8 +395,10 @@ standing caller.
 Scott, add the repo secret `DISCUSSIONS_PAT`: a fine-grained PAT limited to this repository
 with **Discussions: read and write**. The workflow prefers it when present.
 
-Not yet verified end to end: a workflow can only be dispatched once it is on `main`, so
-the first run after merge should be a `dry_run=true`.
+Verified 2026-11-12: a `dry_run=true` create (run 43277118289) resolved `ideas` and posted
+nothing, and two real creates with `GITHUB_TOKEN` produced Discussions 476 (`q-a`) and 478
+(`announcements`), both authored by `github-actions[bot]`. A real reply has not been posted
+yet; only its dry run is verified (see the pull request that added reply mode).
 
 ## Releases from a cloud session
 
