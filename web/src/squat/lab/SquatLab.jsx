@@ -48,6 +48,8 @@ const COARSE_QUERY = '(pointer: coarse)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 // Pause on the lockout before the rep loops, so the eye can reset.
 const LOOP_HOLD_MS = 700;
+// Further than this between press and release is a drag, not a tap.
+const TAP_SLOP = 6;
 
 export const CAMERA_MODES = [
   { id: 'director', name: 'Director' },
@@ -476,9 +478,46 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
 
   // A drag or pinch on the model hands the camera to the user.
   const { camera } = scene;
+  // A tap on the model picks the muscle under it; a drag, pinch or scroll
+  // hands the camera to the user. Told apart by how far the pointer moved.
+  const pickRef = useRef(null);
   useEffect(() => {
-    if (!sceneReady) return undefined;
-    return camera.onUser(() => setMode('manual'));
+    const el = hostRef.current;
+    if (!sceneReady || !el) return undefined;
+    camera.setZoomToCursor(true);
+    const down = new Map();
+    const onDown = (e) => {
+      down.set(e.pointerId, { x: e.clientX, y: e.clientY, moved: false });
+      if (down.size > 1) setMode('manual');
+    };
+    const onMove = (e) => {
+      const p = down.get(e.pointerId);
+      if (!p || p.moved) return;
+      if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > TAP_SLOP) {
+        p.moved = true;
+        setMode('manual');
+      }
+    };
+    const onUp = (e) => {
+      const p = down.get(e.pointerId);
+      down.delete(e.pointerId);
+      if (!p || p.moved || down.size) return;
+      const i = camera.pickMuscle(e.clientX, e.clientY);
+      if (i !== null) pickRef.current?.(i);
+    };
+    const onWheel = () => setMode('manual');
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+    el.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      el.removeEventListener('wheel', onWheel);
+    };
   }, [sceneReady, camera]);
 
   // The camera is a function of the playhead, so scrubbing and pausing show
@@ -534,6 +573,9 @@ export default function SquatLab({ loadScene = loadSceneModule } = {}) {
   };
   const pick = (i) =>
     selection.select(i === null ? null : slugify(muscles[i].name));
+  useEffect(() => {
+    pickRef.current = pick;
+  });
 
   const raw = selection.muscle
     ? activationOf(muscles[selection.muscle.i], view.s, view.direction)

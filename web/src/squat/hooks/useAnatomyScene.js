@@ -180,6 +180,8 @@ export function useAnatomyScene({
       set: (view, targetY) => ctlRef.current?.camera.set?.(view, targetY),
       follow: (view, at) => ctlRef.current?.camera.follow?.(view, at),
       focusOf: (i) => ctlRef.current?.focusOf?.(i) ?? null,
+      pickMuscle: (x, y) => ctlRef.current?.pickMuscle?.(x, y) ?? null,
+      setZoomToCursor: (on) => ctlRef.current?.setZoomToCursor?.(on),
       onUser: (fn) => ctlRef.current?.camera.onUser?.(fn) ?? (() => {}),
     }),
     []

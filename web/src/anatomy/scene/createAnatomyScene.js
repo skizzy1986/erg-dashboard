@@ -12,6 +12,8 @@ import {
   NoToneMapping,
   PerspectiveCamera,
   PlaneGeometry,
+  Raycaster,
+  Vector2,
   Scene,
   ShadowMaterial,
   Sphere,
@@ -217,6 +219,7 @@ export function createAnatomyScene({
     const movers = [];
     const addMesh = (geo, mat, parent, frame) => {
       const mesh = new Mesh(geo, mat);
+      (geo.parentMeshes ??= []).push(mesh);
       mesh.castShadow = shadows;
       if (frame) {
         mesh.matrixAutoUpdate = false;
@@ -250,6 +253,7 @@ export function createAnatomyScene({
 
     // ── muscle sets ────────────────────────────────────────────────
     const colourSets = [];
+    const pickable = [];
     const M = style.model;
     const fixedBounds = new Sphere(new Vector3(...M.centre), M.boundsRadius);
     const makeSet = (geo, mid, tw, mirrored, frame) => {
@@ -257,6 +261,7 @@ export function createAnatomyScene({
       geo.setAttribute('color', new BufferAttribute(col, 3));
       const set = { geo, mid, tw, col, mesh: null };
       colourSets.push(set);
+      pickable.push(set);
       set.mesh = addMesh(
         geo,
         muscleMat,
@@ -701,6 +706,38 @@ export function createAnatomyScene({
           );
         }
         return { centre: [c.x, c.y, c.z], radius: r };
+      },
+      // The muscle under a screen point (client px), or null. Only visible
+      // muscle meshes are tested; the nearest hit wins.
+      pickMuscle(clientX, clientY) {
+        if (pendingS !== null && pendingS !== posedS) applyPose(pendingS);
+        scene.updateMatrixWorld();
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+        const ndc = new Vector2(
+          ((clientX - rect.left) / rect.width) * 2 - 1,
+          -((clientY - rect.top) / rect.height) * 2 + 1
+        );
+        const ray = new Raycaster();
+        ray.setFromCamera(ndc, camera);
+        const meshes = [];
+        const setOf = new Map();
+        for (const set of pickable) {
+          set.geo.parentMeshes?.forEach((m) => {
+            if (m.visible && m.parent?.visible) {
+              meshes.push(m);
+              setOf.set(m, set);
+            }
+          });
+        }
+        const hit = ray.intersectObjects(meshes, false)[0];
+        if (!hit?.face) return null;
+        const set = setOf.get(hit.object);
+        const i = set.mid[hit.face.a];
+        return meta.muscles[i]?.tendon ? null : i;
+      },
+      setZoomToCursor(on) {
+        controls.zoomToCursor = !!on;
       },
       // A Set of muscle indices to keep in colour, or null for all.
       setEmphasis(indices = null) {

@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SquatRoute from '../../SquatApp.jsx';
 
@@ -39,6 +46,8 @@ function fakeScene() {
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
       setEmphasis: vi.fn(),
+      pickMuscle: vi.fn(() => 0),
+      setZoomToCursor: vi.fn(),
       focusOf: vi.fn(() => ({ centre: [0.1, 0.9, 0.1], radius: 0.12 })),
       camera: {
         reset: vi.fn(),
@@ -109,7 +118,10 @@ describe('SquatLab (/squat?lab)', () => {
     await ready(loadScene);
     const ctl = instances[0];
     await user.click(await screen.findByRole('button', { name: 'Pause' }));
-    act(() => ctl.drag());
+    const host = screen.getByTestId('scene-host');
+    fireEvent.pointerDown(host, { pointerId: 1, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(host, { pointerId: 1, clientX: 60, clientY: 10 });
+    fireEvent.pointerUp(host, { pointerId: 1, clientX: 60, clientY: 10 });
     expect(screen.getByRole('button', { name: 'Fixed' })).toHaveAttribute(
       'aria-pressed',
       'true'
@@ -151,5 +163,22 @@ describe('SquatLab (/squat?lab)', () => {
     ]);
     await user.click(screen.getByRole('button', { name: 'Heatmap' }));
     expect(screen.queryByTestId('strain-panel')).toBeNull();
+  });
+
+  it('a tap on the model picks the muscle under it without leaving Director', async () => {
+    const user = userEvent.setup();
+    const { loadScene, instances } = fakeScene();
+    await ready(loadScene);
+    await user.click(await screen.findByRole('button', { name: 'Pause' }));
+    expect(instances[0].setZoomToCursor).toHaveBeenCalledWith(true);
+    const host = screen.getByTestId('scene-host');
+    fireEvent.pointerDown(host, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerUp(host, { pointerId: 1, clientX: 102, clientY: 101 });
+    expect(instances[0].pickMuscle).toHaveBeenCalledWith(102, 101);
+    await waitFor(() => expect(window.location.hash).toMatch(/m=/));
+    expect(screen.getByRole('button', { name: 'Director' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
   });
 });
