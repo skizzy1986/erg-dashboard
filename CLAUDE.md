@@ -92,7 +92,8 @@ coach/
   dependabot.yml  Weekly grouped dependency updates (npm + actions)
   PULL_REQUEST_TEMPLATE.md  PR checklist template
 .claude/
-  agents/       Agency agent library (232 agents, 16 divisions) — staffs the pipeline
+  agents/       The 24 Agency agents the factory uses (pipeline + routed advisory)
+  agent-library/ The other 208 Agency agents, parked: not loaded (see its README)
   skills/       Pipeline definitions (/orchestrate, /feature, /refactor, /research),
                 /daily task brief, erg-context.md spawn preamble, and domain
                 knowledge docs
@@ -513,37 +514,48 @@ Agent tool's `model` parameter (sonnet for research/story/verify/review; opus
 for spec/build/validate). Read-only stages are prompt-enforced and checked
 with `git status` before/after each spawn.
 
-## Agency Agents (the full library staffs the factory)
+## Agency Agents (the library staffs the factory)
 
-The **complete Agency agent library** (`msitarzewski/agency-agents`) is
-installed: **16 divisions, 232 agents**. As of 2026-07-02 the library **staffs
+The **Agency agent library** (`msitarzewski/agency-agents`, 16 divisions, 232
+agents) is committed in full, but only **24 are loadable** — the 10 the pipeline
+spawns and the 14 `.claude/AGENTS.md` routes, in `.claude/agents/`; the other
+208 are parked byte-identical in `.claude/agent-library/`, which Claude Code does
+not load (#483). As of 2026-07-02 the library **staffs
 the pipeline** — the 12 project-specific pipeline agents were retired (git
 history is their archive). Agency agents both advise *and* build, but code
 still ships only through the gated pipeline and lands as a PR per
 `WORKFLOW.md` — never as a direct commit from a loose agent.
 
 > **Which agent for which job?** See **[`.claude/AGENTS.md`](.claude/AGENTS.md)** —
-> a task → agent routing map so the 232-file library is navigable, not sprawl.
+> a task → agent routing map so the 24 loadable agents are navigable, not sprawl.
 
-Installed in **two locations** (2026-06-29):
-- Globally at `~/.claude/agents/` (the upstream installer's default).
-- Committed into this repo's `.claude/agents/` (so they persist and version with
-  the project). **Never edit the library files** — all erg-specific behaviour
-  (context, model pins, read-only discipline, persona reframing) is applied at
-  spawn time by the skills, so the 232 files stay pristine and re-installable.
+Present in two places:
+- Globally at `~/.claude/agents/` (the upstream installer's default) on a local
+  machine. SplitIQ cloud sessions have none — the environment's setup script
+  installs no agents (`docs/CLOUD_ENVIRONMENT.md`). Locally it loads into every
+  session; the optional trim is in `.claude/agent-library/README.md`.
+- Committed in this repo: the 24 in `.claude/agents/`, the 208 in
+  `.claude/agent-library/`. **Never edit the library files** — all erg-specific
+  behaviour (context, model pins, read-only discipline, persona reframing) is
+  applied at spawn time by the skills, so the 232 files stay pristine and
+  re-installable. Re-promote one with
+  `git mv .claude/agent-library/<file>.md .claude/agents/` + a route in
+  `.claude/AGENTS.md`.
 
 Agency agent files are division-prefixed (e.g. `project-management-project-shepherd.md`,
 `product-manager.md`, `testing-test-results-analyzer.md`). To list divisions or
 re-install: clone the upstream repo and run
 `./scripts/install.sh --tool claude-code --list teams` (or `--no-interactive` to
-install all). The 16 divisions: academic, design, engineering, finance,
+install all; a full install refills `~/.claude/agents/` with all 232, so repeat
+the trim). The 16 divisions: academic, design, engineering, finance,
 game-development, gis, marketing, paid-media, product, project-management, sales,
 security, spatial-computing, specialized, support, testing.
 
 ### Most relevant divisions for this solo dashboard
 
-Beyond the pipeline roles above, most of the 232 are irrelevant to a personal
-React/Supabase app (game-dev, GIS, real-estate, sales, …). The high-value
+Beyond the pipeline roles above, most of the library is irrelevant to a personal
+React/Supabase app (game-dev, GIS, real-estate, sales, …) and is parked in
+`.claude/agent-library/`. The high-value
 advisory ones:
 
 | Division | Use for |

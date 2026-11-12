@@ -237,7 +237,8 @@ research  →  story  →  [GATE 1]  →  spec  →  [GATE 2]
           →  [GATE 3]  →  PR  →  CI  →  merge
 ```
 
-The Agency agent library lives in `.claude/agents/`; the pipeline itself is
+The Agency agents the factory uses live in `.claude/agents/` (the rest of the
+library is parked in `.claude/agent-library/`); the pipeline itself is
 defined in `.claude/skills/orchestrate/SKILL.md` (see `FACTORY.md` for the
 model). It never advances past a gate without explicit approval.
 

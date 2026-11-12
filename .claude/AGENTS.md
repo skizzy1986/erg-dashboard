@@ -1,11 +1,13 @@
 # Agent routing — which agent for which job
 
-> The full Agency library (232 agents, 16 divisions) is installed in
-> `.claude/agents/` and **staffs the factory pipeline** (the 12 project pipeline
-> agents were retired 2026-07-02; git history is their archive). This file is
-> the map: pick the right agent fast instead of scrolling 232 files. Background
-> on the library is in CLAUDE.md ("Agency Agents"); the pipeline is defined in
-> `.claude/skills/orchestrate/SKILL.md` and explained in FACTORY.md.
+> The Agency library (232 agents, 16 divisions) is committed, but only the 24
+> agents named in this file's tables are loadable — they sit in `.claude/agents/`
+> and **staff the factory pipeline** (the 12 project pipeline agents were retired
+> 2026-07-02; git history is their archive). The other 208 are parked
+> byte-identical in `.claude/agent-library/`, which Claude Code does not load
+> (#483). Background on the library is in CLAUDE.md ("Agency Agents"); the
+> pipeline is defined in `.claude/skills/orchestrate/SKILL.md` and explained in
+> FACTORY.md.
 
 ## Always give Agency agents erg context
 
@@ -40,8 +42,9 @@ with the right context and gates on your approval.
 
 ## Advisory Agency agents — task → agent
 
-Only five divisions are high-value for a small React/Supabase training app. The rest
-(game-dev, GIS, sales, real-estate, …) are noise here.
+Only five divisions are high-value for a small React/Supabase training app, and only
+the agents routed below are loaded. The rest (game-dev, GIS, sales, real-estate, …)
+are parked in `.claude/agent-library/`.
 
 ### Design — the visual system
 Now a real lane; see [`DESIGN.md`](../DESIGN.md). Always prepend
@@ -54,39 +57,44 @@ Now a real lane; see [`DESIGN.md`](../DESIGN.md). Always prepend
 | Review a diff for token or property-boundary violations | `design-brand-guardian` |
 | Contrast, labels and focus pass on a view | `testing-accessibility-auditor` |
 
-Deliberately unrouted: `design-whimsy-injector`, `design-image-prompt-engineer`,
-`design-visual-storyteller`, `design-inclusive-visuals-specialist`,
-`design-persona-walkthrough`. A single-user training dashboard has no brand, marketing or
-persona surface — saying so beats leaving nine files looking available.
+Deliberately unrouted, and parked in `.claude/agent-library/`: `design-whimsy-injector`,
+`design-image-prompt-engineer`, `design-visual-storyteller`,
+`design-inclusive-visuals-specialist`, `design-persona-walkthrough`,
+`design-ux-researcher`. A single-user training dashboard has no brand, marketing or
+persona surface.
 
 ### Product — what to build next
 | Task | Agent |
 |---|---|
 | Re-rank the backlog, decide what's next | `product-manager` |
 | Plan a focused batch / "sprint" of issues | `product-sprint-prioritizer` (Sprint Prioritizer) |
-| Turn raw user feedback into priorities | `feedback-synthesizer` |
+| Turn raw user feedback into priorities | `product-feedback-synthesizer` |
 
 ### Project management — sequencing & tracking
 | Task | Agent |
 |---|---|
 | Track in-flight issues/PRs, flag stalls | `project-management-project-shepherd` (Project Shepherd) |
 | Turn a rough idea into well-formed, sequenced issues | `project-manager-senior` |
-| Map a multi-step effort into a dependency-ordered plan | `experiment-tracker` / `project-shepherd` |
+| Map a multi-step effort into a dependency-ordered plan | `project-management-experiment-tracker` / `project-management-project-shepherd` |
 
 ### Testing — quality & coverage
 | Task | Agent |
 |---|---|
 | Interpret a coverage report, find the weak spots | `testing-test-results-analyzer` (Test Results Analyzer) |
-| Validate an API/integration before wiring it in | `api-tester` |
-| Audit accessibility of a view | `accessibility-auditor` |
-| Performance-profile a slow view or query | `performance-benchmarker` |
+| Validate an API/integration before wiring it in | `testing-api-tester` |
+| Audit accessibility of a view | `testing-accessibility-auditor` |
+| Performance-profile a slow view or query | `testing-performance-benchmarker` |
 
 ### Support — ops & reporting
 | Task | Agent |
 |---|---|
-| Supabase / Vercel health, deploy or runtime issues | `infrastructure-maintainer` |
-| Turn dashboard data into a written readout | `analytics-reporter` |
-| Optimise a repetitive manual process | `workflow-optimizer` |
+| Supabase / Vercel health, deploy or runtime issues | `support-infrastructure-maintainer` |
+| Turn dashboard data into a written readout | `support-analytics-reporter` |
+| Optimise a repetitive manual process | `testing-workflow-optimizer` |
+
+## Re-promoting a parked agent
+
+`git mv .claude/agent-library/<file>.md .claude/agents/`, add a row for it above, update the 24/208 counts (here, `CLAUDE.md`, `FACTORY.md`), and land it as a PR. Every loadable agent's description is paid on every request — promote for a recurring job, not a one-off.
 
 ## Rule of thumb
 
