@@ -23,6 +23,18 @@ function localLogDate(d) {
   return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
 }
 
+// CONTRACT: logEntriesForDate is STATUS-BLIND. It never inspects `status` —
+// callers must pass an already-filtered list (useSessionLog's
+// `loggedSessions`). Do not add a status gate here: a second gate in a second
+// layer is exactly the drift that let cancelled sessions count as done (#194).
+// Keyed with localLogDate, not toLogDate: toLogDate falls back to today on an
+// invalid Date, which would match today's rows.
+export function logEntriesForDate(date, sessions) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return [];
+  const key = localLogDate(date);
+  return (sessions || []).filter((e) => e.date === key);
+}
+
 // Inverse of toISODate: produces the unpadded "M/D/YY" text that sessions.date
 // stores (verified against production — 92/92 rows are unpadded). Accepts a
 // Date, an ISO "YYYY-MM-DD" string, or an already-"M/D/YY" string (idempotent);
