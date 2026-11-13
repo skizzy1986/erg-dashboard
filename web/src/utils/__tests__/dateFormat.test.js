@@ -1,5 +1,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { toISODate, toLogDate, logEntriesForDate } from '../dateFormat.js';
+import {
+  toISODate,
+  toLogDate,
+  logEntriesForDate,
+  clockTime,
+} from '../dateFormat.js';
 
 describe('toISODate', () => {
   it('normalizes "7/9/26" to 2026-07-09', () => {
@@ -152,5 +157,22 @@ describe('logEntriesForDate', () => {
       { date: '4/2/30', label: 'B', status: 'completed' },
     ];
     expect(logEntriesForDate(new Date(2030, 3, 2), rows)).toEqual(rows);
+  });
+});
+
+describe('clockTime', () => {
+  afterEach(() => {
+    delete globalThis.process.env.TZ;
+  });
+
+  it('renders the local 24-hour wall clock, zero-padded', () => {
+    expect(clockTime(new Date(2026, 7, 18, 7, 5).getTime())).toBe('07:05');
+    expect(clockTime(new Date(2026, 7, 18, 23, 59))).toBe('23:59');
+  });
+
+  it('uses the local zone, not UTC, either side of midnight', () => {
+    globalThis.process.env.TZ = 'Australia/Perth';
+    // 16:30Z is 00:30 the next day in Perth (UTC+8, no DST).
+    expect(clockTime(Date.UTC(2026, 7, 20, 16, 30))).toBe('00:30');
   });
 });

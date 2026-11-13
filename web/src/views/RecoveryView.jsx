@@ -9,6 +9,17 @@ import {
 } from 'recharts';
 import { LIPID_REF } from '../constants/logs.js';
 import { useVitals } from '../hooks/useVitals.js';
+import { useBpReadings } from '../hooks/useBpReadings.js';
+import { useLabResults } from '../hooks/useLabResults.js';
+import { useInjuries } from '../hooks/useInjuries.js';
+import HealthRecordCard from '../components/HealthRecordCard.jsx';
+import {
+  groupLabDraws,
+  formatLabValue,
+  formatLabRange,
+  orderInjuries,
+} from '../utils/healthRecords.js';
+import { toLogDate, clockTime } from '../utils/dateFormat.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
@@ -17,25 +28,179 @@ const LIPID_SOURCES = [
   ...new Map(LIPID_REF.map((r) => [r.source.url, r.source])).values(),
 ];
 
-function EmptyPanel({ children }) {
+const rowStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'baseline',
+  gap: 8,
+  padding: '7px 0',
+  borderBottom: `1px solid ${THEME.divider}`,
+};
+
+function RecordRow({ label, value, sub }) {
   return (
-    <p
-      style={{
-        margin: 0,
-        padding: '16px 0',
-        textAlign: 'center',
-        color: THEME.muted,
-        fontSize: 13,
-      }}
-    >
-      {children}
-    </p>
+    <div style={{ borderBottom: `1px solid ${THEME.divider}` }}>
+      <div style={{ ...rowStyle, borderBottom: 'none' }}>
+        <span style={{ fontSize: 11, color: THEME.text }}>{label}</span>
+        <span style={{ fontSize: 11, color: THEME.text, textAlign: 'right' }}>
+          {value}
+        </span>
+      </div>
+      {sub && (
+        <div
+          style={{
+            fontSize: 10,
+            color: THEME.muted,
+            paddingBottom: 7,
+            marginTop: -3,
+          }}
+        >
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// The latest draw only; earlier draws stay in the table for a later trend view.
+function LatestDraw({ draw }) {
+  return (
+    <>
+      <div style={{ fontSize: 10, color: THEME.muted, margin: '4px 0' }}>
+        Collected {toLogDate(draw.collectedOn)}
+      </div>
+      {draw.markers.map((m) => (
+        <RecordRow
+          key={m.id}
+          label={m.marker}
+          value={formatLabValue(m)}
+          sub={[formatLabRange(m), m.note].filter(Boolean).join(' · ')}
+        />
+      ))}
+    </>
+  );
+}
+
+function bpRow(r) {
+  const d = new Date(r.measured_at);
+  const pulse = r.pulse_bpm != null ? ` · ${r.pulse_bpm} bpm` : '';
+  const sub = [r.context, r.clean ? 'clean' : null].filter(Boolean).join(' · ');
+  return (
+    <RecordRow
+      key={r.id}
+      label={`${toLogDate(d)} ${clockTime(d)}`}
+      value={`${r.sys_mmhg}/${r.dia_mmhg} mmHg${pulse}`}
+      sub={sub}
+    />
+  );
+}
+
+function injuryRow(r) {
+  const side = r.side ? ` (${r.side})` : '';
+  const dates = [
+    r.onset_on ? `since ${toLogDate(r.onset_on)}` : null,
+    r.resolved_on ? `resolved ${toLogDate(r.resolved_on)}` : null,
+  ];
+  return (
+    <RecordRow
+      key={r.id}
+      label={`${r.region}${side}`}
+      value={r.status.toUpperCase()}
+      sub={[...dates, r.note].filter(Boolean).join(' · ')}
+    />
+  );
+}
+
+function HealthSections() {
+  const bp = useBpReadings();
+  const labs = useLabResults();
+  const injuries = useInjuries();
+  const lipid = groupLabDraws(labs.rows, 'lipid')[0];
+  const hormone = groupLabDraws(labs.rows, 'hormone')[0];
+  return (
+    <>
+      <HealthRecordCard
+        title="BLOOD PRESSURE"
+        accent={THEME.critical}
+        query={bp}
+        isEmpty={bp.rows.length === 0}
+        emptyText="No blood pressure readings yet."
+      >
+        {bp.rows.map(bpRow)}
+      </HealthRecordCard>
+
+      <HealthRecordCard
+        title="BLOODS · LIPID PANEL"
+        accent={THEME.accent}
+        query={labs}
+        isEmpty={!lipid}
+        emptyText="No lipid results yet."
+        footer={
+          <>
+            {LIPID_REF.map((m) => (
+              <div key={m.marker} style={rowStyle}>
+                <span style={{ fontSize: 11, color: m.color }}>{m.marker}</span>
+                <span style={{ fontSize: 10, color: THEME.muted }}>
+                  limit {m.target} {m.unit}
+                </span>
+              </div>
+            ))}
+            <div
+              style={{
+                fontSize: 10,
+                color: THEME.muted,
+                lineHeight: 1.6,
+                marginTop: 10,
+              }}
+            >
+              Decision limits:{' '}
+              {LIPID_SOURCES.map((s, i) => (
+                <span key={s.url}>
+                  {i > 0 && ', '}
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: THEME.muted }}
+                  >
+                    {s.name}
+                  </a>
+                </span>
+              ))}
+            </div>
+          </>
+        }
+      >
+        {lipid && <LatestDraw draw={lipid} />}
+      </HealthRecordCard>
+
+      <HealthRecordCard
+        title="HORMONE PANEL"
+        accent={THEME.accentAlt}
+        query={labs}
+        isEmpty={!hormone}
+        emptyText="No hormone results yet."
+      >
+        {hormone && <LatestDraw draw={hormone} />}
+      </HealthRecordCard>
+
+      <HealthRecordCard
+        title="INJURY WATCH"
+        accent={THEME.warning}
+        query={injuries}
+        isEmpty={injuries.rows.length === 0}
+        emptyText="No injuries logged yet."
+      >
+        {orderInjuries(injuries.rows).map(injuryRow)}
+      </HealthRecordCard>
+    </>
   );
 }
 
 // ── RECOVERY VIEW — HRV/RHR/sleep readiness + trends ──────────
-// Daily readiness composite, vitals trend charts, and placeholder panels for
-// health records (their data arrives with a later DB slice). Vitals come from
+// Daily readiness composite and vitals trend charts, then the health-record
+// cards (bp_readings, lab_results, injuries) read from the DB. The health cards
+// sit outside the vitals gate: a day with no vitals still shows them. Vitals come from
 // useVitals — they used to come from the static `recoveryLog` constant, so this
 // screen showed June numbers while mobile showed today's. Baselines are the
 // rolling personal ones, not two constants hand-set in June.
@@ -346,143 +511,10 @@ export default function RecoveryView({ isWide }) {
                 fatigue. HRV trend builds as more nights are logged.
               </div>
             </div>
-
-            {/* Blood Pressure */}
-            <div
-              style={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: '14px 16px',
-                marginTop: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: THEME.critical,
-                  marginBottom: 4,
-                }}
-              >
-                BLOOD PRESSURE
-              </div>
-              <EmptyPanel>No blood pressure readings yet.</EmptyPanel>
-            </div>
-
-            {/* Bloods / Cholesterol */}
-            <div
-              style={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: '14px 16px',
-                marginTop: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: THEME.accent,
-                  marginBottom: 4,
-                }}
-              >
-                BLOODS · LIPID PANEL
-              </div>
-              <EmptyPanel>No lipid results yet.</EmptyPanel>
-              {LIPID_REF.map((m) => (
-                <div
-                  key={m.marker}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                    padding: '7px 0',
-                    borderBottom: `1px solid ${THEME.divider}`,
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: m.color }}>
-                    {m.marker}
-                  </span>
-                  <span style={{ fontSize: 10, color: THEME.muted }}>
-                    limit {m.target} {m.unit}
-                  </span>
-                </div>
-              ))}
-              <div
-                style={{
-                  fontSize: 10,
-                  color: THEME.muted,
-                  lineHeight: 1.6,
-                  marginTop: 10,
-                }}
-              >
-                Decision limits:{' '}
-                {LIPID_SOURCES.map((s, i) => (
-                  <span key={s.url}>
-                    {i > 0 && ', '}
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: THEME.muted }}
-                    >
-                      {s.name}
-                    </a>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Hormone panel */}
-            <div
-              style={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: '14px 16px',
-                marginTop: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: THEME.accentAlt,
-                  marginBottom: 4,
-                }}
-              >
-                HORMONE PANEL
-              </div>
-              <EmptyPanel>No hormone results yet.</EmptyPanel>
-            </div>
-
-            {/* Injury Watch */}
-            <div
-              style={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                padding: '14px 16px',
-                marginTop: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: THEME.warning,
-                  marginBottom: 4,
-                }}
-              >
-                INJURY WATCH
-              </div>
-              <EmptyPanel>No injuries logged yet.</EmptyPanel>
-            </div>
           </>
         );
       })()}
+      <HealthSections />
     </>
   );
 }

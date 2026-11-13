@@ -10,6 +10,8 @@
 // column — so every message shown to Scott is composed HERE from the bounded
 // `last_error_code` enum. Never expect prose from the server.
 
+import { clockTime } from './dateFormat.js';
+
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 const STALE_AFTER_MS = 48 * HOUR_MS;
@@ -57,13 +59,6 @@ function relative(thenMs, nowMs) {
   if (delta < DAY_MS)
     return `${plural(Math.floor(delta / HOUR_MS), 'hour')} ago`;
   return `${plural(Math.floor(delta / DAY_MS), 'day')} ago`;
-}
-
-// Local wall-clock HH:MM. toLocaleTimeString would drag the runner's locale
-// (and a 12-hour clock) into the assertion.
-function clockTime(ms) {
-  const d = new Date(ms);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 // A null row means NEVER CONNECTED, not an error. A failed read is the hook's
