@@ -2,6 +2,7 @@ import { THEME } from '../../constants/theme.js';
 import { splashCss } from '../../utils/splashCss.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { FONT } from '../../constants/type.js';
+import { brandLine } from '../../utils/brandLine.js';
 
 const CSS = splashCss(THEME);
 
@@ -9,6 +10,7 @@ const MARK_PATH = 'M30 88 C 44 88, 46 40, 62 40 C 78 40, 80 88, 94 88';
 
 export default function SplashScreen() {
   const reduced = usePrefersReducedMotion();
+  const line = brandLine(document.documentElement.lang);
   return (
     <div
       className={reduced ? 'siq-splash siq-splash--still' : 'siq-splash'}
@@ -74,8 +76,9 @@ export default function SplashScreen() {
           >
             BIKE
           </span>
-          <span className="siq-splash__tagline" lang="es">
-            Entrena con cabeza
+          <span className="siq-splash__tagline" lang={line.lang}>
+            {line.lead}{' '}
+            <span className="siq-splash__tagline-head">{line.head}</span>
           </span>
         </div>
       </div>

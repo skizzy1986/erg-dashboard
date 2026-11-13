@@ -80,8 +80,11 @@ beforeEach(() => {
   mocks.captureError = vi.fn();
 });
 
+const pageLang = document.documentElement.lang;
+
 afterEach(() => {
   vi.useRealTimers();
+  document.documentElement.lang = pageLang;
 });
 
 describe('AuthGate boot behaviour', () => {
@@ -147,57 +150,58 @@ describe('AuthGate boot behaviour', () => {
     expect(splashes()).toBe(0);
   });
 
-  it('shows the Spanish brand tagline under SPLITIQ without changing the document language', async () => {
-    const before = document.documentElement.lang;
+  const LOCALES = [
+    ['', 'Train Smarter', 'en', 'Smarter'],
+    ['es', 'Entrena con cabeza', 'es', 'cabeza'],
+  ];
+  // Split across a lead and a head span, so match the whole line's text.
+  const loginLine = (text) =>
+    screen.getByText(
+      (_, el) => el.tagName === 'DIV' && el.textContent === text
+    );
+  const toLogin = async () => {
     const d = deferred();
     mocks.getSession = d.promise;
-
-    render(<AuthGate />);
+    const utils = render(<AuthGate />);
     await act(async () => {
       d.reject(new Error('network'));
     });
+    return utils;
+  };
 
-    const tagline = screen.getByText('Entrena con cabeza', { exact: true });
-    expect(tagline).toHaveAttribute('lang', 'es');
-    expect(screen.getByText('Sign in to continue')).toBeTruthy();
-    expect(document.documentElement.lang).toBe(before);
-  });
+  it.each(LOCALES)(
+    'shows the brand line for page lang %j between SPLITIQ and the sign-in prompt',
+    async (pageLang, text, lang, head) => {
+      document.documentElement.lang = pageLang;
+      const { container } = await toLogin();
 
-  it('places the tagline between SPLITIQ and the sign-in prompt, as the only lang-marked element', async () => {
-    const d = deferred();
-    mocks.getSession = d.promise;
+      const line = loginLine(text);
+      expect(line).toHaveAttribute('lang', lang);
+      expect(line.querySelector('span')).toHaveTextContent(
+        new RegExp(`^${head}$`)
+      );
+      expect(document.documentElement.lang).toBe(pageLang);
 
-    const { container } = render(<AuthGate />);
-    await act(async () => {
-      d.reject(new Error('network'));
+      const brand = screen.getByText('SPLITIQ');
+      const prompt = screen.getByText('Sign in to continue');
+      const FOLLOWING = document.DOCUMENT_POSITION_FOLLOWING;
+      expect(brand.compareDocumentPosition(line) & FOLLOWING).toBeTruthy();
+      expect(line.compareDocumentPosition(prompt) & FOLLOWING).toBeTruthy();
+
+      const marked = container.querySelectorAll('[lang]');
+      expect(marked).toHaveLength(1);
+      expect(marked[0]).toBe(line);
+    }
+  );
+
+  it("styles the login line in the wordmark's two faces", async () => {
+    await toLogin();
+    const line = loginLine('Train Smarter');
+    expect(line).toHaveStyle({
+      fontSize: `${TYPE.body.size}px`,
+      color: THEME.text,
     });
-
-    const brand = screen.getByText('SPLITIQ');
-    const tagline = screen.getByText('Entrena con cabeza');
-    const prompt = screen.getByText('Sign in to continue');
-    const FOLLOWING = document.DOCUMENT_POSITION_FOLLOWING;
-    expect(brand.compareDocumentPosition(tagline) & FOLLOWING).toBeTruthy();
-    expect(tagline.compareDocumentPosition(prompt) & FOLLOWING).toBeTruthy();
-
-    const marked = container.querySelectorAll('[lang]');
-    expect(marked).toHaveLength(1);
-    expect(marked[0]).toHaveAttribute('lang', 'es');
-  });
-
-  it('styles the login tagline on the caption rank in the subtle text colour', async () => {
-    const d = deferred();
-    mocks.getSession = d.promise;
-
-    render(<AuthGate />);
-    await act(async () => {
-      d.reject(new Error('network'));
-    });
-
-    const tagline = screen.getByText('Entrena con cabeza');
-    expect(tagline).toHaveStyle({
-      fontSize: `${TYPE.caption.size}px`,
-      color: THEME.textSubtle,
-    });
+    expect(line.querySelector('span')).toHaveStyle({ color: THEME.accent });
   });
 
   it('plays the splash on desktop and clears it at the floor, as on mobile', async () => {
@@ -325,6 +329,7 @@ describe('AuthGate boot behaviour', () => {
 
   it('signs out through the floating button once authed', async () => {
     mocks.isMobile = false;
+    mocks.dataReady = true;
     const d = deferred();
     mocks.getSession = d.promise;
 
@@ -332,9 +337,30 @@ describe('AuthGate boot behaviour', () => {
     await act(async () => {
       d.resolve({ data: { session: SESSION } });
     });
+    advance(SPLASH_MIN_MS);
 
     fireEvent.click(screen.getByTitle('Sign out'));
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  // The splash covers the page on desktop too, so a button rendered under it
+  // would still be reachable by Tab while invisible.
+  it('holds the desktop sign-out back until the splash has cleared', async () => {
+    mocks.isMobile = false;
+    mocks.dataReady = true;
+    const d = deferred();
+    mocks.getSession = d.promise;
+
+    render(<AuthGate />);
+    await act(async () => {
+      d.resolve({ data: { session: SESSION } });
+    });
+    expect(splashes()).toBe(1);
+    expect(screen.queryByTitle('Sign out')).toBeNull();
+
+    advance(SPLASH_MIN_MS);
+    expect(splashes()).toBe(0);
+    expect(screen.getByTitle('Sign out')).toBeTruthy();
   });
 
   it('has no floating sign-out on mobile, where Settings carries it', async () => {

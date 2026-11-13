@@ -75,7 +75,7 @@ async function openAuthed(page, context) {
   // no splash YET and the count-0 check below would pass before it mounts —
   // the baseline then captures the splash. Let the shell's chunks land first.
   await page.waitForLoadState('networkidle');
-  // The mobile splash overlays the tab tree, and toBeVisible() ignores
+  // The splash overlays the tab tree, and toBeVisible() ignores
   // occlusion, so every mobile baseline would capture the splash instead.
   // The timeout must beat the default 5000ms — that is exactly the splash
   // ceiling, so a default wait races it.

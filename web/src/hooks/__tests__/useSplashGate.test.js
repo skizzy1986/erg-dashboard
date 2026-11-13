@@ -100,7 +100,7 @@ describe('useSplashGate', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('arms nothing on desktop', () => {
+  it('arms nothing when disabled', () => {
     const { result } = renderHook((props) => useSplashGate(props), {
       initialProps: { enabled: false, authResolved: true, dataExpected: true },
     });

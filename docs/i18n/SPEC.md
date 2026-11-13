@@ -348,7 +348,7 @@ Not display: `StrengthLogger.jsx:167` (`en-CA`) is an ISO generator and is not t
 - Supabase errors are mapped on `error.code`. `AuthError.code` is verified (Context7 `/supabase/supabase-js`, `auth-js/src/lib/errors.ts` and `error-codes.ts`): `invalid_credentials`, `email_not_confirmed`, `over_request_rate_limit`, `user_banned`, `request_timeout`, and no-code (network).
 - **In English, `error.message` is shown exactly as today** (`AuthGate.jsx:40`, byte-identical). In Spanish, a mapped message; for unknown codes, a generic "No pudimos iniciar sesión. Inténtalo de nuevo."
 - **There is no sign-up flow in the code.** I grepped `signUp`/"Sign up" and found nothing, so the story's "sign-up" has nothing to translate.
-- **Brand tagline "Entrena con cabeza"** (Login, below SPLITIQ; splash on every device, below the wordmark) is a brand line, Spanish for every locale, marked `lang="es"`. PR-1 must not blindly extract it as an English source string. Whether an English locale shows a variant ("Train smart") is PR-1's decision once the switch exists.
+- **Brand line** (Login, below SPLITIQ; splash, below the wordmark) is localised through `BRAND_LINE` (`web/src/constants/brandLine.js`): en "Train Smarter", es "Entrena con cabeza", each with its own `lang` written on the line. It is a brand line with the wordmark's two-face treatment (`lead` in Archivo, `head` in Plex Mono accent), so PR-1 should keep it as a designed two-part string, not a flat catalogue message, and wire `brandLine()` (`web/src/utils/brandLine.js`, today fed `document.documentElement.lang`) to the real locale source. Until PR-1 the page is always `lang="en"`, so every user sees "Train Smarter".
 
 ### 9. Reviewer artefact
 

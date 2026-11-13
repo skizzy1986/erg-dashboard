@@ -15,9 +15,25 @@ function stubReducedMotion() {
   }));
 }
 
+const pageLang = document.documentElement.lang;
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.documentElement.lang = pageLang;
 });
+
+const LOCALES = [
+  ['', 'Train Smarter', 'en', 'Smarter'],
+  ['es', 'Entrena con cabeza', 'es', 'cabeza'],
+];
+
+// The line is split across spans (lead + head), so match on the whole line's
+// textContent rather than a single text node.
+const brandLineEl = (text) =>
+  screen.getByText(
+    (_, el) =>
+      el.classList.contains('siq-splash__tagline') && el.textContent === text
+  );
 
 describe('SplashScreen', () => {
   it('renders the fixed brand lockup and caption', () => {
@@ -27,33 +43,31 @@ describe('SplashScreen', () => {
     expect(screen.getByText(/Split/)).toBeInTheDocument();
   });
 
-  it('shows the Spanish brand tagline, marked lang="es"', () => {
-    render(<SplashScreen />);
-    const tagline = screen.getByText('Entrena con cabeza', { exact: true });
-    expect(tagline).toHaveAttribute('lang', 'es');
-  });
+  it.each(LOCALES)(
+    'shows the brand line for page lang %j, marked with its own lang',
+    (pageLangValue, text, lang, head) => {
+      document.documentElement.lang = pageLangValue;
+      const { container } = render(<SplashScreen />);
+      const line = brandLineEl(text);
+      expect(line).toHaveAttribute('lang', lang);
+      expect(line.querySelector('.siq-splash__tagline-head')).toHaveTextContent(
+        new RegExp(`^${head}$`)
+      );
+      const marked = container.firstChild.querySelectorAll('[lang]');
+      expect(marked).toHaveLength(1);
+      expect(marked[0]).toBe(line);
+    }
+  );
 
-  it('puts the tagline after the wordmark, as the only lang-marked element', () => {
+  it('cycles ERG, STRENGTH, BIKE, hidden from assistive tech, after the wordmark and before the line', () => {
     const { container } = render(<SplashScreen />);
-    const word = container.querySelector('.siq-splash__word');
-    const tagline = screen.getByText('Entrena con cabeza');
-    expect(
-      word.compareDocumentPosition(tagline) &
-        document.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    const marked = container.firstChild.querySelectorAll('[lang]');
-    expect(marked).toHaveLength(1);
-    expect(marked[0]).toBe(tagline);
-  });
-
-  it('cycles ERG, STRENGTH, BIKE, hidden from assistive tech, before the tagline', () => {
-    const { container } = render(<SplashScreen />);
+    const wordmark = container.querySelector('.siq-splash__word');
     const words = ['ERG', 'STRENGTH', 'BIKE'].map((w) => screen.getByText(w));
-    const tagline = screen.getByText('Entrena con cabeza');
+    const tagline = brandLineEl('Train Smarter');
     for (const word of words) {
       expect(word).toHaveAttribute('aria-hidden', 'true');
     }
-    const order = [...words, tagline];
+    const order = [wordmark, ...words, tagline];
     for (let i = 1; i < order.length; i++) {
       expect(
         order[i - 1].compareDocumentPosition(order[i]) &
@@ -83,7 +97,7 @@ describe('SplashScreen', () => {
     expect(root).toHaveClass('siq-splash--still');
     expect(screen.getByText('IQ')).toBeInTheDocument();
     expect(screen.getByText('SYNCING TRAINING LOG')).toBeInTheDocument();
-    expect(screen.getByText('Entrena con cabeza')).toBeInTheDocument();
+    expect(brandLineEl('Train Smarter')).toBeInTheDocument();
   });
 
   it('injects exactly one stylesheet', () => {

@@ -44,12 +44,21 @@ test.describe('dashboard smoke', () => {
     page.on('pageerror', (err) => consoleErrors.push(String(err)));
 
     await installAppFixtures(context);
+    await page.goto('/');
+    // The splash now plays on desktop too and overlays the nav for up to its
+    // 5000ms ceiling. toBeVisible() ignores occlusion and the default 5000ms
+    // wait races that ceiling, so wait it out the way visual.spec.js does —
+    // after networkidle, since AuthGate is lazy and a count-0 check made
+    // before it mounts would pass at once.
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('.siq-splash')).toHaveCount(0, {
+      timeout: 10_000,
+    });
   });
 
   test('app gets past the auth gate and shows the dashboard nav', async ({
     page,
   }) => {
-    await page.goto('/');
     // The login screen would show a SIGN IN button; the dashboard shows the nav.
     await expect(
       page.getByRole('button', { name: NAV_LABEL('overview'), exact: true })
@@ -59,8 +68,6 @@ test.describe('dashboard smoke', () => {
 
   for (const tab of TABS) {
     test(`tab "${tab}" mounts without error`, async ({ page }) => {
-      await page.goto('/');
-
       const navButton = page.getByRole('button', {
         name: NAV_LABEL(tab),
         exact: true,

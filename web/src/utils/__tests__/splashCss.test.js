@@ -130,53 +130,104 @@ describe('splashCss', () => {
     }
   });
 
-  it('sets the tagline on the caption type rank', () => {
-    const css = splashCss(THEME);
-    const start = css.indexOf('.siq-splash__tagline {');
-    expect(start).toBeGreaterThan(-1);
-    const block = css.slice(start, css.indexOf('}', start));
-    expect(block).toContain(`font-size: ${TYPE.caption.size}px`);
-    expect(block).toContain(`font-weight: ${TYPE.caption.weight}`);
-  });
-
   const ruleBlock = (css, selector) => {
     const start = css.indexOf(`${selector} {`);
     expect(start, `no ${selector} rule`).toBeGreaterThan(-1);
     return css.slice(start, css.indexOf('}', start));
   };
 
-  it('eases both new entrances on the same curve as the wordmark', () => {
+  // Every declaration block whose selector LIST names `selector`, so a rule
+  // shared by several selectors (`a,\nb { … }`) still counts for each.
+  const rulesFor = (css, selector) =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, list]) =>
+        list
+          .split(',')
+          .map((s) => s.trim())
+          .includes(selector)
+      )
+      .map(([, , body]) => body)
+      .join('\n');
+
+  const reducedMotionBlock = (css) => {
+    const start = css.indexOf('@media (prefers-reduced-motion: reduce)');
+    expect(start).toBeGreaterThan(-1);
+    return css.slice(start, css.indexOf('@supports', start));
+  };
+
+  it('sets the tagline on the title rank and the words on the label rank', () => {
     const css = splashCss(THEME);
-    for (const selector of ['.siq-splash__cycle', '.siq-splash__tagline']) {
+    const tagline = ruleBlock(css, '.siq-splash__tagline');
+    expect(tagline).toContain(`font-size: ${TYPE.title.size}px`);
+    expect(tagline).toContain(`letter-spacing: ${TYPE.title.letterSpacing}px`);
+    expect(tagline).toContain(`line-height: ${TYPE.title.lineHeight}`);
+    const cycle = ruleBlock(css, '.siq-splash__cycle');
+    expect(cycle).toContain(`font-size: ${TYPE.label.size}px`);
+    expect(cycle).toContain(`font-weight: ${TYPE.label.weight}`);
+    expect(cycle).toContain(`letter-spacing: ${TYPE.micro.letterSpacing}px`);
+    expect(cycle).toContain('opacity: 0');
+  });
+
+  it('eases every new entrance on the same curve as the wordmark', () => {
+    const css = splashCss(THEME);
+    for (const selector of [
+      '.siq-splash__cycle',
+      '.siq-splash__tagline',
+      '.siq-splash__tagline-head',
+    ]) {
       expect(ruleBlock(css, selector)).toContain('cubic-bezier(.2, .8, .2, 1)');
     }
   });
 
-  it('reads the tagline colour from textSubtle', () => {
-    const css = splashCss({ ...THEME, textSubtle: '#030303' });
-    expect(ruleBlock(css, '.siq-splash__tagline')).toContain('color: #030303');
+  it('reads the tagline colour from text', () => {
+    const css = splashCss({ ...THEME, text: '#020202' });
+    expect(ruleBlock(css, '.siq-splash__tagline')).toContain('color: #020202');
   });
 
+  it("sets the head word in the wordmark's mono accent, as a transformable box", () => {
+    const head = ruleBlock(
+      splashCss({ ...THEME, accent: '#ff0000' }),
+      '.siq-splash__tagline-head'
+    );
+    expect(head).toContain('color: #ff0000');
+    expect(head).toContain('font-family: var(--font-mono)');
+    expect(head).toContain('display: inline-block');
+  });
+
+  const durationAndDelay = (css, selector, keyframe) =>
+    ruleBlock(css, selector)
+      .match(
+        new RegExp(`${keyframe} (\\d+)ms cubic-bezier\\([^)]*\\)(?: (\\d+)ms)?`)
+      )
+      .slice(1)
+      .map(Number);
   const delayOf = (css, selector) =>
     Number(ruleBlock(css, selector).match(/animation-delay: (\d+)ms/)[1]);
-  const taglineDelay = (css) =>
-    Number(
-      ruleBlock(css, '.siq-splash__tagline').match(
-        /siq-splash-tagline \d+ms cubic-bezier\([^)]*\) (\d+)ms/
-      )[1]
-    );
 
-  it('staggers the three words, then resolves into the tagline', () => {
+  it('staggers the three words, then resolves into the tagline and its head', () => {
     const css = splashCss(THEME);
     const delays = [1, 2, 3].map((n) =>
       delayOf(css, `.siq-splash__cycle--${n}`)
     );
     expect(delays[1]).toBeGreaterThan(delays[0]);
     expect(delays[2]).toBeGreaterThan(delays[1]);
-    expect(ruleBlock(css, '.siq-splash__cycle')).toContain(
-      'siq-splash-cycle 480ms'
+    const [wordMs] = durationAndDelay(
+      css,
+      '.siq-splash__cycle',
+      'siq-splash-cycle'
     );
-    expect(taglineDelay(css)).toBeGreaterThanOrEqual(delays[2] + 480 - 80);
+    const [, taglineDelay] = durationAndDelay(
+      css,
+      '.siq-splash__tagline',
+      'siq-splash-tagline'
+    );
+    const [, headDelay] = durationAndDelay(
+      css,
+      '.siq-splash__tagline-head',
+      'siq-splash-tagline'
+    );
+    expect(taglineDelay).toBeGreaterThanOrEqual(delays[2] + wordMs - 80);
+    expect(headDelay).toBeGreaterThan(taglineDelay);
   });
 
   it('fades each word out at the end of its keyframe', () => {
@@ -186,32 +237,33 @@ describe('splashCss', () => {
     expect(frames).toMatch(/100% \{ opacity: 0;/);
   });
 
-  it('sets the words on the micro type rank, hidden at rest', () => {
-    const block = ruleBlock(splashCss(THEME), '.siq-splash__cycle');
-    expect(block).toContain(`font-size: ${TYPE.micro.size}px`);
-    expect(block).toContain(`font-weight: ${TYPE.micro.weight}`);
-    expect(block).toContain(`letter-spacing: ${TYPE.micro.letterSpacing}px`);
-    expect(block).toContain('opacity: 0');
-  });
-
-  it('stills to the tagline alone: words hidden, tagline shown', () => {
+  it('stills to the full line alone: words hidden, tagline and head shown', () => {
     const css = splashCss(THEME);
-    const still = css.slice(css.indexOf('.siq-splash--still'));
-    expect(ruleBlock(still, '.siq-splash--still .siq-splash__cycle')).toContain(
+    const still = css.slice(
+      css.indexOf('.siq-splash--still'),
+      css.indexOf('@media (prefers-reduced-motion: reduce)')
+    );
+    expect(rulesFor(still, '.siq-splash--still .siq-splash__cycle')).toContain(
       'opacity: 0'
     );
-    const tag = ruleBlock(still, '.siq-splash--still .siq-splash__tagline');
-    expect(tag).toContain('opacity: 1');
-    expect(tag).toContain('transform: none');
+    for (const cls of ['siq-splash__tagline', 'siq-splash__tagline-head']) {
+      const rules = rulesFor(still, `.siq-splash--still .${cls}`);
+      expect(rules).toContain('animation: none !important');
+      expect(rules).toContain('opacity: 1');
+      expect(rules).toContain('transform: none');
+    }
   });
 
   it('shows the tagline at rest under prefers-reduced-motion', () => {
-    const css = splashCss(THEME);
-    const block = css.slice(
-      css.indexOf('@media (prefers-reduced-motion: reduce)')
+    const block = reducedMotionBlock(splashCss(THEME));
+    expect(rulesFor(block, '.siq-splash .siq-splash__cycle')).toContain(
+      'opacity: 0'
     );
-    expect(block).toContain('.siq-splash__tagline');
-    expect(block).toContain('opacity: 1');
+    for (const cls of ['siq-splash__tagline', 'siq-splash__tagline-head']) {
+      const rules = rulesFor(block, `.siq-splash .${cls}`);
+      expect(rules).toContain('animation: none !important');
+      expect(rules).toContain('opacity: 1');
+    }
   });
 
   it('leaves no trace of the retired discipline line', () => {

@@ -9,6 +9,7 @@ import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
 import { FONT } from './constants/type.js';
 import { TYPE, SPACE } from './constants/tokens.js';
+import { brandLine } from './utils/brandLine.js';
 
 // A device renders one shell, never both. Statically importing the pair put
 // the desktop dashboard's thirteen tabs and the whole mobile app in the same
@@ -24,6 +25,7 @@ function Login() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const line = brandLine(document.documentElement.lang);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -96,16 +98,27 @@ function Login() {
           SPLITIQ
         </div>
         <div
-          lang="es"
+          lang={line.lang}
           style={{
-            fontSize: TYPE.caption.size,
-            fontWeight: TYPE.caption.weight,
-            lineHeight: TYPE.caption.lineHeight,
-            color: THEME.textSubtle,
+            fontSize: TYPE.body.size,
+            fontWeight: 600,
+            letterSpacing: TYPE.title.letterSpacing,
+            lineHeight: TYPE.title.lineHeight,
+            color: THEME.text,
             marginBottom: SPACE.sm,
           }}
         >
-          Entrena con cabeza
+          {line.lead}{' '}
+          <span
+            style={{
+              fontFamily: FONT.mono,
+              fontWeight: 700,
+              letterSpacing: 0,
+              color: THEME.accent,
+            }}
+          >
+            {line.head}
+          </span>
         </div>
         <div style={{ fontSize: 11, color: THEME.muted, marginBottom: 22 }}>
           Sign in to continue
@@ -295,8 +308,9 @@ export default function AuthGate() {
     body = (
       <>
         {/* On a phone the floating button sat over Today's settings gear, so
-            sign-out lives on the mobile Settings screen instead. */}
-        {!isMobile && <SignOutButton />}
+            sign-out lives on the mobile Settings screen instead. Held back
+            while the splash covers the page, or Tab reaches a hidden button. */}
+        {!isMobile && !showSplash && <SignOutButton />}
         {/* The shell chunk is fetched here rather than at first paint. The
             splash is already covering this window; once it has dismissed at
             its ceiling, fall back to the same pane the unresolved branch uses, so a slow
