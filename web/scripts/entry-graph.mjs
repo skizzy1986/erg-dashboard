@@ -156,14 +156,21 @@ const base = (f) => (f.startsWith('assets/') ? f.slice('assets/'.length) : f);
 
 /**
  * `viaKey`'s own files must be on none of the boot graphs' first paints.
+ * `what` names the chunk in the message and `fix` says what to do; both
+ * default to the 3D chunk, the first thing this guarded.
  * @returns {string[]} problems; empty when the invariant holds
  */
-export function firstPaintLeaks(manifest, viaKey, bootKeys) {
+export function firstPaintLeaks(
+  manifest,
+  viaKey,
+  bootKeys,
+  { what = 'the 3D chunk', fix = 'Import it only through loadScene.js.' } = {}
+) {
   const only = new Set(onlyReachableVia(manifest, viaKey).map(base));
   const problems = [];
   if (!only.size) {
     problems.push(
-      `Nothing is reachable only through ${viaKey} — the 3D chunk was merged into something else, or renamed.`
+      `Nothing is reachable only through ${viaKey} — ${what} was merged into something else, or renamed.`
     );
   }
   for (const boot of bootKeys) {
@@ -172,7 +179,7 @@ export function firstPaintLeaks(manifest, viaKey, bootKeys) {
       .filter((f) => only.has(f));
     if (leaked.length) {
       problems.push(
-        `The 3D chunk is on ${boot}'s first paint: ${leaked.join(', ')}. Import it only through loadScene.js.`
+        `${what[0].toUpperCase()}${what.slice(1)} is on ${boot}'s first paint: ${leaked.join(', ')}. ${fix}`
       );
     }
   }
@@ -203,6 +210,47 @@ export function precachedSquat(urls) {
         `sw.js precaches squat files: ${hits.join(', ')}. They belong in globIgnores.`,
       ]
     : [];
+}
+
+/** No translated catalog may be in the precache list (i18nChunks.mjs). */
+export function precachedI18n(urls) {
+  const hits = urls.filter((u) => /(^|\/)assets\/i18n-/.test(u));
+  return hits.length
+    ? [
+        `sw.js precaches translated catalogs: ${hits.join(', ')}. Every English install would download them; they belong in globIgnores.`,
+      ]
+    : [];
+}
+
+/**
+ * A translated dashboard catalog's own files: all named i18n-*, and none of
+ * them reachable from /squat (one product never loads the other's words).
+ * @returns {string[]} problems; empty when the invariant holds
+ */
+export function i18nCatalogProblems(manifest, catalogKey, squatKey, named) {
+  const files = onlyReachableVia(manifest, catalogKey, 'Catalog')
+    .map(base)
+    .filter((f) => f.endsWith('.js'));
+  const problems = [];
+  const unnamed = files.filter((f) => !named.test(f));
+  if (!files.length || unnamed.length) {
+    problems.push(
+      `${catalogKey} did not build to i18n-* JS only (got: ${files.join(', ') || 'nothing'}). Fix scripts/i18nChunks.mjs — Workbox selects by the prefix.`
+    );
+  }
+  // /squat statically imports the shared entry, which dynamically imports the
+  // dashboard; walking through the entry would find everything. Stop there.
+  const entries = Object.keys(manifest).filter((key) => manifest[key]?.isEntry);
+  const fromSquat = new Set(
+    [...reachableFiles(manifest, [squatKey], { stopAt: entries })].map(base)
+  );
+  const shared = files.filter((f) => fromSquat.has(f));
+  if (shared.length) {
+    problems.push(
+      `/squat can reach the dashboard catalog: ${shared.join(', ')}.`
+    );
+  }
+  return problems;
 }
 
 /** The service worker must still serve index.html for navigations. */
