@@ -346,7 +346,7 @@ asking for: the split measured here cut the entry 395.4 → 134.7 KB (−66%) wh
 26.3 KB to the total. That bind was not theoretical: main sat at 399.2 KB of its
 400 KB total budget — 0.8 KB spare — so the next commit of any size would have failed. Judge a PR on the **entry** row.
 
-Both shells and all fourteen desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
+Both shells and all eleven desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
 recharts (90.7 KB, shared by seven files) is out of first paint entirely. What remains
 in the entry is React, react-query and `@supabase/supabase-js` — auth is needed before
 anything can render, so the client cannot be deferred. Note `createClient` pulls in
