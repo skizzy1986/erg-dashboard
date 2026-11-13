@@ -13,7 +13,8 @@
 >
 > Amended 2026-11-13 after the `VISION.md` amendment (#515): D13–D18, and a second track
 > for the log (L1–L3), tracked by epic
-> [#511](https://github.com/skizzy1986/erg-dashboard/issues/511).
+> [#511](https://github.com/skizzy1986/erg-dashboard/issues/511). D19 records an intention
+> to deepen the squat tool; it approves nothing.
 
 ## What SplitIQ is
 
@@ -135,6 +136,27 @@ upgrade, OpenSim-API muscle mechanics, load/tempo and grip controls, per-user
 anthropometry, a clothed body with x-ray mode (SMPL-X Body is CC BY 4.0 but has no
 muscles and carries a patent note).
 
+### Squat depth — intention recorded 2026-11-13 (D19), nothing approved
+
+Scott's intention: make the squat tool the best it can be before the product spreads
+wider. The UI is not polished to the standard he wants, and the candidates below are his.
+Nothing here is sized or approved. R44 runs first and its Gate 1 decides what is built and
+in what order; until then H1 and H2 stand as written.
+
+| # | Item | Size | Depends on |
+|---|---|---|---|
+| R44 | Squat deep dive: usability, usefulness and feature candidates for `/squat`. A design critique and accessibility review of the tool as shipped, a scan of what comparable tools do, and a ranked candidate list with the evidence for each. R1's walkthroughs are the only observed-user evidence and fold in when they exist. Ends at a Gate 1 packet | M | — (R1 feeds it) |
+
+| Candidate | What is already known | Needs first |
+|---|---|---|
+| UI polish pass | Scott's judgement is that it is well short of the standard he wants. No item above covers visual polish as such | R44 |
+| Variants: low-bar, front squat, sumo stance | The pipeline roadmap's item 6 already scopes low-bar, front squat and stance as presets (bar seat, grip, trunk solve, an optional femur-to-torso scale) with cited targets per variant, and R24 already holds low-bar. A second whole dataset would exceed the 2.3 MB data cap (R20) | R12, R19, R20 |
+| Female model | The kinetics use male segment parameters (de Leva 1996, 85 kg) and the geometry is one BodyParts3D body. It needs a geometry source with muscles under a licence compatible with CC BY-SA, female segment parameters, and reference ranges re-checked for the new body. Per-user anthropometry is parked above | A research spike |
+| Skinned body, and avatars as brand representatives | A skin surface over the muscle model. SMPL-based bodies are ruled out on licence, and SMPL-X Body is parked above (no muscles, a patent note). Anything derived from BodyParts3D carries CC BY-SA, so anyone may reuse an avatar built on it; a brand-exclusive avatar needs its own mesh source | R2, a research spike |
+
+This deepens H1 and H2. Coach access is built after H2 (D14), so every item approved here
+moves L3 further out. R44's Gate 1 is where that trade is made.
+
 ## The log track (added 2026-11-13, D13–D18)
 
 The horizons above sequence the anatomy half. This track sequences the log half that
@@ -250,5 +272,6 @@ figures in the body of every such PR (R7, #436).
 | D16 | 2026-11-13: The log track (L1–L3) is on this roadmap and takes turns with H1 in the one roadmap PR slot. D6's two-open-PR fence holds |
 | D17 | 2026-11-13: Privacy read starts with a `/research` note from primary sources (R33). Scott decides after it whether a professional opinion is needed. No coach reads an athlete's row before then |
 | D18 | 2026-11-13: "Not building" narrowed to match `VISION.md`. One-athlete prescription, coaching-business features and team logging stay out; the generic planner and a coach's list of athletes are in. D4 is unchanged |
+| D19 | 2026-11-13: Intention recorded, nothing approved: a deeper pass on the squat tool (UI polish, variants, a female model, a skinned body and brand avatars). R44's deep dive runs first and its Gate 1 decides the build |
 
 A changed decision is a new row here with the date, not an edit to the old one.
