@@ -125,6 +125,7 @@ function fakeScene() {
       setPalette() {},
       setReducedMotion() {},
       setActivation: vi.fn(),
+      setFocus: vi.fn(),
       camera: {
         reset() {},
         preset() {},

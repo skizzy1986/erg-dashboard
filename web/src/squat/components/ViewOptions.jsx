@@ -3,6 +3,8 @@ import { SPACE } from '../../constants/tokens.js';
 import { microLabel, srOnly } from './ui.js';
 
 export const LAYERS_WAITING = 'Layer switches work once the 3D model is drawn.';
+export const LAYERS_UNAVAILABLE =
+  'Layer switches need the 3D model, which is not showing here.';
 
 // Body (the clothed figure) is a layer the scene already has, empty until a
 // mesh exists for it, so it is not offered yet.
@@ -17,17 +19,32 @@ export default function ViewOptions({
   heatmap = false,
   onHeatmap,
   disabled = false,
+  heatmapDisabled = disabled,
+  unavailable = false,
   compact = false,
 }) {
   // Not appended to LAYERS: that constant is the scene's meshes, and the
   // heatmap is a colouring mode over whichever of them are showing.
   const switches = [
-    ...LAYERS.map(([id, label]) => [id, label, !!layers[id], onLayer]),
-    ['heatmap', 'Activation heatmap', heatmap, (_id, on) => onHeatmap?.(on)],
+    ...LAYERS.map(([id, label]) => [
+      id,
+      label,
+      !!layers[id],
+      onLayer,
+      disabled,
+    ]),
+    // Its own gate: the heatmap also drives the strain readout, which needs
+    // only the rep data, so it works where the model cannot be drawn.
+    [
+      'heatmap',
+      'Activation heatmap',
+      heatmap,
+      (_id, on) => onHeatmap?.(on),
+      heatmapDisabled,
+    ],
   ];
   return (
     <fieldset
-      disabled={disabled}
       aria-describedby={disabled ? 'layers-waiting' : undefined}
       style={{
         margin: 0,
@@ -51,10 +68,10 @@ export default function ViewOptions({
       </legend>
       {disabled && (
         <span id="layers-waiting" style={srOnly}>
-          {LAYERS_WAITING}
+          {unavailable ? LAYERS_UNAVAILABLE : LAYERS_WAITING}
         </span>
       )}
-      {switches.map(([id, label, on, onChange]) => (
+      {switches.map(([id, label, on, onChange, off]) => (
         <label
           key={id}
           style={{
@@ -67,14 +84,15 @@ export default function ViewOptions({
             fontSize: 13,
             fontWeight: 600,
             color: THEME.text,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            opacity: disabled ? 0.5 : 1,
+            cursor: off ? 'not-allowed' : 'pointer',
+            opacity: off ? 0.5 : 1,
           }}
         >
           <input
             type="checkbox"
             role="switch"
             checked={on}
+            disabled={off}
             onChange={(e) => onChange(id, e.target.checked)}
             style={{
               // 24 px: the WCAG 2.5.8 floor axe checks the input itself

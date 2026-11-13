@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StageControls from '../components/StageControls.jsx';
+import { LAYERS_UNAVAILABLE } from '../components/ViewOptions.jsx';
 import { useAnatomyViewState } from '../hooks/useAnatomyViewState.js';
 
 const REP = JSON.parse(
@@ -231,14 +232,61 @@ describe('StageControls on a phone (criterion 19)', () => {
 });
 
 describe('StageControls without a 3D view (criterion 21)', () => {
-  it('keeps the time controls and drops the camera and layer groups', () => {
+  // Gate 2 amendment (2026-11-12): the Show group stays, so the heatmap
+  // switch can drive the strain readout; only its layer switches are gated.
+  it('keeps the time controls and Show, drops the camera, gates the layers', () => {
     render(<Harness wide sceneBlocked />);
     expect(screen.getByRole('slider', { name: 'Rep time' })).toBeEnabled();
     expect(
       screen.getByRole('group', { name: 'Jump to phase' })
     ).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'Camera controls' })).toBeNull();
-    expect(screen.queryByRole('group', { name: 'Show' })).toBeNull();
+    const show = screen.getByRole('group', { name: 'Show' });
+    expect(show).toHaveAccessibleDescription(LAYERS_UNAVAILABLE);
+    expect(
+      within(show).getByRole('switch', { name: 'Muscles' })
+    ).toBeDisabled();
+    expect(
+      within(show).getByRole('switch', { name: 'Skeleton' })
+    ).toBeDisabled();
+    expect(
+      within(show).getByRole('switch', { name: 'Activation heatmap' })
+    ).toBeEnabled();
+  });
+
+  it('drops the camera once the model has failed, and gates the layers', () => {
+    render(<Harness wide sceneFailed />);
+    expect(screen.queryByRole('group', { name: 'Camera controls' })).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Muscles' })).toBeDisabled();
+    expect(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    ).toBeEnabled();
+  });
+
+  it('puts the strain readout in the rail after Show, before the footer', () => {
+    render(
+      <Harness wide sceneBlocked strain={<p data-testid="strain">s</p>} />
+    );
+    const show = screen.getByRole('group', { name: 'Show' });
+    const strain = screen.getByTestId('strain');
+    expect(rail()).toContainElement(strain);
+    expect(show.compareDocumentPosition(strain) & FOLLOWING).toBeTruthy();
+    expect(
+      strain.compareDocumentPosition(
+        screen.getByRole('button', { name: 'Coaching guide' })
+      ) & FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('on a phone, puts the strain readout atop the bar, above the time', () => {
+    render(<Harness sceneBlocked strain={<p data-testid="strain">s</p>} />);
+    const strain = screen.getByTestId('strain');
+    expect(rail()).toContainElement(strain);
+    expect(
+      strain.compareDocumentPosition(
+        screen.getByRole('slider', { name: 'Rep time' })
+      ) & FOLLOWING
+    ).toBeTruthy();
   });
 
   it('puts the share slot straight after the time controls', () => {
@@ -256,19 +304,17 @@ describe('StageControls without a 3D view (criterion 21)', () => {
     ).toBeTruthy();
   });
 
-  it('on a phone, with Share, the groups are Rep and Share', async () => {
+  it('on a phone, with Share, the groups are Rep, Show and Share', async () => {
     const user = userEvent.setup();
     render(<Harness sceneBlocked share={<button>Copy link</button>} />);
     expect(tab('Rep')).toHaveAttribute('aria-expanded', 'true');
     expect(screen.queryByRole('button', { name: 'View' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Show' })).toBeNull();
+    await user.click(tab('Show'));
+    expect(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    ).toBeEnabled();
+    expect(screen.getByRole('switch', { name: 'Skeleton' })).toBeDisabled();
     await user.click(tab('Share'));
     expect(screen.getByRole('button', { name: 'Copy link' })).toBeVisible();
-  });
-
-  it('on a phone, a lone group needs no tabs and is simply shown', () => {
-    render(<Harness sceneBlocked />);
-    expect(screen.queryByRole('button', { name: 'Rep' })).toBeNull();
-    expect(screen.getByRole('group', { name: 'Jump to phase' })).toBeVisible();
   });
 });

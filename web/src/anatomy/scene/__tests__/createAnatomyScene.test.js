@@ -4,6 +4,7 @@ import { gunzipSync } from 'node:zlib';
 import { BufferGeometry, DirectionalLight } from 'three';
 import { createAnatomyScene } from '../createAnatomyScene.js';
 import {
+  emphasise,
   heatColours,
   muscleColours,
   scenePalette,
@@ -364,6 +365,89 @@ describe('setActivation on a built scene', () => {
       expect([...a]).toEqual([...darkAnatomy[i]])
     );
     expect(darkHeat.length).toBe(4);
+    ctl.dispose();
+  });
+
+  // PR B's strain focus rides the same write: setFocus(mask) must reach the
+  // colour attributes as emphasise() specifies, and an equal mask must not
+  // repaint. The regex pins in sceneParity.test.js stay as a secondary guard.
+  const maskFor = (n) =>
+    Uint8Array.from({ length: n }, (_, i) => +(i % 7 === 0));
+  const expectedFocus = ({ mid, tw, weights, mask, palette, style }) => {
+    const base = weights
+      ? heatColours(
+          manifest.meta.muscles,
+          weights,
+          palette.heat,
+          palette.tendon
+        )
+      : muscleColours(manifest.meta.muscles, palette, style.jitter);
+    return writeVertexColours(
+      new Float32Array(mid.length * 3),
+      mid,
+      tw,
+      emphasise(base, mask, {
+        dim: style.focusDim,
+        focusColour: weights ? null : palette.focus,
+      }),
+      palette.tendon,
+      weights ? style.tendonBlendHeat : style.tendonBlend
+    );
+  };
+  const assertFocus = (shot, weights, mask, label) => {
+    const palette = scenePalette('dark');
+    const style = sceneStyle('dark');
+    for (const set of SETS) {
+      expect([...shot[set.at]], `${set.name} ${label}`).toEqual([
+        ...expectedFocus({
+          mid: A(set.mid),
+          tw: A(set.tw),
+          weights,
+          mask,
+          palette,
+          style,
+        }),
+      ]);
+    }
+  };
+
+  it('setFocus(mask) changes the colours written; an equal mask does not repaint', () => {
+    const drive = frameDriver();
+    const setAttr = vi.spyOn(BufferGeometry.prototype, 'setAttribute');
+    const ctl = build(container);
+    const attrs = colourAttrs(setAttr);
+    drive();
+    const anatomy = snapshot(attrs);
+
+    const mask = maskFor(manifest.meta.muscles.length);
+    ctl.setFocus(mask);
+    drive();
+    const focused = snapshot(attrs);
+    focused.forEach((a, i) =>
+      expect([...a], `set ${i}`).not.toEqual([...anatomy[i]])
+    );
+    assertFocus(focused, null, mask, 'focus');
+
+    // A different array holding the same bytes: no repaint, no frame.
+    const versions = attrs.map((a) => a.version);
+    const renders = fake.renderers[0].render.mock.calls.length;
+    ctl.setFocus(Uint8Array.from(mask));
+    drive();
+    attrs.forEach((a, i) => expect(a.version, `set ${i}`).toBe(versions[i]));
+    expect(fake.renderers[0].render.mock.calls.length).toBe(renders);
+
+    // Under the heatmap the focus keeps its ramp colour; the rest are dimmed.
+    const w = weightsFor(manifest.meta.muscles.length);
+    ctl.setActivation(w);
+    drive();
+    assertFocus(snapshot(attrs), w, mask, 'heat + focus');
+
+    ctl.setActivation(null);
+    ctl.setFocus(null);
+    drive();
+    snapshot(attrs).forEach((a, i) =>
+      expect([...a], `set ${i}`).toEqual([...anatomy[i]])
+    );
     ctl.dispose();
   });
 });

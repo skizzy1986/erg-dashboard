@@ -1,9 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SquatApp, { PAGE_DESCRIPTION, PAGE_TITLE } from '../SquatApp.jsx';
 import { HEADER_HEIGHT } from '../components/SquatHeader.jsx';
+import { ACT_NOTE } from '../constants/activationBands.js';
 
 const mocks = vi.hoisted(() => ({ caps: null, workers: [] }));
 vi.mock('../hooks/useCapabilities.js', () => ({
@@ -345,4 +353,143 @@ describe('SquatApp', () => {
       );
     });
   });
+});
+
+// PR B (HERO_STAGE_SPEC.md): the strain readout, which needs only the rep
+// data, so it shows here while the 3D download is still pending.
+describe('strain readout (criteria 9, 12, 13, 14)', () => {
+  const readout = () =>
+    within(screen.getByTestId('strain-panel').querySelector('ol'))
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+
+  // jsdom has no matchMedia here, so this is the phone bar: the switch is
+  // behind its Show tab.
+  it('is off by default: no readout, no key, no caveat on the stage (criterion 13)', async () => {
+    const user = userEvent.setup();
+    render(<SquatApp />);
+    await user.click(screen.getByRole('button', { name: 'Show' }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('switch', { name: 'Activation heatmap' })
+      ).toBeEnabled()
+    );
+    expect(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    ).not.toBeChecked();
+    const stage = screen.getByRole('region', { name: '3D model' });
+    expect(screen.queryByTestId('strain-panel')).toBeNull();
+    expect(within(stage).queryByText('Activation key')).toBeNull();
+    expect(within(stage).queryByText(ACT_NOTE)).toBeNull();
+  });
+
+  it('heatmap on: three regions with their bands in text, and the key and caveat in the stage (criteria 9, 12)', async () => {
+    const user = userEvent.setup();
+    render(<SquatApp />);
+    await user.click(screen.getByRole('button', { name: 'Show' }));
+    const heat = screen.getByRole('switch', { name: 'Activation heatmap' });
+    await waitFor(() => expect(heat).toBeEnabled());
+    await user.click(heat);
+    const stage = screen.getByRole('region', { name: '3D model' });
+    const panel = within(stage).getByTestId('strain-panel');
+    expect(readout()).toHaveLength(3);
+    for (const line of readout()) {
+      expect(line).toMatch(/^[A-Z][^:]+: .+ \((Low|Moderate|High)\)$/);
+    }
+    expect(within(panel).getByText('Activation key')).toBeInTheDocument();
+    expect(within(panel).getByText(ACT_NOTE)).toBeInTheDocument();
+    // The legend has left the muscle section: one key, beside the model.
+    expect(screen.getAllByText('Activation key')).toHaveLength(1);
+    await user.click(heat);
+    expect(screen.queryByTestId('strain-panel')).toBeNull();
+  });
+
+  it('a step changes the list, reading the frame’s own side of the turn (criterion 14)', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/squat#t=2.18&heat');
+    render(<SquatApp />);
+    await waitFor(() =>
+      expect(screen.getByTestId('depth-readout')).toHaveTextContent(
+        /^2\.18 s · Bottom/
+      )
+    );
+    // Frame 109 is the last on the lowering side; 110 is the first on drive.
+    expect(screen.getByTestId('depth-readout')).toHaveTextContent('lowering');
+    const before = readout();
+    expect(before[1]).toMatch(/^Trunk and bracing: .+ \(Moderate\)$/);
+    await user.click(screen.getByRole('button', { name: 'Step forward' }));
+    expect(screen.getByTestId('depth-readout')).toHaveTextContent('drive');
+    const after = readout();
+    expect(after).not.toEqual(before);
+    expect(after[1]).toMatch(/^Trunk and bracing: .+ \(High\)$/);
+    expect(
+      screen.getByRole('region', { name: /^Working hardest now · Bottom$/ })
+    ).toBeInTheDocument();
+  });
+
+  // Criterion 23 at the app level: the polite line follows phases while the
+  // user plays the rep, never the per-frame readout. Fake timers from the
+  // start, so playback (setInterval on performance.now) is driven frame by
+  // frame and the run is deterministic.
+  it('playing, the status line changes at most once per phase, never per frame (criterion 23)', async () => {
+    vi.useFakeTimers();
+    try {
+      window.history.replaceState(null, '', '/squat#heat');
+      render(<SquatApp />);
+      await act(() => vi.advanceTimersByTimeAsync(100));
+      const status = () =>
+        within(screen.getByTestId('strain-panel')).getByRole('status')
+          .textContent;
+      const phase = () =>
+        screen
+          .getByTestId('strain-panel')
+          .querySelector('#strain-title')
+          .textContent.split(' · ')[1];
+      // Paused at load, it says the readout once.
+      expect(status()).toMatch(/^Setup and brace: /);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      const frames = [];
+      // Two frames per step: per-frame changes still show, at half the
+      // renders (this test runs under coverage in CI).
+      for (let i = 0; i < 95; i++) {
+        await act(() => vi.advanceTimersByTimeAsync(40));
+        frames.push({
+          phase: phase(),
+          list: readout().join('|'),
+          said: status(),
+        });
+      }
+      const changes = (key) =>
+        frames.filter((f, i) => i > 0 && f[key] !== frames[i - 1][key]);
+      const phases = new Set(frames.map((f) => f.phase));
+      const said = changes('said');
+      // It did narrate the rep...
+      expect(said.length).toBeGreaterThan(0);
+      // ...at most once per phase entered, and far less often than the
+      // readout itself changed.
+      expect(said.length).toBeLessThanOrEqual(phases.size);
+      expect(changes('list').length).toBeGreaterThan(said.length * 2);
+      // Each thing said names the phase on screen when it was said.
+      for (const f of said)
+        expect(f.said.startsWith(`${f.phase}: `)).toBe(true);
+      // Inside one phase, frames advance and the readout moves, yet the
+      // line holds.
+      const runs = [];
+      for (const f of frames) {
+        const run = runs.at(-1);
+        if (run?.phase === f.phase) run.frames.push(f);
+        else runs.push({ phase: f.phase, frames: [f] });
+      }
+      const steady = runs.find(
+        (r) =>
+          new Set(r.frames.map((f) => f.list)).size > 2 &&
+          new Set(r.frames.slice(1).map((f) => f.said)).size === 1
+      );
+      expect(steady).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+    // ~95 full-app renders: generous headroom for the coverage run.
+  }, 30000);
 });

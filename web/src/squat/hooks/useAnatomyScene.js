@@ -4,6 +4,7 @@ import { loadSceneModule } from '../../anatomy/scene/loadScene.js';
 import { scenePalette } from '../../anatomy/utils/sceneColours.js';
 import { sceneStyle } from '../../anatomy/constants/sceneStyle.js';
 import { activationAt } from '../utils/activation.js';
+import { focusMask } from '../utils/strainFocus.js';
 
 const isOffline = () =>
   typeof navigator !== 'undefined' && navigator.onLine === false;
@@ -23,6 +24,10 @@ const isOffline = () =>
  * first frame's pose and re-applied each time a new link `arrival`s; the
  * scene's own moves never count as one. `onUserCamera` is told whenever the
  * user moves the camera.
+ *
+ * `focus` is `{ top, selected }`: manifest indices of the muscles the strain
+ * readout names (empty with the heatmap off) and the selected muscle's index
+ * (or null). They are lifted out of the rest on the model (PR B).
  */
 export function useAnatomyScene({
   containerRef,
@@ -37,6 +42,7 @@ export function useAnatomyScene({
   pose = null,
   arrival = 0,
   onUserCamera,
+  focus = null,
 }) {
   const [state, setState] = useState({ status: 'idle', errorKind: null });
   const [attempt, setAttempt] = useState(0);
@@ -193,6 +199,26 @@ export function useAnatomyScene({
   useEffect(() => {
     controller?.setActivation(activation);
   }, [controller, activation]);
+
+  const muscleCount = manifest?.meta.muscles.length ?? 0;
+  const top = focus?.top;
+  const selected = focus?.selected ?? null;
+  // Keyed on the indices, not the array: the readout rebuilds its list every
+  // frame, and the mask only changes when the regions or the selection do.
+  const topKey = top?.join(',') ?? '';
+  const mask = useMemo(
+    () =>
+      focusMask(
+        muscleCount,
+        topKey ? topKey.split(',').map(Number) : null,
+        selected
+      ),
+    [muscleCount, topKey, selected]
+  );
+
+  useEffect(() => {
+    controller?.setFocus(mask);
+  }, [controller, mask]);
 
   useEffect(() => {
     controller?.setReducedMotion(reducedMotion);

@@ -18,6 +18,9 @@ import { scenePalette } from '../../anatomy/utils/sceneColours.js';
 import { useAnatomyScene } from '../hooks/useAnatomyScene.js';
 import { reloadPage } from '../utils/reloadPage.js';
 import { camToPose } from '../utils/squatHash.js';
+import { regionMuscles, topActivated } from '../utils/strainFocus.js';
+import { directionAt, repInfo } from '../../anatomy/utils/rep.js';
+import { PHASES } from '../constants/phases.js';
 
 // The 3D view's lifecycle inside the real app shell. three.js never loads
 // here: the `loadScene` seam hands SquatApp a fake scene factory that records
@@ -62,6 +65,7 @@ function fakeScene() {
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
+      setFocus: vi.fn(),
       // R11: the pose the scene reports, settable by a test (`ctl.pose`).
       pose: { ...HOME, home: true },
       camera: {
@@ -183,6 +187,7 @@ describe('SquatApp 3D stage', () => {
       setPalette() {},
       setReducedMotion() {},
       setActivation() {},
+      setFocus() {},
       camera: {},
       dispose() {},
       opts,
@@ -351,6 +356,7 @@ describe('SquatApp 3D stage', () => {
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
+      setFocus: vi.fn(),
       camera: {},
       dispose: vi.fn(),
     };
@@ -841,7 +847,17 @@ describe('share a view', () => {
         expect(
           screen.queryByRole('group', { name: 'Camera controls' })
         ).toBeNull();
-        expect(screen.queryByRole('group', { name: 'Show' })).toBeNull();
+        // Gate 2 amendment: Show stays, layers gated, the heatmap live and
+        // on from the link, its readout in the rail.
+        expect(screen.getByRole('switch', { name: 'Skeleton' })).toBeDisabled();
+        expect(
+          screen.getByRole('switch', { name: 'Activation heatmap' })
+        ).toBeChecked();
+        expect(
+          within(screen.getByRole('region', { name: 'Controls' })).getByTestId(
+            'strain-panel'
+          )
+        ).toBeInTheDocument();
         expect(screen.queryByRole('alert')).toBeNull();
       }
       await user.click(copyButton());
@@ -906,5 +922,149 @@ describe('share a view', () => {
     await user.click(
       screen.getByRole('button', { name: 'Pause', exact: true })
     );
+  });
+});
+
+// PR B (HERO_STAGE_SPEC.md): the strain readout and the selection are lifted
+// out of the rest on the model through one call, setFocus(mask | null).
+describe('strain focus on the model (criteria 10, 11, 21)', () => {
+  const MUSCLES = manifest.meta.muscles;
+  const VL = MUSCLES.findIndex((m) => m.name === 'Vastus lateralis');
+  const marked = (mask) =>
+    mask ? [...mask.keys()].filter((i) => mask[i]) : [];
+  const focusAt = (frame) => {
+    const info = repInfo(manifest.meta.rep, PHASES.length);
+    return regionMuscles(
+      MUSCLES,
+      topActivated(MUSCLES, info.s[frame], directionAt(info, frame))
+    );
+  };
+  async function open(hash) {
+    window.history.replaceState(null, '', `/squat${hash}`);
+    const fake = fakeScene();
+    render(<SquatApp loadScene={fake.loadScene} />);
+    await finishDownload();
+    await waitFor(() => expect(status()).toHaveTextContent('3D model ready'));
+    return fake.instances[0];
+  }
+
+  it('sends nothing to emphasise with the heatmap off and nothing selected', async () => {
+    const ctl = await open('');
+    expect(ctl.setFocus).toHaveBeenLastCalledWith(null);
+    expect(screen.queryByTestId('strain-panel')).toBeNull();
+  });
+
+  it('a muscle selected in the list is the whole focus, heatmap off (criterion 11)', async () => {
+    expect(VL).toBeGreaterThanOrEqual(0);
+    const ctl = await open('#m=vastus-lateralis');
+    await waitFor(() =>
+      expect(marked(ctl.setFocus.mock.lastCall[0])).toEqual([VL])
+    );
+    expect(ctl.setFocus.mock.lastCall[0]).toHaveLength(MUSCLES.length);
+  });
+
+  it('the heatmap lifts the top regions, plus the selection (criterion 10)', async () => {
+    const user = userEvent.setup();
+    const ctl = await open('#m=vastus-lateralis');
+    await user.click(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    );
+    const want = [...new Set([...focusAt(0), VL])].sort((a, b) => a - b);
+    await waitFor(() =>
+      expect(marked(ctl.setFocus.mock.lastCall[0])).toEqual(want)
+    );
+    // The readout is on the stage, beside the model it describes.
+    expect(
+      within(screen.getByRole('region', { name: '3D model' })).getByTestId(
+        'strain-panel'
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('follows the playhead, but only re-sends when the regions change', async () => {
+    const user = userEvent.setup();
+    const ctl = await open('');
+    await user.click(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    );
+    await waitFor(() =>
+      expect(marked(ctl.setFocus.mock.lastCall[0])).toEqual(focusAt(0))
+    );
+    const calls = ctl.setFocus.mock.calls.length;
+    // Frames 0 → 1 name the same regions: the mask is the same, not re-sent.
+    await user.click(screen.getByRole('button', { name: 'Step forward' }));
+    expect(ctl.setFocus.mock.calls.length).toBe(calls);
+    // Drive at 2.60 s names other regions (strainFocus.test.js).
+    fireEvent.change(screen.getByRole('slider', { name: 'Rep time' }), {
+      target: { value: '2.80' },
+    });
+    expect(marked(ctl.setFocus.mock.lastCall[0])).toEqual(focusAt(140));
+    expect(focusAt(140)).not.toEqual(focusAt(0));
+    // Off again: nothing to emphasise.
+    await user.click(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    );
+    expect(ctl.setFocus).toHaveBeenLastCalledWith(null);
+  });
+
+  it('after a failed build the readout moves into the rail, clear of the error (criterion 21)', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/squat#heat');
+    const { loadScene } = fakeScene();
+    loadScene.mockImplementation(() => Promise.reject(new Error('chunk 404')));
+    render(<SquatApp loadScene={loadScene} />);
+    await finishDownload();
+    const alert = await screen.findByRole('alert');
+    const stage = screen.getByRole('region', { name: '3D model' });
+    const rail = screen.getByRole('region', { name: 'Controls' });
+    expect(stage).toContainElement(alert);
+    expect(within(rail).getByTestId('strain-panel')).toBeInTheDocument();
+    expect(within(stage).queryByTestId('strain-panel')).toBeNull();
+    // The dead camera group gives the readout its room; the layers wait.
+    expect(
+      within(rail).queryByRole('group', { name: 'Camera controls' })
+    ).toBeNull();
+    expect(screen.getByRole('switch', { name: 'Muscles' })).toBeDisabled();
+    await user.click(
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    );
+    expect(screen.queryByTestId('strain-panel')).toBeNull();
+  });
+
+  it('without WebGL the heatmap switch drives the readout and clears heat (amendment)', async () => {
+    const user = userEvent.setup();
+    mocks.caps = { webgl: false, decompression: true, worker: true };
+    window.history.replaceState(
+      null,
+      '',
+      '/squat#t=2.44&m=vastus-lateralis&paused&cam=90,85,2.50&hide=skeleton&heat'
+    );
+    const { loadScene } = fakeScene();
+    render(<SquatApp loadScene={loadScene} />);
+    const rail = screen.getByRole('region', { name: 'Controls' });
+    const heat = await within(rail).findByRole('switch', {
+      name: 'Activation heatmap',
+    });
+    await waitFor(() => expect(heat).toBeEnabled());
+    expect(heat).toBeChecked();
+    expect(
+      within(rail).getByRole('switch', { name: 'Skeleton' })
+    ).toBeDisabled();
+    await waitFor(() =>
+      expect(within(rail).getByTestId('strain-panel')).toHaveTextContent(
+        'Working hardest now · Drive'
+      )
+    );
+    await user.click(heat);
+    expect(heat).not.toBeChecked();
+    expect(screen.queryByTestId('strain-panel')).toBeNull();
+    // Clear-on-change, as on a 3D device; the camera and layers survive,
+    // since nothing here can change them.
+    expect(window.location.hash).toBe(
+      '#t=2.44&m=vastus-lateralis&paused&cam=90,85,2.50&hide=skeleton'
+    );
+    await user.click(heat);
+    expect(within(rail).getByTestId('strain-panel')).toBeInTheDocument();
+    expect(loadScene).not.toHaveBeenCalled();
   });
 });

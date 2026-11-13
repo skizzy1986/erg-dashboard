@@ -22,6 +22,12 @@ function overlayStage(data, scene) {
  * `hostRef` is where the scene appends its own canvas; the overlays sit above
  * it in the same box, absolutely placed, so nothing moves when the first frame
  * lands.
+ *
+ * `strain` is the strain readout (PR B), laid over the model's lower edge:
+ * bottom-left on desktop; full width on a phone, stacked over the framing
+ * chip. Low, not under the title: at the top it covered the head and trunk,
+ * at the bottom it covers the feet. The caller passes it only while the model can be drawn; when
+ * it cannot, the readout goes to the controls instead, clear of the notice.
  */
 export default function SquatStage({
   capabilities,
@@ -30,6 +36,7 @@ export default function SquatStage({
   hostRef,
   wide,
   title = null,
+  strain = null,
   children = null,
 }) {
   const blocked = !capabilities.webgl || data.stage === 'unsupported';
@@ -144,16 +151,35 @@ export default function SquatStage({
           />
         )}
       </div>
-      {!wide && (
+      {wide && strain && (
         <div
           style={{
             position: 'absolute',
-            right: SPACE.md,
-            bottom: SPACE.md,
+            left: SPACE.lg,
+            bottom: SPACE.lg,
             zIndex: 1,
             pointerEvents: 'none',
           }}
         >
+          {strain}
+        </div>
+      )}
+      {!wide && (
+        <div
+          style={{
+            position: 'absolute',
+            left: SPACE.md,
+            right: SPACE.md,
+            bottom: SPACE.md,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: SPACE.xs,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        >
+          {strain && <div style={{ alignSelf: 'stretch' }}>{strain}</div>}
           {framing}
         </div>
       )}

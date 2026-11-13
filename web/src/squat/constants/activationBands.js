@@ -11,11 +11,18 @@ export const ACT_BANDS = [
 ];
 
 export const ACT_NOTE = 'Indicative estimate, not EMG.';
+// How many regions the strain readout names (HERO_STAGE_SPEC.md, Gate 2 #1).
+export const TOP_N = 3;
+export const STRAIN_TITLE = 'Working hardest now';
 export const ACT_BASIS =
   "Bands are this model's own colour steps, not a published threshold.";
 export const ACT_NONE = 'Not a muscle — no activation estimate.';
-export const HEAT_LEGEND =
-  'Estimated activation at the depth shown. Indicative estimate, not EMG. Tendons are not coloured.';
+// The heatmap paints muscle only; the strain panel says so beside its key.
+export const HEAT_TENDONS = 'Tendons are not coloured.';
+// With the heatmap on, muscles outside the named regions are dimmed toward grey
+// (focusDim), so their colour no longer matches the key: the overlay says so.
+export const HEAT_OTHERS = 'Others greyed.';
+export const HEAT_LEGEND = `Estimated activation at the depth shown. ${ACT_NOTE} ${HEAT_TENDONS}`;
 export const STALE_LINK =
   'That link points to a muscle this version does not have.';
 

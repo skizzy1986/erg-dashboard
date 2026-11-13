@@ -373,10 +373,12 @@ counts against both). Both squat ceilings were raised in that change, `SQUAT_ENT
 squat budget to the measured figure plus ~2 KB, rounded to a whole KB, with a dated
 comment, and never relax the dashboard's 150. `SQUAT_TOTAL` is the loose ceiling by the
 script's own definition — never precached, `CacheFirst` at runtime, stripped from the
-APK — so those bytes are on nobody's first paint. **Spare after R11: squat entry 1.8 KB,
-squat total 2.2 KB.** PR B's strain panel is expected to exceed one or both; Scott has
-agreed that raise at PR B time, under the same rule, unless the squat-entry trim (#467)
-lands first. The muscle list is
+APK — so those bytes are on nobody's first paint. **PR B's strain panel (#471) fitted
+without a raise** — measured 2026-11-13: **entry 146.9 / 150, total 377.6 / 400, squat
+entry 121.6 / 122, squat total 33.1 / 34, squat 3D 138.4 / 145 KB**, data 2.20 MB. **Spare
+after PR B: squat entry 0.4 KB, squat total 0.9 KB.** The raise Scott agreed for PR B was
+not needed, so it carries to PR A (director camera + autoplay), under the same rule, unless
+the squat-entry trim (#467) lands first. The muscle list is
 deliberately not lazy-loaded (the canvas is `aria-hidden` with `tabindex="-1"`, so the
 list is the model's accessible substitute and must not sit behind a chunk that can fail
 to fetch).

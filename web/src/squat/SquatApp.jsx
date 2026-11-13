@@ -16,6 +16,8 @@ import { useMuscleSelection } from './hooks/useMuscleSelection.js';
 import { buildMuscleIndex, filterMuscles } from './utils/muscleIndex.js';
 import { camToPose, shareState, shareUrl } from './utils/squatHash.js';
 import { activationOf, bandOf, peakBandOf } from './utils/activation.js';
+import { focusKey, regionMuscles, topActivated } from './utils/strainFocus.js';
+import { useStrainAnnouncement } from './hooks/useStrainAnnouncement.js';
 import { loadSceneModule } from '../anatomy/scene/loadScene.js';
 import SquatHeader, { HEADER_HEIGHT } from './components/SquatHeader.jsx';
 import SquatStage from './components/SquatStage.jsx';
@@ -23,7 +25,7 @@ import StageControls from './components/StageControls.jsx';
 import ShareLink from './components/ShareLink.jsx';
 import MuscleList from './components/MuscleList.jsx';
 import MuscleCard from './components/MuscleCard.jsx';
-import HeatmapLegend from './components/HeatmapLegend.jsx';
+import StrainPanel, { strainLine } from './components/StrainPanel.jsx';
 import FormCheck from './components/FormCheck.jsx';
 import GuideDialog from './components/GuideDialog.jsx';
 import AttributionFooter from './components/AttributionFooter.jsx';
@@ -216,7 +218,6 @@ function MuscleSection({
   percent,
   phase,
   direction,
-  heatmap,
   wide,
   loading,
   failed,
@@ -301,7 +302,6 @@ function MuscleSection({
             direction={direction}
             onClear={selection.clear}
           />
-          {heatmap && <HeatmapLegend />}
         </div>
       </div>
     </section>
@@ -343,6 +343,34 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
     }),
     [view, setHash]
   );
+  const muscles = data.manifest?.meta.muscles;
+  const index = useMemo(() => buildMuscleIndex(muscles), [muscles]);
+  const [query, setQuery] = useState('');
+  const { regions, matches } = useMemo(
+    () => filterMuscles(index, query),
+    [index, query]
+  );
+  const selection = useMuscleSelection({ index, hash, setHash });
+
+  // The strain readout (PR B). Needs only the rep data, so it works where the
+  // model cannot be drawn. By frame direction, not phase: Bottom spans the
+  // turn, and each of its frames reads its own side of it (criterion 14).
+  const strainOn = view.heatmap && view.ready && !!muscles;
+  const top = useMemo(
+    () => (strainOn ? topActivated(muscles, view.s, view.direction) : []),
+    [strainOn, muscles, view.s, view.direction]
+  );
+  const topIdx = useMemo(() => regionMuscles(muscles, top), [muscles, top]);
+  const announce = useStrainAnnouncement({
+    key: strainOn ? focusKey(top) : '',
+    text: `${view.phase}: ${top.map(strainLine).join('; ')}`,
+    phase: view.phase,
+    playing: view.playing,
+    // Every play today is the user's (the Play button sets `moved`); PR A's
+    // autoplay will play without setting it, and so stays silent.
+    userPlayed: view.moved,
+  });
+
   const hostRef = useRef(null);
   // From the capabilities alone, so it is known at the first paint: waiting
   // for data.stage === 'unsupported' would remove the controls after they
@@ -365,16 +393,24 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
     pose: camToPose(hash.cam),
     arrival,
     onUserCamera: clearCam,
+    focus: { top: topIdx, selected: selection.muscle?.i ?? null },
   });
-
-  const muscles = data.manifest?.meta.muscles;
-  const index = useMemo(() => buildMuscleIndex(muscles), [muscles]);
-  const [query, setQuery] = useState('');
-  const { regions, matches } = useMemo(
-    () => filterMuscles(index, query),
-    [index, query]
-  );
-  const selection = useMuscleSelection({ index, hash, setHash });
+  // Where the model is not drawn, the readout must not sit over the notice
+  // or the error on the stage: it moves into the controls.
+  const sceneFailed =
+    data.stage === 'error' ||
+    scene.status === 'error' ||
+    scene.status === 'contextlost';
+  const strainInline = sceneBlocked || sceneFailed;
+  const strain = strainOn ? (
+    <StrainPanel
+      items={top}
+      phase={view.phase}
+      announce={announce}
+      compact={!wide}
+      inline={strainInline}
+    />
+  ) : null;
   // The rep time rides in the hash once a move settles, so a link reopens on
   // the same frame. Never while playing, and never before the user has moved
   // anything: a plain load leaves the URL alone. A link arriving cancels a
@@ -468,6 +504,7 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
             scene={scene}
             hostRef={hostRef}
             wide={wide}
+            strain={strainInline ? null : strain}
             title={
               <>
                 {wide && (
@@ -495,8 +532,10 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
             camera={scene.camera}
             cameraDisabled={scene.status !== 'ready'}
             sceneBlocked={sceneBlocked}
+            sceneFailed={sceneFailed}
             wide={wide}
             onGuide={openGuide}
+            strain={strainInline ? strain : null}
             share={
               <ShareLink getLink={getLink} ready={view.ready} wide={wide} />
             }
@@ -573,7 +612,6 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
             percent={view.pct}
             phase={view.phase}
             direction={view.direction}
-            heatmap={view.heatmap && scene.status === 'ready'}
             wide={wide}
             loading={!data.manifest && data.stage !== 'error'}
             failed={!data.manifest && data.stage === 'error'}

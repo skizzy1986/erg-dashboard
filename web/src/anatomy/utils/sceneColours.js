@@ -129,6 +129,37 @@ export function heatColours(muscles, weights, stops, tendon) {
   return out;
 }
 
+/**
+ * Lifts the muscles in `mask` out of the rest (HERO_STAGE_SPEC.md, PR B): every
+ * other muscle moves `dim` of the way to its own luma grey, so it keeps its
+ * lightness and loses its hue. A focus muscle keeps its colour (under the
+ * heatmap, its ramp colour, so the emphasis never misstates the estimate), or
+ * takes `focusColour` when one is given (heatmap off: the selected muscle).
+ * Per muscle only: the per-vertex write after it is unchanged.
+ */
+export function emphasise(muscleCols, mask, { dim, focusColour = null }) {
+  if (!mask) return muscleCols;
+  const out = new Float32Array(muscleCols.length);
+  for (let i = 0; i < muscleCols.length / 3; i++) {
+    const k = i * 3;
+    const r = muscleCols[k];
+    const g = muscleCols[k + 1];
+    const b = muscleCols[k + 2];
+    if (mask[i]) {
+      const c = focusColour ?? [r, g, b];
+      out[k] = c[0];
+      out[k + 1] = c[1];
+      out[k + 2] = c[2];
+    } else {
+      const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      out[k] = r + (y - r) * dim;
+      out[k + 1] = g + (y - g) * dim;
+      out[k + 2] = b + (y - b) * dim;
+    }
+  }
+  return out;
+}
+
 /** The scene's palette for a theme, from the anatomy* tokens. */
 export function scenePalette(themeName) {
   const p = themeName === 'dark' ? DARK : LIGHT;
@@ -144,6 +175,7 @@ export function scenePalette(themeName) {
     bone: hexToRaw01(p.anatomyBone),
     shadow: hexToRaw01(p.anatomyShadow),
     bar: hexToRaw01(p.anatomyBar),
+    focus: hexToRaw01(p.anatomyFocus),
     heat,
   };
 }
