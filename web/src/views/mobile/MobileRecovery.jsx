@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import {
   LineChart,
   Line,
@@ -14,10 +15,14 @@ import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { calcTrainingLoad, tsbBand } from '../../utils/trainingLoad.js';
 import { THEME } from '../../constants/theme.js';
 import { FONT } from '../../constants/type.js';
+import { dateLocale, displayChartDate } from '../../utils/displayLocale.js';
 
 const tickStyle = { fontSize: 9, fill: THEME.muted };
 
 export default function MobileRecovery() {
+  const { t, i18n } = useLingui();
+  const lang = i18n.locale;
+  const chartDate = (d) => displayChartDate(lang, d);
   const {
     isLoading,
     latest,
@@ -42,7 +47,7 @@ export default function MobileRecovery() {
   );
   const tsbValue = loadData[loadData.length - 1]?.tsb ?? null;
 
-  const todayStr = new Date().toLocaleDateString('en-GB', {
+  const todayStr = new Date().toLocaleDateString(dateLocale(lang, 'en-GB'), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -57,12 +62,20 @@ export default function MobileRecovery() {
 
   const coachingText =
     readinessLabel === 'READY'
-      ? 'Train as planned'
+      ? t`Train as planned`
       : readinessLabel === 'CAUTION'
-        ? 'Train but monitor closely'
-        : 'Prioritise recovery today';
+        ? t`Train but monitor closely`
+        : t`Prioritise recovery today`;
 
-  const baselineLabel = hasPersonalBaselines ? 'your avg' : 'baseline';
+  const baselineLabel = hasPersonalBaselines
+    ? t({
+        message: 'your avg',
+        comment: 'Followed by a number: your own average',
+      })
+    : t({
+        message: 'baseline',
+        comment: 'After "vs": compared with the baseline',
+      });
 
   const trend14 = useMemo(
     () =>
@@ -115,7 +128,7 @@ export default function MobileRecovery() {
             color: THEME.positive,
           }}
         >
-          RECOVERY
+          <Trans comment="Screen heading, all capitals">RECOVERY</Trans>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
@@ -150,17 +163,19 @@ export default function MobileRecovery() {
             fontSize: 12,
           }}
         >
-          Loading…
+          <Trans>Loading…</Trans>
         </div>
       )}
 
       {!isLoading && !latest && (
         <div style={{ textAlign: 'center', marginTop: 40 }}>
           <div style={{ fontSize: 13, color: THEME.muted }}>
-            No vitals recorded yet
+            <Trans>No vitals recorded yet</Trans>
           </div>
           <div style={{ fontSize: 11, color: THEME.muted, marginTop: 8 }}>
-            Connect Google Health to populate this view
+            <Trans comment="Google Health is a brand name: keep it">
+              Connect Google Health to populate this view
+            </Trans>
           </div>
         </div>
       )}
@@ -195,7 +210,7 @@ export default function MobileRecovery() {
                 marginTop: 6,
               }}
             >
-              READINESS
+              <Trans comment="All capitals">READINESS</Trans>
             </div>
             <div
               style={{
@@ -245,7 +260,7 @@ export default function MobileRecovery() {
                       marginBottom: 4,
                     }}
                   >
-                    RESTING HR
+                    <Trans comment="All capitals">RESTING HR</Trans>
                   </div>
                   <div
                     style={{ fontSize: 24, fontWeight: 700, color: rhrColor }}
@@ -260,7 +275,9 @@ export default function MobileRecovery() {
                       : rhrDelta < 0
                         ? '↓ ' + rhrDelta
                         : '='}{' '}
-                    vs {baselineLabel}
+                    <Trans comment="Compared with, e.g. vs your avg">
+                      vs {baselineLabel}
+                    </Trans>
                   </div>
                 </div>
               );
@@ -311,7 +328,9 @@ export default function MobileRecovery() {
                         ) /
                           10
                       : '↓ ' + deficit}{' '}
-                    vs {baselineLabel}
+                    <Trans comment="Compared with, e.g. vs your avg">
+                      vs {baselineLabel}
+                    </Trans>
                   </div>
                 </div>
               );
@@ -340,7 +359,7 @@ export default function MobileRecovery() {
                       marginBottom: 4,
                     }}
                   >
-                    SLEEP
+                    <Trans comment="All capitals">SLEEP</Trans>
                   </div>
                   <div
                     style={{ fontSize: 24, fontWeight: 700, color: sleepColor }}
@@ -350,7 +369,7 @@ export default function MobileRecovery() {
                   <div
                     style={{ fontSize: 10, color: THEME.muted, marginTop: 4 }}
                   >
-                    {latest.sleep >= 7 ? 'Target met' : 'Below 7h target'}
+                    {latest.sleep >= 7 ? t`Target met` : t`Below 7h target`}
                   </div>
                 </div>
               );
@@ -372,7 +391,7 @@ export default function MobileRecovery() {
                     marginBottom: 4,
                   }}
                 >
-                  SLEEP SCORE
+                  <Trans comment="All capitals">SLEEP SCORE</Trans>
                 </div>
                 <div
                   style={{
@@ -405,7 +424,9 @@ export default function MobileRecovery() {
                     marginBottom: 4,
                   }}
                 >
-                  FORM / TSB
+                  <Trans comment="All capitals; TSB stays as is">
+                    FORM / TSB
+                  </Trans>
                 </div>
                 <div
                   style={{
@@ -437,7 +458,9 @@ export default function MobileRecovery() {
                 marginBottom: 6,
               }}
             >
-              HRV TREND — 14 DAYS
+              <Trans comment="Chart title, all capitals; HRV stays as is">
+                HRV TREND — 14 DAYS
+              </Trans>
             </div>
             <ResponsiveContainer width="100%" height={110}>
               <LineChart data={trend14}>
@@ -447,6 +470,7 @@ export default function MobileRecovery() {
                   axisLine={false}
                   tickLine={false}
                   interval="preserveStartEnd"
+                  tickFormatter={chartDate}
                 />
                 <ReferenceLine
                   y={personalBaselines.hrvBaseline}
@@ -483,7 +507,9 @@ export default function MobileRecovery() {
                 marginBottom: 6,
               }}
             >
-              RESTING HR TREND — 14 DAYS
+              <Trans comment="Chart title, all capitals">
+                RESTING HR TREND — 14 DAYS
+              </Trans>
             </div>
             <ResponsiveContainer width="100%" height={110}>
               <LineChart data={trend14}>
@@ -493,6 +519,7 @@ export default function MobileRecovery() {
                   axisLine={false}
                   tickLine={false}
                   interval="preserveStartEnd"
+                  tickFormatter={chartDate}
                 />
                 <ReferenceLine
                   y={personalBaselines.rhrBaseline}
@@ -529,7 +556,7 @@ export default function MobileRecovery() {
                 marginBottom: 6,
               }}
             >
-              SLEEP — 14 DAYS
+              <Trans comment="Chart title, all capitals">SLEEP — 14 DAYS</Trans>
             </div>
             <ResponsiveContainer width="100%" height={80}>
               <BarChart data={trend14} barCategoryGap="20%">
@@ -566,7 +593,9 @@ export default function MobileRecovery() {
                   marginBottom: 6,
                 }}
               >
-                READINESS — 7 DAYS
+                <Trans comment="Chart title, all capitals">
+                  READINESS — 7 DAYS
+                </Trans>
               </div>
               <ResponsiveContainer width="100%" height={80}>
                 <LineChart data={history.slice(-7)}>
@@ -611,7 +640,9 @@ export default function MobileRecovery() {
                   marginBottom: 6,
                 }}
               >
-                BODYWEIGHT — 14 DAYS (kg)
+                <Trans comment="Chart title, all capitals; kg stays as is">
+                  BODYWEIGHT — 14 DAYS (kg)
+                </Trans>
               </div>
               <ResponsiveContainer width="100%" height={80}>
                 <LineChart data={weightData}>

@@ -1,3 +1,5 @@
+import { Plural, Trans, useLingui } from '@lingui/react/macro';
+import { plural } from '@lingui/core/macro';
 import WorkoutItem from '../components/WorkoutItem.jsx';
 import { logEntriesForDate } from '../utils/dateFormat.js';
 import { THEME } from '../constants/theme.js';
@@ -17,6 +19,38 @@ const MONTH_NAMES = [
   'Nov',
   'Dec',
 ];
+// es-CO's abbreviations, written down rather than asked of Intl: ICU data
+// differs by browser and version ("sep." in one, "sept." in another), and the
+// rail fits three letters without the trailing point. Fixed calendar words,
+// not prose, so a plain table beside the English rather than catalog messages.
+const RAIL_NAMES = {
+  en: { days: DAY_NAMES, months: MONTH_NAMES },
+  es: {
+    days: ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'],
+    months: [
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ],
+  },
+};
+function railNames(date, lang) {
+  const names = RAIL_NAMES[lang] ?? RAIL_NAMES.en;
+  return {
+    top: names.days[date.getDay()].toUpperCase(),
+    bottom: names.months[date.getMonth()],
+  };
+}
+
 const BACK = 3;
 const FWD = 14;
 
@@ -36,6 +70,7 @@ export default function CalendarView({
   dbStatus = 'ok',
   isWide,
 }) {
+  const { t, i18n } = useLingui();
   const banner = (
     <div
       style={{
@@ -51,10 +86,16 @@ export default function CalendarView({
       }}
     >
       <span style={{ color: THEME.accent, fontWeight: 700 }}>
-        LAST 3 DAYS · TODAY · NEXT 13 ·{' '}
+        <Trans comment="Calendar legend: the window shown, all capitals">
+          LAST 3 DAYS · TODAY · NEXT 13 ·
+        </Trans>{' '}
       </span>
-      <span style={{ color: THEME.positive }}>✓ done</span> · planned · ⊘
-      cancelled
+      <span style={{ color: THEME.positive }}>
+        <Trans comment="Calendar legend">✓ done</Trans>
+      </span>{' '}
+      <Trans comment="Calendar legend, after the done mark">
+        · planned · ⊘ cancelled
+      </Trans>
     </div>
   );
 
@@ -62,7 +103,7 @@ export default function CalendarView({
     return (
       <>
         {banner}
-        {statusLine('Loading sessions…')}
+        {statusLine(t`Loading sessions…`)}
       </>
     );
   }
@@ -76,7 +117,7 @@ export default function CalendarView({
     return (
       <>
         {banner}
-        {statusLine('Sessions could not be loaded.')}
+        {statusLine(t`Sessions could not be loaded.`)}
       </>
     );
   }
@@ -104,7 +145,7 @@ export default function CalendarView({
     <>
       {banner}
       {staleError &&
-        statusLine("Couldn't refresh sessions — showing what loaded earlier.")}
+        statusLine(t`Couldn't refresh sessions — showing what loaded earlier.`)}
       <div
         style={{
           display: isWide ? 'grid' : 'flex',
@@ -114,10 +155,11 @@ export default function CalendarView({
         }}
       >
         {days.map((d, i) => {
+          const names = railNames(d.date, i18n.locale);
           const railObj = {
-            top: DAY_NAMES[d.date.getDay()].toUpperCase(),
+            top: names.top,
             big: d.date.getDate(),
-            bottom: MONTH_NAMES[d.date.getMonth()],
+            bottom: names.bottom,
           };
           const rows = [
             ...d.done.map((s) => ({
@@ -136,10 +178,18 @@ export default function CalendarView({
               done: false,
             })),
           ];
-          const statusLabel = d.done.length
-            ? `✓ DONE${d.done.length > 1 ? ' ×' + d.done.length : ''}`
+          const doneCount = d.done.length;
+          const cancelledCount = d.cancelled.length;
+          const statusLabel = doneCount
+            ? t({
+                comment: 'Day badge, all capitals: sessions done that day',
+                message: plural(doneCount, {
+                  one: '✓ DONE',
+                  other: `✓ DONE ×${doneCount}`,
+                }),
+              })
             : d.planned.length
-              ? 'PLANNED'
+              ? t({ message: 'PLANNED', comment: 'Day badge, all capitals' })
               : '';
           return (
             <div
@@ -179,7 +229,11 @@ export default function CalendarView({
                       fontWeight: 700,
                     }}
                   >
-                    ⊘ {d.cancelled.length} CANCELLED
+                    <Plural
+                      value={cancelledCount}
+                      one={`⊘ ${cancelledCount} CANCELLED`}
+                      other={`⊘ ${cancelledCount} CANCELLED`}
+                    />
                   </span>
                 )}
               </div>
@@ -205,7 +259,7 @@ export default function CalendarView({
           );
         })}
       </div>
-      {empty && statusLine('No sessions in this window.')}
+      {empty && statusLine(t`No sessions in this window.`)}
     </>
   );
 }

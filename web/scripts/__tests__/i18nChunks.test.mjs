@@ -19,8 +19,18 @@ describe('isTranslatedCatalog', () => {
     );
   });
 
-  it('never claims the English catalog, which must stay precached', () => {
+  it('accepts the views catalog beside it (i18n Phase 2a)', () => {
+    expect(isTranslatedCatalog([`${ROOT}/src/locales/views/es.po`])).toBe(true);
+    expect(
+      isTranslatedCatalog([`${ROOT}/src/locales/views/es.po?lingui`])
+    ).toBe(true);
+  });
+
+  it('never claims an English catalog, which must stay precached', () => {
     expect(isTranslatedCatalog([`${ROOT}/src/locales/en.po`])).toBe(false);
+    expect(isTranslatedCatalog([`${ROOT}/src/locales/views/en.po`])).toBe(
+      false
+    );
   });
 
   it('leaves /squat catalogs to the squat- rule', () => {
@@ -51,9 +61,23 @@ describe('chunk naming', () => {
     expect(I18N_JS.test('index-Ab12.js')).toBe(false);
   });
 
+  it('names the views Spanish catalog i18n-es-* too', () => {
+    expect(
+      squatChunkFileNames({ moduleIds: [`${ROOT}/src/locales/views/es.po`] })
+    ).toBe(I18N_CHUNK_NAME);
+  });
+
   it('leaves English and ordinary chunks plain', () => {
     expect(
       squatChunkFileNames({ moduleIds: [`${ROOT}/src/locales/en.po`] })
+    ).toBe(PLAIN_CHUNK_NAME);
+    expect(
+      squatChunkFileNames({
+        moduleIds: [
+          `${ROOT}/src/locales/views/en.po`,
+          `${ROOT}/src/i18n/views.js`,
+        ],
+      })
     ).toBe(PLAIN_CHUNK_NAME);
   });
 });

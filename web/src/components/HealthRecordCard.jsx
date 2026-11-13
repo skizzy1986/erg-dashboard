@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import { THEME } from '../constants/theme.js';
 
 export function EmptyPanel({ children, role }) {
@@ -22,21 +23,34 @@ export function EmptyPanel({ children, role }) {
 // network returns, so "Loading…" there would never resolve.
 function body({ title, query, isEmpty, emptyText, children }) {
   if (query.isPending && query.isPaused)
-    return <EmptyPanel>Offline: no saved data yet.</EmptyPanel>;
-  if (query.isPending) return <EmptyPanel>Loading…</EmptyPanel>;
-  if (query.isError && query.data === undefined)
     return (
-      <EmptyPanel role="alert">
-        Couldn&apos;t load {title.toLowerCase()}.
+      <EmptyPanel>
+        <Trans>Offline: no saved data yet.</Trans>
       </EmptyPanel>
     );
+  if (query.isPending)
+    return (
+      <EmptyPanel>
+        <Trans>Loading…</Trans>
+      </EmptyPanel>
+    );
+  if (query.isError && query.data === undefined) {
+    const what = title.toLowerCase();
+    return (
+      <EmptyPanel role="alert">
+        <Trans comment="{what} is the card's title in lower case, e.g. blood pressure">
+          Couldn&apos;t load {what}.
+        </Trans>
+      </EmptyPanel>
+    );
+  }
   if (isEmpty) return <EmptyPanel>{emptyText}</EmptyPanel>;
   return (
     <>
       {children}
       {query.isError && (
         <div style={{ fontSize: 10, color: THEME.muted, marginTop: 8 }}>
-          Couldn&apos;t refresh, showing earlier data.
+          <Trans>Couldn&apos;t refresh, showing earlier data.</Trans>
         </div>
       )}
     </>

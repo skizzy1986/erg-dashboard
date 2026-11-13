@@ -7,9 +7,13 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
 import LogEntry from '../components/LogEntry.jsx';
 import LoadTooltip from '../components/LoadTooltip.jsx';
 import { tsbBand } from '../utils/trainingLoad.js';
+import { readinessStatusText } from '../utils/recoveryAnalytics.js';
+import { displayChartDate } from '../utils/displayLocale.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
 import { THEME } from '../constants/theme.js';
@@ -20,10 +24,10 @@ import { RADIUS } from '../constants/tokens.js';
 // while the thresholds come from tsbBand(). Keyed off band.key so the two can
 // never drift apart again.
 const TSB_COPY = {
-  fresh: '✅ Fresh — form positive; recent load below fitness',
-  neutral: '⚡ Neutral — recent load and fitness balanced',
-  fatigued: '⚠️ Fatigued — recent load above fitness',
-  deep: '🔴 High fatigue — recent load well above fitness',
+  fresh: msg`✅ Fresh — form positive; recent load below fitness`,
+  neutral: msg`⚡ Neutral — recent load and fitness balanced`,
+  fatigued: msg`⚠️ Fatigued — recent load above fitness`,
+  deep: msg`🔴 High fatigue — recent load well above fitness`,
 };
 
 export default function OverviewView({
@@ -39,7 +43,9 @@ export default function OverviewView({
 }) {
   // `latest` is null when the training-load read fails or returns no sessions;
   // tsbBand(null) is null, so the copy falls back rather than reading a fake 0.
+  const { t, i18n } = useLingui();
   const tsbNow = latest?.tsb ?? null;
+  const tsbCopy = TSB_COPY[tsbBand(tsbNow)?.key];
   // Vitals were read from the static `recoveryLog` constant here, so the home
   // screen scored readiness off June data. Same hook, same single readiness
   // definition, as RecoveryView and mobile.
@@ -51,12 +57,13 @@ export default function OverviewView({
   // Only what the anchors say; no phase is inferred when they are unset.
   const phase = anchors?.current_phase?.value ?? null;
   const block = anchors?.current_block?.value ?? null;
+  const ftpW = ftp ?? '—';
   return (
     <>
       {phase && (
         <div style={{ display: 'flex', marginBottom: 8 }}>
           <div
-            aria-label="Training phase"
+            aria-label={t`Training phase`}
             style={{
               fontSize: 10,
               fontFamily: FONT.mono,
@@ -72,7 +79,7 @@ export default function OverviewView({
         </div>
       )}
       <section
-        aria-label="Readiness"
+        aria-label={t`Readiness`}
         style={{
           background: `linear-gradient(135deg,${THEME.surfaceAlt},${THEME.raised})`,
           border: `1px solid ${THEME.border}`,
@@ -89,14 +96,14 @@ export default function OverviewView({
             fontWeight: 700,
           }}
         >
-          READINESS
+          <Trans comment="Card heading, all capitals">READINESS</Trans>
         </div>
         <div style={{ fontSize: 22, fontWeight: 700, color: THEME.text }}>
           {readiness?.score ?? '—'}
         </div>
         {readiness?.score != null && (
           <div style={{ fontSize: 10, color: THEME.textSubtle }}>
-            {readiness.status}
+            {readinessStatusText(i18n, readiness.status)}
           </div>
         )}
       </section>
@@ -111,20 +118,30 @@ export default function OverviewView({
         }}
       >
         {[
-          ['SESSIONS LOGGED', totalSessions, 'erg + strength'],
           [
-            'ERG DISTANCE',
+            'sessions',
+            t({
+              message: 'SESSIONS LOGGED',
+              comment: 'Stat tile, all capitals',
+            }),
+            totalSessions,
+            t`erg + strength`,
+          ],
+          [
+            'distance',
+            t({ message: 'ERG DISTANCE', comment: 'Stat tile, all capitals' }),
             `${(totalErgDist / 1000).toFixed(0)}km`,
-            'logged total',
+            t`logged total`,
           ],
           [
-            'LATEST WATTS',
+            'watts',
+            t({ message: 'LATEST WATTS', comment: 'Stat tile, all capitals' }),
             latestErg?.avg_watts ? `${latestErg.avg_watts}W` : '—',
-            'working avg power',
+            t`working avg power`,
           ],
-        ].map(([k, v, sub]) => (
+        ].map(([id, k, v, sub]) => (
           <div
-            key={k}
+            key={id}
             style={{
               background: THEME.raised,
               border: `1px solid ${THEME.border}`,
@@ -178,12 +195,12 @@ export default function OverviewView({
           }}
         >
           <div style={{ fontSize: 9, letterSpacing: 3, color: THEME.warning }}>
-            TRAINING LOAD
+            <Trans comment="Card heading, all capitals">TRAINING LOAD</Trans>
           </div>
           <div style={{ fontSize: 9, color: THEME.textFaint }}>
             {cpAvailable
-              ? `Rowing CP ${cp}W · bike FTP ${ftp ?? '—'}W`
-              : 'CP unavailable'}
+              ? t`Rowing CP ${cp}W · bike FTP ${ftpW}W`
+              : t`CP unavailable`}
           </div>
         </div>
         {loadUnavailable && (
@@ -195,7 +212,7 @@ export default function OverviewView({
               marginTop: 6,
             }}
           >
-            TRAINING LOAD UNAVAILABLE
+            <Trans comment="All capitals">TRAINING LOAD UNAVAILABLE</Trans>
           </div>
         )}
 
@@ -210,11 +227,21 @@ export default function OverviewView({
           }}
         >
           {[
-            ['CTL', 'Fitness', latest ? latest.ctl : '—', THEME.accent],
-            ['ATL', 'Fatigue', latest ? latest.atl : '—', THEME.warning],
+            [
+              'CTL',
+              t({ message: 'Fitness', comment: 'Subtitle of CTL' }),
+              latest ? latest.ctl : '—',
+              THEME.accent,
+            ],
+            [
+              'ATL',
+              t({ message: 'Fatigue', comment: 'Subtitle of ATL' }),
+              latest ? latest.atl : '—',
+              THEME.warning,
+            ],
             [
               'TSB',
-              'Form',
+              t({ message: 'Form', comment: 'Subtitle of TSB' }),
               latest ? (latest.tsb > 0 ? '+' : '') + latest.tsb : '—',
               tsbColor,
             ],
@@ -266,6 +293,7 @@ export default function OverviewView({
               axisLine={false}
               tickLine={false}
               interval={Math.floor(loadData.length / 5)}
+              tickFormatter={(d) => displayChartDate(i18n.locale, d)}
             />
             <YAxis
               tick={{
@@ -316,8 +344,9 @@ export default function OverviewView({
             lineHeight: 1.5,
           }}
         >
-          {TSB_COPY[tsbBand(tsbNow)?.key] ??
-            'No training-load reading — form status unknown.'}
+          {tsbCopy
+            ? i18n._(tsbCopy)
+            : t`No training-load reading — form status unknown.`}
         </div>
         <div
           style={{
@@ -327,11 +356,13 @@ export default function OverviewView({
             lineHeight: 1.5,
           }}
         >
-          CTL builds over 42 days — values will be underestimated until ~6 weeks
-          of data.{' '}
+          <Trans>
+            CTL builds over 42 days — values will be underestimated until ~6
+            weeks of data.
+          </Trans>{' '}
           {cpAvailable
-            ? `Power-derived load is measured against rowing CP ${cp}W and bike FTP ${ftp ?? '—'}W; revalidate with a test to sharpen it.`
-            : 'Power-derived load is unavailable while the CP anchor cannot be read.'}
+            ? t`Power-derived load is measured against rowing CP ${cp}W and bike FTP ${ftpW}W; revalidate with a test to sharpen it.`
+            : t`Power-derived load is unavailable while the CP anchor cannot be read.`}
         </div>
       </div>
 
@@ -343,7 +374,7 @@ export default function OverviewView({
           marginBottom: 8,
         }}
       >
-        RECENT SESSIONS
+        <Trans comment="Section heading, all capitals">RECENT SESSIONS</Trans>
       </div>
       <div
         style={{

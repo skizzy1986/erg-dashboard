@@ -1,3 +1,4 @@
+import { msg } from '@lingui/core/macro';
 import { toISODate } from './dateFormat.js';
 import { parseDurationMinutes } from './duration.js';
 
@@ -141,6 +142,28 @@ export const TSB_BANDS = [
     token: 'critical',
   },
 ];
+
+// What each band says on screen. TSB_BANDS keeps its English `label` (tests
+// and callers read it as a string); a view renders i18n._(TSB_BAND_MESSAGES[
+// band.key]) instead, and descriptors.test.js pins the two together.
+export const TSB_BAND_MESSAGES = {
+  fresh: msg({
+    message: 'Fresh — good form',
+    comment: 'Training form (TSB) band',
+  }),
+  neutral: msg({
+    message: 'Neutral — balanced',
+    comment: 'Training form (TSB) band',
+  }),
+  fatigued: msg({
+    message: 'Fatigued — recent load above fitness',
+    comment: 'Training form (TSB) band',
+  }),
+  deep: msg({
+    message: 'High fatigue — recent load well above fitness',
+    comment: 'Training form (TSB) band',
+  }),
+};
 
 // Returns null for a missing reading — "no band" is a real state and must not
 // render as the worst one.

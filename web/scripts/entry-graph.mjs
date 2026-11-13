@@ -253,6 +253,39 @@ export function i18nCatalogProblems(manifest, catalogKey, squatKey, named) {
   return problems;
 }
 
+/**
+ * Words a catalog must keep off a first paint, found by text: an English
+ * catalog is a static import inside some chunk, with no manifest key of its
+ * own, so the graph walk cannot name it. `phrases` are messages only that
+ * catalog holds; any of them in a first-paint file means the catalog is there.
+ * A phrase found in no file at all is reported too — the check would be blind.
+ *
+ * @param {{ file: string, text: string }[]} firstPaint first-paint files
+ * @param {{ file: string, text: string }[]} all every emitted JS file
+ * @param {string[]} phrases
+ * @param {string} what  e.g. 'The views English catalog'
+ * @returns {string[]} problems; empty when the invariant holds
+ */
+export function catalogTextLeaks(firstPaint, all, phrases, what) {
+  if (!phrases.length) return [`${what}: no phrases to look for.`];
+  const problems = [];
+  const unseen = phrases.filter((p) => !all.some((f) => f.text.includes(p)));
+  if (unseen.length === phrases.length) {
+    problems.push(
+      `${what} was not found in any built file (looked for "${phrases[0]}"), so its first-paint check is blind.`
+    );
+  }
+  const leaked = firstPaint.filter((f) =>
+    phrases.some((p) => f.text.includes(p))
+  );
+  if (leaked.length) {
+    problems.push(
+      `${what} is on first paint: ${leaked.map((f) => f.file).join(', ')}. Import it only from the lazy shells (src/i18n/views.js).`
+    );
+  }
+  return problems;
+}
+
 /** The service worker must still serve index.html for navigations. */
 export const navigationProblems = (sw) =>
   servesIndexNavigation(sw)
