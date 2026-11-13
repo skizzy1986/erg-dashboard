@@ -32,7 +32,12 @@ const vitalsRow = {
 
 beforeEach(() => {
   useAnchorsMock.mockReset();
-  useAnchorsMock.mockReturnValue({ cp: 205, ftp: 250, cpAvailable: true });
+  useAnchorsMock.mockReturnValue({
+    anchors: {},
+    cp: 205,
+    ftp: 250,
+    cpAvailable: true,
+  });
   useVitalsMock.mockReset();
   const personalBaselines = computePersonalBaselines([vitalsRow]);
   useVitalsMock.mockReturnValue({
@@ -88,7 +93,6 @@ const baseProps = {
   loadData,
   loggedSessions,
   latestErg: loggedSessions[0],
-  latestSquat: { e1rm: 118, date: '6/9' },
   totalErgDist: 55000,
   totalSessions: 20,
   isWide: true,
@@ -123,10 +127,11 @@ describe('OverviewView', () => {
   });
 
   it('renders no roster text now that the today strip is gone', () => {
-    // FIFO is left out: ADAPTIVE_RULES copy in the Decision Engine still names
-    // it until #421 removes that card. \s keeps the cull guard's needle out.
+    // \s keeps the cull guard's needle out of this file.
     render(<OverviewView {...baseProps} />);
-    expect(screen.queryByText(/YOUR\sWEEKS|not logged|SWAPPED/i)).toBeNull();
+    expect(
+      screen.queryByText(/YOUR\sWEEKS|FIFO|not logged|SWAPPED/i)
+    ).toBeNull();
   });
 
   it('labels load against the live CP/FTP anchors, not a hardcoded 190', () => {
@@ -137,6 +142,7 @@ describe('OverviewView', () => {
 
   it('says CP is unavailable rather than showing a stale threshold', () => {
     useAnchorsMock.mockReturnValue({
+      anchors: {},
       cp: null,
       ftp: null,
       cpAvailable: false,
@@ -156,7 +162,7 @@ describe('OverviewView', () => {
     expect(screen.getByText('TRAINING LOAD UNAVAILABLE')).toBeInTheDocument();
     expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText(/form status unknown/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Fresh — good form/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Fresh —/)).not.toBeInTheDocument();
   });
 
   it('does not show the outage line while the read is still pending', () => {
@@ -178,11 +184,27 @@ describe('OverviewView', () => {
     const { container } = render(
       <OverviewView
         {...baseProps}
-        latest={{ tsb: 8, ctl: 62, atl: 54 }}
+        latest={{ tsb: 15, ctl: 62, atl: 47 }}
         tsbColor={THEME.positive}
       />
     );
     expect(container.textContent.length).toBeGreaterThan(200);
+    expect(
+      screen.getByText('✅ Fresh — form positive; recent load below fitness')
+    ).toBeInTheDocument();
+  });
+
+  // The band copy describes the load; it never tells the athlete what to do.
+  it.each([
+    [-5, '⚡ Neutral — recent load and fitness balanced'],
+    [-15, '⚠️ Fatigued — recent load above fitness'],
+    [-40, '🔴 High fatigue — recent load well above fitness'],
+  ])('describes TSB %i without prescribing', (tsb, copy) => {
+    render(<OverviewView {...baseProps} latest={{ tsb, ctl: 60, atl: 60 }} />);
+    expect(screen.getByText(copy)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/rest day|Thursday|add sessions|ready for/i)
+    ).toBeNull();
   });
 
   it('renders in the narrow (mobile) layout', () => {
@@ -192,17 +214,101 @@ describe('OverviewView', () => {
     expect(container.textContent.length).toBeGreaterThan(200);
   });
 
-  it('shows an empty nutrition panel with no third-party app prompt', () => {
-    render(<OverviewView {...baseProps} />);
-    expect(screen.getByText('NUTRITION STATUS')).toBeInTheDocument();
-    expect(screen.getByText('No nutrition log yet.')).toBeInTheDocument();
-    expect(screen.queryByText(/MacroFactor/)).not.toBeInTheDocument();
-  });
-
   it('handles an empty session history without crashing', () => {
     const { container } = render(
       <OverviewView {...baseProps} loggedSessions={[]} />
     );
     expect(container.textContent.length).toBeGreaterThan(50);
+  });
+
+  describe('training phase', () => {
+    const withAnchors = (anchors) =>
+      useAnchorsMock.mockReturnValue({
+        anchors,
+        cp: 205,
+        ftp: 250,
+        cpAvailable: true,
+      });
+
+    it('(a) claims no phase when the anchor is unset', () => {
+      render(<OverviewView {...baseProps} />);
+      expect(screen.queryByLabelText('Training phase')).toBeNull();
+      expect(screen.queryByText(/Phase 1|BASE/i)).toBeNull();
+    });
+
+    it('(b) shows no pill for a block without a phase', () => {
+      withAnchors({ current_block: { value: 'wk 3/12' } });
+      render(<OverviewView {...baseProps} />);
+      expect(screen.queryByLabelText('Training phase')).toBeNull();
+      expect(screen.queryByText(/WK 3\/12/i)).toBeNull();
+    });
+
+    it('(c) renders only the anchor values when a phase is set', () => {
+      withAnchors({
+        current_phase: { value: 'Base' },
+        current_block: { value: 'wk 3/12' },
+      });
+      const { container } = render(<OverviewView {...baseProps} />);
+      expect(screen.getByLabelText('Training phase')).toHaveTextContent(
+        /^BASE · WK 3\/12$/
+      );
+      // Nothing from the hardcoded phase card it replaces.
+      expect(container.textContent).not.toMatch(
+        /Phase 1|Extended|Jun–Aug|BUILD 1|PEAK|aerobic engine|benchmark/i
+      );
+    });
+  });
+
+  it('(d) renders the load chart with the current CTL, ATL and TSB', () => {
+    render(<OverviewView {...baseProps} />);
+    expect(screen.getByText('TRAINING LOAD')).toBeInTheDocument();
+    const tile = (k) => within(screen.getByText(k).parentElement);
+    expect(tile('CTL').getByText('62')).toBeInTheDocument();
+    expect(tile('ATL').getByText('67')).toBeInTheDocument();
+    expect(tile('TSB').getByText('-5')).toBeInTheDocument();
+  });
+
+  it('(e) shows both unavailable states together when CP and load are null', () => {
+    useAnchorsMock.mockReturnValue({
+      anchors: {},
+      cp: null,
+      ftp: null,
+      cpAvailable: false,
+    });
+    render(
+      <OverviewView {...baseProps} latest={null} loadUnavailable={true} />
+    );
+    expect(screen.getByText('TRAINING LOAD UNAVAILABLE')).toBeInTheDocument();
+    expect(screen.getByText('CP unavailable')).toBeInTheDocument();
+    expect(screen.getByText(/CP anchor cannot be read/)).toBeInTheDocument();
+  });
+
+  it('(f) scores readiness off population defaults below 14 samples', () => {
+    const personalBaselines = computePersonalBaselines([vitalsRow]);
+    expect(personalBaselines.rhrPersonal).toBe(false);
+    const expected = computeReadiness(vitalsRow, {}, -5);
+    expect(expected.score).not.toBeNull();
+    expect(computeReadiness(vitalsRow, personalBaselines, -5).score).toBe(
+      expected.score
+    );
+    render(<OverviewView {...baseProps} />);
+    const card = within(screen.getByRole('region', { name: 'Readiness' }));
+    expect(card.getByText(String(expected.score))).toBeInTheDocument();
+  });
+
+  it('(g) carries no prescription, rules, nutrition or strength surface', () => {
+    const { container } = render(<OverviewView {...baseProps} />);
+    expect(container.textContent).not.toMatch(
+      /ADAPTIVE|PRESCRIPTION|NUTRITION|SEQUENCING|e1RM/i
+    );
+  });
+
+  it('shows three stat tiles', () => {
+    render(<OverviewView {...baseProps} />);
+    for (const k of ['SESSIONS LOGGED', 'ERG DISTANCE', 'LATEST WATTS'])
+      expect(screen.getByText(k)).toBeInTheDocument();
+    expect(
+      screen.getByText('SESSIONS LOGGED').parentElement.parentElement
+    ).toHaveStyle({ gridTemplateColumns: 'repeat(3,1fr)' });
   });
 });
