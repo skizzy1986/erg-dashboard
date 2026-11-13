@@ -159,8 +159,29 @@ describe('recent', () => {
 
 describe('the phase pill', () => {
   it('is absent when no anchor names a phase', () => {
-    render(<MobileToday />);
+    const { container } = render(<MobileToday />);
     expect(screen.queryByText(/WK/)).toBeNull();
+    expect(container.querySelector('header').textContent).not.toMatch(
+      /BASE|WK/i
+    );
+  });
+
+  it('is absent when only the block is set: the block never stands alone', () => {
+    mockAnchors.mockReturnValue({
+      anchors: { current_block: { value: 'wk 3/12' } },
+      cp: 205,
+    });
+    render(<MobileToday />);
+    expect(screen.queryByText(/WK 3\/12/i)).toBeNull();
+  });
+
+  it('renders the phase alone when no block is set', () => {
+    mockAnchors.mockReturnValue({
+      anchors: { current_phase: { value: 'Base' } },
+      cp: 205,
+    });
+    render(<MobileToday />);
+    expect(screen.getByText('BASE')).toBeInTheDocument();
   });
 
   it('renders the live anchor, not a literal', () => {

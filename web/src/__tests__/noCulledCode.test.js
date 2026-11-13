@@ -89,9 +89,30 @@ const GROUPS = {
     'now' + 'Tick',
     'YOUR' + ' WEEKS',
   ],
+  // #421 also culls the macro and nutrition target tables; both needles are
+  // already pinned under #418.
+  '#421 Overview/prescription': [
+    'evaluate' + 'Rules',
+    'check' + 'Consistency',
+    'auto' + 'regulate',
+    'ADAPTIVE' + '_RULES',
+    'RULE' + '_EVOLUTION',
+    'DAILY' + '_ROUTINE',
+    'PHASE' + '_CONTEXT',
+    'derive' + 'Targets',
+    'assess' + 'Macro',
+    'macro' + 'Color',
+    'latest' + 'Squat',
+  ],
 };
 const NEEDLES = Object.values(GROUPS).flat();
 const RE = new RegExp(NEEDLES.map((n) => `\\b${n}\\b`).join('|'));
+
+// The culled modules themselves: no import of them may come back, whatever
+// it imports. The path is built by concatenation for the same reason.
+const CULLED_IMPORT = new RegExp(
+  `from\\s+['"][^'"]*\\/(${['analy' + 'sis', 'coach' + 'ing', 'nutri' + 'tion', 'sched' + 'ule'].join('|')})(\\.js)?['"]`
+);
 
 const files = ROOTS.flatMap(walk);
 
@@ -119,6 +140,38 @@ describe('code culled by epic #412 stays removed', () => {
         .forEach((line, i) => {
           const m = line.match(RE);
           if (m) offenders.push(`${relative(cwd(), file)}:${i + 1}: ${m[0]}`);
+        });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('matches an import of a culled module, and nothing else', () => {
+    expect(CULLED_IMPORT.test("} from '../utils/" + 'analy' + "sis.js';")).toBe(
+      true
+    );
+    expect(CULLED_IMPORT.test('from "../constants/' + 'sched' + 'ule"')).toBe(
+      true
+    );
+    expect(
+      CULLED_IMPORT.test("from '../constants/" + 'coach' + "ing.js'")
+    ).toBe(true);
+    expect(
+      CULLED_IMPORT.test("from '../constants/" + 'nutri' + "tion.js'")
+    ).toBe(true);
+    expect(CULLED_IMPORT.test("from '../utils/recoveryAnalytics.js'")).toBe(
+      false
+    );
+    expect(CULLED_IMPORT.test("from '../hooks/useSessions.js'")).toBe(false);
+  });
+
+  it('no file under web/src or web/e2e imports a culled module', () => {
+    const offenders = [];
+    for (const file of files) {
+      readFileSync(file, 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          if (CULLED_IMPORT.test(line))
+            offenders.push(`${relative(cwd(), file)}:${i + 1}`);
         });
     }
     expect(offenders).toEqual([]);

@@ -32,22 +32,6 @@ export function workoutAccent(txt) {
   return THEME.accent; // erg aerobic default
 }
 
-export function assessMacro(val, range) {
-  if (typeof val !== 'number' || !Array.isArray(range) || range.length < 2)
-    return '—';
-  if (val >= range[0] && val <= range[1]) return '✅';
-  if (val < range[0]) return val >= range[0] * 0.9 ? '⚠️' : '❌';
-  return val <= range[1] * 1.15 ? '⚠️' : '❌';
-}
-
-export function macroColor(status) {
-  return status === '✅'
-    ? THEME.positive
-    : status === '⚠️'
-      ? THEME.caution
-      : THEME.critical;
-}
-
 // AU/most guidelines: treated target generally < 130–135 systolic, < 80 diastolic.
 // Confirm YOUR target with your GP — this is generic reference only.
 export function bpCategory(sys, dia) {

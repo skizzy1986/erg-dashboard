@@ -1,6 +1,6 @@
 import { THEME } from '../constants/theme.js';
 // Population fallbacks, used only until 14 days of personal data exist. Exported
-// because evaluateRules needs the same numbers and must not keep a second copy.
+// so tests and any other reader use these numbers rather than a second copy.
 export const RHR_DEFAULT = 57;
 export const HRV_DEFAULT = 30;
 export const SLEEP_TARGET = 7;

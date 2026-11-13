@@ -9,30 +9,21 @@ import {
 } from 'recharts';
 import LogEntry from '../components/LogEntry.jsx';
 import LoadTooltip from '../components/LoadTooltip.jsx';
-import { deriveTargets, tsbBand } from '../utils/trainingLoad.js';
-import {
-  evaluateRules,
-  checkConsistency,
-  autoregulate,
-} from '../utils/analysis.js';
-import { HR130_POWER } from '../constants/trainingConfig.js';
-import { PHASE_CONTEXT } from '../constants/schedule.js';
+import { tsbBand } from '../utils/trainingLoad.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { useAnchors } from '../hooks/useAnchors.js';
-import { ADAPTIVE_RULES, RULE_EVOLUTION } from '../constants/coaching.js';
 import { THEME } from '../constants/theme.js';
-import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
+import { RADIUS } from '../constants/tokens.js';
 
 // Desktop says more than mobile about the same band, so the copy stays here
 // while the thresholds come from tsbBand(). Keyed off band.key so the two can
 // never drift apart again.
 const TSB_COPY = {
-  fresh: '✅ Fresh — good form, ready for hard sessions',
-  neutral: '⚡ Neutral — balanced load and recovery',
-  fatigued:
-    '⚠️ Fatigued — normal mid-week training load. Protect Thursday rest.',
-  deep: "🔴 High fatigue — rest day is critical. Don't add sessions.",
+  fresh: '✅ Fresh — form positive; recent load below fitness',
+  neutral: '⚡ Neutral — recent load and fitness balanced',
+  fatigued: '⚠️ Fatigued — recent load above fitness',
+  deep: '🔴 High fatigue — recent load well above fitness',
 };
 
 export default function OverviewView({
@@ -42,25 +33,44 @@ export default function OverviewView({
   loadData,
   loggedSessions,
   latestErg,
-  latestSquat,
   totalErgDist,
   totalSessions,
   isWide,
 }) {
-  // `latest` is null when the training-load read fails or returns no sessions.
-  // evaluateRules/autoregulate/calcReadiness all guard `tsb != null`, so the
-  // rules engine degrades to "no TSB signal" rather than reading a fabricated 0.
+  // `latest` is null when the training-load read fails or returns no sessions;
+  // tsbBand(null) is null, so the copy falls back rather than reading a fake 0.
   const tsbNow = latest?.tsb ?? null;
   // Vitals were read from the static `recoveryLog` constant here, so the home
   // screen scored readiness off June data. Same hook, same single readiness
   // definition, as RecoveryView and mobile.
-  const { latest: todayRec, readiness, personalBaselines } = useVitals();
+  const { readiness } = useVitals();
   // Was a hardcoded 190 threaded down from App.jsx. Load is measured against
   // the live rowing CP and bike FTP anchors, so a fixed 190 both drifted from
   // the real value and misdescribed the calculation.
-  const { cp, ftp, cpAvailable } = useAnchors();
+  const { anchors, cp, ftp, cpAvailable } = useAnchors();
+  // Only what the anchors say; no phase is inferred when they are unset.
+  const phase = anchors?.current_phase?.value ?? null;
+  const block = anchors?.current_block?.value ?? null;
   return (
     <>
+      {phase && (
+        <div style={{ display: 'flex', marginBottom: 8 }}>
+          <div
+            aria-label="Training phase"
+            style={{
+              fontSize: 10,
+              fontFamily: FONT.mono,
+              color: THEME.accent,
+              background: THEME.surface,
+              border: `1px solid ${THEME.border}`,
+              borderRadius: RADIUS.pill,
+              padding: '2px 8px',
+            }}
+          >
+            {[phase, block].filter(Boolean).join(' · ').toUpperCase()}
+          </div>
+        </div>
+      )}
       <section
         aria-label="Readiness"
         style={{
@@ -91,117 +101,11 @@ export default function OverviewView({
         )}
       </section>
 
-      {/* Phase context — where you are in the arc */}
-      <div
-        style={{
-          background: `linear-gradient(135deg,${alpha(THEME.accent, '15')},${THEME.surfaceAlt})`,
-          border: `1px solid ${alpha(THEME.accent, '40')}`,
-          borderRadius: 6,
-          padding: '13px 16px',
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            marginBottom: 8,
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 700, color: THEME.accent }}>
-            {PHASE_CONTEXT.phaseLabel}
-          </span>
-          <span style={{ fontSize: 9, color: THEME.muted }}>
-            wk {PHASE_CONTEXT.weeksIn}/{PHASE_CONTEXT.weeksTotal} ·{' '}
-            {PHASE_CONTEXT.window}
-          </span>
-        </div>
-        {/* Arc strip */}
-        <div style={{ display: 'flex', gap: 3, marginBottom: 8 }}>
-          {PHASE_CONTEXT.arc.map((p) => (
-            <div
-              key={p.phase}
-              style={{
-                flex: p.phase === 'RACE' ? 1.3 : 1,
-                background: p.active ? THEME.accent : THEME.raised,
-                border: `1px solid ${p.active ? THEME.accent : THEME.border}`,
-                borderRadius: 3,
-                padding: '5px 4px',
-                textAlign: 'center',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 7,
-                  fontWeight: 700,
-                  color: p.active ? THEME.field : THEME.muted,
-                  letterSpacing: 0.5,
-                }}
-              >
-                {p.phase}
-              </div>
-              <div
-                style={{
-                  fontSize: 6,
-                  color: p.active ? THEME.field : THEME.textFaint,
-                }}
-              >
-                {p.window}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: THEME.textSubtle,
-            lineHeight: 1.5,
-            marginBottom: 5,
-          }}
-        >
-          <span style={{ color: THEME.accent }}>Doing: </span>
-          {PHASE_CONTEXT.doing}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: THEME.textSubtle,
-            lineHeight: 1.5,
-            marginBottom: 5,
-          }}
-        >
-          <span style={{ color: THEME.accent }}>Why now: </span>
-          {PHASE_CONTEXT.why}
-        </div>
-        <div
-          style={{
-            fontSize: 10,
-            color: THEME.muted,
-            lineHeight: 1.5,
-            marginBottom: 5,
-          }}
-        >
-          ⏸ {PHASE_CONTEXT.notYet}
-        </div>
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.muted,
-            lineHeight: 1.5,
-            borderTop: `1px solid ${THEME.divider}`,
-            paddingTop: 6,
-          }}
-        >
-          Next gate: {PHASE_CONTEXT.nextGate}
-        </div>
-      </div>
-
       {/* Stats */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${isWide ? 4 : 2},1fr)`,
+          gridTemplateColumns: `repeat(${isWide ? 3 : 2},1fr)`,
           gap: 8,
           marginBottom: 16,
         }}
@@ -218,7 +122,6 @@ export default function OverviewView({
             latestErg?.avg_watts ? `${latestErg.avg_watts}W` : '—',
             'working avg power',
           ],
-          ['SQUAT e1RM', `${latestSquat.e1rm}kg`, `as of ${latestSquat.date}`],
         ].map(([k, v, sub]) => (
           <div
             key={k}
@@ -255,398 +158,6 @@ export default function OverviewView({
           </div>
         ))}
       </div>
-
-      {/* Adaptive Decision Engine */}
-      {(() => {
-        const lastSrpe = (() => {
-          for (let i = 0; i < loggedSessions.length; i++) {
-            if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe;
-          }
-          return null;
-        })();
-        const fired = evaluateRules(
-          todayRec,
-          lastSrpe,
-          tsbNow,
-          personalBaselines
-        );
-        const consistency = checkConsistency(fired, false);
-        return (
-          <div
-            style={{
-              background: `linear-gradient(135deg,${alpha(THEME.accentAlt, '12')},${THEME.surfaceAlt})`,
-              border: `1px solid ${alpha(THEME.accentAlt, '40')}`,
-              borderRadius: 6,
-              padding: '14px 16px',
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'baseline',
-                marginBottom: 4,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: THEME.accentAlt,
-                }}
-              >
-                ⚙️ ADAPTIVE ENGINE
-              </div>
-              <div style={{ fontSize: 8, color: THEME.muted }}>
-                {ADAPTIVE_RULES.length} rules · evolving
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: 9,
-                color: THEME.muted,
-                marginBottom: 10,
-                lineHeight: 1.5,
-              }}
-            >
-              Codified decision rules from our work. Transparent — every flag
-              traces to a rule + its origin. Reads current data; surfaces what's
-              firing now.
-            </div>
-
-            {/* Currently firing */}
-            <div
-              style={{
-                fontSize: 8,
-                letterSpacing: 2,
-                color: fired.length ? THEME.warning : THEME.positive,
-                marginBottom: 6,
-              }}
-            >
-              {fired.length
-                ? `⚑ ${fired.length} FLAG${fired.length > 1 ? 'S' : ''} FIRING NOW`
-                : '✅ NOTHING FLAGGED — CLEAR TO TRAIN AS PLANNED'}
-            </div>
-            {fired.map((f, i) => (
-              <div
-                key={`${f.id}-${i}`}
-                style={{
-                  background: THEME.field,
-                  borderLeft: `2px solid ${THEME.warning}`,
-                  borderRadius: 3,
-                  padding: '7px 10px',
-                  marginBottom: 4,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 9,
-                    color: THEME.warning,
-                    fontWeight: 700,
-                  }}
-                >
-                  {f.id}{' '}
-                </span>
-                <span style={{ fontSize: 10, color: THEME.textSubtle }}>
-                  {f.msg}
-                </span>
-              </div>
-            ))}
-
-            {consistency.conflict && (
-              <div
-                style={{
-                  background:
-                    'color-mix(in srgb, var(--color-critical) 12%, var(--color-bg))',
-                  border: `1px solid ${alpha(THEME.critical, '50')}`,
-                  borderRadius: 3,
-                  padding: '7px 10px',
-                  marginBottom: 4,
-                  fontSize: 10,
-                  color: THEME.critical,
-                }}
-              >
-                {consistency.msg}
-              </div>
-            )}
-
-            {/* Ruleset (collapsed summary) */}
-            <details style={{ marginTop: 10 }}>
-              <summary
-                style={{
-                  fontSize: 9,
-                  color: THEME.accentAlt,
-                  cursor: 'pointer',
-                  letterSpacing: 1,
-                }}
-              >
-                VIEW FULL RULESET ({ADAPTIVE_RULES.length})
-              </summary>
-              <div style={{ marginTop: 8 }}>
-                {ADAPTIVE_RULES.map((r) => (
-                  <div
-                    key={r.id}
-                    style={{
-                      background: THEME.field,
-                      borderRadius: 3,
-                      padding: '8px 10px',
-                      marginBottom: 4,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'baseline',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: THEME.text,
-                        }}
-                      >
-                        {r.id} · {r.domain}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 8,
-                          color: r.tier === 1 ? THEME.positive : THEME.caution,
-                        }}
-                      >
-                        T{r.tier}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 9,
-                        color: THEME.textSubtle,
-                        lineHeight: 1.5,
-                        marginTop: 2,
-                      }}
-                    >
-                      {r.rule}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 9,
-                        color: THEME.muted,
-                        lineHeight: 1.5,
-                        marginTop: 2,
-                      }}
-                    >
-                      → {r.action}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 8,
-                        color: THEME.textFaint,
-                        lineHeight: 1.4,
-                        marginTop: 2,
-                        fontStyle: 'italic',
-                      }}
-                    >
-                      origin: {r.origin}
-                    </div>
-                  </div>
-                ))}
-                <div
-                  style={{
-                    fontSize: 8,
-                    letterSpacing: 2,
-                    color: THEME.muted,
-                    margin: '10px 0 5px',
-                  }}
-                >
-                  RULESET EVOLUTION
-                </div>
-                {RULE_EVOLUTION.map((e, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      fontSize: 9,
-                      color: THEME.muted,
-                      lineHeight: 1.5,
-                      marginBottom: 3,
-                      paddingLeft: 4,
-                    }}
-                  >
-                    <span style={{ color: THEME.accentAlt }}>{e.date}</span> ·{' '}
-                    {e.change}
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
-        );
-      })()}
-
-      {/* Today's Prescription — live targets + autoregulation */}
-      {(() => {
-        const lastSrpe = (() => {
-          for (let i = 0; i < loggedSessions.length; i++) {
-            if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe;
-          }
-          return null;
-        })();
-        const fired = evaluateRules(
-          todayRec,
-          lastSrpe,
-          tsbNow,
-          personalBaselines
-        );
-        const auto = autoregulate(tsbNow, readiness, fired);
-        const t = deriveTargets(HR130_POWER);
-        return (
-          <div
-            style={{
-              background: `linear-gradient(135deg,${alpha(auto.color, '12')},${THEME.surfaceAlt})`,
-              border: `1px solid ${alpha(auto.color, '50')}`,
-              borderRadius: 6,
-              padding: '14px 16px',
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: auto.color,
-                }}
-              >
-                TODAY'S PRESCRIPTION · AUTOREGULATED
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: auto.color,
-                  letterSpacing: 1,
-                }}
-              >
-                ● {auto.signal}
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: THEME.textSubtle,
-                lineHeight: 1.6,
-                marginBottom: 10,
-              }}
-            >
-              {auto.guidance}
-            </div>
-
-            {/* Live-computed targets */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2,1fr)',
-                gap: 8,
-                marginBottom: 8,
-              }}
-            >
-              <div
-                style={{
-                  background: THEME.field,
-                  borderRadius: 4,
-                  padding: '9px 11px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 8,
-                    color: THEME.muted,
-                    letterSpacing: 2,
-                    marginBottom: 2,
-                  }}
-                >
-                  UT1 TARGET (LIVE)
-                </div>
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: THEME.accent,
-                  }}
-                >
-                  {t.ut1Low}–{t.ut1High}W
-                </div>
-                <div
-                  style={{
-                    fontSize: 8,
-                    color: THEME.textFaint,
-                    marginTop: 1,
-                  }}
-                >
-                  pacer cue {t.pacerCue}W · HR 130
-                </div>
-              </div>
-              <div
-                style={{
-                  background: THEME.field,
-                  borderRadius: 4,
-                  padding: '9px 11px',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 8,
-                    color: THEME.muted,
-                    letterSpacing: 2,
-                    marginBottom: 2,
-                  }}
-                >
-                  UT2 TARGET (LIVE)
-                </div>
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: THEME.positive,
-                  }}
-                >
-                  {t.ut2Low}–{t.ut2High}W
-                </div>
-                <div
-                  style={{
-                    fontSize: 8,
-                    color: THEME.textFaint,
-                    marginTop: 1,
-                  }}
-                >
-                  easy · HR &lt;125
-                </div>
-              </div>
-            </div>
-            <div
-              style={{ fontSize: 8, color: THEME.textFaint, lineHeight: 1.5 }}
-            >
-              Targets computed from {t.source}. Recompute automatically as new
-              HR130 points land. ● {auto.signal} fuses TSB (
-              {tsbNow == null
-                ? 'unavailable'
-                : (tsbNow > 0 ? '+' : '') + tsbNow}
-              ), readiness, and fired rules.{' '}
-              <span style={{ color: THEME.muted }}>
-                TSB rests on estimated CP until the test — direction meaningful,
-                absolute soft.
-              </span>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Training Load Chart */}
       <div
@@ -824,39 +335,6 @@ export default function OverviewView({
         </div>
       </div>
 
-      {/* Nutrition Status */}
-      <div
-        style={{
-          background: THEME.raised,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 6,
-          padding: '14px 16px',
-          marginBottom: 16,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 9,
-            letterSpacing: 3,
-            color: THEME.critical,
-            marginBottom: 10,
-          }}
-        >
-          NUTRITION STATUS
-        </div>
-        <p
-          style={{
-            margin: 0,
-            padding: '16px 0',
-            textAlign: 'center',
-            color: THEME.muted,
-            fontSize: 13,
-          }}
-        >
-          No nutrition log yet.
-        </p>
-      </div>
-
       <div
         style={{
           fontSize: 9,
@@ -877,58 +355,6 @@ export default function OverviewView({
       >
         {loggedSessions.slice(0, 4).map((entry, i) => (
           <LogEntry key={`${entry.date}-${entry.label}-${i}`} entry={entry} />
-        ))}
-      </div>
-
-      {/* Sequencing rules */}
-      <div
-        style={{
-          background: THEME.raised,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 6,
-          padding: '14px 16px',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 9,
-            letterSpacing: 3,
-            color: THEME.positive,
-            marginBottom: 10,
-          }}
-        >
-          SEQUENCING RULES
-        </div>
-        {[
-          ['✅', 'Upper strength + any erg session — same day fine'],
-          ['✅', 'Z2 erg AM → lower strength PM (6hr gap)'],
-          ['⚠️', 'Lower strength → Z2 erg next morning — OK'],
-          ['❌', 'Hard erg + lower strength — same day'],
-          ['❌', 'Hard erg + lower strength — adjacent days'],
-          ['❌', 'Leg accessories in upper sessions'],
-          [
-            '📝',
-            'Report sRPE (1–10) with every session — UT2 should feel 3–4, UT1 5–6',
-          ],
-          [
-            '🚴',
-            'Occasional bike ride = valid UT2 substitute (variability protects against overuse)',
-          ],
-        ].map(([icon, rule]) => (
-          <div
-            key={rule}
-            style={{
-              display: 'flex',
-              gap: 10,
-              marginBottom: 6,
-              fontSize: 11,
-              color: THEME.textSubtle,
-              lineHeight: 1.5,
-            }}
-          >
-            <span style={{ flexShrink: 0 }}>{icon}</span>
-            <span>{rule}</span>
-          </div>
         ))}
       </div>
     </>
