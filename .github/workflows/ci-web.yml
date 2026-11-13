@@ -61,6 +61,11 @@ jobs:
       # the overview painted white text onto a white tile. Nine screenshots
       # cannot cover that class — this does.
       - run: npm run check:colours
+      # Lingui catalogs: in sync with the source (a new or changed message
+      # without a re-extract fails), and every Spanish msgstr filled BEFORE the
+      # English fallback is applied — so the runtime fallback is a safety net,
+      # never a way to ship an untranslated string.
+      - run: npm run i18n:check
       # Scoped to production dependencies: dev-only transitive advisories
       # (eslint/vitest/workbox tooling) must not block application PRs. An
       # unscoped gate deadlocked the repo for a month in 2026-08 — it failed

@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { canonicalSquatUrl, isSquatPath } from './utils/squatRoute.js';
 import { initialSquatTheme } from './utils/squatTheme.js';
 import { THEME } from './constants/theme.js';
+import { LANG_TAG, OFFLINE_TEXT, initialLang } from './i18n/lang.js';
 
 // Two products share one bundle: the signed-in dashboard and the public squat
 // tool at /squat. Each is its own lazy chunk, so the tool never downloads the
@@ -54,11 +55,18 @@ function Ground({ theme, children }) {
   );
 }
 
+// The tool's catalog is in the chunk that failed to arrive, so the words come
+// from the pre-chunk table, in the stored language.
 function SquatOffline() {
+  const lang = initialLang();
   return (
     <Ground theme={initialSquatTheme()}>
-      <p role="alert" style={{ margin: 0, padding: 24, color: THEME.text }}>
-        The squat tool needs a connection the first time. Reconnect and reload.
+      <p
+        role="alert"
+        lang={LANG_TAG[lang]}
+        style={{ margin: 0, padding: 24, color: THEME.text }}
+      >
+        {OFFLINE_TEXT[lang]}
       </p>
     </Ground>
   );

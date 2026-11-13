@@ -6,6 +6,8 @@ import { SPLASH_MIN_MS, SPLASH_MAX_MS } from '../hooks/useSplashGate.js';
 import { THEME } from '../constants/theme.js';
 import { TYPE } from '../constants/tokens.js';
 import { FONT } from '../constants/type.js';
+import { LANG_KEY } from '../i18n/lang.js';
+import { __resetLocaleCacheForTests, bootLocale } from '../i18n/locale.js';
 
 const mocks = vi.hoisted(() => ({
   getSession: null,
@@ -81,11 +83,10 @@ beforeEach(() => {
   mocks.captureError = vi.fn();
 });
 
-const pageLang = document.documentElement.lang;
-
 afterEach(() => {
   vi.useRealTimers();
-  document.documentElement.lang = pageLang;
+  window.localStorage.removeItem(LANG_KEY);
+  __resetLocaleCacheForTests();
 });
 
 describe('AuthGate boot behaviour', () => {
@@ -151,19 +152,34 @@ describe('AuthGate boot behaviour', () => {
     expect(splashes()).toBe(0);
   });
 
+  // [stored choice, line text, line lang, head word, <html lang>, sign-in prompt]
   const LOCALES = [
-    ['', 'Train Smarter', 'en', 'Smarter'],
-    ['es', 'Entrena con cabeza', 'es', 'cabeza'],
+    ['en', 'Train Smarter', 'en', 'Smarter', 'en', 'Sign in to continue'],
+    [
+      'es',
+      'Entrena con cabeza',
+      'es',
+      'cabeza',
+      'es-CO',
+      'Inicia sesión para continuar',
+    ],
   ];
   // Split across a lead and a head span, so match the whole line's text.
   const loginLine = (text) =>
     screen.getByText(
       (_, el) => el.tagName === 'DIV' && el.textContent === text
     );
-  const toLogin = async () => {
+  // A stored Spanish choice suspends LanguageProvider on the catalog; awaiting
+  // the same boot promise inside act() settles it (dashboard.es.test's pattern).
+  const toLogin = async (locale = 'en') => {
+    window.localStorage.setItem(LANG_KEY, locale);
     const d = deferred();
     mocks.getSession = d.promise;
-    const utils = render(<AuthGate />);
+    let utils;
+    await act(async () => {
+      utils = render(<AuthGate />);
+      if (locale === 'es') await bootLocale('es', 'dashboard');
+    });
     await act(async () => {
       d.reject(new Error('network'));
     });
@@ -171,20 +187,19 @@ describe('AuthGate boot behaviour', () => {
   };
 
   it.each(LOCALES)(
-    'shows the brand line for page lang %j between SPLITIQ and the sign-in prompt',
-    async (pageLangValue, text, lang, head) => {
-      document.documentElement.lang = pageLangValue;
-      const { container } = await toLogin();
+    'shows the brand line for locale %j between SPLITIQ and the sign-in prompt',
+    async (locale, text, lang, head, htmlLang, promptText) => {
+      const { container } = await toLogin(locale);
 
       const line = loginLine(text);
       expect(line).toHaveAttribute('lang', lang);
       expect(line.querySelector('span')).toHaveTextContent(
         new RegExp(`^${head}$`)
       );
-      expect(document.documentElement.lang).toBe(pageLangValue);
+      expect(document.documentElement.getAttribute('lang')).toBe(htmlLang);
 
       const brand = screen.getByText('SPLITIQ');
-      const prompt = screen.getByText('Sign in to continue');
+      const prompt = screen.getByText(promptText);
       const FOLLOWING = document.DOCUMENT_POSITION_FOLLOWING;
       expect(brand.compareDocumentPosition(line) & FOLLOWING).toBeTruthy();
       expect(line.compareDocumentPosition(prompt) & FOLLOWING).toBeTruthy();

@@ -5,7 +5,7 @@
 //
 // `sampleStdDev` matches mathjs `std(...)` exactly: its default normalization is
 // 'unbiased', dividing by n-1, NOT the population n. Changing that divisor would
-// silently move the published HR130 spread figure.
+// silently move the published spread figure.
 
 export function mean(xs) {
   if (!xs.length) throw new Error('mean requires at least one value');

@@ -20,6 +20,9 @@ vi.mock('../../../hooks/useAnchors.js', () => ({
   useAnchors: () => mockAnchors(),
 }));
 
+import { i18n } from '@lingui/core';
+import { messages as en } from '../../../locales/en.po';
+import { messages as es } from '../../../locales/es.po';
 import MobileToday from '../MobileToday.jsx';
 
 const iso = (d) => d.toISOString().slice(0, 10);
@@ -216,6 +219,15 @@ describe('the Settings gear', () => {
     const gear = screen.getByRole('button', { name: 'Settings' });
     expect(gear).toHaveStyle({ width: '44px', height: '44px' });
     expect(gear.closest('header')).not.toBeNull();
+  });
+
+  it('is named in Spanish when Spanish is active', () => {
+    i18n.load('es', { ...en, ...es });
+    i18n.activate('es');
+    render(<MobileToday onOpenSettings={() => {}} />);
+    expect(
+      screen.getByRole('button', { name: 'Configuración' })
+    ).toBeInTheDocument();
   });
 
   it('opens Settings from the keyboard', async () => {

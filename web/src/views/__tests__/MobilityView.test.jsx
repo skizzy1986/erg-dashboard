@@ -22,8 +22,7 @@ describe('MobilityView', () => {
 
     fireEvent.click(routine);
     expect(screen.getByText(/Thoracic spine/i)).toBeInTheDocument();
-    // Rehab blocks carry a · REHAB tag.
-    expect(screen.getAllByText(/· REHAB/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/REHAB/i)).not.toBeInTheDocument();
 
     // Clicking again collapses it (covers the toggle-to-null path).
     fireEvent.click(routine);

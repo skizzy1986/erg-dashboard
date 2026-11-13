@@ -2,6 +2,7 @@ import { THEME } from '../../constants/theme.js';
 import { splashCss } from '../../utils/splashCss.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { FONT } from '../../constants/type.js';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { brandLine } from '../../utils/brandLine.js';
 
 const CSS = splashCss(THEME);
@@ -10,7 +11,8 @@ const MARK_PATH = 'M30 88 C 44 88, 46 40, 62 40 C 78 40, 80 88, 94 88';
 
 export default function SplashScreen() {
   const reduced = usePrefersReducedMotion();
-  const line = brandLine(document.documentElement.lang);
+  const { i18n } = useLingui();
+  const line = brandLine(i18n.locale);
   return (
     <div
       className={reduced ? 'siq-splash siq-splash--still' : 'siq-splash'}
@@ -62,19 +64,25 @@ export default function SplashScreen() {
             className="siq-splash__cycle siq-splash__cycle--1"
             aria-hidden="true"
           >
-            ERG
+            <Trans comment="Splash word cycle, one discipline, all capitals">
+              ERG
+            </Trans>
           </span>
           <span
             className="siq-splash__cycle siq-splash__cycle--2"
             aria-hidden="true"
           >
-            STRENGTH
+            <Trans comment="Splash word cycle, one discipline, all capitals">
+              STRENGTH
+            </Trans>
           </span>
           <span
             className="siq-splash__cycle siq-splash__cycle--3"
             aria-hidden="true"
           >
-            BIKE
+            <Trans comment="Splash word cycle, one discipline, all capitals">
+              BIKE
+            </Trans>
           </span>
           <span className="siq-splash__tagline" lang={line.lang}>
             {line.lead}{' '}
@@ -85,7 +93,11 @@ export default function SplashScreen() {
       <div className="siq-splash__progress">
         <div className="siq-splash__track" />
       </div>
-      <div className="siq-splash__caption">SYNCING TRAINING LOG</div>
+      <div className="siq-splash__caption">
+        <Trans comment="Splash-screen loading caption, all capitals">
+          SYNCING TRAINING LOG
+        </Trans>
+      </div>
     </div>
   );
 }

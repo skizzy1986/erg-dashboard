@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import SettingsView from '../SettingsView.jsx';
 import { supabase } from '../../supabaseClient.js';
 import { THEME } from '../../constants/theme.js';
@@ -8,6 +9,7 @@ import { RADIUS, SPACE, TYPE } from '../../constants/tokens.js';
 // stays four, and this is reached from the gear on Today. It hosts the desktop
 // SettingsView unchanged, so Strava behaves identically on both.
 export default function MobileSettings({ onBack, notice }) {
+  const { t } = useLingui();
   // Focus moves to the heading on arrival, so a screen reader announces the
   // new screen instead of leaving focus on a gear that no longer exists.
   const headingRef = useRef(null);
@@ -33,7 +35,7 @@ export default function MobileSettings({ onBack, notice }) {
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back to Today"
+          aria-label={t`Back to Today`}
           style={{
             width: 44,
             height: 44,
@@ -72,7 +74,7 @@ export default function MobileSettings({ onBack, notice }) {
             color: THEME.text,
           }}
         >
-          Settings
+          <Trans>Settings</Trans>
         </h1>
       </header>
       <SettingsView notice={notice} />
@@ -92,7 +94,7 @@ export default function MobileSettings({ onBack, notice }) {
           cursor: 'pointer',
         }}
       >
-        Sign out
+        <Trans>Sign out</Trans>
       </button>
     </div>
   );

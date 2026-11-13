@@ -104,6 +104,18 @@ const GROUPS = {
     'macro' + 'Color',
     'latest' + 'Squat',
   ],
+  '#422 Calibration': [
+    'CALIBRATION' + '_STATUS',
+    'deriveCalibration' + 'Status',
+    'CRITICAL' + '_POWER',
+    'POWER' + '_DURATION',
+    'HR' + '_ZONES',
+    'EST' + '_MHR',
+    'HR130' + '_POWER',
+    'HR130' + '_PROJECTION',
+    'analyze' + 'Barometer',
+    'SRPE' + '_SCALE',
+  ],
 };
 const NEEDLES = Object.values(GROUPS).flat();
 const RE = new RegExp(NEEDLES.map((n) => `\\b${n}\\b`).join('|'));

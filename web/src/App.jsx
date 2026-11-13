@@ -11,6 +11,9 @@ import { tsbBand, calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
+import { Trans } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 
 // Every tab is lazy. Only one is on screen at a time, and three of them are
 // among the heaviest files in the repo (StrengthLogger ~1,682, OverviewView
@@ -76,8 +79,10 @@ class ErrorBoundary extends Component {
             lineHeight: 1.6,
           }}
         >
-          ⚠️ This section hit a render error and was isolated to protect the
-          rest of the dashboard.
+          <Trans comment="Shown in place of a dashboard tab that crashed">
+            ⚠️ This section hit a render error and was isolated to protect the
+            rest of the dashboard.
+          </Trans>
           <br />
           <span style={{ color: THEME.neutralAccent, fontSize: 10 }}>
             {this.state.msg}
@@ -88,45 +93,6 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-const strengthTrend = {
-  'Back Squat': [
-    { date: '6/3', e1rm: 109.7 },
-    { date: '6/5', e1rm: 110.5 },
-    { date: '6/9', e1rm: 118.0 },
-  ],
-  'Romanian Deadlift': [
-    { date: '6/3', e1rm: 85.2 },
-    { date: '6/5', e1rm: 89.2 },
-    { date: '6/9', e1rm: 95.8 },
-  ],
-  'Bench Press': [
-    { date: '6/3', e1rm: 63.4 },
-    { date: '6/8', e1rm: 71.2 },
-  ],
-  'Incline Bench': [
-    { date: '6/3', e1rm: 52.9 },
-    { date: '6/7', e1rm: 55.8 },
-    { date: '6/8', e1rm: 61.7 },
-  ],
-  'Cable Row': [
-    { date: '5/31', e1rm: 62.3 },
-    { date: '6/4', e1rm: 74.6 },
-    { date: '6/8', e1rm: 98.0 },
-  ],
-  'Barbell Row': [
-    { date: '5/31', e1rm: 53.8 },
-    { date: '6/4', e1rm: 62.8 },
-  ],
-  'Lat Pulldown': [
-    { date: '5/31', e1rm: 66.1 },
-    { date: '6/4', e1rm: 74.6 },
-  ],
-  'Shoulder Press': [
-    { date: '6/4', e1rm: 41.9 },
-    { date: '6/7', e1rm: 46.2 },
-  ],
-};
 
 // ── PROGRAM STRUCTURE ─────────────────────────────────────────
 // Based on: polarized TID (Seiler 2010, Silva Oliveira et al. 2024),
@@ -146,24 +112,41 @@ const strengthTrend = {
 
 // ── CUSTOM CHART TOOLTIP ──────────────────────────────────────
 
-// ── TRAINING LOAD DATA ────────────────────────────────────────
-// TSS per day. Erg: (duration_sec/3600) × (avg_watts/FTP)² × 100
-// Strength: time-based estimates (upper ~50, lower ~55, combined ~55)
-// FTP estimated at 190W — update after threshold session.
-
-// ── NUTRITION LOG ─────────────────────────────────────────────
-// dayType: "two-a-day" | "training" | "rest"
-// Targets from bottom-up expenditure model: BMR 1,887 (93.5kg, 187.5cm,
-// M40s) + NEAT + TEF + training. Weekly maintenance ~3,140 kcal.
-// Calibration phase: eat at maintenance ~2 weeks, then 0.3kg/week deficit.
-// Protein 2g/kg = ~187g held constant. Carbs high. Fat moderate floor.
-
 // ── LOG SESSION FORM — writes a strength session to Supabase ───
 // Proof-of-concept write path. Strength only for now (erg pulls from
 // Strava). On submit: insert into the `sessions` table, then call
 // onSaved() so the parent re-fetches and the new entry appears.
 // ── MAIN APP ──────────────────────────────────────────────────
+// The desktop tabs. Labels are message descriptors, translated at render, so
+// a language switch relabels the nav without remounting a tab.
+const NAV = [
+  ['overview', msg({ message: 'Overview', comment: 'Desktop nav tab' })],
+  ['calendar', msg({ message: 'Calendar', comment: 'Desktop nav tab' })],
+  ['plan', msg({ message: 'Plan', comment: 'Desktop nav tab' })],
+  [
+    'live',
+    msg({ message: 'Live', comment: 'Desktop nav tab: live erg session' }),
+  ],
+  [
+    'erg',
+    msg({ message: 'Erg', comment: 'Desktop nav tab: rowing ergometer' }),
+  ],
+  ['strength', msg({ message: 'Strength', comment: 'Desktop nav tab' })],
+  [
+    'logger',
+    msg({
+      message: 'Logger',
+      comment: 'Desktop nav tab: log strength sets live',
+    }),
+  ],
+  ['mobility', msg({ message: 'Mobility', comment: 'Desktop nav tab' })],
+  ['recovery', msg({ message: 'Recovery', comment: 'Desktop nav tab' })],
+  ['log', msg({ message: 'Log', comment: 'Desktop nav tab: past sessions' })],
+  ['settings', msg({ message: 'Settings', comment: 'Desktop nav tab' })],
+];
+
 export default function App() {
+  const { _ } = useLingui();
   // The Strava OAuth callback returns to `…#/settings?strava=…`. There is no
   // router here — `view` is useState and nothing else reads the location — so
   // without this the whole OAuth outcome, errors included, would land on
@@ -177,10 +160,10 @@ export default function App() {
         : readStravaCallback(window.location),
     []
   );
-  const stravaNotice = useMemo(
-    () => stravaCallbackMessage(stravaCallback),
-    [stravaCallback]
-  );
+  // Built at render, not memoised on the callback: its text is translated, and
+  // a language switch while the notice is showing must re-read it. useLingui
+  // above re-renders App on that switch.
+  const stravaNotice = stravaCallbackMessage(stravaCallback);
   const [view, setView] = useState(stravaCallback ? 'settings' : 'overview');
   // Clearing the URL is an external-system update, so it belongs in an effect.
   // Without it a refresh replays a stale OAuth result.
@@ -286,7 +269,9 @@ export default function App() {
                 minWidth: 0,
               }}
             >
-              ERG + STRENGTH · BASE
+              <Trans comment="Header tagline, all capitals">
+                ERG + STRENGTH · BASE
+              </Trans>
             </div>
             <div
               style={{
@@ -330,19 +315,7 @@ export default function App() {
             margin: '18px 0 16px',
           }}
         >
-          {[
-            ['overview', 'Overview'],
-            ['calendar', 'Calendar'],
-            ['plan', 'Plan'],
-            ['live', 'Live'],
-            ['erg', 'Erg'],
-            ['strength', 'Strength'],
-            ['logger', 'Logger'],
-            ['mobility', 'Mobility'],
-            ['recovery', 'Recovery'],
-            ['log', 'Log'],
-            ['settings', 'Settings'],
-          ].map(([v, label]) => (
+          {NAV.map(([v, label]) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -364,7 +337,7 @@ export default function App() {
                 fontFamily: FONT.mono,
               }}
             >
-              {label.toUpperCase()}
+              {_(label).toUpperCase()}
             </button>
           ))}
         </div>
@@ -436,10 +409,7 @@ export default function App() {
 
             {/* ── STRENGTH VIEW ── */}
             {view === 'strength' && (
-              <StrengthView
-                strengthTrend={strengthTrend}
-                strengthSessions={strengthSessions}
-              />
+              <StrengthView strengthSessions={strengthSessions} />
             )}
 
             {/* ── MOBILITY VIEW ── */}
@@ -477,8 +447,10 @@ export default function App() {
             lineHeight: 1.7,
           }}
         >
-          Tap any session to expand · Share Concept2 links or Fitbod screenshots
-          to log sessions
+          <Trans comment="Desktop footer hint. Concept2 and Fitbod are brand names: keep them.">
+            Tap any session to expand · Share Concept2 links or Fitbod
+            screenshots to log sessions
+          </Trans>
         </div>
       </div>
     </div>

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { i18n } from '@lingui/core';
+import { messages as en } from '../../../locales/en.po';
+import { messages as es } from '../../../locales/es.po';
 import SplashScreen from '../SplashScreen.jsx';
 
 function stubReducedMotion() {
@@ -15,16 +18,21 @@ function stubReducedMotion() {
   }));
 }
 
-const pageLang = document.documentElement.lang;
-
 afterEach(() => {
   vi.unstubAllGlobals();
-  document.documentElement.lang = pageLang;
 });
 
+// Spanish over the English source, as the dashboard's loader does; the RTL
+// shim's I18nProvider renders whatever the global i18n has active, and
+// test-setup puts English back before the next test.
+const activate = (locale) => {
+  if (locale === 'es') i18n.load('es', { ...en, ...es });
+  i18n.activate(locale);
+};
+
 const LOCALES = [
-  ['', 'Train Smarter', 'en', 'Smarter'],
-  ['es', 'Entrena con cabeza', 'es', 'cabeza'],
+  ['en', 'Train Smarter', 'en', 'Smarter', ['ERG', 'STRENGTH', 'BIKE']],
+  ['es', 'Entrena con cabeza', 'es', 'cabeza', ['ERGÓMETRO', 'FUERZA', 'BICI']],
 ];
 
 // The line is split across spans (lead + head), so match on the whole line's
@@ -44,9 +52,9 @@ describe('SplashScreen', () => {
   });
 
   it.each(LOCALES)(
-    'shows the brand line for page lang %j, marked with its own lang',
-    (pageLangValue, text, lang, head) => {
-      document.documentElement.lang = pageLangValue;
+    'shows the brand line for locale %j, marked with its own lang',
+    (locale, text, lang, head) => {
+      activate(locale);
       const { container } = render(<SplashScreen />);
       const line = brandLineEl(text);
       expect(line).toHaveAttribute('lang', lang);
@@ -59,23 +67,27 @@ describe('SplashScreen', () => {
     }
   );
 
-  it('cycles ERG, STRENGTH, BIKE, hidden from assistive tech, after the wordmark and before the line', () => {
-    const { container } = render(<SplashScreen />);
-    const wordmark = container.querySelector('.siq-splash__word');
-    const words = ['ERG', 'STRENGTH', 'BIKE'].map((w) => screen.getByText(w));
-    const tagline = brandLineEl('Train Smarter');
-    for (const word of words) {
-      expect(word).toHaveAttribute('aria-hidden', 'true');
+  it.each(LOCALES)(
+    'cycles the three disciplines in locale %j, hidden from assistive tech, after the wordmark and before the line',
+    (locale, text, _lang, _head, cycle) => {
+      activate(locale);
+      const { container } = render(<SplashScreen />);
+      const wordmark = container.querySelector('.siq-splash__word');
+      const words = cycle.map((w) => screen.getByText(w));
+      const tagline = brandLineEl(text);
+      for (const word of words) {
+        expect(word).toHaveAttribute('aria-hidden', 'true');
+      }
+      const order = [wordmark, ...words, tagline];
+      for (let i = 1; i < order.length; i++) {
+        expect(
+          order[i - 1].compareDocumentPosition(order[i]) &
+            document.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+      }
+      expect(container.querySelector('[role="img"]')).toBeNull();
     }
-    const order = [wordmark, ...words, tagline];
-    for (let i = 1; i < order.length; i++) {
-      expect(
-        order[i - 1].compareDocumentPosition(order[i]) &
-          document.DOCUMENT_POSITION_FOLLOWING
-      ).toBeTruthy();
-    }
-    expect(container.querySelector('[role="img"]')).toBeNull();
-  });
+  );
 
   it('does not ship the mockup status bar', () => {
     render(<SplashScreen />);

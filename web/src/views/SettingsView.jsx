@@ -1,8 +1,24 @@
 import React from 'react';
 import StravaConnectPanel from '../components/StravaConnectPanel.jsx';
+import LanguageToggle from '../components/LanguageToggle.jsx';
+import { Trans } from '@lingui/react/macro';
 import { THEME } from '../constants/theme.js';
 import { FONT } from '../constants/type.js';
 import { RADIUS, SPACE, TYPE } from '../constants/tokens.js';
+
+const sectionStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: SPACE.sm,
+};
+
+const headingStyle = {
+  margin: 0,
+  fontSize: TYPE.title.size,
+  fontWeight: TYPE.title.weight,
+  letterSpacing: TYPE.title.letterSpacing,
+  color: THEME.textStrong,
+};
 
 // Deliberately thin. Strava is the first integration to need a home; Garmin,
 // Concept2 and the rest land here as sibling panels rather than growing another
@@ -26,18 +42,7 @@ export default function SettingsView({ onSynced, notice }) {
             color: THEME.accent,
           }}
         >
-          SETTINGS
-        </div>
-        <div
-          style={{
-            fontSize: TYPE.title.size,
-            fontWeight: TYPE.title.weight,
-            letterSpacing: TYPE.title.letterSpacing,
-            color: THEME.textStrong,
-            marginTop: SPACE.xs,
-          }}
-        >
-          Integrations
+          <Trans comment="Section eyebrow, all capitals">SETTINGS</Trans>
         </div>
       </div>
       {/* The OAuth outcome, routed here by App.jsx's callback effect. */}
@@ -56,7 +61,31 @@ export default function SettingsView({ onSynced, notice }) {
           {notice.text}
         </div>
       )}
-      <StravaConnectPanel onSynced={onSynced} />
+      <section aria-labelledby="settings-language" style={sectionStyle}>
+        <h2 id="settings-language" style={headingStyle}>
+          <Trans comment="Settings section heading above the language control">
+            Language
+          </Trans>
+        </h2>
+        <div
+          style={{
+            background: THEME.surface,
+            border: `1px solid ${THEME.border}`,
+            borderRadius: RADIUS.md,
+            padding: `${SPACE.lg}px`,
+          }}
+        >
+          <LanguageToggle />
+        </div>
+      </section>
+      <section aria-labelledby="settings-integrations" style={sectionStyle}>
+        <h2 id="settings-integrations" style={headingStyle}>
+          <Trans comment="Settings section heading above the Strava panel">
+            Integrations
+          </Trans>
+        </h2>
+        <StravaConnectPanel onSynced={onSynced} />
+      </section>
     </div>
   );
 }
