@@ -10,6 +10,10 @@
 >
 > Approved by Scott at Gate 1 on 2026-11-07: D1–D11 as recommended, R1–R18 to proceed.
 > H2 and H3 are hypotheses until the walkthroughs (R1) and the second movement decide them.
+>
+> Amended 2026-11-13 after the `VISION.md` amendment (#515): D13–D18, and a second track
+> for the log (L1–L3), tracked by epic
+> [#511](https://github.com/skizzy1986/erg-dashboard/issues/511).
 
 ## What SplitIQ is
 
@@ -17,8 +21,9 @@ A training app where the movements explain themselves. A coach opens it on a pho
 the rack to show a lifter what a squat does: orbit a skeleton with 118 muscles, scrub to
 any depth, see which muscles work and roughly how hard, and see what the bottom position is
 doing. The athlete gets the same view, then logs the session in the same place against a
-load model that does not claim more than it can support. The anatomy engine is the product;
-the log is the context around it.
+load model that does not claim more than it can support. The anatomy engine is the spine.
+The log around it is a product in its own right: it plans deterministically, reads at a
+simple or an expert depth, and can be shared with a coach (D13, 2026-11-13).
 
 **Why anyone would love it.** No other product found shows modelled muscle activation
 through the full range of motion, with its sources and limits on the page, free, in a
@@ -30,7 +35,8 @@ is pattern-level, and rectus femoris was missed in squat simulation (research §
 **What it is not.** Not a logger with videos (Hevy, Strong, JEFIT). Not a catalogue
 (Muscle & Motion has 1,200+ exercises; five done well beats eight hundred stubbed). Not a
 coaching-business platform (TrueCoach, Trainerize, Hevy Coach own programme delivery,
-billing and messaging). Not a load dashboard competing with Intervals.icu, which is free
+billing and messaging). A coach reading the log an athlete shares is in (L3); the business
+around it is not. Not a load dashboard competing with Intervals.icu, which is free
 and complete.
 
 ## Who it is for
@@ -40,6 +46,10 @@ and complete.
 | **The coach** explaining a lift to a group or a client | Make a lifter understand a position in one pass, on a phone, in seconds | A link they can send; a view that works on a gym-floor phone, offline after first visit |
 | **The athlete** learning or re-learning a movement | Understand why a position feels the way it does and what correct looks like | Contrast: a fault shown against the ideal, and a second lift to learn |
 | **The self-coached lifter or rower** | Record sessions and understand what the numbers and the movement mean | Logging "Back Squat" and getting a one-tap "see this modelled" |
+| **Someone who just wants to track workouts** (added 2026-11-13) | Record training without learning the model | A log that is complete at the simple depth |
+
+From L3, the coach also reads the training an athlete has chosen to share and sets their
+plan. That is the same person as the first row, not a fifth persona.
 
 No coach or lifter has yet been observed using `/squat`, and no study exists of 3D
 activation visualisation for lifters. R1 fixes the first; nothing fixes the second, so no
@@ -55,17 +65,19 @@ through `/orchestrate <item>` with its own Gate 2 and Gate 3, one PR per item, `
 
 | # | Item | Issue | Size | Blocks |
 |---|---|---|---|---|
-| R1 | Five coach/athlete walkthroughs of `/squat` | [#433](https://github.com/skizzy1986/erg-dashboard/issues/433) | S | All of H2 (D10) |
+| R1 | Five coach/athlete walkthroughs of `/squat`. Also ask each coach whether they would want an athlete's shared log here: the only evidence L3 will have before it is built | [#433](https://github.com/skizzy1986/erg-dashboard/issues/433) | S | All of H2 (D10) |
 | R2 | Read the SimTK/OpenSim model terms and OpenCap terms (Scott, D8) | [#434](https://github.com/skizzy1986/erg-dashboard/issues/434) | S | R11, R26–R28, R21, any invite beyond Paul |
 | R3 | Health data out of source and bundle (reorientation slice 4a) | [#416](https://github.com/skizzy1986/erg-dashboard/issues/416) | S | R11, R26–R28, any invite beyond Paul |
 | R4 | Migration for the `exercises` seed and the three un-migrated views | [#435](https://github.com/skizzy1986/erg-dashboard/issues/435) | M | R22. **#429 first**, or the migration can merge and never apply |
 | R5 | Backup gaps | [#428](https://github.com/skizzy1986/erg-dashboard/issues/428) | M | R31 |
 | R6 | Reorientation slices 4b–12 | [#417–#425](https://github.com/skizzy1986/erg-dashboard/issues/412) | per #412 | — |
+| R33 | Privacy research note (D17): what holding another person's training and health data requires, from primary sources (the Privacy Act, OAIC guidance), marked as not legal advice. Scott decides after it whether a professional opinion is needed | — | S | R37, all of L3, R31 |
 
 H1 may run beside slices 4b–12 under D6's fences: #416 first; no `CLAUDE.md` edits outside
 slice 11 (#424); at most two open PRs, one cull and one roadmap; rebase on the shared files
 (`web/vite.config.js`, `web/scripts/check-bundle-size.mjs`, e2e and visual snapshots,
-`RouteRoot.jsx`).
+`RouteRoot.jsx`). The log track (L1–L3) takes turns with H1 in the one roadmap slot; it is
+not a third stream (D16).
 
 ### H1 — Make the squat the product it claims to be (about three months of hobby time)
 
@@ -102,9 +114,10 @@ on the R19 spike; the low-bar variant first if the new-route cost is high.
 | R24 | Within-movement contrasts on the squat: low-bar variant, then a fault ghost overlay (pipeline roadmap items 6–7) | L each | R12, R20 |
 | R25 | Third movement, chosen after R1 and the second ship | L | R1, R21 |
 
-### H3 — Coach and athlete surfaces (not yet approved)
+### H3 — Coach and athlete surfaces on `/squat` (not yet approved)
 
-Done when a coach can use `/squat` on a phone without Scott present.
+Done when a coach can use `/squat` on a phone without Scott present. A coach reading an
+athlete's shared log is a different surface and lives in L3.
 
 | # | Item | Size | Depends on |
 |---|---|---|---|
@@ -113,7 +126,7 @@ Done when a coach can use `/squat` on a phone without Scott present.
 | R28 | Printable coaching card: phase cues, form check labelled "Reference ideal, modelled", sources and link | M | R10 |
 | R29 | Present mode: large controls, panels hidden, offline after first visit | M | R8, R17 |
 | R30 | Annotation: pinned muscles plus a short note in the URL hash (parked, no evidence yet) | M | R11 |
-| R31 | Sign-up, password reset, remove `VITALS_USER_ID` pinning — **only if D3 is revisited after H2**; needs a health-data opinion first | L | R3, R5 |
+| R31 | Open sign-up, password reset, remove `VITALS_USER_ID` pinning — **only if D3 is revisited after H2**; needs a health-data opinion first (R33 is its first step). L3's invite path (R41) is separate and stays invite-only | L | R3, R5, R33 |
 | R32 | Rowing stroke anatomy feasibility note, research only (D5): no 3D stroke anatomy was found anywhere, and rowing coaches' stated pain is team data admin, not stroke understanding | S | after R21 |
 
 **Parked, signal needed:** measured-rep importer and OpenCap overlay (pipeline roadmap
@@ -122,19 +135,61 @@ upgrade, OpenSim-API muscle mechanics, load/tempo and grip controls, per-user
 anthropometry, a clothed body with x-ray mode (SMPL-X Body is CC BY 4.0 but has no
 muscles and carries a patent note).
 
+## The log track (added 2026-11-13, D13–D18)
+
+The horizons above sequence the anatomy half. This track sequences the log half that
+`VISION.md` widened on 2026-11-13: one coherent dashboard, a deterministic planner, and a
+coach working with what an athlete shares. It is tracked by epic
+[#511](https://github.com/skizzy1986/erg-dashboard/issues/511), whose item letters are
+given in brackets. Each item still runs through `/orchestrate` with its own gates, and
+takes the roadmap PR slot in turn with H1 (D16).
+
+### L1 — One coherent log (runs beside H1)
+
+Done when every user-visible name says SplitIQ, the desktop uses the four destinations with
+URLs, and the dashboard has a light/dark/auto control.
+
+| # | Item | Size | Depends on |
+|---|---|---|---|
+| R34 | One name everywhere (B): user-visible self-names, the APK display name and `applicationId` (a new Android identity, accepted at #511's Gate 1), version read from `package.json`, a phase-free eyebrow, a PWA description from `VISION.md`, and a guard test. The README title belongs to #424 | S–M | — |
+| R35 | Residue the cull misses (C): the unowned list in #511 §5. May ship with R34 | S | — |
+| R36 | Dashboard theme control honouring `splitiq.theme` (F). `StrengthLogger.jsx` stays light until #79. Re-measure the dashboard entry budget first | M | — |
+| R37 | Coach access **spec only** (D): relationship and consent, per-category grants, RLS read policies, the plan-write policy, the invite path, and how the `coach_log` / `source = 'coach'` names are reconciled. Runs to Gate 2 and stops (D14) | M | R33 |
+| R38 | Desktop adopts the four destinations with URL routing and one session hook (E) | L | R6 slices #420–#423, R37 |
+| R39 | Depth preference: simple or expert per user, simple by default (`VISION.md`, *One dataset, two depths*). Not in #511; added here so the principle has an item | M–L | R38 |
+
+### L2 — Deterministic planning (after the cull)
+
+Done when a user sets their own parameters and gets planned sessions on the calendar, and
+the same inputs always give the same plan.
+
+| # | Item | Size | Depends on |
+|---|---|---|---|
+| R40 | Planner v1, self-serve (D15): per-user parameter rows (availability, goal, template), pure planner functions, output as `sessions` rows with `status = 'planned'`. No coach involvement | L | R6 complete |
+
+### L3 — Coach access (not before H2, D14)
+
+Done when an invited coach can read exactly what one athlete has granted, and nothing else.
+
+| # | Item | Size | Depends on |
+|---|---|---|---|
+| R41 | Invite path for a second account. Invite-only, so D3 holds; scope settled by R37 | M | R5, R33, R37 |
+| R42 | Coach–athlete relationship, grants and RLS, built to R37's spec, with every policy tested as denied by default | L | R37, R41, H2 done |
+| R43 | Coach view in the four destinations, and coach-set plans through the planner | L | R38, R40, R42 |
+
 ## What we are not building
 
 | Not building | Why |
 |---|---|
 | An exercise catalogue | `VISION.md`: five done well beats eight hundred stubbed. The 1,200-exercise catalogue is Muscle & Motion's ground. |
 | AI or LLM anything | `VISION.md`: no AI coaching. `check:no-llm` guards it; the coach was removed in #427 and #430. |
-| A prescription engine | `VISION.md`: no personal prescription engine. The cull list (#412) removes the last of it. |
-| Coaching-business features: messaging, billing, client management | Not a business (D4). TrueCoach, Trainerize and Hevy Coach own this. |
+| A one-athlete prescription engine | `VISION.md`: no prescription fitted to one person in the source. The cull list (#412) removes the last of it. The generic planner (L2) is in (D18). |
+| Coaching-business features: messaging, billing, client onboarding, a programme marketplace | Not a business (D4). TrueCoach, Trainerize and Hevy Coach own this. A coach's list of the athletes who shared with them is in (L3, D18). |
 | A load-dashboard feature race | Intervals.icu is free and complete; the load model stays as honest context. The 2026 ACWR meta-analysis says ratio-style load is not a stand-alone predictor, so the wording stays descriptive, never a verdict. |
 | SMPL-based bodies | The model licence is non-commercial and forbids making the data available to third parties at all, which a public web app does. Read directly, packet §6a. |
 | Z-Anatomy parts | Its inner-ear and kidney parts are NC-licensed; NC parts would break the CC BY-SA data licence. |
 | Video or pose form-check | Accuracy is unvalidated (0–95.5% by camera placement) and it would blur modelled and measured, which `VISION.md` forbids. |
-| Team logging | A different product (team erg data admin). |
+| Team logging | A different product (team erg data admin). Coach access is one coach reading one athlete's grant; no squad or crew aggregate (D18). |
 | Anything on the `VISION.md` cull list | By definition. |
 
 ## Obligations that travel with every item
@@ -154,7 +209,9 @@ muscles and carries a patent note).
 - `/squat` never imports `supabaseClient.js`. No personal data in a shareable link.
 - Health data lives in the database behind owner-only RLS, never in tracked source or a
   public chunk. Before any real user beyond invitation, get a proper read on the Privacy
-  Act's health-service position (secondary sources only so far).
+  Act's health-service position (secondary sources only so far). R33 is the first step,
+  and no coach reads an athlete's row before it (D17). Coach access adds per-category
+  grants on top of owner-only RLS; it never loosens it.
 
 ## Bundle baseline — measured 2026-11-07 at `bdac9fb` (after slice 4a, #447)
 
@@ -187,5 +244,11 @@ figures in the body of every such PR (R7, #436).
 | D10 | H2 is gated on R1 |
 | D11 | This file is the roadmap; the pipeline's `docs/ROADMAP.md` stays as the squat candidate-PR list |
 | D12 | 2026-11-13: Docs-only PRs sit outside D6's two-open-PR fence |
+| D13 | 2026-11-13: Positioning amended with `VISION.md` (#515). The anatomy engine stays the spine; the log plans, reads at two depths and can be shared with a coach. Replaces D1's "the log is the context around it" |
+| D14 | 2026-11-13: Coach access is specified now (R37) and built after H2 (L3). D3 holds: it is invite-only, and open sign-up (R31) stays parked |
+| D15 | 2026-11-13: The self-serve deterministic planner ships before coach-set plans (L2 before R43) |
+| D16 | 2026-11-13: The log track (L1–L3) is on this roadmap and takes turns with H1 in the one roadmap PR slot. D6's two-open-PR fence holds |
+| D17 | 2026-11-13: Privacy read starts with a `/research` note from primary sources (R33). Scott decides after it whether a professional opinion is needed. No coach reads an athlete's row before then |
+| D18 | 2026-11-13: "Not building" narrowed to match `VISION.md`. One-athlete prescription, coaching-business features and team logging stay out; the generic planner and a coach's list of athletes are in. D4 is unchanged |
 
 A changed decision is a new row here with the date, not an edit to the old one.
