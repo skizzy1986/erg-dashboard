@@ -306,20 +306,39 @@ describe('SquatApp', () => {
       await settle();
     });
 
-    it('the h1 sits on the stage and is the first heading', async () => {
-      wideScreen();
-      render(<SquatApp />);
-      const h1 = screen.getByRole('heading', {
-        level: 1,
-        name: 'High-bar back squat',
-      });
-      expect(screen.getByRole('region', { name: '3D model' })).toContainElement(
-        h1
-      );
-      expect(screen.getAllByRole('heading')[0]).toBe(h1);
-      expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-      await settle();
-    });
+    // #501: a title card on the stage covered the bar, as the camera frames
+    // the model edge to edge. The h1 is the header's breadcrumb instead.
+    it.each([
+      ['wide', true],
+      ['phone', false],
+    ])(
+      'the h1 is in the header, the first heading, and off the stage (%s)',
+      async (_, wide) => {
+        if (wide) wideScreen();
+        const { container } = render(<SquatApp />);
+        const h1 = screen.getByRole('heading', {
+          level: 1,
+          name: 'High-bar back squat',
+        });
+        // The page's own header, the shell's first child (jsdom also maps
+        // the cards' nested <header>s to banner, so the role is ambiguous).
+        const header = container.firstChild.firstElementChild;
+        expect(header.tagName).toBe('HEADER');
+        expect(header).toContainElement(h1);
+        expect(screen.getAllByRole('heading')[0]).toBe(h1);
+        expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+        const stage = screen.getByRole('region', { name: '3D model' });
+        expect(within(stage).queryByRole('heading')).toBeNull();
+        expect(within(stage).queryByText('High-bar back squat')).toBeNull();
+        expect(screen.queryByText('Coaching model')).toBeNull();
+        expect(screen.queryByText('Squat', { exact: true })).toBeNull();
+        // The framing chip stays: top-right on wide, bottom corner on a phone.
+        expect(
+          within(stage).getByText('Modelled, not measured')
+        ).toBeInTheDocument();
+        await settle();
+      }
+    );
 
     it('clears the sticky header with scroll-padding, and restores it on unmount', async () => {
       wideScreen();

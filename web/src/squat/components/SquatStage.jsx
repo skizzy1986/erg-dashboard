@@ -25,9 +25,9 @@ function overlayStage(data, scene) {
  *
  * `strain` is the strain readout (PR B), laid over the model's lower edge:
  * bottom-left on desktop; full width on a phone, stacked over the framing
- * chip. Low, not under the title: at the top it covered the head and trunk,
- * at the bottom it covers the feet. The caller passes it only while the model can be drawn; when
- * it cannot, the readout goes to the controls instead, clear of the notice.
+ * chip. Low: at the top it covered the head and trunk, at the bottom it covers
+ * the feet. The caller passes it only while the model can be drawn; when it
+ * cannot, the readout goes to the controls instead, clear of the notice.
  */
 export default function SquatStage({
   capabilities,
@@ -35,7 +35,6 @@ export default function SquatStage({
   scene,
   hostRef,
   wide,
-  title = null,
   strain = null,
   children = null,
 }) {
@@ -87,43 +86,22 @@ export default function SquatStage({
           style={{ position: 'absolute', inset: 0 }}
         />
       )}
-      {/* The h1 first in DOM order, then the framing chip; both opaque, as
-          they sit over the moving model. On a phone the two side by side
-          would collide, and stacked they cover the bar, so the chip moves to
-          the bottom corner. */}
-      <div
-        style={{
-          position: 'absolute',
-          top: wide ? SPACE.lg : SPACE.md,
-          left: wide ? SPACE.lg : SPACE.md,
-          right: wide ? SPACE.lg : SPACE.md,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: SPACE.sm,
-          // Above the status layer, so a message never paints over them.
-          zIndex: 1,
-          pointerEvents: 'none',
-        }}
-      >
-        {title && (
-          <div
-            style={{
-              background: THEME.surface,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: RADIUS.md,
-              padding: wide
-                ? `${SPACE.sm}px ${SPACE.lg}px ${SPACE.md}px`
-                : `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px`,
-              maxWidth: '100%',
-              boxSizing: 'border-box',
-            }}
-          >
-            {title}
-          </div>
-        )}
-        {wide && framing}
-      </div>
+      {/* The framing chip, opaque as it sits over the moving model. On a
+          phone it moves to the bottom corner, clear of the bar. */}
+      {wide && (
+        <div
+          style={{
+            position: 'absolute',
+            top: SPACE.lg,
+            right: SPACE.lg,
+            // Above the status layer, so a message never paints over it.
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        >
+          {framing}
+        </div>
+      )}
       <div
         style={{
           position: 'absolute',
