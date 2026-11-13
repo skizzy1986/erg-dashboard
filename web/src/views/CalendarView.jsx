@@ -1,13 +1,4 @@
-import { useState } from 'react';
 import WorkoutItem from '../components/WorkoutItem.jsx';
-import BenchmarkBadge from '../components/BenchmarkBadge.jsx';
-import BenchmarkLinkControl from '../components/BenchmarkLinkControl.jsx';
-import {
-  useBenchmarkStatuses,
-  useBenchmarkDataUnavailable,
-} from '../hooks/useBenchmarkStatuses.js';
-import { useBenchmarkSessions } from '../hooks/useBenchmarkSessions.js';
-import { useLinkBenchmarkSession } from '../hooks/useLinkBenchmarkSession.js';
 import {
   getRosterMode,
   resolveDay,
@@ -15,10 +6,8 @@ import {
   daySessions,
   logEntriesForDate,
 } from '../utils/schedule.js';
-import { compareBenchmarkSeverity } from '../utils/benchmarkStatus.js';
 import { MICROCYCLE, PHASE_CONTEXT } from '../constants/schedule.js';
 import { THEME } from '../constants/theme.js';
-import { alpha } from '../utils/themeCss.js';
 
 // ── CALENDAR VIEW ──
 export default function CalendarView({
@@ -26,23 +15,6 @@ export default function CalendarView({
   cancelledSessions = [],
   isWide,
 }) {
-  // Resolved once for the FULL ladder. Each state carries its own entry, so the
-  // panel below renders from the states themselves — a badge cannot drift onto
-  // the wrong row once the rows are re-ordered by severity.
-  const benchmarkStatuses = useBenchmarkStatuses();
-  const benchmarksUnavailable = useBenchmarkDataUnavailable();
-  // Same query key useBenchmarkStatuses already reads, so react-query serves it
-  // from cache — this is not a second request.
-  const { data: benchmarkSessions } = useBenchmarkSessions();
-  const link = useLinkBenchmarkSession();
-  // One mutation serves every row, so remember which benchmark issued the write
-  // and show its busy/error state against that row only.
-  const [linkingKey, setLinkingKey] = useState(null);
-  const linkError = link.isError
-    ? link.error?.code === '23505'
-      ? 'Another session already claims this benchmark'
-      : link.error?.message || 'Could not save the link'
-    : null;
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthNames = [
     'Jan',
@@ -93,15 +65,6 @@ export default function CalendarView({
   }
   const todayMode = firstMode;
   const todayCycle = MICROCYCLE[todayMode] || MICROCYCLE.home;
-  // The whole ladder renders, ordered by severity (#228). It used to be capped
-  // at the first five by position, which hid the 2k Test, the 1000m tune-ups
-  // and the TARGET champs entirely — and meant a benchmark going overdue deep
-  // in the ladder could never surface, however loud (#215). Severity order is
-  // what keeps nine rows from being wallpaper: anything actionable floats.
-  // .slice() still copies, so .sort() never mutates the memoized hook result.
-  const visibleEvents = benchmarkStatuses
-    .slice()
-    .sort(compareBenchmarkSeverity);
   return (
     <>
       <div
@@ -235,113 +198,6 @@ export default function CalendarView({
                   />
                 ))
               )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Upcoming events from the ladder */}
-      <div
-        style={{
-          background: `linear-gradient(135deg,${alpha(THEME.caution, '10')},${THEME.surfaceAlt})`,
-          border: `1px solid ${alpha(THEME.caution, '30')}`,
-          borderLeft: `3px solid ${THEME.caution}`,
-          borderRadius: 6,
-          padding: '12px 14px',
-          marginTop: 14,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 9,
-            letterSpacing: 2,
-            color: THEME.caution,
-            marginBottom: 8,
-          }}
-        >
-          UPCOMING EVENTS · SEASON 1 LADDER
-        </div>
-        {benchmarksUnavailable && (
-          <div
-            style={{
-              fontSize: 9,
-              letterSpacing: 2,
-              color: THEME.muted,
-              marginBottom: 8,
-            }}
-          >
-            BENCHMARK STATUS UNAVAILABLE
-          </div>
-        )}
-        {visibleEvents.map((bench, i) => {
-          const e = bench.entry;
-          const col =
-            e.kind === 'TARGET'
-              ? THEME.critical
-              : e.kind === 'competition'
-                ? THEME.warning
-                : e.kind === 'optional'
-                  ? THEME.accentAlt
-                  : THEME.accent;
-          return (
-            <div
-              key={bench.index}
-              style={{
-                display: 'flex',
-                gap: 10,
-                marginBottom: 6,
-                paddingBottom: 6,
-                borderBottom:
-                  i < visibleEvents.length - 1
-                    ? `1px solid ${THEME.divider}`
-                    : 'none',
-              }}
-            >
-              <div
-                style={{
-                  width: 78,
-                  flexShrink: 0,
-                  fontSize: 9,
-                  fontWeight: 700,
-                  color: col,
-                }}
-              >
-                {e.date}
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  fontSize: 10,
-                  color: THEME.textSubtle,
-                  lineHeight: 1.4,
-                }}
-              >
-                {e.name}
-                <BenchmarkBadge
-                  status={bench.status}
-                  fuzzy={bench.fuzzy}
-                  daysOverdue={bench.daysOverdue}
-                  daysUntilStart={bench.daysUntilStart}
-                  rescheduledTo={bench.rescheduledTo}
-                />
-                {/* status 'unknown' means the sessions read is pending or failed
-                    (#188). Rendering then would flash LINK before flipping to
-                    LINKED, and offer a picker over an empty candidate list. */}
-                {e.kind === 'benchmark' && bench.status !== 'unknown' && (
-                  <BenchmarkLinkControl
-                    benchmarkKey={e.key}
-                    benchmarkName={e.name}
-                    linkedSessionId={bench.matchedSessionId}
-                    sessions={benchmarkSessions ?? []}
-                    onLink={(sessionId) => {
-                      setLinkingKey(e.key);
-                      link.mutate({ benchmarkKey: e.key, sessionId });
-                    }}
-                    busy={link.isPending && linkingKey === e.key}
-                    error={linkingKey === e.key ? linkError : null}
-                  />
-                )}
-              </div>
             </div>
           );
         })}

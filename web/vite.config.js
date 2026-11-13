@@ -249,32 +249,6 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
-        'src/utils/eventWindow.js': { lines: 80, functions: 80, branches: 70 },
-        'src/utils/benchmarkStatus.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/hooks/useBenchmarkStatuses.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/components/BenchmarkBadge.jsx': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/components/BenchmarkLinkControl.jsx': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/hooks/useLinkBenchmarkSession.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
         'src/utils/dateFormat.js': { lines: 80, functions: 80, branches: 70 },
         'src/utils/invalidateSessionQueries.js': {
           lines: 80,
@@ -293,11 +267,6 @@ export default defineConfig({
           branches: 70,
         },
         'src/hooks/useErgSessions.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/hooks/useBenchmarkSessions.js': {
           lines: 80,
           functions: 80,
           branches: 70,

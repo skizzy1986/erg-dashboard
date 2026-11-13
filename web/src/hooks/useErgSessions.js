@@ -38,8 +38,7 @@ export function useErgSessions() {
         )
         .eq('type', 'erg')
         // Every other consumer of "did this session happen?" reads
-        // COMPLETED_STATUSES (useTSSHistory, MobileAnalytics,
-        // benchmarkStatus). This hook was the one place that hardcoded a single
+        // COMPLETED_STATUSES (useTSSHistory, MobileAnalytics). This hook was the one place that hardcoded a single
         // status, and it picked the one the bulk-imported history does not use:
         // the live table holds 'actual' and 'completed' rows and zero 'logged'
         // ones, so the erg list rendered empty (#206).

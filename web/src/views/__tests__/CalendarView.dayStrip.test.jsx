@@ -2,27 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Mocked at the module boundary, same as CalendarView.test.jsx — vi.mock is
-// per-file, so these have to be repeated. Simplified to quiet defaults: the
-// ladder panel is not under test here, only the day strip above it.
-vi.mock('../../hooks/useBenchmarkStatuses.js', () => ({
-  useBenchmarkStatuses: () => [],
-  useBenchmarkDataUnavailable: () => false,
-}));
-
-vi.mock('../../hooks/useBenchmarkSessions.js', () => ({
-  useBenchmarkSessions: () => ({ data: [] }),
-}));
-
-vi.mock('../../hooks/useLinkBenchmarkSession.js', () => ({
-  useLinkBenchmarkSession: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-    isError: false,
-    error: null,
-  }),
-}));
-
 import CalendarView from '../CalendarView.jsx';
 
 // Dates are unpadded M/D/YY on purpose. logEntriesForDate builds its key with
