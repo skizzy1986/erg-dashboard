@@ -11,6 +11,9 @@ export const ACT_BANDS = [
 ];
 
 export const ACT_NOTE = 'Indicative estimate, not EMG.';
+// How many regions the strain readout names (HERO_STAGE_SPEC.md, Gate 2 #1).
+export const TOP_N = 3;
+export const STRAIN_TITLE = 'Working hardest now';
 export const ACT_BASIS =
   "Bands are this model's own colour steps, not a published threshold.";
 export const ACT_NONE = 'Not a muscle — no activation estimate.';

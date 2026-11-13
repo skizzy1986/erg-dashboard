@@ -62,6 +62,9 @@ const BASE = {
   // (SKINNING.md §7). The heatmap value is PR2b's.
   tendonBlend: 0.9,
   tendonBlendHeat: 0.75,
+  // How far a muscle outside the strain focus or selection moves towards its
+  // own grey (sceneColours.js emphasise, PR B).
+  focusDim: 0.65,
   bar: {
     radius: 0.0145,
     length: 2.2,

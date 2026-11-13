@@ -24,6 +24,7 @@ import { viewArray } from '../utils/arrays.js';
 import { dequantise } from '../utils/dequantise.js';
 import { createPoser } from '../utils/poseModel.js';
 import {
+  emphasise,
   heatColours,
   muscleColours,
   writeVertexColours,
@@ -339,6 +340,9 @@ export function createAnatomyScene({
     let pal = palette;
     let st = style;
     let heat = null;
+    // One byte per muscle, 1 = stands out (strain focus or selection); null
+    // paints every muscle as it is.
+    let focus = null;
 
     function applyLights(p, style0) {
       const lt = style0.lights;
@@ -358,9 +362,13 @@ export function createAnatomyScene({
     }
 
     function writeColours() {
-      const mc = heat
+      const base = heat
         ? heatColours(meta.muscles, heat, pal.heat, pal.tendon)
         : muscleColours(meta.muscles, pal, st.jitter);
+      const mc = emphasise(base, focus, {
+        dim: st.focusDim,
+        focusColour: heat ? null : pal.focus,
+      });
       const blend = heat ? st.tendonBlendHeat : st.tendonBlend;
       for (const set of colourSets) {
         writeVertexColours(set.col, set.mid, set.tw, mc, pal.tendon, blend);
@@ -647,6 +655,15 @@ export function createAnatomyScene({
         const next = weights ?? null;
         if (sameWeights(heat, next)) return;
         heat = next;
+        pendingHeat = true;
+        invalidate();
+      },
+      // A mask from strainFocus.js focusMask, or null. Same mechanism as the
+      // heatmap: a per-muscle recolour in the next frame, no extra draw.
+      setFocus(mask = null) {
+        const next = mask ?? null;
+        if (sameWeights(focus, next)) return;
+        focus = next;
         pendingHeat = true;
         invalidate();
       },

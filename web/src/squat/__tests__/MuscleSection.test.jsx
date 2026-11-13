@@ -52,6 +52,7 @@ function fakeScene() {
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
+      setFocus: vi.fn(),
       camera: {
         reset: vi.fn(),
         preset: vi.fn(),
@@ -393,11 +394,11 @@ describe('the no-scene path keeps the list whole', () => {
     await user.type(filter(), 'calves');
     await waitFor(() => expect(options()).toHaveLength(14));
 
-    // The heatmap and its legend cannot exist here, and the switch is gone
-    // with the rest of ViewOptions.
+    // No model to colour, but the switch still drives the strain readout
+    // (Gate 2 amendment): off by default, so no readout and no key yet.
     expect(
-      screen.queryByRole('switch', { name: 'Activation heatmap' })
-    ).toBeNull();
+      screen.getByRole('switch', { name: 'Activation heatmap' })
+    ).not.toBeChecked();
     expect(screen.queryByText(/Activation key/i)).toBeNull();
   });
 });

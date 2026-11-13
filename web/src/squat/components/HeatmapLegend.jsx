@@ -1,7 +1,7 @@
 import { THEME } from '../../constants/theme.js';
 import { RADIUS, SPACE } from '../../constants/tokens.js';
 import { ACT_BANDS, HEAT_LEGEND } from '../constants/activationBands.js';
-import { card, microLabel } from './ui.js';
+import { card, microLabel, srOnly } from './ui.js';
 
 // The four ramp stops sit at 0, 0.30, 0.60 and 1 — the band cuts — so a band
 // is the SEGMENT between two of them, not one of them. A flat swatch lies:
@@ -24,18 +24,25 @@ const SWATCH = STOPS.slice(0, -1).map(
  * contrastPairs.js, where beside it the ink is THEME.text on surface — a pair
  * already measured.
  */
-export default function HeatmapLegend() {
+export default function HeatmapLegend({ compact = false }) {
+  const Heading = compact ? 'h4' : 'h3';
   return (
-    <div style={{ ...card, padding: SPACE.lg }}>
-      <h3 style={{ ...microLabel, margin: 0 }}>Activation key</h3>
+    <div style={compact ? null : { ...card, padding: SPACE.lg }}>
+      {/* Compact: the swatches speak for themselves on screen; the heading
+          stays for assistive tech and the page outline. */}
+      <Heading style={compact ? srOnly : { ...microLabel, margin: 0 }}>
+        Activation key
+      </Heading>
       <ul
         style={{
           listStyle: 'none',
-          margin: `${SPACE.sm}px 0`,
+          margin: compact ? `${SPACE.xs}px 0 0` : `${SPACE.sm}px 0`,
           padding: 0,
           display: 'flex',
-          flexDirection: 'column',
-          gap: SPACE.xs,
+          flexDirection: compact ? 'row' : 'column',
+          flexWrap: 'wrap',
+          columnGap: SPACE.md,
+          rowGap: SPACE.xs,
         }}
       >
         {ACT_BANDS.map((b, i) => (
@@ -45,7 +52,7 @@ export default function HeatmapLegend() {
               display: 'flex',
               alignItems: 'center',
               gap: SPACE.sm,
-              fontSize: 13,
+              fontSize: compact ? 12 : 13,
               fontWeight: 600,
               lineHeight: 1.4,
               color: THEME.text,
@@ -55,8 +62,8 @@ export default function HeatmapLegend() {
               aria-hidden="true"
               data-testid={`heat-swatch-${b.id}`}
               style={{
-                width: 28,
-                height: 14,
+                width: compact ? 20 : 28,
+                height: compact ? 10 : 14,
                 flex: 'none',
                 borderRadius: RADIUS.sm,
                 background: SWATCH[i],
@@ -68,16 +75,19 @@ export default function HeatmapLegend() {
           </li>
         ))}
       </ul>
-      <p
-        style={{
-          margin: 0,
-          fontSize: 12,
-          lineHeight: 1.5,
-          color: THEME.textSubtle,
-        }}
-      >
-        {HEAT_LEGEND}
-      </p>
+      {/* Compact sits in the strain panel, which carries the caveat itself. */}
+      {!compact && (
+        <p
+          style={{
+            margin: 0,
+            fontSize: 12,
+            lineHeight: 1.5,
+            color: THEME.textSubtle,
+          }}
+        >
+          {HEAT_LEGEND}
+        </p>
+      )}
     </div>
   );
 }

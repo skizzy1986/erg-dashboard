@@ -62,6 +62,7 @@ function fakeScene() {
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
+      setFocus: vi.fn(),
       // R11: the pose the scene reports, settable by a test (`ctl.pose`).
       pose: { ...HOME, home: true },
       camera: {
@@ -183,6 +184,7 @@ describe('SquatApp 3D stage', () => {
       setPalette() {},
       setReducedMotion() {},
       setActivation() {},
+      setFocus() {},
       camera: {},
       dispose() {},
       opts,
@@ -351,6 +353,7 @@ describe('SquatApp 3D stage', () => {
       setPalette: vi.fn(),
       setReducedMotion: vi.fn(),
       setActivation: vi.fn(),
+      setFocus: vi.fn(),
       camera: {},
       dispose: vi.fn(),
     };
@@ -841,7 +844,17 @@ describe('share a view', () => {
         expect(
           screen.queryByRole('group', { name: 'Camera controls' })
         ).toBeNull();
-        expect(screen.queryByRole('group', { name: 'Show' })).toBeNull();
+        // Gate 2 amendment: Show stays, layers gated, the heatmap live and
+        // on from the link, its readout in the rail.
+        expect(screen.getByRole('switch', { name: 'Skeleton' })).toBeDisabled();
+        expect(
+          screen.getByRole('switch', { name: 'Activation heatmap' })
+        ).toBeChecked();
+        expect(
+          within(screen.getByRole('region', { name: 'Controls' })).getByTestId(
+            'strain-panel'
+          )
+        ).toBeInTheDocument();
         expect(screen.queryByRole('alert')).toBeNull();
       }
       await user.click(copyButton());

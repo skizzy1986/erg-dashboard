@@ -39,33 +39,41 @@ export default function StageControls({
   camera,
   cameraDisabled,
   sceneBlocked,
+  sceneFailed = false,
   wide,
   onGuide,
   share = null,
+  strain = null,
   children = null,
 }) {
   const [open, setOpen] = useState('rep');
 
   // Rendered from the first paint, disabled until the model is drawn, so
   // nothing around them moves when it is. Where the 3D view cannot exist at
-  // all they are left out from the start.
-  const camGroup = sceneBlocked ? null : (
-    <>
-      {children}
-      <CameraControls
-        camera={camera}
-        disabled={cameraDisabled}
-        compact={!wide}
-      />
-    </>
-  );
-  const showGroup = sceneBlocked ? null : (
+  // all the camera is left out from the start; so is it once the model has
+  // failed, which frees the rail for the strain readout. The Show group
+  // stays: its heatmap switch drives that readout, which needs only the rep
+  // data, while its layer switches stay scene-gated.
+  const camGroup =
+    sceneBlocked || sceneFailed ? null : (
+      <>
+        {children}
+        <CameraControls
+          camera={camera}
+          disabled={cameraDisabled}
+          compact={!wide}
+        />
+      </>
+    );
+  const showGroup = (
     <ViewOptions
       layers={view.layers}
       onLayer={view.setLayer}
       heatmap={view.heatmap}
       onHeatmap={view.setHeatmap}
-      disabled={cameraDisabled}
+      disabled={cameraDisabled || sceneBlocked || sceneFailed}
+      heatmapDisabled={!view.ready}
+      unavailable={sceneBlocked || sceneFailed}
       compact={!wide}
     />
   );
@@ -95,10 +103,11 @@ export default function StageControls({
           <>
             <div style={rule} />
             {camGroup}
-            <div style={rule} />
-            {showGroup}
           </>
         )}
+        <div style={rule} />
+        {showGroup}
+        {strain}
         {/* Share is a third footer button, not a row of its own: at
             1280 × 720 the rail has 11 px to spare above the footer, and a
             row would push the footer below the fold. Its message and field
@@ -141,8 +150,6 @@ export default function StageControls({
     showGroup && ['show', 'Show', showGroup],
     share && ['share', 'Share', share],
   ].filter(Boolean);
-  // One group needs no tabs: it is simply shown.
-  const tabs = groups.length > 1;
 
   return (
     <section
@@ -161,6 +168,7 @@ export default function StageControls({
       }}
     >
       {title}
+      {strain}
       <section aria-labelledby="time-title">
         <h3 id="time-title" style={srOnly}>
           Rep time
@@ -175,54 +183,49 @@ export default function StageControls({
         </div>
         {readout}
       </section>
-      {tabs && (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))`,
+          gap: SPACE.xxs,
+          padding: SPACE.xxs,
+          background: THEME.field,
+          border: `1px solid ${THEME.border}`,
+          borderRadius: RADIUS.sm + 2,
+        }}
+      >
+        {groups.map(([id, label]) => {
+          const on = open === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-expanded={on}
+              aria-controls={panelId(id)}
+              onClick={() => setOpen(on ? null : id)}
+              style={{
+                ...toggle(false),
+                border: 'none',
+                background: on ? THEME.surface : 'transparent',
+                color: on ? THEME.text : THEME.textSubtle,
+                boxShadow: on ? `inset 0 -2px 0 ${THEME.accent}` : 'none',
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {groups.map(([id, , body]) => (
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${groups.length}, minmax(0, 1fr))`,
-            gap: SPACE.xxs,
-            padding: SPACE.xxs,
-            background: THEME.field,
-            border: `1px solid ${THEME.border}`,
-            borderRadius: RADIUS.sm + 2,
-          }}
+          key={id}
+          id={panelId(id)}
+          hidden={open !== id}
+          style={{ minHeight: PANEL_MIN }}
         >
-          {groups.map(([id, label]) => {
-            const on = open === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                aria-expanded={on}
-                aria-controls={panelId(id)}
-                onClick={() => setOpen(on ? null : id)}
-                style={{
-                  ...toggle(false),
-                  border: 'none',
-                  background: on ? THEME.surface : 'transparent',
-                  color: on ? THEME.text : THEME.textSubtle,
-                  boxShadow: on ? `inset 0 -2px 0 ${THEME.accent}` : 'none',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
+          {body}
         </div>
-      )}
-      {groups.map(([id, , body]) => {
-        const shown = !tabs || open === id;
-        return (
-          <div
-            key={id}
-            id={panelId(id)}
-            hidden={!shown}
-            style={{ minHeight: tabs ? PANEL_MIN : undefined }}
-          >
-            {body}
-          </div>
-        );
-      })}
+      ))}
     </section>
   );
 }

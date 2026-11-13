@@ -39,6 +39,7 @@ const EXPECTED_KEYS = [
   'anatomyHeatMid',
   'anatomyHeatHigh',
   'anatomyHeatPeak',
+  'anatomyFocus',
 ];
 
 // The activation ramp is geometry paint, not ink anyone reads, and starts on
@@ -52,9 +53,9 @@ const SHARED_BY_DESIGN = [
 ];
 
 describe('THEME', () => {
-  it('has exactly the 35 expected keys (no more, no fewer)', () => {
+  it('has exactly the 36 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(THEME);
-    expect(keys).toHaveLength(35);
+    expect(keys).toHaveLength(36);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -70,9 +71,9 @@ describe('THEME', () => {
 });
 
 describe('DARK — the palette values THEME resolves to', () => {
-  it('has exactly the 35 expected keys (no more, no fewer)', () => {
+  it('has exactly the 36 expected keys (no more, no fewer)', () => {
     const keys = Object.keys(DARK);
-    expect(keys).toHaveLength(35);
+    expect(keys).toHaveLength(36);
     expect(keys.sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 

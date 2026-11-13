@@ -49,6 +49,9 @@ export const DARK = {
   anatomyHeatMid: '#8c3b6b',
   anatomyHeatHigh: '#cf3a2a',
   anatomyHeatPeak: '#ffd35c',
+  // A muscle picked in the list, painted on the model with the heatmap off.
+  // Cyan, as far from the muscle reds and the ramp as the palette goes.
+  anatomyFocus: '#4cd4f5',
 };
 
 // The light palette. Values are conventions.md's, which is design-owned and
@@ -104,6 +107,7 @@ export const LIGHT = {
   anatomyHeatMid: '#8c3b6b',
   anatomyHeatHigh: '#cf3a2a',
   anatomyHeatPeak: '#ffd35c',
+  anatomyFocus: '#3cc4e8',
 };
 
 // The palette the document boots on. Light is primary (#251); dark is retained

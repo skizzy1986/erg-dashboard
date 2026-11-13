@@ -40,4 +40,5 @@ export const THEME = {
   anatomyHeatMid: 'var(--color-anatomy-heat-mid)',
   anatomyHeatHigh: 'var(--color-anatomy-heat-high)',
   anatomyHeatPeak: 'var(--color-anatomy-heat-peak)',
+  anatomyFocus: 'var(--color-anatomy-focus)',
 };
