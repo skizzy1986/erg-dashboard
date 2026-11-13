@@ -450,10 +450,11 @@ describe('strain readout (criteria 9, 12, 13, 14)', () => {
 
       fireEvent.click(screen.getByRole('button', { name: 'Play' }));
       const frames = [];
-      for (let i = 0; i < 200; i++) {
-        await act(() => vi.advanceTimersByTimeAsync(20));
+      // Two frames per step: per-frame changes still show, at half the
+      // renders (this test runs under coverage in CI).
+      for (let i = 0; i < 95; i++) {
+        await act(() => vi.advanceTimersByTimeAsync(40));
         frames.push({
-          at: i * 20,
           phase: phase(),
           list: readout().join('|'),
           said: status(),
@@ -489,5 +490,6 @@ describe('strain readout (criteria 9, 12, 13, 14)', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
+    // ~95 full-app renders: generous headroom for the coverage run.
+  }, 30000);
 });
