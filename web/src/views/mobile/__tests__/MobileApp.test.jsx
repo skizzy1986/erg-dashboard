@@ -24,6 +24,7 @@ vi.mock('../MobileToday.jsx', () => ({ default: () => <p>TODAY</p> }));
 vi.mock('../MobileProgress.jsx', () => ({ default: () => <p>PROGRESS</p> }));
 vi.mock('../MobileRecovery.jsx', () => ({ default: () => <p>BODY</p> }));
 vi.mock('../../ErgLiveView.jsx', () => ({ default: () => <p>ERG LIVE</p> }));
+vi.mock('../MobileSettings.jsx', () => ({ default: () => <p>SETTINGS</p> }));
 vi.mock('../../../StrengthLogger.jsx', () => ({
   default: () => <p>STRENGTH LOGGER</p>,
 }));
