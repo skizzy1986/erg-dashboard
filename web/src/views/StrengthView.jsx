@@ -139,7 +139,12 @@ function LiftTrend({ lifts, active, onSelect }) {
           current e1RM · {latest.date}
         </span>
         {series.length > 1 && (
-          <span style={{ fontSize: 10, color: THEME.positive }}>
+          <span
+            style={{
+              fontSize: 10,
+              color: diff >= 0 ? THEME.positive : THEME.muted,
+            }}
+          >
             {diff >= 0 ? '+' : ''}
             {diff.toFixed(1)}kg
           </span>

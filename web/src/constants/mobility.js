@@ -48,7 +48,7 @@ export const MOBILITY_ROUTINES = [
     name: 'Pre-Session Mobility / Prime',
     icon: '🔑',
     color: THEME.positive,
-    when: "Before EVERY erg + every lift (the 'mobility first' in session notes).",
+    when: 'Before any erg or lifting session.',
     why: 'Primes the body to move well before loading it. Cheap insurance — opens hips/t-spine/shoulders so the catch and the squat have range. Warms the hamstrings and glutes before they take load.',
     blocks: [
       {
