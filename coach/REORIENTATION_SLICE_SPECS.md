@@ -550,3 +550,25 @@ Out of scope:
 - Orchestrator change after Stage 5: the `RecoveryView` empty-state `it.each` is scoped to each card
   with `within` (from the Test Results Analyzer). A mutation test swapping two labels failed 2 tests;
   the restored file passes.
+
+## Slices 4b–10 — #417–#423 — outcomes (2026-11-13)
+
+Specs, research corrections and the Gate 2 rulings are in
+[`REORIENTATION_GATE2_4b-10.md`](REORIENTATION_GATE2_4b-10.md) and
+[`REORIENTATION_RESEARCH_4b-10.md`](REORIENTATION_RESEARCH_4b-10.md); this section records only what
+shipped. Scott approved every Gate 2 recommendation and delegated merge authority; each PR passed
+Code Reviewer + Reality Checker before merge.
+
+| Slice | PR | Merge | Gate 3 fixes made before merge | Parked / follow-up |
+|---|---|---|---|---|
+| 4b #417 | #500 | `769508c` | — | Migrations 015 (`bp_readings` capture) and 016 (`lab_results`, `injuries`) applied to production on Scott's go-ahead; RLS probe: owner sees own rows, other user 0 rows, `WITH CHECK` → 42501, `anon` → 42501. Workbox `supabase-api` rule never matches → #526. |
+| 5 #418 | #499 | `4d85c75` | — | `noCulledCode` guard added; 11 desktop tabs remain. |
+| 6 #419 | #502 | `7f8dc39` | — | `sessions.benchmark_key` left dormant; read-back identical before and after (1 of 98 rows set). |
+| 7 #420 | #506 | `9a0078a` | A failed refetch blanked a calendar that had already loaded; now keeps the rows with a "couldn't refresh" line. | — |
+| 8 #421 | #513 | `cd49930` | Two `TSB_BANDS` labels prescribed action; now descriptive, with a test that no band label prescribes. | — |
+| 9 #422 | #518 | `2effcac` | `FTP_TEST` read "Overdue" and named one rower's habits → generic; `App.jsx` nutrition comment with personal figures deleted; ErgView coverage key set to measured 94/90/89; `sessionLoad` comment made generic. CI caught `ergTrend.test.js` importing a module that builds the Supabase client (local env masked it) → client mocked. | sRPE labels use band names; W/BPM mixes all intensities; `architecture.md` and design-sync docs name deleted symbols (slices 11, 12). Also closed #179; #182 was already closed as not planned. |
+| 10 #423 | #519 | `7e47aa3` | `prep.when` pointed at coach-written notes → "Before any erg or lifting session."; a falling e1RM delta no longer renders in the positive colour. | D19: `strengthTrend` exported outside git before deletion (8 series, sha256 `81eeeba1…2d8b`). `PREHAB_NOTE` / `STRENGTH_TEMPLATES` personal copy → #514. Reviewer suggestions: `['lift-history']` `staleTime` + invalidation, a row cap, lift-pill order. |
+
+**Process lesson.** Run the suite with `env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY` before
+pushing: cloud sessions export both, CI sets neither, and a test that transitively imports
+`supabaseClient.js` passes locally and fails to load in CI.
