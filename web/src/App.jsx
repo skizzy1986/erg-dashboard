@@ -236,7 +236,6 @@ export default function App() {
   // Was hardcoded at 55000. The logged erg sessions actually sum to ~216km, so
   // the headline understated the work by about 4x.
   const totalErgDist = ergSessions.reduce((m, e) => m + (e.distance_m ?? 0), 0);
-  const latestSquat = strengthTrend['Back Squat'].slice(-1)[0];
   const totalSessions = loggedSessions.length;
 
   return (
@@ -421,7 +420,6 @@ export default function App() {
                 loadData={loadData}
                 loggedSessions={loggedSessions}
                 latestErg={latestErg}
-                latestSquat={latestSquat}
                 totalErgDist={totalErgDist}
                 totalSessions={totalSessions}
                 isWide={isWide}

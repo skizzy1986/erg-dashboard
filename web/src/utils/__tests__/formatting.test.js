@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  normType,
-  workoutAccent,
-  assessMacro,
-  macroColor,
-  bpCategory,
-} from '../formatting.js';
+import { normType, workoutAccent, bpCategory } from '../formatting.js';
 import { THEME } from '../../constants/theme.js';
 
 describe('normType', () => {
@@ -98,58 +92,6 @@ describe('workoutAccent', () => {
 
   it('is case-insensitive', () => {
     expect(workoutAccent('LOWER')).toBe(THEME.positive);
-  });
-});
-
-describe('assessMacro', () => {
-  it('returns a dash when value is not a number', () => {
-    expect(assessMacro('120', [100, 150])).toBe('—');
-    expect(assessMacro(undefined, [100, 150])).toBe('—');
-  });
-
-  it('returns a dash when range is not a valid two-element array', () => {
-    expect(assessMacro(120, [100])).toBe('—');
-    expect(assessMacro(120, null)).toBe('—');
-    expect(assessMacro(120, 'range')).toBe('—');
-  });
-
-  it('returns a tick when value is within range (inclusive)', () => {
-    expect(assessMacro(125, [100, 150])).toBe('✅');
-    expect(assessMacro(100, [100, 150])).toBe('✅');
-    expect(assessMacro(150, [100, 150])).toBe('✅');
-  });
-
-  it('warns when value is just below the floor (>= 90% of min)', () => {
-    expect(assessMacro(95, [100, 150])).toBe('⚠️');
-    expect(assessMacro(90, [100, 150])).toBe('⚠️');
-  });
-
-  it('fails when value is well below the floor (< 90% of min)', () => {
-    expect(assessMacro(80, [100, 150])).toBe('❌');
-  });
-
-  it('warns when value is just above the ceiling (<= 115% of max)', () => {
-    expect(assessMacro(170, [100, 150])).toBe('⚠️');
-    expect(assessMacro(172.5, [100, 150])).toBe('⚠️');
-  });
-
-  it('fails when value is well above the ceiling (> 115% of max)', () => {
-    expect(assessMacro(180, [100, 150])).toBe('❌');
-  });
-});
-
-describe('macroColor', () => {
-  it('returns green for a tick', () => {
-    expect(macroColor('✅')).toBe(THEME.positive);
-  });
-
-  it('returns yellow for a warning', () => {
-    expect(macroColor('⚠️')).toBe(THEME.caution);
-  });
-
-  it('returns red for a fail (or any other status)', () => {
-    expect(macroColor('❌')).toBe(THEME.critical);
-    expect(macroColor('—')).toBe(THEME.critical);
   });
 });
 

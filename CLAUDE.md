@@ -346,7 +346,7 @@ asking for: the split measured here cut the entry 395.4 → 134.7 KB (−66%) wh
 26.3 KB to the total. That bind was not theoretical: main sat at 399.2 KB of its
 400 KB total budget — 0.8 KB spare — so the next commit of any size would have failed. Judge a PR on the **entry** row.
 
-Both shells and all fourteen desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
+Both shells and all eleven desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
 recharts (90.7 KB, shared by seven files) is out of first paint entirely. What remains
 in the entry is React, react-query and `@supabase/supabase-js` — auth is needed before
 anything can render, so the client cannot be deferred. Note `createClient` pulls in
@@ -376,7 +376,12 @@ without a raise** — measured 2026-11-13: **entry 146.9 / 150, total 377.6 / 40
 entry 121.6 / 122, squat total 33.1 / 34, squat 3D 138.4 / 145 KB**, data 2.20 MB. **Spare
 after PR B: squat entry 0.4 KB, squat total 0.9 KB.** The raise Scott agreed for PR B was
 not needed, so it carries to PR A (director camera + autoplay), under the same rule, unless
-the squat-entry trim (#467) lands first. The muscle list is
+the squat-entry trim (#467) lands first. **Latest — measured 2026-11-13 on `main` at
+`961c4c5`: entry 146.9 / 150, total 334.8 / 400, squat entry 121.5 / 122, squat total
+33.0 / 34, squat 3D 138.4 / 145 KB, data 2.20 / 2.30 MB.** Total fell 42.8 KB from PR B's
+377.6 as the product-coherence slices deleted code: #499 (Program and Journal tabs)
+−32.6 → 345.0, #502 (benchmark ladder) −4.3 → 340.7, #506 (roster) −7.4 → 333.3, then
+#500 (health records) +1.5. None of it touched the entry. The muscle list is
 deliberately not lazy-loaded (the canvas is `aria-hidden` with `tabindex="-1"`, so the
 list is the model's accessible substitute and must not sit behind a chunk that can fail
 to fetch).
@@ -401,12 +406,13 @@ fix round added **+0.3 KB** more (→ 146.4): `RouteRoot` resolves the squat the
 `/squat/` → `/squat`. PR2a added **+0.2 KB** (→ 146.6): `RouteRoot`'s first-visit offline
 message when the tool's chunk cannot be fetched. PR2b-i added **+0.2 KB** (→ 146.8), all
 of it shared code the muscle panel pulled across the chunk boundary. The dashboard pays
-~2.3 KB of its 150 KB entry for the second product; that leaves 3.2 KB spare. The next
+~2.3 KB of its 150 KB entry for the second product; that leaves 3.1 KB spare
+(2026-11-13). The next
 entry-growing change can win room back with the `RealtimeClient` reclaim or raise the
 budget under the rule below.
 
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
-at first paint, so it lands in the entry, where there is 3.2 KB spare (2026-11-05). It is now a
+at first paint, so it lands in the entry, where there is 3.1 KB spare (2026-11-13). It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
 `npm run size` enforces every budget inside the **Build** job.
 

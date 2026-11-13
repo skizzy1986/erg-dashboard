@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  calcTrainingLoad,
-  deriveTargets,
-  sessionLoad,
-} from '../trainingLoad.js';
+import { calcTrainingLoad, sessionLoad } from '../trainingLoad.js';
 
 const ANCHORS = { cp: 205, ftp: 250 };
 
@@ -401,23 +397,5 @@ describe('calcTrainingLoad', () => {
       const decimals = entry.tsb.toString().split('.')[1]?.length ?? 0;
       expect(decimals).toBeLessThanOrEqual(1);
     });
-  });
-});
-
-describe('deriveTargets', () => {
-  it('anchors to the last clean actual point', () => {
-    const t = deriveTargets([
-      { type: 'actual', watts: 145 },
-      { type: 'actual', watts: 151 },
-    ]);
-    expect(t.anchor).toBe(151);
-    expect(t.ut1Low).toBe(Math.round(151 * 0.96));
-    expect(t.source).toContain('2 clean HR130 points');
-  });
-
-  it('falls back to 150 when there are no clean points', () => {
-    const t = deriveTargets([{ type: 'projected', watts: 200 }]);
-    expect(t.anchor).toBe(150);
-    expect(t.source).toBe('default (no clean points)');
   });
 });
