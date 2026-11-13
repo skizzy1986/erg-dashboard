@@ -28,7 +28,7 @@ viewer sees what the lift does without hunting through controls or scrolling.
 - Don't pad: replace, don't add alongside. Three.js and scene code stay out of `SquatApp`'s static graph.
 - Each PR runs `npm run build && npm run size` and pastes the output into the PR body.
 - If `SQUAT_ENTRY` exceeds its ceiling, raise `MAX_SQUAT_ENTRY_GZIP_KB` to the measured figure + ~2 KB, with a dated comment in that file's style, and update the bundle paragraph in `CLAUDE.md`.
-- The dashboard entry budget (150 KB) is **not** relaxed. Flag anything that adds bytes to `main`; `constants/themeValues.js` and `constants/theme.js` are emitted from `main.jsx`.
+- The dashboard entry budget (150 KB) rises only under the deliberate-raise rule in `CLAUDE.md` (#504), never as a side effect of a squat PR. Flag anything that adds bytes to `main`; `constants/themeValues.js` and `constants/theme.js` are emitted from `main.jsx`.
 - Caveat: #465 (the gate does not measure the production build) is open, so figures are indicative until it lands.
 
 **Gate 2:**
