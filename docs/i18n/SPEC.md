@@ -12,7 +12,7 @@
 >
 > | PR | Scope | Status |
 > |---|---|---|
-> | PR-M | Mobile Settings screen (gear in Today header, reuses SettingsView) | in build |
+> | PR-M | Mobile Settings screen (gear in Today header, reuses SettingsView) | shipped to PR #508 — awaiting baseline + merge |
 > | PR-1 | Lingui foundation (spike first) + dashboard Phase 1 | not started |
 > | PR-2 | /squat chrome on Lingui | not started |
 > | PR-3 | /squat prose overlay | not started |

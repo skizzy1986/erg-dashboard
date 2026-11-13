@@ -188,3 +188,37 @@ describe('dates', () => {
     expect(screen.getByText('PARSED')).toBeInTheDocument();
   });
 });
+
+describe('the Settings gear', () => {
+  it('is a 44px button named Settings beside the date', () => {
+    render(<MobileToday onOpenSettings={() => {}} />);
+    const gear = screen.getByRole('button', { name: 'Settings' });
+    expect(gear).toHaveStyle({ width: '44px', height: '44px' });
+    expect(gear.closest('header')).not.toBeNull();
+  });
+
+  it('opens Settings from the keyboard', async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    render(<MobileToday onOpenSettings={onOpen} />);
+    screen.getByRole('button', { name: 'Settings' }).focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    expect(onOpen).toHaveBeenCalledTimes(2);
+  });
+
+  it('takes focus when asked to (returning from Settings)', () => {
+    render(<MobileToday onOpenSettings={() => {}} focusSettings />);
+    expect(screen.getByRole('button', { name: 'Settings' })).toHaveFocus();
+  });
+
+  it('does not take focus by default', () => {
+    render(<MobileToday onOpenSettings={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Settings' })).not.toHaveFocus();
+  });
+
+  it('is not drawn without somewhere to go', () => {
+    render(<MobileToday />);
+    expect(screen.queryByRole('button', { name: 'Settings' })).toBeNull();
+  });
+});
