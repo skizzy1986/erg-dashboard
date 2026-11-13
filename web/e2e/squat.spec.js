@@ -572,6 +572,38 @@ test.describe('phone 390 px layout', () => {
   });
 });
 
+// #501: the page's one h1 is the header breadcrumb, not a card on the stage.
+// The header row must hold it, the theme control and the link without
+// overflowing; at 360 px the h1 truncates with an ellipsis instead.
+async function expectTitleInHeader(page) {
+  const h1 = page.getByRole('heading', { level: 1 });
+  await expect(h1).toHaveCount(1);
+  await expect(h1).toHaveText('High-bar back squat');
+  await expect(page.locator('body header').first().locator('h1')).toHaveCount(
+    1
+  );
+  await expect(
+    page.getByRole('region', { name: '3D model' }).locator('h1')
+  ).toHaveCount(0);
+  const fit = await page.evaluate(() => {
+    const header = document.querySelector('header');
+    const row = header.firstElementChild;
+    const right = (el) => el.getBoundingClientRect().right;
+    const link = [...header.querySelectorAll('a')].find((a) =>
+      a.textContent.startsWith('Open SplitIQ')
+    );
+    return {
+      rowFits: row.scrollWidth <= row.clientWidth,
+      headerFits: header.scrollWidth <= header.clientWidth,
+      linkRight: right(link),
+      vw: document.documentElement.clientWidth,
+    };
+  });
+  expect(fit.rowFits).toBe(true);
+  expect(fit.headerFits).toBe(true);
+  expect(fit.linkRight).toBeLessThanOrEqual(fit.vw);
+}
+
 for (const width of [360, 390]) {
   test.describe(`phone ${width} px`, () => {
     test.use({
@@ -585,6 +617,10 @@ for (const width of [360, 390]) {
     }) => {
       await openReady(page);
       expect(await noHorizontalScroll(page)).toBe(true);
+      await expectTitleInHeader(page);
+      await expect(
+        page.getByRole('button', { name: /^Theme: / })
+      ).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole('link', { name: /Open SplitIQ/ })).toHaveText(
         /^Open SplitIQ/
       );
@@ -803,6 +839,7 @@ for (const [label, viewport, phone] of [
       page,
     }) => {
       await openReady(page);
+      await expectTitleInHeader(page);
       const stage = await page
         .getByRole('region', { name: '3D model' })
         .boundingBox();
