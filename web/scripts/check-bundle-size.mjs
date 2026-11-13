@@ -42,8 +42,9 @@
 //                         precaches exceeds Workbox's 2 MiB per-file ceiling —
 //                         above it, Workbox silently skips the file.
 //
-// Both budgets are RATCHETS — lower them as the bundle shrinks, never raise
-// one without a deliberate, stated reason.
+// Every budget is a RATCHET against unnoticed creep, not a performance
+// threshold: lower it as the bundle shrinks, and raise it only by the
+// procedure in CLAUDE.md, "Budgets rise deliberately, never by drift" (#504).
 //
 // Do not quote a size figure from memory or from a doc — it drifts. Run
 // `npm run build && npm run size`, or read dist/bundle-size.json, which this
@@ -369,31 +370,31 @@ for (const [label, bytes, budgetKb, advice] of [
     'Entry chunk',
     entryBytes,
     MAX_ENTRY_GZIP_KB,
-    'Lazy-load a route or trim a dependency that first paint does not need.',
+    'Lazy-load a route or trim a dependency that first paint does not need, or raise MAX_ENTRY_GZIP_KB deliberately (CLAUDE.md, #504).',
   ],
   [
     'Total',
     totalBytes,
     MAX_TOTAL_GZIP_KB,
-    'Trim a dependency, or raise MAX_TOTAL_GZIP_KB deliberately if the growth is intended.',
+    'Trim a dependency, or raise MAX_TOTAL_GZIP_KB deliberately (CLAUDE.md, #504).',
   ],
   [
     'Squat entry',
     squatEntryBytes,
     MAX_SQUAT_ENTRY_GZIP_KB,
-    'Something /squat statically imports grew — keep heavy pieces behind a lazy import.',
+    'Something /squat statically imports grew — keep heavy pieces behind a lazy import, or raise MAX_SQUAT_ENTRY_GZIP_KB deliberately (CLAUDE.md, #504).',
   ],
   [
     'Squat total',
     squatTotalBytes,
     MAX_SQUAT_TOTAL_GZIP_KB,
-    'Trim the tool, or raise MAX_SQUAT_TOTAL_GZIP_KB deliberately with the new figure.',
+    'Trim the tool, or raise MAX_SQUAT_TOTAL_GZIP_KB deliberately (CLAUDE.md, #504).',
   ],
   [
     'Squat 3D',
     squat3dBytes,
     MAX_SQUAT_3D_GZIP_KB,
-    'three.js or the scene grew — check for a non-tree-shaken import (three/addons barrel, `import *`).',
+    'three.js or the scene grew — check for a non-tree-shaken import (three/addons barrel, `import *`), or raise MAX_SQUAT_3D_GZIP_KB deliberately (CLAUDE.md, #504).',
   ],
 ]) {
   if (bytes > budgetKb * 1024) {
@@ -405,7 +406,7 @@ for (const [label, bytes, budgetKb, advice] of [
 
 if (squatData.bytes > MAX_SQUAT_DATA_BYTES) {
   failures.push(
-    `✖ ${squatData.file} is ${squatData.bytes} bytes, over the ${MAX_SQUAT_DATA_BYTES}-byte budget.\n  A pipeline re-run grew the anatomy stream; decimate or requantise it.`
+    `✖ ${squatData.file} is ${squatData.bytes} bytes, over the ${MAX_SQUAT_DATA_BYTES}-byte budget.\n  A pipeline re-run grew the anatomy stream; decimate or requantise it, or raise MAX_SQUAT_DATA_BYTES deliberately (CLAUDE.md, #504).`
   );
 }
 for (const p of precache.filter((f) => f.bytes > MAX_PRECACHE_FILE_BYTES)) {
