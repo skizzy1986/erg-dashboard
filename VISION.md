@@ -254,17 +254,11 @@ superseded by this file** and needs rewriting; until it is, prefer this document
 That rewrite (#424) now also carries the 2026-11-13 amendment, as does the project
 paragraph in `.claude/skills/erg-context.md`.
 
-`docs/ROADMAP.md` was decided on 2026-11-07, before the amendment, and now
-disagrees with this file in the places below. This file wins until the roadmap
-records new decision rows.
-
-| Roadmap line | What the amendment changes |
-|---|---|
-| D1 positioning: "the anatomy engine is the product; the log is the context around it" | The anatomy engine is still the spine, but the log is no longer only context: it plans and it is shared with a coach |
-| Not building "a prescription engine" | Still true of one-athlete prescription; the generic planner is in |
-| Not building "client management" and "team logging" | Billing, messaging and team logging stay out; a coach's list of the athletes who shared with them is in |
-| H3 "done when a coach can use `/squat` on a phone" | Coach surfaces now include the athlete's shared log, not only `/squat` |
-| D3 invite-only through H2, and R31 sign-up after H2 | Unchanged here, but coach access cannot ship without a sign-up path, so the sequence needs a decision |
+`docs/ROADMAP.md` was decided on 2026-11-07, before the amendment. It recorded the
+amendment on 2026-11-13 as decisions D13–D18 and a second track for the log (L1–L3):
+coach access is specified now and built after its H2, invite-only; the self-serve
+planner ships before coach-set plans; and the privacy reading starts with a research
+note. This file still wins wherever the two disagree.
 
 Roadmap D4 ("not a business" is absolute) is unchanged and is relied on above.
 
