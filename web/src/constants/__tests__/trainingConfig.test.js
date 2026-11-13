@@ -120,4 +120,10 @@ describe('derivePaceZones', () => {
     expect(band('UT1')).toEqual([144, 164]);
     expect(band('AT')).toEqual([164, 185]);
   });
+
+  it('derivePaceZones(205) is byte-identical to the pre-#422 output', () => {
+    expect(JSON.stringify(derivePaceZones(205))).toBe(
+      '[{"zone":"Recovery","color":"#666","wattsLow":0,"wattsHigh":113,"paceFloor":145.7683373800698,"paceCeil":300},{"zone":"UT2","color":"var(--color-accent)","wattsLow":113,"wattsHigh":144,"paceFloor":134.452387168712,"paceCeil":145.7683373800698},{"zone":"UT1","color":"var(--color-positive)","wattsLow":144,"wattsHigh":164,"paceFloor":128.74826901045958,"paceCeil":134.452387168712},{"zone":"AT","color":"var(--color-caution)","wattsLow":164,"wattsHigh":185,"paceFloor":123.67979934387759,"paceCeil":128.74826901045958},{"zone":"TR","color":"var(--color-warning)","wattsLow":185,"wattsHigh":215,"paceFloor":117.6367980107184,"paceCeil":123.67979934387759},{"zone":"AN","color":"var(--color-critical)","wattsLow":215,"wattsHigh":267,"paceFloor":109.44239648589375,"paceCeil":117.6367980107184}]'
+    );
+  });
 });
