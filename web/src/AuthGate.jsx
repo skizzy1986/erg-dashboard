@@ -8,6 +8,14 @@ import SplashScreen from './components/mobile/SplashScreen.jsx';
 import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
 import { FONT } from './constants/type.js';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
+import './i18n/dashboard.js';
+import LanguageProvider from './i18n/LanguageProvider.jsx';
+import LanguageToggle, {
+  LanguageStatus,
+} from './components/LanguageToggle.jsx';
+import { authErrorText } from './utils/authError.js';
 
 // A device renders one shell, never both. Statically importing the pair put
 // the desktop dashboard's thirteen tabs and the whole mobile app in the same
@@ -16,18 +24,26 @@ import { FONT } from './constants/type.js';
 const App = lazy(() => import('./App.jsx'));
 const MobileApp = lazy(() => import('./views/mobile/MobileApp.jsx'));
 
+const MISSING_FIELDS = msg({
+  message: 'Enter email and password.',
+  comment: 'Login form validation error.',
+});
+
 // ── THEME TOKENS (match the dashboard) ───────────────────────────
 // ── LOGIN SCREEN ─────────────────────────────────────────────────
 function Login() {
+  const { t, i18n } = useLingui();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  // The cause, not its text: rendered in whichever language is active, so a
+  // switch mid-error re-reads it instead of leaving the old language behind.
   const [err, setErr] = useState(null);
 
   const submit = async (e) => {
     e.preventDefault();
     if (!email.trim() || !password) {
-      setErr('Enter email and password.');
+      setErr({ missing: true });
       return;
     }
     setBusy(true);
@@ -37,9 +53,13 @@ function Login() {
       password,
     });
     setBusy(false);
-    if (error) setErr(error.message);
+    if (error) setErr({ error });
     // On success, onAuthStateChange in AuthGate swaps the view.
   };
+
+  const errText = err?.missing
+    ? t(MISSING_FIELDS)
+    : authErrorText(err?.error, i18n.locale);
 
   const inp = {
     background: THEME.field,
@@ -85,22 +105,36 @@ function Login() {
       >
         <div
           style={{
-            fontSize: 15,
-            fontWeight: 700,
-            color: THEME.positive,
-            letterSpacing: 1,
-            marginBottom: 4,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
           }}
         >
-          SPLITIQ
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: THEME.positive,
+              letterSpacing: 1,
+              marginBottom: 4,
+            }}
+          >
+            SPLITIQ
+          </div>
+          {/* Reachable before sign-in, so the language can change without an
+              account. */}
+          <LanguageToggle variant="cycle" withStatus={false} />
         </div>
+        {/* Its own full-width line: beside the toggle, the sentence would
+            squeeze the header row on a 360px phone. */}
+        <LanguageStatus />
         <div style={{ fontSize: 11, color: THEME.muted, marginBottom: 22 }}>
-          Sign in to continue
+          <Trans>Sign in to continue</Trans>
         </div>
 
         <div style={{ marginBottom: 14 }}>
           <label style={lbl} htmlFor="login-email">
-            EMAIL
+            <Trans comment="Login form field label, all capitals">EMAIL</Trans>
           </label>
           <input
             id="login-email"
@@ -113,7 +147,9 @@ function Login() {
         </div>
         <div style={{ marginBottom: 18 }}>
           <label style={lbl} htmlFor="login-password">
-            PASSWORD
+            <Trans comment="Login form field label, all capitals">
+              PASSWORD
+            </Trans>
           </label>
           <input
             id="login-password"
@@ -125,7 +161,7 @@ function Login() {
           />
         </div>
 
-        {err && (
+        {errText && (
           <div
             style={{
               fontSize: 11,
@@ -134,7 +170,7 @@ function Login() {
               lineHeight: 1.5,
             }}
           >
-            {err}
+            {errText}
           </div>
         )}
 
@@ -155,7 +191,12 @@ function Login() {
             letterSpacing: 1,
           }}
         >
-          {busy ? 'SIGNING IN…' : 'SIGN IN'}
+          {busy
+            ? t({
+                message: 'SIGNING IN…',
+                comment: 'Login button while the request is in flight',
+              })
+            : t({ message: 'SIGN IN', comment: 'Login button' })}
         </button>
       </form>
     </div>
@@ -179,13 +220,16 @@ function LoadingPane() {
         fontSize: 12,
       }}
     >
-      Loading…
+      <Trans comment="Shown while the session or the app is loading">
+        Loading…
+      </Trans>
     </div>
   );
 }
 
 // ── SIGN-OUT BUTTON (floating, top-right) ────────────────────────
 function SignOutButton() {
+  const { t } = useLingui();
   return (
     <button
       onClick={() => supabase.auth.signOut()}
@@ -205,9 +249,12 @@ function SignOutButton() {
         fontFamily: 'inherit',
         backdropFilter: 'blur(4px)',
       }}
-      title="Sign out"
+      title={t({
+        message: 'Sign out',
+        comment: 'Tooltip on the sign-out button',
+      })}
     >
-      SIGN OUT
+      <Trans comment="Floating button, all capitals">SIGN OUT</Trans>
     </button>
   );
 }
@@ -236,14 +283,16 @@ function InstallButton() {
         fontFamily: 'inherit',
       }}
     >
-      ＋ ADD TO HOME SCREEN
+      <Trans comment="Install-the-app button, all capitals">
+        ＋ ADD TO HOME SCREEN
+      </Trans>
     </button>
   );
 }
 
 // ── AUTH GATE ────────────────────────────────────────────────────
 // undefined = still checking, null = logged out, object = signed in.
-export default function AuthGate() {
+function Gate() {
   const [session, setSession] = useState(undefined);
   const [authFailed, setAuthFailed] = useState(false);
   const isMobile = useIsMobile();
@@ -309,5 +358,17 @@ export default function AuthGate() {
       {showSplash && <SplashScreen />}
       <InstallButton />
     </>
+  );
+}
+
+// The language provider wraps all three branches, so the login screen is in
+// the visitor's language before there is an account to store it against. A
+// stored Spanish choice holds the first paint on RouteRoot's ground until the
+// catalog arrives (see LanguageProvider).
+export default function AuthGate() {
+  return (
+    <LanguageProvider product="dashboard">
+      <Gate />
+    </LanguageProvider>
   );
 }

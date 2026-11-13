@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
+import { useLingui } from '@lingui/react/macro';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useVitals } from '../../hooks/useVitals.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
@@ -68,6 +69,7 @@ export default function MobileToday({
   useEffect(() => {
     if (focusSettings) gearRef.current?.focus();
   }, [focusSettings]);
+  const { t } = useLingui();
   const { data: sessions } = useSessions();
   const { readiness } = useVitals();
   const { data: tssHistory, isLoading: loadPending } = useTSSHistory();
@@ -179,7 +181,7 @@ export default function MobileToday({
             ref={gearRef}
             type="button"
             onClick={onOpenSettings}
-            aria-label="Settings"
+            aria-label={t`Settings`}
             style={{
               width: 44,
               height: 44,

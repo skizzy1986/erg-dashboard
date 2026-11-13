@@ -5,6 +5,7 @@ import { useStravaSync } from '../hooks/useStravaSync.js';
 import { THEME } from '../constants/theme.js';
 import { FONT } from '../constants/type.js';
 import { RADIUS, SPACE, TYPE } from '../constants/tokens.js';
+import { Trans, useLingui } from '@lingui/react/macro';
 
 // `tone` arrives from describeConnection as a THEME KEY NAME, never a colour.
 // This is the only place it becomes a value, so the panel follows the palette
@@ -40,6 +41,9 @@ function Button({ label, onClick, disabled, primary, tone }) {
 }
 
 export default function StravaConnectPanel({ compact = false, onSynced }) {
+  // Also what re-renders the panel on a language switch, so describeConnection
+  // (called by useStravaConnection on every render) re-reads its words.
+  const { t } = useLingui();
   const { status, connection, isLoading, isError, refetch } =
     useStravaConnection();
   const { start, requestDisconnect, disconnect } = useStravaConnect();
@@ -61,7 +65,10 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
 
   const shell = (children) => (
     <section
-      aria-label="Strava connection"
+      aria-label={t({
+        message: 'Strava connection',
+        comment: 'Screen reader only: name of the Strava settings panel',
+      })}
       style={{
         background: THEME.surface,
         border: `1px solid ${THEME.border}`,
@@ -82,7 +89,7 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
   if (isLoading) {
     return shell(
       <div style={{ fontSize: TYPE.bodySm.size, color: THEME.muted }}>
-        Checking Strava connection…
+        <Trans comment="Loading state">Checking Strava connection…</Trans>
       </div>
     );
   }
@@ -99,20 +106,34 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
             color: THEME.critical,
           }}
         >
-          Could not read the Strava connection status
+          <Trans comment="Error state heading">
+            Could not read the Strava connection status
+          </Trans>
         </div>
         <div style={{ fontSize: TYPE.bodySm.size, color: THEME.muted }}>
-          The connection itself may be fine — only this status read failed.
+          <Trans comment="Error state detail">
+            The connection itself may be fine — only this status read failed.
+          </Trans>
         </div>
         <div style={{ display: 'flex', gap: SPACE.sm }}>
-          <Button label="Retry" onClick={() => refetch()} tone="critical" />
+          <Button
+            label={t({
+              message: 'Retry',
+              comment: 'Button in the error state',
+            })}
+            onClick={() => refetch()}
+            tone="critical"
+          />
         </div>
       </>
     );
   }
 
   const { kind, headline, detail, tone, canSync, canConnect } = status;
-  const connectLabel = kind === 'auth_failed' ? 'Reconnect' : 'Connect Strava';
+  const connectLabel =
+    kind === 'auth_failed'
+      ? t({ message: 'Reconnect', comment: 'Button' })
+      : t({ message: 'Connect Strava', comment: 'Button' });
 
   return shell(
     <>
@@ -145,18 +166,25 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
             wordBreak: 'break-all',
           }}
         >
-          Activity ids: {(connection?.ambiguous_activity_ids ?? []).join(', ')}
+          <Trans comment="Followed by a list of Strava activity numbers">
+            Activity ids:{' '}
+            {(connection?.ambiguous_activity_ids ?? []).join(', ')}
+          </Trans>
         </div>
       )}
 
       {sync.isError && (
         <div style={{ fontSize: TYPE.caption.size, color: THEME.critical }}>
-          Sync failed. Try again.
+          <Trans comment="Error after pressing Sync now">
+            Sync failed. Try again.
+          </Trans>
         </div>
       )}
       {start.isError && (
         <div style={{ fontSize: TYPE.caption.size, color: THEME.critical }}>
-          Could not start the Strava connection. Try again.
+          <Trans comment="Error after pressing Connect Strava">
+            Could not start the Strava connection. Try again.
+          </Trans>
         </div>
       )}
 
@@ -170,7 +198,11 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
       >
         {canConnect && (
           <Button
-            label={start.isPending ? 'Opening Strava…' : connectLabel}
+            label={
+              start.isPending
+                ? t({ message: 'Opening Strava…', comment: 'Button, busy' })
+                : connectLabel
+            }
             onClick={() => start.mutate()}
             disabled={start.isPending}
             primary
@@ -178,7 +210,11 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
         )}
         {canSync && (
           <Button
-            label={sync.isPending ? 'Syncing…' : 'Sync now'}
+            label={
+              sync.isPending
+                ? t({ message: 'Syncing…', comment: 'Button, busy' })
+                : t({ message: 'Sync now', comment: 'Button' })
+            }
             onClick={() => sync.mutate()}
             disabled={sync.isPending}
             primary={!canConnect}
@@ -186,7 +222,11 @@ export default function StravaConnectPanel({ compact = false, onSynced }) {
         )}
         {kind !== 'not_connected' && (
           <Button
-            label={disconnect.isPending ? 'Disconnecting…' : 'Disconnect'}
+            label={
+              disconnect.isPending
+                ? t({ message: 'Disconnecting…', comment: 'Button, busy' })
+                : t({ message: 'Disconnect', comment: 'Button' })
+            }
             onClick={requestDisconnect}
             disabled={disconnect.isPending}
             tone="muted"

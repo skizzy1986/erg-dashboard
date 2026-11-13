@@ -110,6 +110,18 @@ jobs:
       - name: Drop web-only squat chunks and data
         run: rm -f dist/assets/squat-*
         working-directory: web
+      # The dashboard's Spanish catalog is the opposite case: the APK ships the
+      # dashboard, so it carries the catalog and Spanish works offline. It is
+      # named i18n-* (scripts/i18nChunks.mjs) and must survive the strip above,
+      # while nothing squat-* may.
+      - name: Assert the Spanish catalog ships and squat does not
+        run: |
+          ls dist/assets/i18n-es-*.js
+          if ls dist/assets/squat-* 2>/dev/null; then
+            echo "squat-* files are still in dist/assets" >&2
+            exit 1
+          fi
+        working-directory: web
       - name: Sync Capacitor assets
         run: npx cap sync android
         working-directory: web

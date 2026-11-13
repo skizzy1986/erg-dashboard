@@ -387,6 +387,19 @@ list is the model's accessible substitute and must not sit behind a chunk that c
 to fetch).
 `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
 
+**i18n PR-1 (es-CO on Lingui 6) raised two budgets and added a third**, measured
+2026-11-13: **entry 155.6 / 157, total 338.7 / 400, squat entry 122.0 / 124, squat
+total 33.0 / 34, squat 3D 138.4 / 145 KB, DASH_ES 2.8 / 5 KB**, data 2.20 MB.
+**ENTRY 150 → 157**: the Lingui runtime and the English catalog are on first paint by
+design (production message descriptors are id-only, so English cannot render without
+its catalog). **SQUAT_ENTRY 122 → 124**: `src/i18n/lang.js` and the root fallback's
+words sit in the shared `main` chunk, because RouteRoot's offline message and the
+Sentry root fallback render before any product chunk. **DASH_ES** is new: the
+dashboard's Spanish catalog, reachable only through `src/locales/es.po`, never
+precached, and carved out of TOTAL so a language never reads as the dashboard
+growing. Spare after it: entry 1.4 KB, squat entry 2.0 KB — the 3.2 KB entry figure
+below predates it.
+
 **Squat-only JS is `squat-` prefixed, never precached, and cached at runtime instead** — a
 reversal of PR1, where the tool's (then small) JS chunks were precached. `chunkFileNames`
 in `web/vite.config.js` names a chunk `squat-*` only when every module in it is under

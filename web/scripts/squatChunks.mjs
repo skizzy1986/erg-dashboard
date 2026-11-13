@@ -3,6 +3,8 @@
 // check-bundle-size.mjs and the Android build select files by the prefix it
 // produces. Plain data and functions so each piece is unit-tested.
 
+import { I18N_CHUNK_NAME, isTranslatedCatalog } from './i18nChunks.mjs';
+
 // A module belongs to the squat tool if it lives under one of these.
 export const SQUAT_ONLY_DIRS = [
   '/src/squat/',
@@ -24,9 +26,15 @@ export const isSquatOnly = (moduleIds) =>
 export const SQUAT_CHUNK_NAME = 'assets/squat-[name]-[hash].js';
 export const PLAIN_CHUNK_NAME = 'assets/[name]-[hash].js';
 
-/** rolldown output.chunkFileNames */
-export const squatChunkFileNames = (chunk) =>
-  isSquatOnly(chunk.moduleIds) ? SQUAT_CHUNK_NAME : PLAIN_CHUNK_NAME;
+/**
+ * rolldown output.chunkFileNames — the build's one naming function. Squat is
+ * checked first; a translated dashboard catalog is named by i18nChunks.mjs.
+ */
+export const squatChunkFileNames = (chunk) => {
+  if (isSquatOnly(chunk.moduleIds)) return SQUAT_CHUNK_NAME;
+  if (isTranslatedCatalog(chunk.moduleIds)) return I18N_CHUNK_NAME;
+  return PLAIN_CHUNK_NAME;
+};
 
 /** The built file names the prefix produces (dist/assets basenames). */
 export const SQUAT_JS = /^squat-.*\.js$/;

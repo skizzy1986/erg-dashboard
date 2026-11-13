@@ -186,6 +186,27 @@ loads.**
   faithful to production, not a bug. **Do not fix it by adding DM Mono:**
   `HANDOFF.md` §1 sets the face to **Archivo**, minimum weight 500. These call
   sites should move to Archivo rather than acquire the face they name.
+- **Lingui breaks the next re-sync at import (i18n PR-1, 2026-11-13).**
+  `BottomTabBar`, exported from `entry.jsx`, now calls `useLingui()` and imports
+  `constants/destinations.js`, whose labels are `msg` macros. Two things the app's
+  build supplies are missing from the converter: the **Lingui macro transform**
+  (`@lingui/vite-plugin` with `macroTransform: true` in `vite.config.js`) and an
+  **`I18nProvider`** above the component, without which `useLingui()` throws at
+  render. An untransformed macro fails one of two ways depending on which export
+  condition the bundler resolves (`node_modules/@lingui/core/macro`): the
+  `default` entry throws when `destinations.js` calls `msg` at module scope, so
+  the bundle dies at import; the `browser` entry is a no-op returning
+  `undefined`, so every tab label is lost. The converter bundles with plain
+  esbuild and has neither piece, so expect the next `/design-login` re-sync to
+  fail at import or render. Any further exported component that adopts
+  `<Trans>`/`useLingui` joins it.
+  **`npm run check:design-sync` cannot see this**: it bundles `entry.jsx` to prove
+  the barrel resolves, but it never executes the bundle or renders a component.
+  Handle it before the next re-sync: either add the macro transform to the
+  converter's esbuild step (a Babel/SWC pass with Lingui's macro plugin) and wrap
+  each render in an `I18nProvider` with the English catalog loaded and activated,
+  or export a provider-wrapped, English-only stand-in from `entry.jsx`. Tracked in a
+  GitHub issue.
 - **Toolchain assumptions:** the render check runs against **system Chrome**
   (`DS_CHROMIUM_PATH=/c/Program Files/Google/Chrome/Application/chrome.exe`)
   because no playwright browser is cached on this machine. `playwright` itself

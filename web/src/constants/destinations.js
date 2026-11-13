@@ -1,3 +1,5 @@
+import { msg } from '@lingui/core/macro';
+
 // The four destinations, from DESIGN_BRIEF.md §2.2 and the artboards' own
 // `data-tab` ids. One list, so the tab bar and the shell cannot disagree about
 // what exists — and so desktop can adopt the same names in S3.
@@ -12,11 +14,38 @@
 // Icons are still emoji. The artboards draw 18x18 glyphs; swapping them is
 // iconography, not information architecture, and is deliberately left out of
 // this change.
+//
+// `label` stays the English string — the e2e suite and the destination tests
+// select by it. `message` is the same text as a Lingui descriptor, which the
+// tab bar renders in the active language. A test pins the two together.
 export const DESTINATIONS = [
-  { id: 'today', label: 'Today', icon: '☀️' },
-  { id: 'train', label: 'Train', icon: '🚣' },
-  { id: 'progress', label: 'Progress', icon: '📈' },
-  { id: 'body', label: 'Body', icon: '❤️' },
+  {
+    id: 'today',
+    label: 'Today',
+    message: msg({ message: 'Today', comment: 'Mobile tab bar' }),
+    icon: '☀️',
+  },
+  {
+    id: 'train',
+    label: 'Train',
+    message: msg({ message: 'Train', comment: 'Mobile tab bar' }),
+    icon: '🚣',
+  },
+  {
+    id: 'progress',
+    label: 'Progress',
+    message: msg({ message: 'Progress', comment: 'Mobile tab bar' }),
+    icon: '📈',
+  },
+  {
+    id: 'body',
+    label: 'Body',
+    message: msg({
+      message: 'Body',
+      comment: 'Mobile tab bar: readiness, sleep, heart rate',
+    }),
+    icon: '❤️',
+  },
 ];
 
 export const DEFAULT_DESTINATION = 'today';
