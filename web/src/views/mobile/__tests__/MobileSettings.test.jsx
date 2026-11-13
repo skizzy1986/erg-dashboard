@@ -35,6 +35,10 @@ vi.mock('../MobileToday.jsx', () => ({
 vi.mock('../MobileProgress.jsx', () => ({ default: () => <p>PROGRESS</p> }));
 vi.mock('../MobileRecovery.jsx', () => ({ default: () => <p>BODY</p> }));
 vi.mock('../MobileTrain.jsx', () => ({ default: () => <p>TRAIN</p> }));
+const signOut = vi.hoisted(() => vi.fn());
+vi.mock('../../../supabaseClient.js', () => ({
+  supabase: { auth: { signOut } },
+}));
 // SettingsView itself is real; only the panel's Supabase/Strava hooks are not.
 vi.mock('../../../components/StravaConnectPanel.jsx', () => ({
   default: () => <div data-testid="strava-panel" />,
@@ -131,6 +135,16 @@ describe('mobile Settings', () => {
     await openSettings(user);
     const back = screen.getByRole('button', { name: 'Back to Today' });
     expect(back).toHaveStyle({ width: '44px', height: '44px' });
+  });
+
+  it('carries sign-out as a 44px button', async () => {
+    signOut.mockClear();
+    const user = userEvent.setup();
+    await openSettings(user);
+    const button = screen.getByRole('button', { name: 'Sign out' });
+    expect(button).toHaveStyle({ minHeight: '44px' });
+    await user.click(button);
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('deep-links from #/settings', () => {

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import SettingsView from '../SettingsView.jsx';
+import { supabase } from '../../supabaseClient.js';
 import { THEME } from '../../constants/theme.js';
-import { SPACE, TYPE } from '../../constants/tokens.js';
+import { RADIUS, SPACE, TYPE } from '../../constants/tokens.js';
 
 // Settings is a screen, not a destination: the four-tab IA (DESIGN_BRIEF §2.2)
 // stays four, and this is reached from the gear on Today. It hosts the desktop
@@ -75,6 +76,24 @@ export default function MobileSettings({ onBack, notice }) {
         </h1>
       </header>
       <SettingsView notice={notice} />
+      <button
+        type="button"
+        onClick={() => supabase.auth.signOut()}
+        style={{
+          width: '100%',
+          minHeight: 44,
+          marginTop: SPACE.xl,
+          border: `1px solid ${THEME.border}`,
+          borderRadius: RADIUS.sm,
+          background: THEME.surface,
+          color: THEME.text,
+          fontSize: TYPE.body.size,
+          fontFamily: 'inherit',
+          cursor: 'pointer',
+        }}
+      >
+        Sign out
+      </button>
     </div>
   );
 }

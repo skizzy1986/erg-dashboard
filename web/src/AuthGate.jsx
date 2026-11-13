@@ -281,7 +281,9 @@ export default function AuthGate() {
   } else {
     body = (
       <>
-        <SignOutButton />
+        {/* On a phone the floating button sat over Today's settings gear, so
+            sign-out lives on the mobile Settings screen instead. */}
+        {!isMobile && <SignOutButton />}
         {/* The shell chunk is fetched here rather than at first paint. On a
             phone the splash is already covering this window; once it has
             dismissed at its ceiling — or on desktop, where it never shows —

@@ -187,7 +187,9 @@ export default function MobileToday({
               alignSelf: 'center',
               // The 44px target overhangs the 20px glyph; negative margins keep
               // it from growing the header or pushing the glyph off the edge.
-              margin: `-${SPACE.md}px -${SPACE.md}px -${SPACE.md}px ${phase ? 0 : 'auto'}`,
+              // Vertically it nets to 12px, under the text line, so the header
+              // keeps its pre-gear height.
+              margin: `-${SPACE.lg}px -${SPACE.md}px -${SPACE.lg}px ${phase ? 0 : 'auto'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
