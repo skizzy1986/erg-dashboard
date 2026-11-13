@@ -100,6 +100,7 @@ Left: **`SquatStage`** fills its cell and keeps the canvas host, the "Modelled, 
 - `<h1>High-bar back squat</h1>` moves into the stage's top-left overlay on an opaque `THEME.surface` chip, replacing the "3D model" micro-label.
 - `section aria-label="3D model"` stays.
 - The h1 remains the first heading in DOM order.
+- *Superseded by #501 (2026-11-13): the h1 now lives in the squat header ("SPLITIQ / High-bar back squat"); the stage carries no title.*
 
 Right: the **`StageControls` rail**, one card at full hero height. It is a flex column with no internal scroll, in this order:
 
@@ -184,7 +185,7 @@ PR C is mostly a move. It adds the rail and the phone disclosure, and removes th
 ### Risks
 
 - `svh` falls back to minHeight on older Safari.
-- Moving the h1 into an overlay could upset the heading order the axe e2e checks.
+- Moving the h1 into an overlay could upset the heading order the axe e2e checks. *Superseded by #501 (2026-11-13): the h1 now lives in the squat header ("SPLITIQ / High-bar back squat"); the stage carries no title.*
 - e2e selectors use group names, which are preserved.
 - Rollback is a plain revert: layout only, no data.
 

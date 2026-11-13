@@ -852,6 +852,22 @@ for (const [label, viewport, phone] of [
         // Fills the viewport below the header, less the hero's padding.
         expect(stage.y + stage.height).toBeGreaterThanOrEqual(720 - 16 - 1);
       }
+      // #501: the framing chip is placed by its own wrapper, top-right on
+      // desktop and in the stage's bottom corner on a phone.
+      const chip = await page
+        .getByRole('region', { name: '3D model' })
+        .getByText('Modelled, not measured')
+        .boundingBox();
+      expect(chip.x).toBeGreaterThanOrEqual(stage.x);
+      expect(chip.y).toBeGreaterThanOrEqual(stage.y);
+      expect(chip.x + chip.width).toBeLessThanOrEqual(stage.x + stage.width);
+      expect(chip.y + chip.height).toBeLessThanOrEqual(stage.y + stage.height);
+      if (phone) {
+        expect(chip.y).toBeGreaterThanOrEqual(stage.y + stage.height / 2);
+      } else {
+        expect(stage.x + stage.width - (chip.x + chip.width)).toBeLessThan(32);
+        expect(chip.y - stage.y).toBeLessThan(32);
+      }
       // Docked: the rail sits beside the stage on desktop, the bar under it on
       // a phone (criterion 17).
       const rail = await page
