@@ -50,3 +50,48 @@ Spec **1 + 2 together** as one PR ("coherence pass: names and residue") — both
 string/copy-level, independent of the cull, low risk, and visible on every surface.
 Answer the decisions on 5 and 6 now so they are queued, not blocking; 6 cannot start
 before #423 lands regardless.
+
+## Gate 1 response (Scott, 2026-11-13)
+
+**Not an approval of 1 + 2 — a widened vision:**
+
+> SplitIQ as both a professional tool that coaches can use with their athletes, and
+> approachable for anyone who wants to track workouts, with deterministic session
+> planning and fitness metrics represented meaningfully, as granular or as
+> straightforward as each user wants.
+
+Decisions recorded:
+
+- **APK:** rename the display name **and** `applicationId`. Accepted cost: a new
+  Android identity, so existing installs do not upgrade in place.
+- **Theme:** full light/dark/auto control on the dashboard now, accepting that
+  `StrengthLogger` stays light until it is rewritten (#79).
+- **IA:** after the cull, desktop adopts the four destinations with URL routing.
+
+### Where this departs from `VISION.md` (which is the authority until amended)
+
+1. **Coaches with athletes.** VISION's audience includes "coaches explaining a
+   lift", not coaches holding athletes' data. Every user table is owner-only RLS.
+   A coach seeing an athlete's sessions means a relationship table, consent, and
+   new read policies on `sessions`, `vitals`, `strength_*`, `anchors`, plus a
+   sign-up path (none exists). Health records now moving into the DB (slice 4b,
+   #500) are the sharpest case: they need an explicit per-category share scope,
+   not inherited access.
+2. **Deterministic planning.** VISION already allows "plans are algorithmic —
+   deterministic, parameterised, testable" but says "no personal prescription
+   engine". The new line is a **generic** planner parameterised per user (or set
+   by a coach), never rules fitted to one athlete. The cull is still right: it
+   deletes one-athlete literals, not a generic engine. D14 (planned sessions as DB
+   rows) is the foundation a planner would write to.
+3. **Granular or straightforward.** Progressive disclosure — the same data at a
+   simple and an expert depth — is a design principle VISION does not state yet.
+   It also settles the IA question: four destinations at the simple depth.
+
+### Proposed sequence
+
+1. **Amend `VISION.md`** with the three points above. Scott's decision, one docs PR.
+2. **Stories 1 + 2** (names, residue). Neutral to the new vision; can run now.
+3. **Coach ↔ athlete** gets its own `/orchestrate` run. It is a data-model and
+   RLS epic, not a UI change, and it should be specified before the four-destination
+   IA so the IA has a coach view to place.
+4. Theme and IA queue behind the cull, as decided.
