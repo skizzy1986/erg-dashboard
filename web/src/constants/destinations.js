@@ -6,7 +6,8 @@ import { msg } from '@lingui/core/macro';
 //
 // Each answers one question:
 //   today    What am I doing right now, and am I in any state to do it?
-//   train    The live session — prescription, logging, the set in front of me.
+//   train    The live session — today's planned session, logging, the set in front of me.
+//            A plan is a sessions row with status 'planned' (planner, R40).
 //   progress Is the training working? Load, erg, strength, history.
 //   body     Readiness and the readings behind it — sleep, RHR, HRV.
 // The artboards draw a fifth, coach; it was retired in #414.

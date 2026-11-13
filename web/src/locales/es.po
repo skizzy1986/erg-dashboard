@@ -150,11 +150,6 @@ msgstr "Ergómetro"
 msgid "ERG · STRENGTH · BIKE"
 msgstr "ERGÓMETRO · FUERZA · BICI"
 
-#. Header tagline, all capitals
-#: src/App.jsx
-msgid "ERG + STRENGTH · BASE"
-msgstr "ERGÓMETRO + FUERZA · BASE"
-
 #: src/utils/stravaStatus.js
 msgid "Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically."
 msgstr "Importando historial: {imported} importadas, {adopted} vinculadas a sesiones existentes. Sigue automáticamente."
