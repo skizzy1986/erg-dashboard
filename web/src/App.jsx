@@ -35,17 +35,13 @@ const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
    MAP (search the ── banner to jump):
    • DATA + HELPERS ......... lines ~4–2015 (everything before App)
        - Logs: SESSION LOG, BLOODS, HORMONE, MOBILITY, DECISION LEDGER
-       - Plans: MICROCYCLE, SEASON, EVENT PROGRESSION, MACROFACTOR
-       - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION, ROSTER
+       - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION
        - Components: WorkoutItem, LogEntry, tooltips
    • APP COMPONENT .......... from `export default function App`
-       - State + live clock/roster, NAV, then one block per tab:
+       - State, NAV, then one block per tab:
          overview · calendar · erg · strength · mobility
          · recovery · log
    KEY SYSTEMS:
-   • Roster auto-switch: getRosterMode() — home/FIFO by date,
-     anchored to ROSTER_ANCHOR (Tue 23 Jun 2026 = FIFO out).
-   • Shared workout UI: WorkoutItem (one session/box) + daySessions().
    • Validate before deploy: esbuild + the each-tab render test.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -136,10 +132,6 @@ const strengthTrend = {
 // Based on: polarized TID (Seiler 2010, Silva Oliveira et al. 2024),
 // British Rowing training matrix, Pete Plan continuous improvement model
 
-// ── 2-WEEK MICROCYCLE (roster-driven) ─────────────────────────
-// 1-on/1-off FIFO roster used AS periodization. Home week = loading,
-// FIFO week = auto-deload. Erg is priority; strength yields when scarce.
-
 // ── STRENGTH GUIDELINES ───────────────────────────────────────
 // Concurrent training: heavy/low-rep compounds minimise interference
 // effect (Wilson et al. 2012) while maximising force transfer to
@@ -190,7 +182,6 @@ export default function App() {
     [stravaCallback]
   );
   const [view, setView] = useState(stravaCallback ? 'settings' : 'overview');
-  const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
   // Clearing the URL is an external-system update, so it belongs in an effect.
   // Without it a refresh replays a stale OAuth result.
   useEffect(() => {
@@ -202,10 +193,6 @@ export default function App() {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   ); // viewport width → responsive layout
   useEffect(() => {
-    const t = setInterval(() => setNowTick(new Date()), 60000); // once a minute is plenty
-    return () => clearInterval(t);
-  }, []);
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     const onResize = () => setVw(window.innerWidth);
     window.addEventListener('resize', onResize);
@@ -216,6 +203,7 @@ export default function App() {
   const containerMax = isWide ? 1100 : 680;
 
   const {
+    dbStatus,
     loggedSessions,
     cancelledSessions,
     logDisplaySessions,
@@ -417,7 +405,9 @@ export default function App() {
             {view === 'calendar' && (
               <CalendarView
                 loggedSessions={loggedSessions}
+                plannedSessions={plannedSessions}
                 cancelledSessions={cancelledSessions}
+                dbStatus={dbStatus}
                 isWide={isWide}
               />
             )}
@@ -435,7 +425,6 @@ export default function App() {
                 totalErgDist={totalErgDist}
                 totalSessions={totalSessions}
                 isWide={isWide}
-                nowTick={nowTick}
               />
             )}
 
