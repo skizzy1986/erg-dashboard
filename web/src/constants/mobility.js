@@ -8,7 +8,7 @@ export const MOBILITY_ROUTINES = [
     icon: '🧻',
     color: THEME.accent,
     when: 'Post-session or evening. Anytime tissue feels tight.',
-    why: 'Manages tissue quality + tightness around the rowing posture (thoracic, lats, hips) and the rehab area. Down-regulates after hard sessions.',
+    why: 'Manages tissue quality + tightness around the rowing posture (thoracic, lats, hips, hamstrings). Down-regulates after hard sessions.',
     blocks: [
       {
         move: 'Thoracic spine — 60-90s',
@@ -22,15 +22,13 @@ export const MOBILITY_ROUTINES = [
       },
       {
         move: 'Glutes / piriformis — 60s/side',
-        rehab: true,
         visual:
-          'Sit on the roller (or a ball for more pressure). Cross one ankle over the opposite knee (figure-4), lean slightly toward the crossed side. Roll the meat of the glute slowly. Ball into the deepest spot and breathe. Key rehab tissue — give the left side time.',
+          'Sit on the roller (or a ball for more pressure). Cross one ankle over the opposite knee (figure-4), lean slightly toward the crossed side. Roll the meat of the glute slowly. Ball into the deepest spot and breathe. Give each side equal time; spend longer where it is tighter.',
       },
       {
         move: 'Hamstrings — 60s/side',
-        rehab: true,
         visual:
-          "Sit with the roller under one thigh, hands behind for support, leg straight. Roll from just under the sit-bone (origin) down toward the back of the knee. Turn the foot in/out to hit different parts. Extra time and care on the left — back off if it's sharp near the origin (rehab area).",
+          "Sit with the roller under one thigh, hands behind for support, leg straight. Roll from just under the sit-bone (origin) down toward the back of the knee. Turn the foot in/out to hit different parts. Go gently near the sit-bone — back off if it's sharp near the origin.",
       },
       {
         move: 'Quads / IT band — 45-60s/side',
@@ -43,7 +41,7 @@ export const MOBILITY_ROUTINES = [
           'Seated, roller under one calf, other leg crossed over for extra load. Hands lift the hips. Roll ankle-to-knee, rotate the foot in/out to cover inner/outer calf.',
       },
     ],
-    note: 'Slow. Breathe into tight spots. NOT a pain contest — discomfort ok, sharp pain no. Extra care + time on the left hamstring/glute.',
+    note: 'Slow. Breathe into tight spots. NOT a pain contest — discomfort ok, sharp pain no. Spend extra time on whichever side is tighter.',
   },
   {
     id: 'prep',
@@ -51,7 +49,7 @@ export const MOBILITY_ROUTINES = [
     icon: '🔑',
     color: THEME.positive,
     when: "Before EVERY erg + every lift (the 'mobility first' in session notes).",
-    why: 'Primes the body to move well before loading it. Cheap insurance — opens hips/t-spine/shoulders so the catch and the squat have range. Protects the rehab area by warming it before load.',
+    why: 'Primes the body to move well before loading it. Cheap insurance — opens hips/t-spine/shoulders so the catch and the squat have range. Warms the hamstrings and glutes before they take load.',
     blocks: [
       {
         move: 'Cat-cow — 8-10 slow reps',
@@ -70,9 +68,8 @@ export const MOBILITY_ROUTINES = [
       },
       {
         move: 'Leg swings, front-back + lateral — 10/side',
-        rehab: true,
         visual:
-          'Hold a wall/rack for balance. Swing one leg forward and back like a pendulum, relaxed, increasing range gradually — keep the torso still. Then swing the same leg side-to-side across the body. Dynamic hamstring/glute prep — controlled, never forced (rehab warm-up).',
+          'Hold a wall/rack for balance. Swing one leg forward and back like a pendulum, relaxed, increasing range gradually — keep the torso still. Then swing the same leg side-to-side across the body. Dynamic hamstring/glute prep — controlled, never forced.',
       },
       {
         move: 'Thoracic open-books — 6/side',
@@ -86,19 +83,18 @@ export const MOBILITY_ROUTINES = [
       },
       {
         move: 'Glute bridges — 12',
-        rehab: true,
         visual:
-          "Lie on your back, knees bent, feet flat hip-width. Push through the heels and lift the hips until knees-hips-shoulders form a line — squeeze the glutes hard at the top, don't arch the low back. Lower slowly. Fires the glutes before squat/erg (rehab activation — don't skip).",
+          "Lie on your back, knees bent, feet flat hip-width. Push through the heels and lift the hips until knees-hips-shoulders form a line — squeeze the glutes hard at the top, don't arch the low back. Lower slowly. Fires the glutes before squat/erg.",
       },
     ],
-    note: "5-8min, dynamic not static (save long holds for post). The glute bridges + leg swings double as rehab activation — don't skip them.",
+    note: "5-8min, dynamic not static (save long holds for post). The glute bridges + leg swings double as glute and hamstring activation — don't skip them.",
   },
   {
     id: 'yoga',
     name: 'Yoga Flow',
     icon: '🧘',
     color: THEME.accentAlt,
-    when: 'Recovery slots (Thu AM), rest days, evenings. The longer reset.',
+    when: 'Recovery days, rest days, evenings. The longer reset.',
     why: 'Longer holds for genuine range + a parasympathetic down-shift (recovery, sleep, HRV). Counters the flexion-dominant rowing posture with extension + rotation.',
     blocks: [
       {
@@ -108,15 +104,13 @@ export const MOBILITY_ROUTINES = [
       },
       {
         move: 'Low lunge + half-split — 1min/side',
-        rehab: true,
         visual:
-          'Step into a low lunge (right foot forward, left knee down), sink the hips forward to stretch the back hip flexor. Then shift the hips back, straightening the front leg with toes up, folding gently over it (half-split) for the hamstring. Gentle on the left — physio-comfortable range only (rehab).',
+          'Step into a low lunge (right foot forward, left knee down), sink the hips forward to stretch the back hip flexor. Then shift the hips back, straightening the front leg with toes up, folding gently over it (half-split) for the hamstring. Stay in a comfortable range — no sharp stretch.',
       },
       {
         move: 'Pigeon — 1-2min/side',
-        rehab: true,
         visual:
-          'From down dog or hands-and-knees, bring the right shin forward and across, angled under your torso, left leg extended straight back. Square the hips and fold forward over the front shin, breathing into the deep glute. Ease into the left side slowly — no sharp stretch (rehab area).',
+          'From down dog or hands-and-knees, bring the right shin forward and across, angled under your torso, left leg extended straight back. Square the hips and fold forward over the front shin, breathing into the deep glute. Ease into each side slowly — no sharp stretch.',
       },
       {
         move: 'Thread-the-needle — 1min/side',
@@ -139,9 +133,6 @@ export const MOBILITY_ROUTINES = [
           'Sit side-on to a wall, then swing the legs up it as you lie back, hips close to or a few inches from the wall, arms relaxed. Just breathe slowly — long exhales. The down-regulation finish: shifts you into recovery (parasympathetic) mode.',
       },
     ],
-    note: 'Breath-led, never force. Pigeon + half-split touch the rehab area — back off to physio-comfortable range, no sharp stretch. Great on poor-sleep days (the down-shift helps).',
+    note: 'Breath-led, never force. Pigeon + half-split load the hamstrings and deep glutes — back off to a comfortable range, no sharp stretch. Great on poor-sleep days (the down-shift helps).',
   },
 ];
-
-export const MOBILITY_STREAK_NOTE =
-  "Consistency is the metric here, not intensity. The prep work especially — it's rehab activation disguised as a warm-up. Dropping it is the flag, not a quiet skip.";

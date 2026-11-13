@@ -347,6 +347,16 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/utils/liftSeries.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useLiftHistory.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/views/OverviewView.jsx': {
           lines: 80,
           functions: 80,

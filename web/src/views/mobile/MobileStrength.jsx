@@ -4,7 +4,7 @@ import { THEME } from '../../constants/theme.js';
 import { FONT } from '../../constants/type.js';
 
 export default function MobileStrength() {
-  const { data, isLoading } = useStrengthPRs();
+  const { data, isLoading, isError } = useStrengthPRs();
 
   return (
     <div
@@ -52,7 +52,20 @@ export default function MobileStrength() {
         </div>
       )}
 
-      {!isLoading && (data ?? []).length === 0 && (
+      {isError && (
+        <div
+          style={{
+            textAlign: 'center',
+            color: THEME.muted,
+            marginTop: 40,
+            fontSize: 12,
+          }}
+        >
+          Strength records unavailable.
+        </div>
+      )}
+
+      {!isLoading && !isError && (data ?? []).length === 0 && (
         <div
           style={{
             textAlign: 'center',
@@ -65,7 +78,7 @@ export default function MobileStrength() {
         </div>
       )}
 
-      {!isLoading && (data ?? []).length > 0 && (
+      {!isLoading && !isError && (data ?? []).length > 0 && (
         <div
           style={{
             display: 'grid',
