@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   MIN_TREND_POINTS,
   workingPowerSeries,
@@ -8,6 +8,10 @@ import {
 } from '../ergTrend.js';
 import { enrich } from '../../hooks/useErgSessions.js';
 import { derivePaceZones } from '../../constants/trainingConfig.js';
+
+// enrich lives beside the hook, whose module builds the Supabase client on
+// import; CI has no VITE_SUPABASE_URL, so the client must not be constructed.
+vi.mock('../../supabaseClient.js', () => ({ supabase: {} }));
 
 const row = (date, avg_watts, avg_hr = null, extra = {}) =>
   enrich({ date, avg_watts, avg_hr, label: '30m', srpe: 4, ...extra }, 200);
