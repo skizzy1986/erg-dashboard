@@ -158,7 +158,7 @@ Modified files:
   - Add an optional `compact` (bool).
   - Their `<h2>` labels become `<h3>` under one rail `<h2>Controls</h2>`. Keep them: e2e uses the group names.
 - **`SquatStage.jsx`**:
-  - New optional `title` (node) for the top-left overlay.
+  - New optional `title` (node) for the top-left overlay. *Superseded by #501 (2026-11-13): the prop is removed; the h1 lives in the squat header.*
   - New optional `children` (overlay nodes after the chips; PR B's strain panel goes here).
   - `minHeight` becomes `height: '100%'` with a 520 / 460 floor.
 - **`SquatApp.jsx`**: restructured per the layout. The intro's duplicate buttons are deleted (they move to the rail footer). MuscleSection and PhaseStrip are unchanged.
