@@ -7,17 +7,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import WorkoutItem from '../components/WorkoutItem.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import LoadTooltip from '../components/LoadTooltip.jsx';
 import { deriveTargets, tsbBand } from '../utils/trainingLoad.js';
-import {
-  getRosterMode,
-  logEntriesForDate,
-  getToday,
-  getUpcomingSessions,
-  daySessions,
-} from '../utils/schedule.js';
 import {
   evaluateRules,
   checkConsistency,
@@ -54,7 +46,6 @@ export default function OverviewView({
   totalErgDist,
   totalSessions,
   isWide,
-  nowTick,
 }) {
   // `latest` is null when the training-load read fails or returns no sessions.
   // evaluateRules/autoregulate/calcReadiness all guard `tsb != null`, so the
@@ -70,324 +61,35 @@ export default function OverviewView({
   const { cp, ftp, cpAvailable } = useAnchors();
   return (
     <>
-      {/* ── CONDENSED TODAY STATUS STRIP (live, mobile-first) ── */}
-      {(() => {
-        const t = getToday(getRosterMode(nowTick)); // roster auto-switches home/FIFO by date
-        const lastSrpe = (() => {
-          for (let i = 0; i < loggedSessions.length; i++) {
-            if (loggedSessions[i].srpe != null) return loggedSessions[i].srpe;
-          }
-          return null;
-        })();
-        const fired = evaluateRules(
-          todayRec,
-          lastSrpe,
-          tsbNow,
-          personalBaselines
-        );
-        const sig = autoregulate(tsbNow, readiness, fired);
-        const upcoming = getUpcomingSessions(nowTick, loggedSessions);
-        return (
-          <div
-            style={{
-              background: `linear-gradient(135deg,${THEME.surfaceAlt},${THEME.raised})`,
-              border: `1px solid ${alpha(sig.color, '50')}`,
-              borderRadius: 8,
-              padding: '14px 16px',
-              marginBottom: 14,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 10,
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: THEME.textStrong,
-                  }}
-                >
-                  {t.dateStr}
-                </div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    color: THEME.muted,
-                    letterSpacing: 1,
-                    marginTop: 1,
-                  }}
-                >
-                  {PHASE_CONTEXT.phaseLabel} · wk {PHASE_CONTEXT.weeksIn}/
-                  {PHASE_CONTEXT.weeksTotal} ·{' '}
-                  {t.cycleLabel.split('—')[0].trim()}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: sig.color,
-                  }}
-                >
-                  ● {sig.signal}
-                </div>
-                <div style={{ fontSize: 9, color: THEME.muted }}>
-                  readiness{' '}
-                  {readiness && readiness.score != null ? readiness.score : '—'}
-                </div>
-              </div>
-            </div>
-            {t.today &&
-              (() => {
-                const todaySessions = daySessions(t.today);
-                const todayLogged = logEntriesForDate(
-                  new Date(),
-                  loggedSessions
-                );
-                const isDone = todayLogged.length > 0;
-                return (
-                  <div style={{ marginBottom: 8 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 7,
-                        marginBottom: 5,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 8,
-                          color: t.cycleColor,
-                          letterSpacing: 2,
-                        }}
-                      >
-                        TODAY · {t.todayKey}
-                      </span>
-                      {isDone && (
-                        <span
-                          style={{
-                            fontSize: 8,
-                            color: THEME.positive,
-                            letterSpacing: 1,
-                            fontWeight: 700,
-                          }}
-                        >
-                          ✓ {todayLogged.length} LOGGED
-                        </span>
-                      )}
-                    </div>
-                    {todaySessions.length === 0 ? (
-                      <div
-                        style={{
-                          background: THEME.field,
-                          borderRadius: 5,
-                          padding: '10px 12px',
-                          fontSize: 11,
-                          color: THEME.textFaint,
-                        }}
-                      >
-                        Rest day — no scheduled session.
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 4,
-                        }}
-                      >
-                        {todaySessions.map((s, j) => (
-                          <WorkoutItem
-                            key={j}
-                            session={{ ...s, done: isDone }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            <div
-              style={{
-                fontSize: 8,
-                color: THEME.muted,
-                letterSpacing: 2,
-                marginBottom: 5,
-              }}
-            >
-              UPCOMING
-            </div>
-            {upcoming.length === 0 ? (
-              <div style={{ fontSize: 10, color: THEME.textFaint }}>
-                No more scheduled sessions in the next 3 days.
-              </div>
-            ) : (
-              upcoming.map((u, i) => {
-                const dayDiff = Math.round(
-                  (new Date(
-                    u.when.getFullYear(),
-                    u.when.getMonth(),
-                    u.when.getDate()
-                  ) -
-                    new Date(
-                      nowTick.getFullYear(),
-                      nowTick.getMonth(),
-                      nowTick.getDate()
-                    )) /
-                    86400000
-                );
-                const whenLabel =
-                  dayDiff === 0 ? 'Today' : dayDiff === 1 ? 'Tomorrow' : u.dow;
-                const slotColor = i === 0 ? THEME.accent : THEME.neutralAccent;
-                return (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '5px 0',
-                      borderTop: i > 0 ? `1px solid ${THEME.divider}` : 'none',
-                    }}
-                  >
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: THEME.textSubtle,
-                          lineHeight: 1.3,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {u.label}
-                      </div>
-                      <div style={{ fontSize: 8, color: THEME.textFaint }}>
-                        {u.slot}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        textAlign: 'right',
-                        flexShrink: 0,
-                        marginLeft: 10,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: slotColor,
-                        }}
-                      >
-                        {whenLabel}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-
-            {/* Recently completed — last few logged sessions at a glance */}
-            {(() => {
-              const recent = loggedSessions.slice(0, 4);
-              if (recent.length === 0) return null;
-              return (
-                <>
-                  <div
-                    style={{
-                      fontSize: 8,
-                      color: THEME.positive,
-                      letterSpacing: 2,
-                      margin: '12px 0 5px',
-                    }}
-                  >
-                    RECENTLY COMPLETED
-                  </div>
-                  {recent.map((e, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '4px 0',
-                        borderTop:
-                          i > 0 ? `1px solid ${THEME.divider}` : 'none',
-                      }}
-                    >
-                      <div
-                        style={{
-                          minWidth: 0,
-                          flex: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: THEME.positive,
-                            fontSize: 10,
-                            flexShrink: 0,
-                          }}
-                        >
-                          ✓
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: THEME.positive,
-                            lineHeight: 1.3,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {e.label}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          textAlign: 'right',
-                          flexShrink: 0,
-                          marginLeft: 10,
-                          display: 'flex',
-                          gap: 6,
-                          alignItems: 'center',
-                        }}
-                      >
-                        {e.srpe && (
-                          <span style={{ fontSize: 8, color: THEME.muted }}>
-                            sRPE {e.srpe}
-                          </span>
-                        )}
-                        {e.prs > 0 && (
-                          <span style={{ fontSize: 8, color: THEME.caution }}>
-                            🏆{e.prs}
-                          </span>
-                        )}
-                        <span style={{ fontSize: 9, color: THEME.muted }}>
-                          {e.date.slice(0, -3)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              );
-            })()}
+      <section
+        aria-label="Readiness"
+        style={{
+          background: `linear-gradient(135deg,${THEME.surfaceAlt},${THEME.raised})`,
+          border: `1px solid ${THEME.border}`,
+          borderRadius: 8,
+          padding: '14px 16px',
+          marginBottom: 14,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 9,
+            color: THEME.muted,
+            letterSpacing: 2,
+            fontWeight: 700,
+          }}
+        >
+          READINESS
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: THEME.text }}>
+          {readiness?.score ?? '—'}
+        </div>
+        {readiness?.score != null && (
+          <div style={{ fontSize: 10, color: THEME.textSubtle }}>
+            {readiness.status}
           </div>
-        );
-      })()}
+        )}
+      </section>
 
       {/* Phase context — where you are in the arc */}
       <div
