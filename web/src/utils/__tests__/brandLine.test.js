@@ -7,7 +7,7 @@ describe('brandLine', () => {
     expect(brandLine(locale)).toBe(BRAND_LINE.es);
   });
 
-  it.each([['en'], ['en-AU'], [''], [undefined], [null]])(
+  it.each([['en'], ['en-AU'], ['est'], [''], [undefined], [null]])(
     'falls back to English for %j',
     (locale) => {
       expect(brandLine(locale)).toBe(BRAND_LINE.en);

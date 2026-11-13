@@ -45,12 +45,13 @@ test.describe('dashboard smoke', () => {
 
     await installAppFixtures(context);
     await page.goto('/');
-    // The splash now plays on desktop too and overlays the nav for up to its
-    // 5000ms ceiling. toBeVisible() ignores occlusion and the default 5000ms
-    // wait races that ceiling, so wait it out the way visual.spec.js does —
-    // after networkidle, since AuthGate is lazy and a count-0 check made
-    // before it mounts would pass at once.
-    await page.waitForLoadState('networkidle');
+    // The splash plays on desktop too and overlays the nav for up to its
+    // 5000ms ceiling, and toBeVisible() ignores occlusion. AuthGate is lazy, so
+    // wait for the splash to mount first (a count-0 check made before it does
+    // would pass at once), then for it to clear. The explicit 10 s clears the
+    // 5 s ceiling whatever the config's expect default is. The seeded session
+    // resolves getSession, so the splash always mounts here.
+    await expect(page.locator('.siq-splash')).toHaveCount(1);
     await expect(page.locator('.siq-splash')).toHaveCount(0, {
       timeout: 10_000,
     });

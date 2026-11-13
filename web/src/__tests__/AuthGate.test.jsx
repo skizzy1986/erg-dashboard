@@ -5,6 +5,7 @@ import AuthGate from '../AuthGate.jsx';
 import { SPLASH_MIN_MS, SPLASH_MAX_MS } from '../hooks/useSplashGate.js';
 import { THEME } from '../constants/theme.js';
 import { TYPE } from '../constants/tokens.js';
+import { FONT } from '../constants/type.js';
 
 const mocks = vi.hoisted(() => ({
   getSession: null,
@@ -171,8 +172,8 @@ describe('AuthGate boot behaviour', () => {
 
   it.each(LOCALES)(
     'shows the brand line for page lang %j between SPLITIQ and the sign-in prompt',
-    async (pageLang, text, lang, head) => {
-      document.documentElement.lang = pageLang;
+    async (pageLangValue, text, lang, head) => {
+      document.documentElement.lang = pageLangValue;
       const { container } = await toLogin();
 
       const line = loginLine(text);
@@ -180,7 +181,7 @@ describe('AuthGate boot behaviour', () => {
       expect(line.querySelector('span')).toHaveTextContent(
         new RegExp(`^${head}$`)
       );
-      expect(document.documentElement.lang).toBe(pageLang);
+      expect(document.documentElement.lang).toBe(pageLangValue);
 
       const brand = screen.getByText('SPLITIQ');
       const prompt = screen.getByText('Sign in to continue');
@@ -199,9 +200,15 @@ describe('AuthGate boot behaviour', () => {
     const line = loginLine('Train Smarter');
     expect(line).toHaveStyle({
       fontSize: `${TYPE.body.size}px`,
+      fontWeight: '600',
+      letterSpacing: `${TYPE.title.letterSpacing}px`,
       color: THEME.text,
     });
-    expect(line.querySelector('span')).toHaveStyle({ color: THEME.accent });
+    expect(line.querySelector('span')).toHaveStyle({
+      fontFamily: FONT.mono,
+      fontWeight: '700',
+      color: THEME.accent,
+    });
   });
 
   it('plays the splash on desktop and clears it at the floor, as on mobile', async () => {

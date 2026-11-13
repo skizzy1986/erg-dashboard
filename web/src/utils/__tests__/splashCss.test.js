@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { splashCss } from '../splashCss.js';
 import { THEME } from '../../constants/theme.js';
 import { TYPE } from '../../constants/tokens.js';
+import { SPLASH_MIN_MS } from '../../hooks/useSplashGate.js';
 
 // Substitution, not "contains no hex" — THEME values ARE hexes, so the only
 // honest proof that a colour came from the token is swapping the token and
@@ -194,6 +195,14 @@ describe('splashCss', () => {
     expect(head).toContain('display: inline-block');
   });
 
+  // Accent on the light splash only passes AA at 3:1, which WCAG allows only
+  // for large text: bold at 18.66px (14pt) or more.
+  it('keeps the accent head word large bold text', () => {
+    const head = ruleBlock(splashCss(THEME), '.siq-splash__tagline-head');
+    expect(head).toContain('font-weight: 700');
+    expect(TYPE.title.size).toBeGreaterThanOrEqual(18.66);
+  });
+
   const durationAndDelay = (css, selector, keyframe) =>
     ruleBlock(css, selector)
       .match(
@@ -228,6 +237,17 @@ describe('splashCss', () => {
     );
     expect(taglineDelay).toBeGreaterThanOrEqual(delays[2] + wordMs - 80);
     expect(headDelay).toBeGreaterThan(taglineDelay);
+  });
+
+  // The head is fully opaque at the keyframe's 48% stop. This keeps the whole
+  // line readable for about 2 s before the splash can clear at its floor.
+  it('lands the head word early enough to read before the floor', () => {
+    const [duration, delay] = durationAndDelay(
+      splashCss(THEME),
+      '.siq-splash__tagline-head',
+      'siq-splash-tagline'
+    );
+    expect(delay + 0.48 * duration + 1900).toBeLessThanOrEqual(SPLASH_MIN_MS);
   });
 
   it('fades each word out at the end of its keyframe', () => {
