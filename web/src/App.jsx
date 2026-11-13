@@ -12,20 +12,18 @@ import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
 
-// Every tab is lazy. Only one is on screen at a time, and four of them are
-// the heaviest files in the repo (ProgramView ~1,958 lines, StrengthLogger
-// ~1,682, OverviewView ~1,423, ErgView ~1,271), so shipping every tab to
+// Every tab is lazy. Only one is on screen at a time, and three of them are
+// among the heaviest files in the repo (StrengthLogger ~1,682, OverviewView
+// ~1,423, ErgView ~1,271), so shipping every tab to
 // paint one of them was most of the entry chunk. React.lazy caches the
 // resolved module, so only a tab's FIRST visit suspends.
 const StrengthLogger = lazy(() => import('./StrengthLogger.jsx'));
 const ErgLiveView = lazy(() => import('./views/ErgLiveView.jsx'));
 const ErgView = lazy(() => import('./views/ErgView.jsx'));
-const JournalView = lazy(() => import('./views/JournalView.jsx'));
 const RecoveryView = lazy(() => import('./views/RecoveryView.jsx'));
 const StrengthView = lazy(() => import('./views/StrengthView.jsx'));
 const MobilityView = lazy(() => import('./views/MobilityView.jsx'));
 const OverviewView = lazy(() => import('./views/OverviewView.jsx'));
-const ProgramView = lazy(() => import('./views/ProgramView.jsx'));
 const CalendarView = lazy(() => import('./views/CalendarView.jsx'));
 const PlanView = lazy(() => import('./views/PlanView.jsx'));
 const LogView = lazy(() => import('./views/LogView.jsx'));
@@ -42,8 +40,8 @@ const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
        - Components: WorkoutItem, LogEntry, tooltips
    • APP COMPONENT .......... from `export default function App`
        - State + live clock/roster, NAV, then one block per tab:
-         overview · calendar · program · erg · strength · mobility
-         · recovery · log · journal
+         overview · calendar · erg · strength · mobility
+         · recovery · log
    KEY SYSTEMS:
    • Roster auto-switch: getRosterMode() — home/FIFO by date,
      anchored to ROSTER_ANCHOR (Tue 23 Jun 2026 = FIFO out).
@@ -192,7 +190,6 @@ export default function App() {
     [stravaCallback]
   );
   const [view, setView] = useState(stravaCallback ? 'settings' : 'overview');
-  const [expanded, setExpanded] = useState(null);
   const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
   // Clearing the URL is an external-system update, so it belongs in an effect.
   // Without it a refresh replays a stale OAuth result.
@@ -349,7 +346,6 @@ export default function App() {
           {[
             ['overview', 'Overview'],
             ['calendar', 'Calendar'],
-            ['program', 'Program'],
             ['plan', 'Plan'],
             ['live', 'Live'],
             ['erg', 'Erg'],
@@ -358,15 +354,11 @@ export default function App() {
             ['mobility', 'Mobility'],
             ['recovery', 'Recovery'],
             ['log', 'Log'],
-            ['journal', 'Journal'],
             ['settings', 'Settings'],
           ].map(([v, label]) => (
             <button
               key={v}
-              onClick={() => {
-                setView(v);
-                setExpanded(null);
-              }}
+              onClick={() => setView(v)}
               style={{
                 flex: '1 1 auto',
                 minWidth: 0,
@@ -430,11 +422,6 @@ export default function App() {
               />
             )}
 
-            {/* ── PROGRAM VIEW ── */}
-            {view === 'program' && (
-              <ProgramView expanded={expanded} setExpanded={setExpanded} />
-            )}
-
             {/* ── OVERVIEW ── */}
             {view === 'overview' && (
               <OverviewView
@@ -482,9 +469,6 @@ export default function App() {
                 onSaved={fetchSessions}
               />
             )}
-
-            {/* ── JOURNAL VIEW (longitudinal spine) ── */}
-            {view === 'journal' && <JournalView />}
 
             {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
             {view === 'settings' && (

@@ -107,19 +107,16 @@ vi.mock('../StrengthLogger.jsx', () => ({
 vi.mock('../views/ErgLiveView.jsx', () => ({
   default: () => <div>ErgLiveView-stub</div>,
 }));
+// Flipped by the error-boundary test so one tab's render throws on demand.
+let settingsThrows = false;
 vi.mock('../views/SettingsView.jsx', () => ({
-  default: () => <div>SettingsView-stub</div>,
+  default: () => {
+    if (settingsThrows) throw new Error('settings blew up');
+    return <div>SettingsView-stub</div>;
+  },
 }));
 vi.mock('../views/ErgView.jsx', () => ({
   default: () => <div>ErgView-stub</div>,
-}));
-// Flipped by the error-boundary test so one tab's render throws on demand.
-let journalThrows = false;
-vi.mock('../views/JournalView.jsx', () => ({
-  default: () => {
-    if (journalThrows) throw new Error('journal blew up');
-    return <div>JournalView-stub</div>;
-  },
 }));
 
 const captureErrorMock = vi.fn();
@@ -157,9 +154,6 @@ vi.mock('../views/OverviewView.jsx', () => ({
       <span data-testid="overview-total">{totalSessions}</span>
     </div>
   ),
-}));
-vi.mock('../views/ProgramView.jsx', () => ({
-  default: () => <div>ProgramView-stub</div>,
 }));
 vi.mock('../views/CalendarView.jsx', () => ({
   default: (props) => (
@@ -201,7 +195,7 @@ const LIVE_TSS = [
 ];
 
 beforeEach(() => {
-  journalThrows = false;
+  settingsThrows = false;
   captureErrorMock.mockReset();
   tssHistoryMock.mockReset();
   tssHistoryMock.mockReturnValue({
@@ -215,7 +209,6 @@ beforeEach(() => {
 const NAV = [
   ['OVERVIEW', 'OverviewView-stub'],
   ['CALENDAR', 'CalendarView-stub'],
-  ['PROGRAM', 'ProgramView-stub'],
   ['PLAN', 'PlanView-stub'],
   ['LIVE', 'ErgLiveView-stub'],
   ['ERG', 'ErgView-stub'],
@@ -224,7 +217,6 @@ const NAV = [
   ['MOBILITY', 'MobilityView-stub'],
   ['RECOVERY', 'RecoveryView-stub'],
   ['LOG', 'LogView-stub'],
-  ['JOURNAL', 'JournalView-stub'],
   ['SETTINGS', 'SettingsView-stub'],
 ];
 
@@ -237,16 +229,18 @@ describe('App', () => {
 
     expect(screen.getByText('SPLITIQ')).toBeInTheDocument();
 
-    // Thirteen tabs: the Coach tab was retired in #414.
-    expect(NAV).toHaveLength(13);
+    // Eleven tabs: Coach retired in #414, Program and Journal in #418.
+    expect(NAV).toHaveLength(11);
     const navRow = screen.getByRole('button', {
       name: 'OVERVIEW',
     }).parentElement;
-    expect(navRow.querySelectorAll('button')).toHaveLength(13);
+    expect(navRow.querySelectorAll('button')).toHaveLength(11);
     for (const [label] of NAV) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
     expect(screen.queryByRole('button', { name: 'COACH' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'PROGRAM' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'JOURNAL' })).toBeNull();
 
     // Every tab is lazy (#331), so its content arrives when the chunk
     // resolves rather than in the click’s own tick — findBy, not getBy.
@@ -342,8 +336,8 @@ describe('App', () => {
     render(<App />);
     await screen.findByText('OverviewView-stub');
 
-    journalThrows = true;
-    fireEvent.click(screen.getByRole('button', { name: 'JOURNAL' }));
+    settingsThrows = true;
+    fireEvent.click(screen.getByRole('button', { name: 'SETTINGS' }));
 
     // The throw now happens on the far side of a Suspense boundary. The
     // ErrorBoundary sits OUTSIDE that Suspense precisely so it still
@@ -351,7 +345,7 @@ describe('App', () => {
     expect(await screen.findByText(/isolated to protect/i)).toBeInTheDocument();
     expect(captureErrorMock).toHaveBeenCalledTimes(1);
     const [error, context] = captureErrorMock.mock.calls[0];
-    expect(error.message).toBe('journal blew up');
+    expect(error.message).toBe('settings blew up');
     expect(context.componentStack).toEqual(expect.any(String));
 
     consoleError.mockRestore();

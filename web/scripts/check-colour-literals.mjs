@@ -77,10 +77,6 @@ const ALLOWED = {
     hexes: ['#666'],
     reason: 'as trainingConfig.js.',
   },
-  'web/src/views/program/ProgramYear.jsx': {
-    hexes: ['#666'],
-    reason: 'as trainingConfig.js.',
-  },
 };
 
 // Pathspec is the directory, not a `**` glob — git's wildmatch does not reach
