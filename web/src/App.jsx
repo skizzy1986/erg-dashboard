@@ -151,11 +151,6 @@ const strengthTrend = {
 
 // ── CUSTOM CHART TOOLTIP ──────────────────────────────────────
 
-// ── TRAINING LOAD DATA ────────────────────────────────────────
-// TSS per day. Erg: (duration_sec/3600) × (avg_watts/FTP)² × 100
-// Strength: time-based estimates (upper ~50, lower ~55, combined ~55)
-// FTP estimated at 190W — update after threshold session.
-
 // ── NUTRITION LOG ─────────────────────────────────────────────
 // dayType: "two-a-day" | "training" | "rest"
 // Targets from bottom-up expenditure model: BMR 1,887 (93.5kg, 187.5cm,

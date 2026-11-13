@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
@@ -212,19 +212,16 @@ describe('ErgView', () => {
       useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
     });
 
-    it('shows the live CP in the calibration panel, not a stale constant', () => {
-      const { container } = renderView();
-      expect(container.textContent).toContain('CP 205W (provisional)');
-      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+    it('shows the live CP and its status on the CP card', () => {
+      const { getByText } = renderView();
+      const card = getByText('CRITICAL POWER').parentElement;
+      expect(card.textContent).toContain('205W');
+      expect(card.textContent).toContain('provisional');
     });
 
-    // POWER_DURATION's predicted-watts column still carries pre-anchor estimates
-    // (incl. "~180–190W") — that table belongs to #180, so these assertions are
-    // scoped to the two surfaces that present a *current* CP.
     it('never presents 190W as the current CP', () => {
       const { container } = renderView();
-      expect(container.textContent).not.toContain('CP/FTP est. 190W');
-      expect(container.textContent).not.toMatch(/CRITICAL POWER190W/);
+      expect(container.textContent).not.toContain('190W');
     });
 
     it('follows the anchor when it changes rather than staying pinned', () => {
@@ -233,8 +230,10 @@ describe('ErgView', () => {
         cpStatus: 'confirmed',
         cpAvailable: true,
       });
-      const { container } = renderView();
-      expect(container.textContent).toContain('CP 212W (confirmed)');
+      const { getByText } = renderView();
+      const card = getByText('CRITICAL POWER').parentElement;
+      expect(card.textContent).toContain('212W');
+      expect(card.textContent).toContain('confirmed');
     });
 
     it('says the anchor is unavailable instead of falling back silently', () => {
@@ -243,15 +242,131 @@ describe('ErgView', () => {
         cpStatus: null,
         cpAvailable: false,
       });
-      const { container } = renderView();
-      expect(container.textContent).toContain('CP anchor unavailable');
-      expect(container.textContent).toContain('CP unavailable');
-      expect(container.textContent).not.toContain('CP/FTP est. 190W');
+      const { getByText } = renderView();
+      const card = getByText('CRITICAL POWER').parentElement;
+      expect(card.textContent).toContain('CP unavailable');
+      expect(card.textContent).toContain('anchor unreachable');
+      expect(card.textContent).not.toMatch(/\d+W/);
     });
 
     it('does not show a past-dated CP test window', () => {
       const { container } = renderView();
       expect(container.textContent).not.toContain('~Jun 24+');
+    });
+  });
+
+  describe('trends derive from logged sessions (#422)', () => {
+    const POWER_GAP = 'sessions with power logged';
+    const EFF_GAP = 'sessions with power and heart rate';
+
+    function powered(n, { hr = null } = {}) {
+      return Array.from({ length: n }, (_, i) => ({
+        id: i + 1,
+        date: `11/${10 - i}/26`,
+        label: `row ${i + 1}`,
+        duration: 45,
+        srpe: 4,
+        avg_watts: 140 + i,
+        avg_hr: hr,
+        pace_500m: 130,
+        pace_500m_str: '2:10.0',
+        zone: 'UT2',
+        hardPush: false,
+        date_display: `11/${10 - i}`,
+      }));
+    }
+
+    it('shows insufficient data in both trend sections with no sessions', () => {
+      useErgSessionsMock.mockReturnValue({ data: [], isLoading: false });
+      const { container } = renderView();
+      const text = container.textContent;
+      expect(text.match(/insufficient data/gi)).toHaveLength(2);
+      expect(text).toContain(`0 of 3 ${POWER_GAP}`);
+      expect(text).toContain(`0 of 3 ${EFF_GAP}`);
+    });
+
+    it('shows insufficient data in both trend sections with two powered sessions', () => {
+      useErgSessionsMock.mockReturnValue({
+        data: powered(2, { hr: 125 }),
+        isLoading: false,
+      });
+      const { container } = renderView();
+      const text = container.textContent;
+      expect(text.match(/insufficient data/gi)).toHaveLength(2);
+      expect(text).toContain(`2 of 3 ${POWER_GAP}`);
+      expect(text).toContain(`2 of 3 ${EFF_GAP}`);
+    });
+
+    it('charts power from three sessions while efficiency still needs heart rate', () => {
+      useErgSessionsMock.mockReturnValue({
+        data: powered(3),
+        isLoading: false,
+      });
+      const { container, getByText } = renderView();
+      const text = container.textContent;
+      expect(text).not.toContain(POWER_GAP);
+      expect(text).toContain(`0 of 3 ${EFF_GAP}`);
+      expect(text.match(/insufficient data/gi)).toHaveLength(1);
+      expect(getByText('W / BPM').nextSibling.textContent).toBe('—');
+    });
+
+    it('fills the W / BPM tile and the efficiency stats from three sessions with heart rate', () => {
+      useErgSessionsMock.mockReturnValue({
+        data: powered(3, { hr: 100 }),
+        isLoading: false,
+      });
+      const { container, getByText } = renderView();
+      expect(container.textContent).not.toMatch(/insufficient data/i);
+      // Newest row is 11/10 at 140 W / 100 bpm.
+      expect(getByText('W / BPM').nextSibling.textContent).toBe('1.40');
+      expect(getByText('LATEST').nextSibling.textContent).toBe('1.40');
+      // Watts fall 0.01 W/bpm per day going forward in time → −0.07 /wk.
+      expect(getByText('TREND').nextSibling.textContent).toBe('−0.07 /wk');
+      expect(getByText('FIT').nextSibling.textContent).toBe('r² 1.00');
+      expect(getByText('n 3')).toBeTruthy();
+    });
+
+    it('labels a rising efficiency trend with a plus sign', () => {
+      const rows = powered(3, { hr: 100 }).map((r, i) => ({
+        ...r,
+        avg_watts: 150 - i,
+      }));
+      useErgSessionsMock.mockReturnValue({ data: rows, isLoading: false });
+      const { getByText } = renderView();
+      expect(getByText('TREND').nextSibling.textContent).toBe('+0.07 /wk');
+    });
+
+    it('widens the zone distribution from 30 sessions to all of them', () => {
+      useErgSessionsMock.mockReturnValue({
+        data: Array.from({ length: 31 }, (_, i) => ({
+          ...powered(1)[0],
+          id: i + 1,
+          label: `row ${i + 1}`,
+        })),
+        isLoading: false,
+      });
+      const { container, getByText } = renderView();
+      expect(container.textContent).toContain('UT2 30 · 100%');
+      fireEvent.click(getByText('All'));
+      expect(container.textContent).toContain('UT2 31 · 100%');
+    });
+
+    it('renders none of the removed personal-calibration surfaces', () => {
+      useErgSessionsMock.mockReturnValue({
+        data: powered(3, { hr: 100 }),
+        isLoading: false,
+      });
+      const { container } = renderView();
+      for (const gone of [
+        'HR130',
+        'KEY BAROMETER',
+        'MODEL CALIBRATION STATUS',
+        'RACE FORMATS',
+        'PROJECTED',
+        'NORTH STAR',
+      ]) {
+        expect(container.textContent).not.toContain(gone);
+      }
     });
   });
 });

@@ -31,7 +31,7 @@ function thresholdFor(type, cp, ftp) {
 // fatigue deduction could never fire. Do not rescale one side without the other.
 //
 // Known offset, deliberately NOT calibrated away: on the two sessions carrying
-// both signals (150 W, sRPE 7) power reads ~24% below the sRPE figure. At 73%
+// both signals, power reads ~24% below the sRPE figure. At 73%
 // of CP an RPE of 7 is genuinely elevated, and that gap is read as fatigue in
 // this project's own coaching notes. Tuning a factor to close it on n=2 would
 // erase the signal rather than measure it.

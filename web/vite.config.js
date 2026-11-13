@@ -292,6 +292,11 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
+        'src/utils/ergTrend.js': { lines: 80, functions: 80, branches: 70 },
+        // #422 rewrote most of ErgView; pinned at the pre-#422 measured floor
+        // (lines 91.01 / functions 88.57 / branches 75) so the slice cannot
+        // lower it. Measured after: 94.33 / 90.9 / 89.65.
+        'src/views/ErgView.jsx': { lines: 91, functions: 88, branches: 75 },
         'src/utils/invalidateSessionQueries.js': {
           lines: 80,
           functions: 80,

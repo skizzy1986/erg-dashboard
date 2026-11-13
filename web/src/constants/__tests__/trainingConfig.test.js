@@ -1,30 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import * as trainingConfig from '../trainingConfig.js';
-import {
-  CALIBRATION_STATUS,
-  CRITICAL_POWER,
-  FTP_TEST,
-  deriveCalibrationStatus,
-  derivePaceZones,
-} from '../trainingConfig.js';
+import { FTP_TEST, derivePaceZones } from '../trainingConfig.js';
 
-const loadModelRow = (rows) => rows.find((r) => r.key === 'load-model');
+// Names built by concatenation so this file does not trip noCulledCode.test.js.
+const REMOVED = [
+  'CALIBRATION' + '_STATUS',
+  'deriveCalibration' + 'Status',
+  'CRITICAL' + '_POWER',
+  'POWER' + '_DURATION',
+  'HR' + '_ZONES',
+  'EST' + '_MHR',
+  'HR130' + '_POWER',
+  'SRPE' + '_SCALE',
+];
 
 describe('CP is never mirrored as a static constant', () => {
-  it('CRITICAL_POWER carries no cpEstimate', () => {
-    expect(CRITICAL_POWER).not.toHaveProperty('cpEstimate');
-  });
-
   it('exports no static PACE_ZONES that could diverge from the live bands', () => {
     expect(trainingConfig).not.toHaveProperty('PACE_ZONES');
-  });
-
-  it('no static calibration row quotes a hardcoded CP wattage', () => {
-    const copy = CALIBRATION_STATUS.map(
-      (r) => `${r.metric} ${r.basis} ${r.upgrade}`
-    ).join(' ');
-    expect(copy).not.toMatch(/\b190\s*W\b/i);
-    expect(copy).not.toMatch(/CP\/FTP est\./i);
   });
 
   it('the CP test card carries no past-dated "when"', () => {
@@ -32,73 +24,9 @@ describe('CP is never mirrored as a static constant', () => {
   });
 });
 
-describe('deriveCalibrationStatus', () => {
-  it('quotes the live CP and its status when the anchor is available', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 205,
-      cpAvailable: true,
-      cpStatus: 'provisional',
-    });
-    expect(loadModelRow(rows).basis).toBe(
-      'CP 205W (provisional), strength TSS ±30%, CTL needs 42d'
-    );
-  });
-
-  it('reflects a confirmed anchor without changing the wattage source', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 212,
-      cpAvailable: true,
-      cpStatus: 'confirmed',
-    });
-    expect(loadModelRow(rows).basis).toMatch(/^CP 212W \(confirmed\),/);
-  });
-
-  it('says the anchor is unavailable rather than falling back to a stale CP', () => {
-    const rows = deriveCalibrationStatus({ cp: null, cpAvailable: false });
-    expect(loadModelRow(rows).basis).toMatch(/^CP anchor unavailable,/);
-    expect(loadModelRow(rows).basis).not.toMatch(/\d+W/);
-  });
-
-  it('treats a missing context the same as an unavailable anchor', () => {
-    expect(loadModelRow(deriveCalibrationStatus()).basis).toMatch(
-      /^CP anchor unavailable,/
-    );
-  });
-
-  it('labels an available anchor with an unknown status explicitly', () => {
-    const rows = deriveCalibrationStatus({ cp: 205, cpAvailable: true });
-    expect(loadModelRow(rows).basis).toBe(
-      'CP 205W (status unknown), strength TSS ±30%, CTL needs 42d'
-    );
-  });
-
-  it('leaves every other row untouched', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 205,
-      cpAvailable: true,
-      cpStatus: 'provisional',
-    });
-    expect(rows).toHaveLength(CALIBRATION_STATUS.length);
-    for (const [i, row] of rows.entries()) {
-      if (row.key === 'load-model') continue;
-      expect(row).toBe(CALIBRATION_STATUS[i]);
-    }
-  });
-
-  it('does not mutate the source array', () => {
-    const before = loadModelRow(CALIBRATION_STATUS).basis;
-    deriveCalibrationStatus({ cp: 205, cpAvailable: true });
-    expect(loadModelRow(CALIBRATION_STATUS).basis).toBe(before);
-  });
-
-  it('does not upgrade the confidence tier — that is #181, not this', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 205,
-      cpAvailable: true,
-      cpStatus: 'confirmed',
-    });
-    expect(loadModelRow(rows).tier).toBe(2);
-    expect(loadModelRow(rows).conf).toBe('Estimated');
+describe('personal calibration is removed (#422)', () => {
+  it.each(REMOVED)('%s is no longer exported', (name) => {
+    expect(trainingConfig[name]).toBeUndefined();
   });
 });
 
