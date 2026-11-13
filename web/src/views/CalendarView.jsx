@@ -51,7 +51,7 @@ export default function CalendarView({
       }}
     >
       <span style={{ color: THEME.accent, fontWeight: 700 }}>
-        LAST 3 DAYS · NEXT 14 ·{' '}
+        LAST 3 DAYS · TODAY · NEXT 13 ·{' '}
       </span>
       <span style={{ color: THEME.positive }}>✓ done</span> · planned · ⊘
       cancelled
@@ -66,7 +66,13 @@ export default function CalendarView({
       </>
     );
   }
-  if (dbStatus === 'error') {
+  // A refetch after a save can fail while App still holds the earlier rows;
+  // keep showing them rather than blanking a calendar that already loaded.
+  const hasRows =
+    loggedSessions.length + plannedSessions.length + cancelledSessions.length >
+    0;
+  const staleError = dbStatus === 'error' && hasRows;
+  if (dbStatus === 'error' && !hasRows) {
     return (
       <>
         {banner}
@@ -97,6 +103,8 @@ export default function CalendarView({
   return (
     <>
       {banner}
+      {staleError &&
+        statusLine("Couldn't refresh sessions — showing what loaded earlier.")}
       <div
         style={{
           display: isWide ? 'grid' : 'flex',

@@ -61,6 +61,17 @@ describe('CalendarView — sessions rows only (#420)', () => {
     expect(screen.queryByText('No sessions in this window.')).toBeNull();
   });
 
+  it('keeps rows already loaded visible when a later refetch fails', () => {
+    renderView({
+      dbStatus: 'error',
+      loggedSessions: [{ date: mdy(0), label: 'Kept row', status: 'logged' }],
+    });
+    expect(screen.queryByText('Sessions could not be loaded.')).toBeNull();
+    expect(screen.getByText(/Couldn't refresh sessions/)).toBeTruthy();
+    expect(screen.getByText('Kept row')).toBeTruthy();
+    expect(screen.getByText(/✓ DONE/)).toBeTruthy();
+  });
+
   it('marks a completed row today as done and shows its label', () => {
     const { container } = renderView({
       loggedSessions: [{ date: mdy(0), label: 'UT2 60min' }],
