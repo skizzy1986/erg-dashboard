@@ -12,20 +12,18 @@ import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
 
-// Every tab is lazy. Only one is on screen at a time, and four of them are
-// the heaviest files in the repo (ProgramView ~1,958 lines, StrengthLogger
-// ~1,682, OverviewView ~1,423, ErgView ~1,271), so shipping every tab to
+// Every tab is lazy. Only one is on screen at a time, and three of them are
+// among the heaviest files in the repo (StrengthLogger ~1,682, OverviewView
+// ~1,423, ErgView ~1,271), so shipping every tab to
 // paint one of them was most of the entry chunk. React.lazy caches the
 // resolved module, so only a tab's FIRST visit suspends.
 const StrengthLogger = lazy(() => import('./StrengthLogger.jsx'));
 const ErgLiveView = lazy(() => import('./views/ErgLiveView.jsx'));
 const ErgView = lazy(() => import('./views/ErgView.jsx'));
-const JournalView = lazy(() => import('./views/JournalView.jsx'));
 const RecoveryView = lazy(() => import('./views/RecoveryView.jsx'));
 const StrengthView = lazy(() => import('./views/StrengthView.jsx'));
 const MobilityView = lazy(() => import('./views/MobilityView.jsx'));
 const OverviewView = lazy(() => import('./views/OverviewView.jsx'));
-const ProgramView = lazy(() => import('./views/ProgramView.jsx'));
 const CalendarView = lazy(() => import('./views/CalendarView.jsx'));
 const PlanView = lazy(() => import('./views/PlanView.jsx'));
 const LogView = lazy(() => import('./views/LogView.jsx'));
@@ -37,17 +35,13 @@ const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
    MAP (search the ── banner to jump):
    • DATA + HELPERS ......... lines ~4–2015 (everything before App)
        - Logs: SESSION LOG, BLOODS, HORMONE, MOBILITY, DECISION LEDGER
-       - Plans: MICROCYCLE, SEASON, EVENT PROGRESSION, MACROFACTOR
-       - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION, ROSTER
+       - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION
        - Components: WorkoutItem, LogEntry, tooltips
    • APP COMPONENT .......... from `export default function App`
-       - State + live clock/roster, NAV, then one block per tab:
-         overview · calendar · program · erg · strength · mobility
-         · recovery · log · journal
+       - State, NAV, then one block per tab:
+         overview · calendar · erg · strength · mobility
+         · recovery · log
    KEY SYSTEMS:
-   • Roster auto-switch: getRosterMode() — home/FIFO by date,
-     anchored to ROSTER_ANCHOR (Tue 23 Jun 2026 = FIFO out).
-   • Shared workout UI: WorkoutItem (one session/box) + daySessions().
    • Validate before deploy: esbuild + the each-tab render test.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -138,10 +132,6 @@ const strengthTrend = {
 // Based on: polarized TID (Seiler 2010, Silva Oliveira et al. 2024),
 // British Rowing training matrix, Pete Plan continuous improvement model
 
-// ── 2-WEEK MICROCYCLE (roster-driven) ─────────────────────────
-// 1-on/1-off FIFO roster used AS periodization. Home week = loading,
-// FIFO week = auto-deload. Erg is priority; strength yields when scarce.
-
 // ── STRENGTH GUIDELINES ───────────────────────────────────────
 // Concurrent training: heavy/low-rep compounds minimise interference
 // effect (Wilson et al. 2012) while maximising force transfer to
@@ -192,8 +182,6 @@ export default function App() {
     [stravaCallback]
   );
   const [view, setView] = useState(stravaCallback ? 'settings' : 'overview');
-  const [expanded, setExpanded] = useState(null);
-  const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
   // Clearing the URL is an external-system update, so it belongs in an effect.
   // Without it a refresh replays a stale OAuth result.
   useEffect(() => {
@@ -205,10 +193,6 @@ export default function App() {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   ); // viewport width → responsive layout
   useEffect(() => {
-    const t = setInterval(() => setNowTick(new Date()), 60000); // once a minute is plenty
-    return () => clearInterval(t);
-  }, []);
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     const onResize = () => setVw(window.innerWidth);
     window.addEventListener('resize', onResize);
@@ -219,6 +203,7 @@ export default function App() {
   const containerMax = isWide ? 1100 : 680;
 
   const {
+    dbStatus,
     loggedSessions,
     cancelledSessions,
     logDisplaySessions,
@@ -349,7 +334,6 @@ export default function App() {
           {[
             ['overview', 'Overview'],
             ['calendar', 'Calendar'],
-            ['program', 'Program'],
             ['plan', 'Plan'],
             ['live', 'Live'],
             ['erg', 'Erg'],
@@ -358,15 +342,11 @@ export default function App() {
             ['mobility', 'Mobility'],
             ['recovery', 'Recovery'],
             ['log', 'Log'],
-            ['journal', 'Journal'],
             ['settings', 'Settings'],
           ].map(([v, label]) => (
             <button
               key={v}
-              onClick={() => {
-                setView(v);
-                setExpanded(null);
-              }}
+              onClick={() => setView(v)}
               style={{
                 flex: '1 1 auto',
                 minWidth: 0,
@@ -425,14 +405,11 @@ export default function App() {
             {view === 'calendar' && (
               <CalendarView
                 loggedSessions={loggedSessions}
+                plannedSessions={plannedSessions}
                 cancelledSessions={cancelledSessions}
+                dbStatus={dbStatus}
                 isWide={isWide}
               />
-            )}
-
-            {/* ── PROGRAM VIEW ── */}
-            {view === 'program' && (
-              <ProgramView expanded={expanded} setExpanded={setExpanded} />
             )}
 
             {/* ── OVERVIEW ── */}
@@ -448,7 +425,6 @@ export default function App() {
                 totalErgDist={totalErgDist}
                 totalSessions={totalSessions}
                 isWide={isWide}
-                nowTick={nowTick}
               />
             )}
 
@@ -482,9 +458,6 @@ export default function App() {
                 onSaved={fetchSessions}
               />
             )}
-
-            {/* ── JOURNAL VIEW (longitudinal spine) ── */}
-            {view === 'journal' && <JournalView />}
 
             {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
             {view === 'settings' && (

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import {
   RHR_DEFAULT,
   HRV_DEFAULT,
@@ -92,7 +92,6 @@ const baseProps = {
   totalErgDist: 55000,
   totalSessions: 20,
   isWide: true,
-  nowTick: new Date('2026-06-20T08:00:00'),
 };
 
 describe('OverviewView', () => {
@@ -108,7 +107,8 @@ describe('OverviewView', () => {
       personalBaselines,
     });
     render(<OverviewView {...baseProps} />);
-    expect(screen.getByText('20')).toBeInTheDocument();
+    const card = within(screen.getByRole('region', { name: 'Readiness' }));
+    expect(card.getByText('20')).toBeInTheDocument();
   });
 
   it('shows a dash for readiness when there is no vitals reading', () => {
@@ -118,7 +118,15 @@ describe('OverviewView', () => {
       personalBaselines: computePersonalBaselines([]),
     });
     render(<OverviewView {...baseProps} />);
-    expect(screen.getByText(/readiness\s+—/)).toBeInTheDocument();
+    const card = within(screen.getByRole('region', { name: 'Readiness' }));
+    expect(card.getByText('—')).toBeInTheDocument();
+  });
+
+  it('renders no roster text now that the today strip is gone', () => {
+    // FIFO is left out: ADAPTIVE_RULES copy in the Decision Engine still names
+    // it until #421 removes that card. \s keeps the cull guard's needle out.
+    render(<OverviewView {...baseProps} />);
+    expect(screen.queryByText(/YOUR\sWEEKS|not logged|SWAPPED/i)).toBeNull();
   });
 
   it('labels load against the live CP/FTP anchors, not a hardcoded 190', () => {
