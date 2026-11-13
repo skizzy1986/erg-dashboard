@@ -12,8 +12,9 @@ agents were retired (git history is their archive; see the migration PR).
 2. **Knowledge** — `CLAUDE.md` (durable facts), `.claude/skills/erg-context.md`
    (the spawn preamble), and the domain skills (architecture, supabase-patterns,
    testing-patterns, training-science).
-3. **Agents** — the 232-agent Agency library in `.claude/agents/`
-   (see `.claude/AGENTS.md` for the routing map). Pipeline roles:
+3. **Agents** — the 24 Agency agents the factory uses, in `.claude/agents/` (the
+   rest of the 232-agent library is parked, unloaded, in `.claude/agent-library/`;
+   see `.claude/AGENTS.md` for the routing map). Pipeline roles:
    - `Codebase Onboarding Engineer` (research) · `Product Manager` (story) ·
      `Workflow Architect` (spec) — read-only stages
    - `Backend Architect` / `Frontend Developer` (build + tests) ·

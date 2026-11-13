@@ -304,7 +304,8 @@ Unlike the `doctrine_sha` Routine, this scheduled task's prompt is committed.
 
 ## Project-management agents
 
-The Agency agent library is installed (see `.claude/agents/`). The most useful
+The Agency agents the factory uses are in `.claude/agents/` (routing map:
+`.claude/AGENTS.md`). The most useful
 for running this workflow:
 - **`product-manager`** / **`product-sprint-prioritizer`** — decide what's next,
   re-rank the backlog.
