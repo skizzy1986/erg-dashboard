@@ -57,6 +57,20 @@ const GROUPS = {
     'EVENT' + '_PATHWAY',
     'ANNUAL' + '_ARC',
   ],
+  '#419 Benchmarks': [
+    'EVENT' + '_LADDER',
+    'benchmark' + '_key',
+    'useBenchmark' + 'Statuses',
+    'useBenchmark' + 'DataUnavailable',
+    'useBenchmark' + 'Sessions',
+    'useLinkBenchmark' + 'Session',
+    'Benchmark' + 'Badge',
+    'Benchmark' + 'LinkControl',
+    'benchmark' + 'Status',
+    'event' + 'Window',
+    'benchmark' + '-window',
+    'SEASON 1' + ' LADDER',
+  ],
 };
 const NEEDLES = Object.values(GROUPS).flat();
 const RE = new RegExp(NEEDLES.map((n) => `\\b${n}\\b`).join('|'));

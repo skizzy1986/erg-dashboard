@@ -21,23 +21,20 @@ describe('invalidateSessionQueries', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['tss-history'] });
   });
 
-  it('does not name the benchmark keys — the sessions prefix covers them', () => {
+  it('does not name sub-keys — the sessions prefix covers them', () => {
     const client = makeClient();
     const spy = vi.spyOn(client, 'invalidateQueries');
 
     invalidateSessionQueries(client);
 
     expect(spy).not.toHaveBeenCalledWith({
-      queryKey: ['sessions', 'benchmark-window'],
-    });
-    expect(spy).not.toHaveBeenCalledWith({
-      queryKey: ['benchmark-sessions'],
+      queryKey: ['sessions', 'window'],
     });
   });
 
-  it('marks a cached benchmark-window query stale via the sessions prefix', async () => {
+  it('marks a cached sub-key query stale via the sessions prefix', async () => {
     const client = makeClient();
-    const key = ['sessions', 'benchmark-window'];
+    const key = ['sessions', 'window'];
     await client.fetchQuery({ queryKey: key, queryFn: async () => ['row'] });
     expect(client.getQueryState(key).isInvalidated).toBe(false);
 
