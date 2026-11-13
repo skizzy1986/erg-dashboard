@@ -30,6 +30,9 @@ const NEEDLES = [
   'mobility' + 'Log',
   'nutrition' + 'Log',
   'HORMONE' + '_REF',
+  'strength' + 'Trend',
+  'MOBILITY_' + 'STREAK_NOTE',
+  'PRIMARY_' + 'LIFTS',
 ];
 const RE = new RegExp(NEEDLES.map((n) => `\\b${n}\\b`).join('|'));
 

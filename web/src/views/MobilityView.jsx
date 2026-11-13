@@ -137,9 +137,6 @@ export default function MobilityView() {
                           background: THEME.field,
                           borderRadius: 5,
                           padding: '9px 11px',
-                          borderLeft: b.rehab
-                            ? `2px solid ${THEME.positive}`
-                            : '2px solid transparent',
                         }}
                       >
                         <div
@@ -168,18 +165,6 @@ export default function MobilityView() {
                             }}
                           >
                             {b.move}
-                            {b.rehab && (
-                              <span
-                                style={{
-                                  color: THEME.positive,
-                                  fontSize: 9,
-                                  fontWeight: 700,
-                                }}
-                              >
-                                {' '}
-                                · REHAB
-                              </span>
-                            )}
                           </span>
                         </div>
                         <div
