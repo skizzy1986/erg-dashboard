@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SquatApp, { PAGE_DESCRIPTION, PAGE_TITLE } from '../SquatApp.jsx';
 import { HEADER_HEIGHT } from '../components/SquatHeader.jsx';
@@ -418,5 +425,69 @@ describe('strain readout (criteria 9, 12, 13, 14)', () => {
     expect(
       screen.getByRole('region', { name: /^Working hardest now · Bottom$/ })
     ).toBeInTheDocument();
+  });
+
+  // Criterion 23 at the app level: the polite line follows phases while the
+  // user plays the rep, never the per-frame readout. Fake timers from the
+  // start, so playback (setInterval on performance.now) is driven frame by
+  // frame and the run is deterministic.
+  it('playing, the status line changes at most once per phase, never per frame (criterion 23)', async () => {
+    vi.useFakeTimers();
+    try {
+      window.history.replaceState(null, '', '/squat#heat');
+      render(<SquatApp />);
+      await act(() => vi.advanceTimersByTimeAsync(100));
+      const status = () =>
+        within(screen.getByTestId('strain-panel')).getByRole('status')
+          .textContent;
+      const phase = () =>
+        screen
+          .getByTestId('strain-panel')
+          .querySelector('#strain-title')
+          .textContent.split(' · ')[1];
+      // Paused at load, it says the readout once.
+      expect(status()).toMatch(/^Setup and brace: /);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+      const frames = [];
+      for (let i = 0; i < 200; i++) {
+        await act(() => vi.advanceTimersByTimeAsync(20));
+        frames.push({
+          at: i * 20,
+          phase: phase(),
+          list: readout().join('|'),
+          said: status(),
+        });
+      }
+      const changes = (key) =>
+        frames.filter((f, i) => i > 0 && f[key] !== frames[i - 1][key]);
+      const phases = new Set(frames.map((f) => f.phase));
+      const said = changes('said');
+      // It did narrate the rep...
+      expect(said.length).toBeGreaterThan(0);
+      // ...at most once per phase entered, and far less often than the
+      // readout itself changed.
+      expect(said.length).toBeLessThanOrEqual(phases.size);
+      expect(changes('list').length).toBeGreaterThan(said.length * 2);
+      // Each thing said names the phase on screen when it was said.
+      for (const f of said)
+        expect(f.said.startsWith(`${f.phase}: `)).toBe(true);
+      // Inside one phase, frames advance and the readout moves, yet the
+      // line holds.
+      const runs = [];
+      for (const f of frames) {
+        const run = runs.at(-1);
+        if (run?.phase === f.phase) run.frames.push(f);
+        else runs.push({ phase: f.phase, frames: [f] });
+      }
+      const steady = runs.find(
+        (r) =>
+          new Set(r.frames.map((f) => f.list)).size > 2 &&
+          new Set(r.frames.slice(1).map((f) => f.said)).size === 1
+      );
+      expect(steady).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

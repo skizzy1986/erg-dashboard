@@ -385,6 +385,7 @@ New **`squat/components/CameraModeSelect.jsx`**, props `mode`, `onSelect`, `disa
 - The interval skips ticks while `document.hidden` and re-bases on return.
 - `SquatApp` autoplays once, latched by a ref, when `view.ready && scene.status === 'ready' && !reducedMotion && hash.t === undefined && hash.cam === undefined`. It does not resume after the user pauses.
 - WCAG 2.2.2 is met by the always-visible Pause.
+- **Seam left by PR B (criterion 23).** PR B wires `useStrainAnnouncement`'s `userPlayed` to `view.moved`, which is sticky: any play, step or scrub sets it, and only a `link` action resets it. After an autoplay restart that follows any user move, `moved` is still true, so the restart would be narrated. PR A must replace it with an explicit "the user started this playback" flag, set by the Play button and cleared by `autoplay`, so autoplay is never narrated.
 - Memoise `MuscleSection` and `PhaseStrip`, because playback becomes the resting state.
 
 **Reduced motion:** no autoplay; the initial mode is three-quarter. If the user picks Director, the camera jumps with the playhead and does not tween.

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * The strain readout's polite announcement (criterion 23). Paused, it follows
- * the readout (`key`). Playing, it speaks only when the phase changes, at most
+ * the readout (`key`) and the phase: the key carries no phase, so a scrub into
+ * a new phase with the same top regions must still be said. Playing, it speaks only when the phase changes, at most
  * once per `minMs`, and only if the user started playback: an autoplaying rep
  * (PR A) never narrates itself. Otherwise it keeps the last thing it said.
  * An empty key (heatmap off) clears it.
@@ -34,7 +35,7 @@ export function useStrainAnnouncement({
       return undefined;
     }
     if (!playing) {
-      if (key !== said.current.key) speak();
+      if (key !== said.current.key || phase !== said.current.phase) speak();
       return undefined;
     }
     if (!userPlayed || phase === said.current.phase) return undefined;

@@ -1,5 +1,7 @@
 import { DARK, LIGHT } from '../../constants/themeValues.js';
 import { THEME } from '../../constants/theme.js';
+import { emphasise, hexToRaw01 } from '../../anatomy/utils/sceneColours.js';
+import { sceneStyle } from '../../anatomy/constants/sceneStyle.js';
 
 const lum = (hex) => {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
@@ -74,6 +76,32 @@ describe('3D scene tokens', () => {
     }
     expect(LIGHT.anatomyFocus).not.toBe(DARK.anatomyFocus);
   });
+
+  // With a muscle selected, every other muscle is dimmed toward its own grey
+  // (emphasise at focusDim), so the neighbour the focus colour actually sits
+  // beside is the DIMMED muscle, not the token. Same 3:1, per theme.
+  it.each([
+    ['light', LIGHT],
+    ['dark', DARK],
+  ])(
+    'keeps the focus colour a 3:1 object against dimmed muscle (%s)',
+    (name, p) => {
+      const dimmed = emphasise(
+        Float32Array.from(hexToRaw01(p.anatomyMuscle)),
+        [0],
+        { dim: sceneStyle(name).focusDim }
+      );
+      const hex = `#${[...dimmed]
+        .map((c) =>
+          Math.round(c * 255)
+            .toString(16)
+            .padStart(2, '0')
+        )
+        .join('')}`;
+      expect(hex).not.toBe(p.anatomyMuscle);
+      expect(ratio(p.anatomyFocus, hex)).toBeGreaterThanOrEqual(3);
+    }
+  );
 
   it('keeps the dark scene on the source page colours', () => {
     expect(DARK.anatomyMuscle).toBe('#a52529');

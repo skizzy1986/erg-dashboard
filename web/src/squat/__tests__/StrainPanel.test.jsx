@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import StrainPanel, { strainLine } from '../components/StrainPanel.jsx';
-import { ACT_BANDS, ACT_NOTE } from '../constants/activationBands.js';
+import {
+  ACT_BANDS,
+  ACT_NOTE,
+  HEAT_OTHERS,
+} from '../constants/activationBands.js';
 
 const band = (id) => ACT_BANDS.find((b) => b.id === id);
 const ITEMS = [
@@ -44,6 +48,9 @@ describe('StrainPanel (criteria 9, 12, 21, 23)', () => {
     }
     expect(within(panel).getByText(ACT_NOTE)).toBeInTheDocument();
     expect(within(panel).getByText(/Tendons are not coloured/)).toBeVisible();
+    // Key honesty: the regions outside the top three are dimmed toward grey,
+    // so their colour no longer matches the key.
+    expect(panel.textContent).toContain(HEAT_OTHERS);
     // Over the canvas: it shows, and the drag goes through to the model.
     expect(panel.style.pointerEvents).toBe('none');
     expect(panel.style.background).toBe('var(--color-surface)');
@@ -58,6 +65,7 @@ describe('StrainPanel (criteria 9, 12, 21, 23)', () => {
     expect(within(panel).queryByText('Activation key')).toBeNull();
     expect(within(panel).getByText(ACT_NOTE)).toBeInTheDocument();
     expect(within(panel).queryByText(/Tendons are not coloured/)).toBeNull();
+    expect(panel.textContent).not.toContain(HEAT_OTHERS);
     expect(panel.style.pointerEvents).toBe('');
   });
 

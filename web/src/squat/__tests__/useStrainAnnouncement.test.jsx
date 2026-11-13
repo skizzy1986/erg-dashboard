@@ -31,6 +31,13 @@ describe('useStrainAnnouncement', () => {
     expect(result.current).toBe('Lowering: B');
   });
 
+  it('paused, a new phase with the same key is said', () => {
+    const { result, rerender } = setup();
+    expect(result.current).toBe('Lowering: A');
+    rerender({ ...base, phase: 'Bottom', text: 'Bottom: A' });
+    expect(result.current).toBe('Bottom: A');
+  });
+
   it('an empty key (heatmap off) clears it', () => {
     const { result, rerender } = setup();
     rerender({ ...base, key: '', text: '' });

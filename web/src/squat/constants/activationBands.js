@@ -19,6 +19,9 @@ export const ACT_BASIS =
 export const ACT_NONE = 'Not a muscle — no activation estimate.';
 // The heatmap paints muscle only; the strain panel says so beside its key.
 export const HEAT_TENDONS = 'Tendons are not coloured.';
+// With the heatmap on, muscles outside the named regions are dimmed toward grey
+// (focusDim), so their colour no longer matches the key: the overlay says so.
+export const HEAT_OTHERS = 'Others greyed.';
 export const HEAT_LEGEND = `Estimated activation at the depth shown. ${ACT_NOTE} ${HEAT_TENDONS}`;
 export const STALE_LINK =
   'That link points to a muscle this version does not have.';

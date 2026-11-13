@@ -3,6 +3,7 @@ import { RADIUS, SPACE } from '../../constants/tokens.js';
 import { REGION_NAMES } from '../constants/muscleRegions.js';
 import {
   ACT_NOTE,
+  HEAT_OTHERS,
   HEAT_TENDONS,
   STRAIN_TITLE,
 } from '../constants/activationBands.js';
@@ -45,7 +46,7 @@ export default function StrainPanel({
               border: `1px solid ${THEME.border}`,
               borderRadius: RADIUS.md,
               padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px`,
-              maxWidth: compact ? 'none' : 300,
+              maxWidth: compact ? 'none' : 260,
               // Over the canvas: it shows, the drag goes through to the model.
               pointerEvents: 'none',
             }),
@@ -84,7 +85,7 @@ export default function StrainPanel({
       >
         <span>{ACT_NOTE}</span>
         {/* Beside the key, which explains the colours; inline there are none. */}
-        {!inline && ` ${HEAT_TENDONS}`}
+        {!inline && ` ${HEAT_TENDONS} ${HEAT_OTHERS}`}
       </p>
       {/* Polite, and fed by useStrainAnnouncement: never once per frame. */}
       <p role="status" aria-live="polite" style={srOnly}>
