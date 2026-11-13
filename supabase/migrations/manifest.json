@@ -151,6 +151,16 @@
       ],
       "note": "Root-cause fix for #429. Applied 2026-11-09 01:06 UTC as postgres via apply_migration (#451); read-back in the PR body.",
       "issue": 429
+    },
+    {
+      "file": "015_bp_readings.sql",
+      "status": "pending",
+      "issue": 417
+    },
+    {
+      "file": "016_health_records.sql",
+      "status": "pending",
+      "issue": 417
     }
   ],
   "liveOnly": [
@@ -264,7 +274,7 @@
     {
       "version": "20261106035559",
       "name": "bp_readings",
-      "note": "Reorientation epic; no file. Backup coverage gap tracked in #428",
+      "note": "Created before tracking; structure captured by 015_bp_readings.sql. Backup coverage gap tracked in #428",
       "issue": 428
     },
     {
