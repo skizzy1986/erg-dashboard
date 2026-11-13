@@ -28,7 +28,7 @@ const webRoot = resolve(here, '../..');
 const repoRoot = resolve(webRoot, '..');
 const migrationsDir = join(repoRoot, 'supabase/migrations');
 const scriptPath = join(webRoot, 'scripts/check-migrations.mjs');
-const fixturePath = join(here, 'fixtures/live-migrations-2026-11-09.json');
+const fixturePath = join(here, 'fixtures/live-migrations-2026-11-13.json');
 
 const V1 = '20260101000000';
 const V2 = '20260202000000';
@@ -581,7 +581,7 @@ describe('the real manifest', () => {
     );
   });
 
-  it('reconciles against the 2026-11-09 live snapshot', () => {
+  it('reconciles against the 2026-11-13 live snapshot', () => {
     const { rows } = parseLive(readFileSync(fixturePath, 'utf8'));
     const { drift, counts } = diffLive(realManifest, rows);
     // Discipline: the fixture is a verbatim `list_migrations` result. When
@@ -590,8 +590,8 @@ describe('the real manifest', () => {
     // fail until you do; do not add a tolerance here to get it green — the
     // last one (for 014 while it was pending) was removed when 014 was applied.
     expect(drift).toEqual([]);
-    expect(counts.live).toBe(32);
-    expect(counts.byFile).toBe(9);
+    expect(counts.live).toBe(34);
+    expect(counts.byFile).toBe(11);
     expect(counts.liveOnly).toBe(23);
   });
 });

@@ -154,12 +154,26 @@
     },
     {
       "file": "015_bp_readings.sql",
-      "status": "pending",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20261113111854",
+          "name": "015_bp_readings"
+        }
+      ],
+      "note": "Applied 2026-11-13 via apply_migration (#500); verified no-op capture of the live table, read-back in the PR body.",
       "issue": 417
     },
     {
       "file": "016_health_records.sql",
-      "status": "pending",
+      "status": "applied",
+      "live": [
+        {
+          "version": "20261113111929",
+          "name": "016_health_records"
+        }
+      ],
+      "note": "Applied 2026-11-13 via apply_migration (#500); RLS probe and anon 42501 read-back in the PR body.",
       "issue": 417
     }
   ],
