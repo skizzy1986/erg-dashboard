@@ -63,6 +63,10 @@ msgstr "⚠️ Esta sección tuvo un error al mostrarse y se aisló para protege
 msgid "Activity ids: {0}"
 msgstr "ID de actividades: {0}"
 
+#: src/views/mobile/MobileSettings.jsx
+msgid "Back to Today"
+msgstr "Volver a Hoy"
+
 #. Mobile tab bar: readiness, sleep, heart rate
 #: src/constants/destinations.js
 msgid "Body"
@@ -260,6 +264,8 @@ msgstr "Reintentar"
 
 #. Desktop nav tab
 #: src/App.jsx
+#: src/views/mobile/MobileSettings.jsx
+#: src/views/mobile/MobileToday.jsx
 msgid "Settings"
 msgstr "Configuración"
 
@@ -279,6 +285,7 @@ msgstr "Inicia sesión para continuar"
 
 #. Tooltip on the sign-out button
 #: src/AuthGate.jsx
+#: src/views/mobile/MobileSettings.jsx
 msgid "Sign out"
 msgstr "Cerrar sesión"
 

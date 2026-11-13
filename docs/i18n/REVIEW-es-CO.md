@@ -9,7 +9,7 @@ proper names stay as they are (SplitIQ, Strava). Numbers use a decimal point.
 Placeholders in braces — `{count}`, `{0}` — must stay exactly as written; their order
 may change. To correct a line, reply with its **row** id and the new Spanish.
 
-## Dashboard (src/locales, 102 strings)
+## Dashboard (src/locales, 103 strings)
 
 | Row | English | Español | Where / note |
 |---|---|---|---|
@@ -26,6 +26,7 @@ may change. To correct a line, reply with its **row** id and the new Spanish.
 | `xszP8W` | ＋ ADD TO HOME SCREEN | ＋ AGREGAR A LA PANTALLA DE INICIO | Install-the-app button, all capitals · src/AuthGate.jsx |
 | `UVT0ke` | ⚠️ This section hit a render error and was isolated to protect the rest of the dashboard. | ⚠️ Esta sección tuvo un error al mostrarse y se aisló para proteger el resto del panel. | Shown in place of a dashboard tab that crashed · src/App.jsx |
 | `OJnS4k` | Activity ids: {0} | ID de actividades: {0} | Followed by a list of Strava activity numbers · placeholder {0}: (connection?.ambiguous_activity_ids ?? []).join(', ') · src/components/StravaConnectPanel.jsx |
+| `rtDcZz` | Back to Today | Volver a Hoy | src/views/mobile/MobileSettings.jsx |
 | `bGQplw` | Body | Cuerpo | Mobile tab bar: readiness, sleep, heart rate · src/constants/destinations.js |
 | `AjVXBS` | Calendar | Calendario | Desktop nav tab · src/App.jsx |
 | `LgcGHa` | Checking Strava connection… | Verificando la conexión con Strava… | Loading state · src/components/StravaConnectPanel.jsx |
@@ -67,11 +68,11 @@ may change. To correct a line, reply with its **row** id and the new Spanish.
 | `gcoiFh` | Reconnect | Reconectar | Button · src/components/StravaConnectPanel.jsx |
 | `P9wzG_` | Recovery | Recuperación | Desktop nav tab · src/App.jsx |
 | `6gRgw8` | Retry | Reintentar | Button in the error state · src/components/StravaConnectPanel.jsx |
-| `Tz0i8g` | Settings | Configuración | Desktop nav tab · src/App.jsx |
+| `Tz0i8g` | Settings | Configuración | Desktop nav tab · src/App.jsx · src/views/mobile/MobileSettings.jsx · src/views/mobile/MobileToday.jsx |
 | `F28qJt` | SETTINGS | CONFIGURACIÓN | Section eyebrow, all capitals · src/views/SettingsView.jsx |
 | `zPC2tx` | SIGN IN | INICIAR SESIÓN | Login button · src/AuthGate.jsx |
 | `zAvS8w` | Sign in to continue | Inicia sesión para continuar | src/AuthGate.jsx |
-| `fcWrnU` | Sign out | Cerrar sesión | Tooltip on the sign-out button · src/AuthGate.jsx |
+| `fcWrnU` | Sign out | Cerrar sesión | Tooltip on the sign-out button · src/AuthGate.jsx · src/views/mobile/MobileSettings.jsx |
 | `qc2maQ` | SIGN OUT | CERRAR SESIÓN | Floating button, all capitals · src/AuthGate.jsx |
 | `CcNLeM` | SIGNING IN… | INICIANDO SESIÓN… | Login button while the request is in flight · src/AuthGate.jsx |
 | `OqpWY6` | Some activities could not be saved to the database. Run the sync again. | Algunas actividades no se pudieron guardar en la base de datos. Vuelve a sincronizar. | src/utils/stravaStatus.js |

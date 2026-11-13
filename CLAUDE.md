@@ -388,7 +388,7 @@ to fetch).
 `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
 
 **i18n PR-1 (es-CO on Lingui 6) raised two budgets and added a third**, measured
-2026-11-13: **entry 155.6 / 157, total 341.5 / 400, squat entry 122.0 / 124, squat
+2026-11-13: **entry 155.6 / 157, total 338.7 / 400, squat entry 122.0 / 124, squat
 total 33.0 / 34, squat 3D 138.4 / 145 KB, DASH_ES 2.8 / 5 KB**, data 2.20 MB.
 **ENTRY 150 → 157**: the Lingui runtime and the English catalog are on first paint by
 design (production message descriptors are id-only, so English cannot render without

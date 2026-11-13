@@ -63,6 +63,10 @@ msgstr "⚠️ This section hit a render error and was isolated to protect the r
 msgid "Activity ids: {0}"
 msgstr "Activity ids: {0}"
 
+#: src/views/mobile/MobileSettings.jsx
+msgid "Back to Today"
+msgstr "Back to Today"
+
 #. Mobile tab bar: readiness, sleep, heart rate
 #: src/constants/destinations.js
 msgid "Body"
@@ -260,6 +264,8 @@ msgstr "Retry"
 
 #. Desktop nav tab
 #: src/App.jsx
+#: src/views/mobile/MobileSettings.jsx
+#: src/views/mobile/MobileToday.jsx
 msgid "Settings"
 msgstr "Settings"
 
@@ -279,6 +285,7 @@ msgstr "Sign in to continue"
 
 #. Tooltip on the sign-out button
 #: src/AuthGate.jsx
+#: src/views/mobile/MobileSettings.jsx
 msgid "Sign out"
 msgstr "Sign out"
 

@@ -383,7 +383,6 @@ describe('A view still waiting for its #412 slice', () => {
         loadData={[{ date: '6/7', ctl: 55, atl: 60, tsb: -5, tss: 50 }]}
         loggedSessions={[]}
         latestErg={null}
-        latestSquat={{ e1rm: 118, date: '6/9' }}
         totalErgDist={0}
         totalSessions={0}
         isWide

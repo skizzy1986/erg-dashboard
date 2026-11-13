@@ -44,6 +44,9 @@ vi.mock('../../../components/StravaConnectPanel.jsx', () => ({
   default: () => <div data-testid="strava-panel" />,
 }));
 
+import { i18n } from '@lingui/core';
+import { messages as en } from '../../../locales/en.po';
+import { messages as es } from '../../../locales/es.po';
 import MobileApp from '../MobileApp.jsx';
 import { DESTINATIONS } from '../../../constants/destinations.js';
 import { THEME } from '../../../constants/theme.js';
@@ -239,5 +242,23 @@ describe('the destinations are unchanged', () => {
       'progress',
       'body',
     ]);
+  });
+});
+
+describe('in Spanish', () => {
+  it('names the screen, Back and Sign out in Spanish', () => {
+    i18n.load('es', { ...en, ...es });
+    i18n.activate('es');
+    window.location.hash = '#/settings';
+    render(<MobileApp />);
+    expect(
+      screen.getByRole('heading', { name: 'Configuración' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Volver a Hoy' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Cerrar sesión' })
+    ).toBeInTheDocument();
   });
 });
