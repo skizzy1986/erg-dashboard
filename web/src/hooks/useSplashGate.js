@@ -26,7 +26,7 @@ export function useSplashGate({
   useEffect(() => {
     if (!active) return undefined;
     // Fixes t=0 at first activation so a re-run of this effect (StrictMode's
-    // double-invoked mount, or a viewport crossing 767px) re-arms with the
+    // double-invoked mount, or a caller toggling `enabled`) re-arms with the
     // REMAINING time rather than a fresh full floor. Belt-and-braces today:
     // both re-run paths land at elapsed~=0, and the dismissed latch below means
     // a disable/re-enable can never show the splash again anyway.

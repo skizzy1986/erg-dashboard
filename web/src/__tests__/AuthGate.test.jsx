@@ -3,6 +3,8 @@ import { StrictMode } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import AuthGate from '../AuthGate.jsx';
 import { SPLASH_MIN_MS, SPLASH_MAX_MS } from '../hooks/useSplashGate.js';
+import { THEME } from '../constants/theme.js';
+import { TYPE } from '../constants/tokens.js';
 
 const mocks = vi.hoisted(() => ({
   getSession: null,
@@ -145,25 +147,78 @@ describe('AuthGate boot behaviour', () => {
     expect(splashes()).toBe(0);
   });
 
-  it('never renders the splash on desktop', async () => {
+  it('shows the Spanish brand tagline under SPLITIQ without changing the document language', async () => {
+    const before = document.documentElement.lang;
+    const d = deferred();
+    mocks.getSession = d.promise;
+
+    render(<AuthGate />);
+    await act(async () => {
+      d.reject(new Error('network'));
+    });
+
+    const tagline = screen.getByText('Entrena con cabeza', { exact: true });
+    expect(tagline).toHaveAttribute('lang', 'es');
+    expect(screen.getByText('Sign in to continue')).toBeTruthy();
+    expect(document.documentElement.lang).toBe(before);
+  });
+
+  it('places the tagline between SPLITIQ and the sign-in prompt, as the only lang-marked element', async () => {
+    const d = deferred();
+    mocks.getSession = d.promise;
+
+    const { container } = render(<AuthGate />);
+    await act(async () => {
+      d.reject(new Error('network'));
+    });
+
+    const brand = screen.getByText('SPLITIQ');
+    const tagline = screen.getByText('Entrena con cabeza');
+    const prompt = screen.getByText('Sign in to continue');
+    const FOLLOWING = document.DOCUMENT_POSITION_FOLLOWING;
+    expect(brand.compareDocumentPosition(tagline) & FOLLOWING).toBeTruthy();
+    expect(tagline.compareDocumentPosition(prompt) & FOLLOWING).toBeTruthy();
+
+    const marked = container.querySelectorAll('[lang]');
+    expect(marked).toHaveLength(1);
+    expect(marked[0]).toHaveAttribute('lang', 'es');
+  });
+
+  it('styles the login tagline on the caption rank in the subtle text colour', async () => {
+    const d = deferred();
+    mocks.getSession = d.promise;
+
+    render(<AuthGate />);
+    await act(async () => {
+      d.reject(new Error('network'));
+    });
+
+    const tagline = screen.getByText('Entrena con cabeza');
+    expect(tagline).toHaveStyle({
+      fontSize: `${TYPE.caption.size}px`,
+      color: THEME.textSubtle,
+    });
+  });
+
+  it('plays the splash on desktop and clears it at the floor, as on mobile', async () => {
     mocks.isMobile = false;
     const d = deferred();
     mocks.getSession = d.promise;
 
     render(<AuthGate />);
-    expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(splashes()).toBe(1);
+    expect(screen.queryByText(/^Loading/)).toBeNull();
+    await act(async () => {
+      d.resolve({ data: { session: null } });
+    });
+    expect(splashes()).toBe(1);
 
-    advance(SPLASH_MIN_MS);
-    expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
-    expect(vi.getTimerCount()).toBe(0);
+    advance(SPLASH_MIN_MS - 1);
+    expect(splashes()).toBe(1);
 
-    advance(SPLASH_MAX_MS);
+    advance(1);
     expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(screen.getByText(/Sign in to continue/)).toBeTruthy();
   });
 
   it('shows exactly one of the splash and the loading pane while auth is unresolved', () => {
@@ -178,8 +233,8 @@ describe('AuthGate boot behaviour', () => {
     mocks.isMobile = false;
     mocks.getSession = deferred().promise;
     render(<AuthGate />);
-    expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
+    expect(splashes()).toBe(1);
+    expect(screen.queryByText(/^Loading/)).toBeNull();
   });
 
   it("keeps that exclusivity, and the splash's identity, across the transition to a signed-in session", async () => {

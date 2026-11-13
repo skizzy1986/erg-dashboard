@@ -55,7 +55,29 @@ export default function SplashScreen() {
         <div className="siq-splash__word">
           Split<span className="siq-splash__word-iq">IQ</span>
         </div>
-        <div className="siq-splash__sub">ERG · STRENGTH · BIKE</div>
+        <div className="siq-splash__line">
+          <span
+            className="siq-splash__cycle siq-splash__cycle--1"
+            aria-hidden="true"
+          >
+            ERG
+          </span>
+          <span
+            className="siq-splash__cycle siq-splash__cycle--2"
+            aria-hidden="true"
+          >
+            STRENGTH
+          </span>
+          <span
+            className="siq-splash__cycle siq-splash__cycle--3"
+            aria-hidden="true"
+          >
+            BIKE
+          </span>
+          <span className="siq-splash__tagline" lang="es">
+            Entrena con cabeza
+          </span>
+        </div>
       </div>
       <div className="siq-splash__progress">
         <div className="siq-splash__track" />

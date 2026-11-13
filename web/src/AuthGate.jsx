@@ -8,6 +8,7 @@ import SplashScreen from './components/mobile/SplashScreen.jsx';
 import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
 import { FONT } from './constants/type.js';
+import { TYPE, SPACE } from './constants/tokens.js';
 
 // A device renders one shell, never both. Statically importing the pair put
 // the desktop dashboard's thirteen tabs and the whole mobile app in the same
@@ -93,6 +94,18 @@ function Login() {
           }}
         >
           SPLITIQ
+        </div>
+        <div
+          lang="es"
+          style={{
+            fontSize: TYPE.caption.size,
+            fontWeight: TYPE.caption.weight,
+            lineHeight: TYPE.caption.lineHeight,
+            color: THEME.textSubtle,
+            marginBottom: SPACE.sm,
+          }}
+        >
+          Entrena con cabeza
         </div>
         <div style={{ fontSize: 11, color: THEME.muted, marginBottom: 22 }}>
           Sign in to continue
@@ -249,7 +262,7 @@ export default function AuthGate() {
   const isMobile = useIsMobile();
   const dataReady = useInitialDataReady();
   const showSplash = useSplashGate({
-    enabled: isMobile,
+    enabled: true,
     authResolved: session !== undefined,
     authFailed,
     dataReady,
@@ -284,10 +297,9 @@ export default function AuthGate() {
         {/* On a phone the floating button sat over Today's settings gear, so
             sign-out lives on the mobile Settings screen instead. */}
         {!isMobile && <SignOutButton />}
-        {/* The shell chunk is fetched here rather than at first paint. On a
-            phone the splash is already covering this window; once it has
-            dismissed at its ceiling — or on desktop, where it never shows —
-            fall back to the same pane the unresolved branch uses, so a slow
+        {/* The shell chunk is fetched here rather than at first paint. The
+            splash is already covering this window; once it has dismissed at
+            its ceiling, fall back to the same pane the unresolved branch uses, so a slow
             chunk reads as loading rather than as a blank screen. */}
         <Suspense fallback={showSplash ? null : <LoadingPane />}>
           {isMobile ? <MobileApp /> : <App />}
