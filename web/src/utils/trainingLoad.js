@@ -132,13 +132,13 @@ export const TSB_BANDS = [
   {
     key: 'fatigued',
     floor: -30,
-    label: 'Fatigued — normal mid-week',
+    label: 'Fatigued — recent load above fitness',
     token: 'warning',
   },
   {
     key: 'deep',
     floor: -Infinity,
-    label: 'High fatigue — rest critical',
+    label: 'High fatigue — recent load well above fitness',
     token: 'critical',
   },
 ];
