@@ -51,7 +51,9 @@ export default function StageControls({
   // Rendered from the first paint, disabled until the model is drawn, so
   // nothing around them moves when it is. Where the 3D view cannot exist at
   // all the camera is left out from the start; so is it once the model has
-  // failed, which frees the rail for the strain readout. The Show group
+  // failed, which frees the rail for the strain readout (at 1280 × 720 the
+  // camera group is ~143 px and the readout ~126 px, with 24 px to spare
+  // once the camera is gone). The Show group
   // stays: its heatmap switch drives that readout, which needs only the rep
   // data, while its layer switches stay scene-gated.
   const camGroup =

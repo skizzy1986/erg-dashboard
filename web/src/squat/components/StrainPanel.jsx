@@ -1,7 +1,11 @@
 import { THEME } from '../../constants/theme.js';
 import { RADIUS, SPACE } from '../../constants/tokens.js';
 import { REGION_NAMES } from '../constants/muscleRegions.js';
-import { ACT_NOTE, STRAIN_TITLE } from '../constants/activationBands.js';
+import {
+  ACT_NOTE,
+  HEAT_TENDONS,
+  STRAIN_TITLE,
+} from '../constants/activationBands.js';
 import HeatmapLegend from './HeatmapLegend.jsx';
 import { microLabel, srOnly } from './ui.js';
 
@@ -78,7 +82,9 @@ export default function StrainPanel({
           color: THEME.textSubtle,
         }}
       >
-        {ACT_NOTE}
+        <span>{ACT_NOTE}</span>
+        {/* Beside the key, which explains the colours; inline there are none. */}
+        {!inline && ` ${HEAT_TENDONS}`}
       </p>
       {/* Polite, and fed by useStrainAnnouncement: never once per frame. */}
       <p role="status" aria-live="polite" style={srOnly}>

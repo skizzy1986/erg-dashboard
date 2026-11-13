@@ -705,6 +705,100 @@ for (const [label, viewport, phone] of [
       expect(errors).toEqual([]);
     });
 
+    // PR B: the strain readout is laid over the stage, so it must neither push
+    // a tool off screen nor sit off screen itself (criteria 9, 12, 16).
+    test('with the heatmap on, the readout and every tool are on screen (criteria 12, 16)', async ({
+      page,
+    }) => {
+      const errors = await openReady(page, '/squat#heat');
+      const innerHeight = await page.evaluate(() => window.innerHeight);
+      const stage = page.getByRole('region', { name: '3D model' });
+      const panel = stage.getByTestId('strain-panel');
+      await expect(panel).toBeVisible();
+      await expect(panel.locator('ol > li')).toHaveCount(3);
+      await expect(
+        panel.getByText('Indicative estimate, not EMG.')
+      ).toBeVisible();
+      await expect(panel.getByTestId('heat-swatch-high')).toBeVisible();
+      const p = await panel.boundingBox();
+      const s = await stage.boundingBox();
+      expect(p.y).toBeGreaterThanOrEqual(s.y);
+      expect(p.y + p.height).toBeLessThanOrEqual(
+        Math.min(innerHeight, s.y + s.height)
+      );
+      for (const [tab, name, control] of heroTools(page)) {
+        if (phone && tab) {
+          const button = page.getByRole('button', { name: tab, exact: true });
+          if ((await button.getAttribute('aria-expanded')) !== 'true') {
+            await button.click();
+          }
+        }
+        await expect(control, name).toBeVisible();
+        const box = await control.boundingBox();
+        expect(box.y + box.height, `${name} bottom`).toBeLessThanOrEqual(
+          innerHeight
+        );
+        expect(await page.evaluate(() => window.scrollY), name).toBe(0);
+      }
+      // A step updates it in place: the readout follows the playhead.
+      await page.getByRole('button', { name: 'Step forward' }).click();
+      await expect(panel).toBeVisible();
+      expect(await noHorizontalScroll(page)).toBe(true);
+      expect(await axe(page)).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+
+    test('without WebGL, the readout sits in the controls, clear of the notice (criterion 21)', async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        const proto = window.HTMLCanvasElement.prototype;
+        const original = proto.getContext;
+        proto.getContext = function (kind, ...rest) {
+          if (/^(webgl|webgl2|experimental-webgl)$/.test(kind)) return null;
+          return original.call(this, kind, ...rest);
+        };
+      });
+      const errors = [];
+      page.on('pageerror', (err) => errors.push(String(err)));
+      await page.goto('/squat#heat', { timeout: PAINT_TIMEOUT });
+      const note = page.getByRole('note', { name: '3D view unavailable' });
+      await expect(note).toBeVisible({ timeout: PAINT_TIMEOUT });
+      const rail = page.getByRole('region', { name: 'Controls' });
+      const panel = rail.getByTestId('strain-panel');
+      await expect(panel).toBeVisible({ timeout: PAINT_TIMEOUT });
+      await expect(panel.locator('ol > li')).toHaveCount(3);
+      const innerHeight = await page.evaluate(() => window.innerHeight);
+      const p = await panel.boundingBox();
+      const n = await note.boundingBox();
+      expect(p.y + p.height).toBeLessThanOrEqual(innerHeight);
+      const overlaps =
+        p.x < n.x + n.width &&
+        n.x < p.x + p.width &&
+        p.y < n.y + n.height &&
+        n.y < p.y + p.height;
+      expect(overlaps).toBe(false);
+      if (phone) {
+        await page.getByRole('button', { name: 'Show', exact: true }).click();
+      }
+      const heat = page.getByRole('switch', { name: 'Activation heatmap' });
+      await expect(heat).toBeEnabled();
+      await expect(
+        page.getByRole('switch', { name: 'Skeleton' })
+      ).toBeDisabled();
+      const footer = phone
+        ? heat
+        : page.getByRole('button', { name: 'Coaching guide' });
+      const f = await footer.boundingBox();
+      expect(f.y + f.height).toBeLessThanOrEqual(innerHeight);
+      expect(await page.evaluate(() => window.scrollY)).toBe(0);
+      await heat.click();
+      await expect(page.getByTestId('strain-panel')).toHaveCount(0);
+      expect(new URL(page.url()).hash).toBe('');
+      expect(await axe(page)).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+
     test('the stage is the hero, and the page below stays reachable (criteria 15, 18)', async ({
       page,
     }) => {

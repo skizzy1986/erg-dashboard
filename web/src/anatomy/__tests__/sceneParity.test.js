@@ -78,6 +78,17 @@ describe('activation heatmap wiring', () => {
     expect(CODE).toMatch(/if \(sameWeights\(heat, next\)\) return;/);
   });
 
+  // PR B: the strain focus rides the same per-muscle recolour as the heatmap.
+  it('exposes setFocus, skips an unchanged mask, and emphasises in writeColours', () => {
+    expect(CODE).toMatch(/setFocus\(mask = null\) \{/);
+    expect(CODE).toMatch(/if \(sameWeights\(focus, next\)\) return;/);
+    const write = CODE.slice(
+      CODE.indexOf('function writeColours() {'),
+      CODE.indexOf('writeVertexColours(set.col')
+    );
+    expect(write).toMatch(/emphasise\(base, focus, \{/);
+  });
+
   it('swaps the tendon blend with the colour source, and nothing else', () => {
     expect(CODE).toMatch(
       /const blend = heat \? st\.tendonBlendHeat : st\.tendonBlend;/

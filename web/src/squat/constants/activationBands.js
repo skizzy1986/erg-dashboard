@@ -17,8 +17,9 @@ export const STRAIN_TITLE = 'Working hardest now';
 export const ACT_BASIS =
   "Bands are this model's own colour steps, not a published threshold.";
 export const ACT_NONE = 'Not a muscle — no activation estimate.';
-export const HEAT_LEGEND =
-  'Estimated activation at the depth shown. Indicative estimate, not EMG. Tendons are not coloured.';
+// The heatmap paints muscle only; the strain panel says so beside its key.
+export const HEAT_TENDONS = 'Tendons are not coloured.';
+export const HEAT_LEGEND = `Estimated activation at the depth shown. ${ACT_NOTE} ${HEAT_TENDONS}`;
 export const STALE_LINK =
   'That link points to a muscle this version does not have.';
 

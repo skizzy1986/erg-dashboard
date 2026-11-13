@@ -25,14 +25,13 @@ const SWATCH = STOPS.slice(0, -1).map(
  * already measured.
  */
 export default function HeatmapLegend({ compact = false }) {
-  const Heading = compact ? 'h4' : 'h3';
   return (
     <div style={compact ? null : { ...card, padding: SPACE.lg }}>
       {/* Compact: the swatches speak for themselves on screen; the heading
-          stays for assistive tech and the page outline. */}
-      <Heading style={compact ? srOnly : { ...microLabel, margin: 0 }}>
+          stays for assistive tech, one level under the panel's h2. */}
+      <h3 style={compact ? srOnly : { ...microLabel, margin: 0 }}>
         Activation key
-      </Heading>
+      </h3>
       <ul
         style={{
           listStyle: 'none',

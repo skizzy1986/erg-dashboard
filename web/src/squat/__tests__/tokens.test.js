@@ -46,6 +46,7 @@ describe('3D scene tokens', () => {
     'anatomyHeatMid',
     'anatomyHeatHigh',
     'anatomyHeatPeak',
+    'anatomyFocus',
   ];
 
   it.each(KEYS)('%s is a pointer with a value on both themes', (k) => {
@@ -60,6 +61,18 @@ describe('3D scene tokens', () => {
     for (const p of [LIGHT, DARK]) {
       expect(ratio(p.anatomyTendon, p.anatomyMuscle)).toBeGreaterThan(3);
     }
+  });
+
+  // PR B: a muscle picked in the list, painted over the plain model, beside
+  // unselected muscle — WCAG 1.4.11's 3:1 for a graphical object, per theme.
+  // Not also 3:1 against the light stage ground: against muscle red (~0.10
+  // luminance) and the near-white ground (~0.9) no colour clears both, and
+  // the neighbour that matters is the muscle around it.
+  it('keeps the focus colour a 3:1 object against muscle', () => {
+    for (const p of [LIGHT, DARK]) {
+      expect(ratio(p.anatomyFocus, p.anatomyMuscle)).toBeGreaterThanOrEqual(3);
+    }
+    expect(LIGHT.anatomyFocus).not.toBe(DARK.anatomyFocus);
   });
 
   it('keeps the dark scene on the source page colours', () => {

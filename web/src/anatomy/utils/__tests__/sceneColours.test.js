@@ -1,6 +1,7 @@
 import { DARK, LIGHT } from '../../../constants/themeValues.js';
 import { SCENE_STYLE, sceneStyle } from '../../constants/sceneStyle.js';
 import {
+  emphasise,
   heatColours,
   HEAT_POSITIONS,
   hexToRaw01,
@@ -248,5 +249,66 @@ describe('switching the heatmap off restores the exact anatomy colours', () => {
   it('uses the softer tendon blend under the heatmap', () => {
     expect(st.tendonBlendHeat).toBeLessThan(st.tendonBlend);
     expect(st.tendonBlendHeat).toBe(0.75);
+  });
+});
+
+// PR B (HERO_STAGE_SPEC.md): the strain focus and the selection lift their
+// muscles out of the rest. Per muscle only; the vertex write is unchanged.
+describe('emphasise', () => {
+  const luma = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  const cols = Float32Array.from([0.8, 0.2, 0.1, 0.1, 0.6, 0.9, 0.5, 0.5, 0.5]);
+  const dim = SCENE_STYLE.light.focusDim;
+
+  it('is a 0.65 dim in both themes', () => {
+    expect(SCENE_STYLE.light.focusDim).toBe(0.65);
+    expect(SCENE_STYLE.dark.focusDim).toBe(0.65);
+  });
+
+  it('returns the colours untouched (same array) with no mask', () => {
+    expect(emphasise(cols, null, { dim })).toBe(cols);
+  });
+
+  it('keeps a focus muscle, moves the rest towards their own grey', () => {
+    const out = emphasise(cols, Uint8Array.from([1, 0, 0]), { dim });
+    expect(out).not.toBe(cols);
+    expect([...out.slice(0, 3)]).toEqual([...cols.slice(0, 3)]);
+    const y = luma(0.1, 0.6, 0.9);
+    expect(out[3]).toBeCloseTo(0.1 + (y - 0.1) * dim, 6);
+    expect(out[4]).toBeCloseTo(0.6 + (y - 0.6) * dim, 6);
+    expect(out[5]).toBeCloseTo(0.9 + (y - 0.9) * dim, 6);
+    // Lightness kept, hue lost: the luma of a dimmed muscle does not move.
+    expect(luma(out[3], out[4], out[5])).toBeCloseTo(y, 6);
+    // Already grey: nothing to take away.
+    expect([...out.slice(6, 9)].map((v) => +v.toFixed(6))).toEqual([
+      0.5, 0.5, 0.5,
+    ]);
+    // The input is never written to.
+    expect(cols[3]).toBeCloseTo(0.1, 6);
+  });
+
+  it('paints a focus muscle in focusColour when given one (heatmap off)', () => {
+    const focus = scenePalette('light').focus;
+    expect(focus).toEqual(hexToRaw01(LIGHT.anatomyFocus));
+    const out = emphasise(cols, Uint8Array.from([0, 1, 0]), {
+      dim,
+      focusColour: focus,
+    });
+    expect([...out.slice(3, 6)]).toEqual([...Float32Array.from(focus)]);
+  });
+
+  it('under the heatmap a focus muscle keeps its ramp colour', () => {
+    const muscles = [{ name: 'a' }, { name: 'b' }];
+    const pal = scenePalette('dark');
+    const heat = heatColours(muscles, [0.9, 0.2], pal.heat, pal.tendon);
+    const out = emphasise(heat, Uint8Array.from([1, 0]), {
+      dim,
+      focusColour: null,
+    });
+    expect([...out.slice(0, 3)]).toEqual([...heat.slice(0, 3)]);
+    expect([...out.slice(3, 6)]).not.toEqual([...heat.slice(3, 6)]);
+  });
+
+  it('reads the focus token per theme', () => {
+    expect(scenePalette('dark').focus).toEqual(hexToRaw01(DARK.anatomyFocus));
   });
 });

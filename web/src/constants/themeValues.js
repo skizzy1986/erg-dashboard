@@ -107,7 +107,7 @@ export const LIGHT = {
   anatomyHeatMid: '#8c3b6b',
   anatomyHeatHigh: '#cf3a2a',
   anatomyHeatPeak: '#ffd35c',
-  anatomyFocus: '#3cc4e8',
+  anatomyFocus: '#48cdee',
 };
 
 // The palette the document boots on. Light is primary (#251); dark is retained
