@@ -71,7 +71,8 @@ const ALLOWED = {
   'web/src/constants/trainingConfig.js': {
     hexes: ['#666'],
     reason:
-      'zone-lookup fallback; wants a decision, not a nearest-token guess.',
+      'Recovery band colour; no HR row behind it since #422. Wants a token ' +
+      'decision, not a nearest-token guess.',
   },
   'web/src/views/ErgView.jsx': {
     hexes: ['#666'],

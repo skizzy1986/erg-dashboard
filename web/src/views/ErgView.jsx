@@ -8,18 +8,17 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { mean, sampleStdDev } from '../utils/stats.js';
 import ErgTooltip from '../components/ErgTooltip.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import PaceTrendChart from '../components/PaceTrendChart.jsx';
+import { FTP_TEST, derivePaceZones } from '../constants/trainingConfig.js';
 import {
-  CRITICAL_POWER,
-  POWER_DURATION,
-  FTP_TEST,
-  deriveCalibrationStatus,
-  derivePaceZones,
-  HR130_POWER,
-} from '../constants/trainingConfig.js';
+  MIN_TREND_POINTS,
+  workingPowerSeries,
+  efficiencySeries,
+  fitTrend,
+  zoneGuides,
+} from '../utils/ergTrend.js';
 import { formatPace } from '../utils/pace.js';
 import { toISODate } from '../utils/dateFormat.js';
 import { useErgSessions } from '../hooks/useErgSessions.js';
@@ -28,166 +27,6 @@ import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
 import { tsbBand } from '../utils/trainingLoad.js';
 import { FONT } from '../constants/type.js';
-
-// ── ERG TREND DATA ─────────────────────────────────────────────
-// workingPace in seconds/500m (excludes warmup split)
-const ergTrend = [
-  {
-    date: '5/22',
-    dist: '5k',
-    pace: 147.9,
-    watts: 110,
-    label: '5k',
-    hardPush: false,
-  },
-  {
-    date: '5/24',
-    dist: '5k',
-    pace: 145.4,
-    watts: 115,
-    label: '5k',
-    hardPush: false,
-  },
-  {
-    date: '5/25',
-    dist: '10k',
-    pace: 130.4,
-    watts: 163,
-    label: '10k',
-    hardPush: true,
-  },
-  {
-    date: '6/4',
-    dist: '10k',
-    pace: 134.8,
-    watts: 143,
-    label: '10k',
-    hardPush: false,
-  },
-  {
-    date: '6/5',
-    dist: '10k',
-    pace: 125.1,
-    watts: 181,
-    label: '10k',
-    hardPush: true,
-  },
-  {
-    date: '6/6',
-    dist: '10k',
-    pace: 141.3,
-    watts: 125,
-    label: '10k',
-    hardPush: false,
-  },
-  {
-    date: '6/8',
-    dist: '60m',
-    pace: 136.2,
-    watts: 134,
-    label: '60m',
-    hardPush: false,
-  },
-  {
-    date: '6/9',
-    dist: '30m',
-    pace: 132.1,
-    watts: 152,
-    label: '30m',
-    hardPush: false,
-  },
-  {
-    date: '6/10',
-    dist: '45m',
-    pace: 134.1,
-    watts: 145,
-    label: '45m',
-    hardPush: false,
-  },
-  {
-    date: '6/12',
-    dist: '45m',
-    pace: 132.3,
-    watts: 151,
-    label: '45m',
-    hardPush: false,
-  },
-  {
-    date: '6/13',
-    dist: '60m',
-    pace: 132.5,
-    watts: 150,
-    label: '60m',
-    hardPush: false,
-  },
-];
-
-// ── BAROMETER REGRESSION (least-squares) ──────────────────────
-function analyzeBarometer(points) {
-  // Fit the CLEAN anchor points only (exclude flagged setup artifacts).
-  const actual = points.filter((p) => p.type === 'actual' && !p.setupArtifact);
-  if (actual.length < 3) return null; // not enough to fit honestly
-  const epoch = new Date('2026/' + actual[0].date).getTime();
-  const xs = actual.map(
-    (p) => (new Date('2026/' + p.date).getTime() - epoch) / 86400000
-  );
-  const ys = actual.map((p) => p.watts);
-  const n = xs.length;
-  const mx = mean(xs),
-    my = mean(ys);
-  let num = 0,
-    den = 0;
-  for (let i = 0; i < n; i++) {
-    num += (xs[i] - mx) * (ys[i] - my);
-    den += (xs[i] - mx) ** 2;
-  }
-  const slope = den === 0 ? 0 : num / den; // W per day
-  const intercept = my - slope * mx;
-  const preds = xs.map((x) => slope * x + intercept);
-  const ssRes = ys.reduce((s, y, i) => s + (y - preds[i]) ** 2, 0);
-  const ssTot = ys.reduce((s, y) => s + (y - my) ** 2, 0);
-  const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
-  const residSd = n > 2 ? Math.sqrt(ssRes / (n - 2)) : 0; // residual std error = the noise floor
-  // Plateau read: mean + spread of the clean anchors = the honest "current level"
-  const currentLevel = Math.round(my);
-  const spread = +sampleStdDev(ys).toFixed(1);
-  // Interpret honestly: a slope only means something if the fit (R²) supports
-  // it. Low R² with a tight spread = plateau, not a trend.
-  let verdict;
-  if (r2 < 0.5 || Math.abs(slope * 7) < 2)
-    verdict =
-      'PLATEAU — engine settled at ~' +
-      currentLevel +
-      'W (low R² + tight spread = a real repeatable level, not still climbing). Expected late-base; the gain is banked. Next real signal = end-of-base 5k.';
-  else if (slope * 7 >= 2)
-    verdict =
-      'STILL RISING (~' +
-      +(slope * 7).toFixed(1) +
-      "W/wk) — but early gains decelerate; don't extrapolate linearly.";
-  else
-    verdict =
-      'DIPPING — watch fatigue/consistency, recheck on a fresh clean anchor.';
-  return {
-    slopePerWeek: +(slope * 7).toFixed(1),
-    r2: +r2.toFixed(2),
-    residSd: +residSd.toFixed(1),
-    spread,
-    nPoints: n,
-    currentLevel,
-    verdict,
-  };
-}
-
-const HR130_ANALYSIS = analyzeBarometer(HR130_POWER);
-
-// Projection band for end of base (~12 weeks, early Sep). Conservative→optimistic.
-const HR130_PROJECTION = {
-  startWatts: 151, // current clean baseline (6/12)
-  endLow: 165, // conservative end-of-base
-  endHigh: 180, // optimistic end-of-base
-  endDate: 'early Sep',
-  note: 'Projection assumes consistent execution + sleep holding. Early-phase return gains slow over time. 4 clean points now (134→145→151→149 at HR130), incl. Strava-verified. We replace this with real data at the end-of-base 5k benchmark. Watch actual vs band.',
-};
 
 const card = {
   background: THEME.raised,
@@ -210,6 +49,12 @@ const statLabel = {
   marginBottom: 2,
 };
 
+const insufficient = {
+  fontSize: 10,
+  color: THEME.muted,
+  fontStyle: 'italic',
+};
+
 function withinLast7Days(dateStr) {
   const iso = toISODate(dateStr);
   if (!iso) return false;
@@ -227,14 +72,10 @@ export default function ErgView({ tsbNow, ctlNow }) {
   // Live Critical Power from the anchors context store (no hardcoded fallback).
   const { cp, cpStatus, cpAvailable } = useAnchors();
   const paceZones = cpAvailable ? derivePaceZones(cp) : [];
-  const calibrationStatus = deriveCalibrationStatus({
-    cp,
-    cpAvailable,
-    cpStatus,
-  });
-
-  const hr130Now =
-    [...HR130_POWER].filter((p) => !p.setupArtifact).pop()?.watts ?? null;
+  const power = workingPowerSeries(sessions);
+  const eff = efficiencySeries(sessions);
+  const effFit = fitTrend(eff.map((p) => ({ iso: p.iso, y: p.wpb })));
+  const guides = zoneGuides(paceZones);
   const sessionsThisWeek = sessions.filter((s) =>
     withinLast7Days(s.date)
   ).length;
@@ -296,11 +137,11 @@ export default function ErgView({ tsbNow, ctlNow }) {
             </div>
           </div>
           <div style={statCard}>
-            <div style={statLabel}>HR130 POWER</div>
+            <div style={statLabel}>W / BPM</div>
             <div
               style={{ fontSize: 15, fontWeight: 700, color: THEME.positive }}
             >
-              {hr130Now != null ? `${hr130Now}W` : '—'}
+              {eff.length ? eff.at(-1).wpb.toFixed(2) : '—'}
             </div>
           </div>
           <div style={statCard}>
@@ -392,109 +233,94 @@ export default function ErgView({ tsbNow, ctlNow }) {
           Drag-factor independent — true cross-session comparison. ● hard push ○
           Z2
         </div>
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart
-            data={ergTrend}
-            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-          >
-            <XAxis
-              dataKey="date"
-              tick={{
-                fontSize: 9,
-                fill: THEME.muted,
-                fontFamily: FONT.mono,
-              }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              domain={[110, 200]}
-              tick={{
-                fontSize: 9,
-                fill: THEME.muted,
-                fontFamily: FONT.mono,
-              }}
-              tickFormatter={(v) => `${v}W`}
-              axisLine={false}
-              tickLine={false}
-              width={38}
-            />
-            <Tooltip content={<ErgTooltip />} />
-            <ReferenceLine
-              y={150}
-              stroke={THEME.positive}
-              strokeDasharray="3 3"
-              strokeOpacity={0.35}
-              label={{
-                value: 'Z2 top',
-                position: 'insideTopRight',
-                fontSize: 8,
-                fill: THEME.positive,
-                fontFamily: FONT.mono,
-              }}
-            />
-            <ReferenceLine
-              y={125}
-              stroke={THEME.accent}
-              strokeDasharray="3 3"
-              strokeOpacity={0.35}
-              label={{
-                value: 'Z2 base',
-                position: 'insideBottomRight',
-                fontSize: 8,
-                fill: THEME.accent,
-                fontFamily: FONT.mono,
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="watts"
-              stroke={THEME.accent}
-              strokeWidth={2}
-              dot={(props) => {
-                const { cx, cy, payload } = props;
-                return payload.hardPush ? (
-                  <circle
-                    key={cx}
-                    cx={cx}
-                    cy={cy}
-                    r={4}
-                    fill={THEME.accent}
-                    stroke={THEME.field}
-                    strokeWidth={1}
-                  />
-                ) : (
-                  <circle
-                    key={cx}
-                    cx={cx}
-                    cy={cy}
-                    r={4}
-                    fill={THEME.field}
-                    stroke={THEME.accent}
-                    strokeWidth={2}
-                  />
-                );
-              }}
-              activeDot={{ r: 5, fill: THEME.accent }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 9,
-            color: THEME.muted,
-            lineHeight: 1.5,
-          }}
-        >
-          Z2 watt targets (DF 125, HR ceiling 136): UT1 working sessions
-          143–150W (pacer 143–145W — bumped from 140 after 6/12 showed 151W at
-          HR130), UT2 easy/FIFO 125–135W (pacer 130W). Set pacer on watts; let
-          HR cap at 136. Engine is climbing — re-check targets weekly.
-        </div>
+        {power.length < MIN_TREND_POINTS ? (
+          <div style={insufficient}>
+            Insufficient data — {power.length} of {MIN_TREND_POINTS} sessions
+            with power logged.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart
+              data={power}
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+            >
+              <XAxis
+                dataKey="date"
+                tick={{
+                  fontSize: 9,
+                  fill: THEME.muted,
+                  fontFamily: FONT.mono,
+                }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                tick={{
+                  fontSize: 9,
+                  fill: THEME.muted,
+                  fontFamily: FONT.mono,
+                }}
+                tickFormatter={(v) => `${v}W`}
+                axisLine={false}
+                tickLine={false}
+                width={38}
+              />
+              <Tooltip content={<ErgTooltip />} />
+              {guides.map((g, i) => (
+                <ReferenceLine
+                  key={g.label}
+                  y={g.y}
+                  ifOverflow="extendDomain"
+                  stroke={THEME.muted}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  label={{
+                    value: g.label,
+                    position: i === 0 ? 'insideBottomRight' : 'insideTopRight',
+                    fontSize: 8,
+                    fill: THEME.muted,
+                    fontFamily: FONT.mono,
+                  }}
+                />
+              ))}
+              <Line
+                type="monotone"
+                dataKey="watts"
+                stroke={THEME.accent}
+                strokeWidth={2}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  return payload.hardPush ? (
+                    <circle
+                      key={cx}
+                      cx={cx}
+                      cy={cy}
+                      r={4}
+                      fill={THEME.accent}
+                      stroke={THEME.field}
+                      strokeWidth={1}
+                    />
+                  ) : (
+                    <circle
+                      key={cx}
+                      cx={cx}
+                      cy={cy}
+                      r={4}
+                      fill={THEME.field}
+                      stroke={THEME.accent}
+                      strokeWidth={2}
+                    />
+                  );
+                }}
+                activeDot={{ r: 5, fill: THEME.accent }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
-      {/* Power @ HR130 — key barometer + projection */}
+      {/* ── AEROBIC EFFICIENCY ── */}
       <div
         style={{
           background: THEME.raised,
@@ -513,271 +339,52 @@ export default function ErgView({ tsbNow, ctlNow }) {
             marginBottom: 4,
           }}
         >
-          ⭐ POWER @ HR130 · KEY BAROMETER
+          AEROBIC EFFICIENCY · W PER BEAT
         </div>
         <div style={{ fontSize: 9, color: THEME.textFaint, marginBottom: 10 }}>
-          The truest single fitness metric — watts at your HR130 anchor. Rising
-          = engine growing. Actual vs end-of-base projection.
+          Average watts ÷ average heart rate per session. Rising = more power
+          per beat.
         </div>
-
-        {/* Current + projection numbers */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 6,
-            marginBottom: 12,
-          }}
-        >
-          {[
-            [
-              'NOW',
-              `${HR130_PROJECTION.startWatts}W`,
-              '6/12 baseline',
-              THEME.positive,
-            ],
-            [
-              'PROJECTED',
-              `${HR130_PROJECTION.endLow}–${HR130_PROJECTION.endHigh}W`,
-              HR130_PROJECTION.endDate,
-              THEME.accent,
-            ],
-            [
-              'GAIN',
-              `+${HR130_PROJECTION.endLow - HR130_PROJECTION.startWatts}–${HR130_PROJECTION.endHigh - HR130_PROJECTION.startWatts}W`,
-              'over base',
-              THEME.caution,
-            ],
-          ].map(([k, v, sub, c]) => (
-            <div
-              key={k}
-              style={{
-                background: THEME.field,
-                borderRadius: 4,
-                padding: '8px 9px',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 8,
-                  color: THEME.muted,
-                  letterSpacing: 2,
-                  marginBottom: 2,
-                }}
-              >
-                {k}
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: c }}>{v}</div>
-              <div
-                style={{ fontSize: 8, color: THEME.textFaint, marginTop: 1 }}
-              >
-                {sub}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mini chart of actuals */}
-        <ResponsiveContainer width="100%" height={120}>
-          <LineChart
-            data={HR130_POWER}
-            margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-          >
-            <XAxis
-              dataKey="date"
-              tick={{
-                fontSize: 9,
-                fill: THEME.muted,
-                fontFamily: FONT.mono,
-              }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              domain={[120, 185]}
-              tick={{
-                fontSize: 8,
-                fill: THEME.muted,
-                fontFamily: FONT.mono,
-              }}
-              tickFormatter={(v) => `${v}W`}
-              axisLine={false}
-              tickLine={false}
-              width={32}
-            />
-            <Tooltip
-              contentStyle={{
-                background: THEME.raised,
-                border: `1px solid ${THEME.border}`,
-                borderRadius: 6,
-                fontSize: 11,
-                fontFamily: FONT.mono,
-              }}
-            />
-            <ReferenceLine
-              y={165}
-              stroke={THEME.accent}
-              strokeDasharray="3 3"
-              strokeOpacity={0.3}
-              label={{
-                value: 'proj. low',
-                position: 'insideTopRight',
-                fontSize: 8,
-                fill: THEME.accent,
-                fontFamily: FONT.mono,
-              }}
-            />
-            <ReferenceLine
-              y={180}
-              stroke={THEME.accent}
-              strokeDasharray="3 3"
-              strokeOpacity={0.3}
-              label={{
-                value: 'proj. high',
-                position: 'insideTopRight',
-                fontSize: 8,
-                fill: THEME.accent,
-                fontFamily: FONT.mono,
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="watts"
-              stroke={THEME.positive}
-              strokeWidth={2}
-              dot={{
-                r: 4,
-                fill: THEME.positive,
-                stroke: THEME.field,
-                strokeWidth: 1,
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.muted,
-            lineHeight: 1.5,
-            marginTop: 8,
-          }}
-        >
-          {HR130_PROJECTION.note}
-        </div>
-
-        {/* regression diagnostic */}
-        {HR130_ANALYSIS && (
+        {effFit == null ? (
+          <div style={insufficient}>
+            Insufficient data — {eff.length} of {MIN_TREND_POINTS} sessions with
+            power and heart rate.
+          </div>
+        ) : (
           <div
             style={{
-              marginTop: 12,
-              background: THEME.field,
-              border: `1px solid ${THEME.border}`,
-              borderRadius: 5,
-              padding: '11px 13px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3,1fr)',
+              gap: 6,
             }}
           >
-            <div
-              style={{
-                fontSize: 8,
-                letterSpacing: 2,
-                color: THEME.accentAlt,
-                marginBottom: 8,
-              }}
-            >
-              ∑ TREND ANALYSIS (linear fit · clean anchors only)
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3,1fr)',
-                gap: 6,
-                marginBottom: 9,
-              }}
-            >
-              {[
-                [
-                  'LEVEL',
-                  `${HR130_ANALYSIS.currentLevel}W`,
-                  `±${HR130_ANALYSIS.spread} spread`,
-                ],
-                [
-                  'SLOPE',
-                  `${HR130_ANALYSIS.slopePerWeek > 0 ? '+' : ''}${HR130_ANALYSIS.slopePerWeek}W/wk`,
-                  `${HR130_ANALYSIS.nPoints} points`,
-                ],
-                [
-                  'FIT R²',
-                  `${HR130_ANALYSIS.r2}`,
-                  HR130_ANALYSIS.r2 < 0.5 ? 'weak = noise' : 'meaningful',
-                ],
-              ].map(([k, v, sub]) => (
+            {[
+              ['LATEST', eff.at(-1).wpb.toFixed(2), 'newest session'],
+              [
+                'TREND',
+                `${effFit.slopePerWeek >= 0 ? '+' : '−'}${Math.abs(effFit.slopePerWeek).toFixed(2)} /wk`,
+                'least-squares slope',
+              ],
+              ['FIT', `r² ${effFit.r2.toFixed(2)}`, `n ${effFit.nPoints}`],
+            ].map(([k, v, sub]) => (
+              <div key={k} style={statCard}>
+                <div style={statLabel}>{k}</div>
                 <div
-                  key={k}
                   style={{
-                    background: THEME.raised,
-                    borderRadius: 4,
-                    padding: '7px 8px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: THEME.positive,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 7,
-                      color: THEME.muted,
-                      letterSpacing: 1,
-                      marginBottom: 2,
-                    }}
-                  >
-                    {k}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: THEME.accentAlt,
-                    }}
-                  >
-                    {v}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 7,
-                      color: THEME.textFaint,
-                      marginTop: 1,
-                    }}
-                  >
-                    {sub}
-                  </div>
+                  {v}
                 </div>
-              ))}
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: THEME.textSubtle,
-                lineHeight: 1.6,
-                borderTop: `1px solid ${THEME.divider}`,
-                paddingTop: 8,
-              }}
-            >
-              <span style={{ color: THEME.accentAlt, fontWeight: 700 }}>
-                READ:{' '}
-              </span>
-              {HR130_ANALYSIS.verdict}
-            </div>
-            <div
-              style={{
-                fontSize: 8,
-                color: THEME.textFaint,
-                lineHeight: 1.5,
-                marginTop: 6,
-              }}
-            >
-              Computed (least-squares) on the 4 clean HR130 anchors; the 6/8
-              reading is excluded as a drag/strap setup artifact. We don't
-              extrapolate the slope forward — early gains decelerate, so a
-              linear projection would overstate. Real forward signal = the
-              end-of-base 5k.
-            </div>
+                <div
+                  style={{ fontSize: 8, color: THEME.textFaint, marginTop: 1 }}
+                >
+                  {sub}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -948,7 +555,7 @@ export default function ErgView({ tsbNow, ctlNow }) {
         </div>
       </div>
 
-      {/* Rowing metrics — power-duration curve */}
+      {/* Rowing metrics — critical power */}
       <div
         style={{
           background: THEME.raised,
@@ -964,275 +571,34 @@ export default function ErgView({ tsbNow, ctlNow }) {
             fontSize: 9,
             letterSpacing: 3,
             color: THEME.accentAlt,
-            marginBottom: 4,
-          }}
-        >
-          ROWING METRICS · POWER–DURATION
-        </div>
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.textFaint,
             marginBottom: 10,
-            lineHeight: 1.5,
           }}
         >
-          Rowing-native model. Critical Power (CP) = the rowing FTP. W' =
-          anaerobic reserve above CP (fuels 1-min/1k). 2k pace = the north star.
-          FTP kept under the hood only for load (TSS) maths.
-        </div>
-
-        {/* CP / W' / north star */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3,1fr)',
-            gap: 6,
-            marginBottom: 12,
-          }}
-        >
-          {[
-            [
-              'CRITICAL POWER',
-              cpAvailable ? cp + 'W' : 'CP unavailable',
-              cpAvailable ? cpStatus : 'anchor unreachable',
-              THEME.accent,
-            ],
-            [
-              "W' (anaerobic)",
-              CRITICAL_POWER.wPrime ? CRITICAL_POWER.wPrime + 'J' : '—',
-              'needs 1-min max',
-              THEME.warning,
-            ],
-            ['NORTH STAR', '2k pace', 'the race benchmark', THEME.caution],
-          ].map(([k, v, sub, c]) => (
-            <div
-              key={k}
-              style={{
-                background: THEME.field,
-                borderRadius: 4,
-                padding: '8px 9px',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 8,
-                  color: THEME.muted,
-                  letterSpacing: 1,
-                  marginBottom: 2,
-                }}
-              >
-                {k}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: c }}>{v}</div>
-              <div
-                style={{ fontSize: 8, color: THEME.textFaint, marginTop: 1 }}
-              >
-                {sub}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Power-duration table */}
-        <div
-          style={{
-            fontSize: 8,
-            letterSpacing: 2,
-            color: THEME.muted,
-            marginBottom: 6,
-          }}
-        >
-          YOUR 3 RACE FORMATS ON THE CURVE
-        </div>
-        {POWER_DURATION.map((p) => {
-          const isTarget = ['1-min', '1000m', '5000m'].includes(p.format);
-          return (
-            <div
-              key={p.format}
-              style={{
-                background: THEME.field,
-                borderRadius: 3,
-                padding: '8px 10px',
-                marginBottom: 4,
-                borderLeft: `2px solid ${isTarget ? THEME.accentAlt : THEME.textDim}`,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: isTarget ? THEME.accentAlt : THEME.textSubtle,
-                  }}
-                >
-                  {isTarget && '🎯 '}
-                  {p.format}{' '}
-                  <span style={{ fontSize: 9, color: THEME.muted }}>
-                    {p.dur}
-                  </span>
-                </span>
-                <span style={{ fontSize: 11, color: THEME.text }}>
-                  {p.actualW || p.predW}
-                  <span style={{ fontSize: 8, color: THEME.muted }}>
-                    W {p.actualW ? 'tested' : 'est.'}
-                  </span>
-                </span>
-              </div>
-              <div style={{ fontSize: 9, color: THEME.muted, marginTop: 2 }}>
-                {p.system} · feeds {p.feeds}
-              </div>
-            </div>
-          );
-        })}
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.muted,
-            lineHeight: 1.6,
-            marginTop: 8,
-            fontStyle: 'italic',
-          }}
-        >
-          Predicted watts are rough estimates from current aerobic data — wide
-          error bars on the short formats (no anaerobic data yet). Each tested
-          format replaces an estimate and sharpens the curve. The curve's shape
-          tells us whether you're aerobically or anaerobically biased — which
-          shapes how we train the three formats.
-        </div>
-      </div>
-
-      {/* Model calibration status */}
-      <div
-        style={{
-          background: THEME.raised,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 6,
-          padding: '14px 16px',
-          marginBottom: 12,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 9,
-            letterSpacing: 3,
-            color: THEME.muted,
-            marginBottom: 4,
-          }}
-        >
-          MODEL CALIBRATION STATUS
+          ROWING METRICS · CRITICAL POWER
         </div>
         <div
           style={{
-            fontSize: 9,
-            color: THEME.textFaint,
-            marginBottom: 12,
-            lineHeight: 1.5,
+            background: THEME.field,
+            borderRadius: 4,
+            padding: '8px 9px',
           }}
         >
-          Confidence tier per metric — so estimated numbers aren't read as
-          measured. Upgrades as benchmarks land.
-        </div>
-        {[1, 2, 3].map((tier) => (
-          <div key={tier} style={{ marginBottom: 10 }}>
-            <div
-              style={{
-                fontSize: 8,
-                letterSpacing: 2,
-                color:
-                  tier === 1
-                    ? THEME.positive
-                    : tier === 2
-                      ? THEME.caution
-                      : THEME.warning,
-                marginBottom: 5,
-              }}
-            >
-              TIER {tier} ·{' '}
-              {tier === 1
-                ? 'TRUST'
-                : tier === 2
-                  ? 'ESTIMATED — WIDE BARS'
-                  : 'FRAGILE — SKEPTICISM'}
-            </div>
-            {calibrationStatus
-              .filter((c) => c.tier === tier)
-              .map((c) => (
-                <div
-                  key={c.metric}
-                  style={{
-                    background: THEME.field,
-                    borderLeft: `2px solid ${c.color}`,
-                    borderRadius: 3,
-                    padding: '7px 10px',
-                    marginBottom: 4,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'baseline',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: THEME.text,
-                      }}
-                    >
-                      {c.metric}
-                    </span>
-                    <span style={{ fontSize: 9, color: c.color }}>
-                      {c.conf}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 9,
-                      color: THEME.muted,
-                      lineHeight: 1.4,
-                      marginTop: 2,
-                    }}
-                  >
-                    {c.basis}
-                  </div>
-                  {c.upgrade !== '—' && (
-                    <div
-                      style={{
-                        fontSize: 9,
-                        color: THEME.accent,
-                        lineHeight: 1.4,
-                        marginTop: 2,
-                      }}
-                    >
-                      ↑ {c.upgrade}
-                    </div>
-                  )}
-                </div>
-              ))}
+          <div
+            style={{
+              fontSize: 8,
+              color: THEME.muted,
+              letterSpacing: 1,
+              marginBottom: 2,
+            }}
+          >
+            CRITICAL POWER
           </div>
-        ))}
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.muted,
-            lineHeight: 1.6,
-            borderTop: `1px solid ${THEME.divider}`,
-            paddingTop: 10,
-            fontStyle: 'italic',
-          }}
-        >
-          Architecture is sound; calibration is young. Every benchmark replaces
-          an estimate with a measurement. Calibration ends ~Jun 24; the model
-          gets real teeth at the Sep 5k.
+          <div style={{ fontSize: 14, fontWeight: 700, color: THEME.accent }}>
+            {cpAvailable ? cp + 'W' : 'CP unavailable'}
+          </div>
+          <div style={{ fontSize: 8, color: THEME.textFaint, marginTop: 1 }}>
+            {cpAvailable ? cpStatus : 'anchor unreachable'}
+          </div>
         </div>
       </div>
 

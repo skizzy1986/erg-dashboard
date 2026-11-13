@@ -206,6 +206,35 @@ describe('ErgLiveView save row', () => {
   });
 });
 
+describe('ErgLiveView sRPE buttons (#422)', () => {
+  it('renders one button per point on the shared sRPE bands', () => {
+    finished();
+    renderWithClient(<ErgLiveView />, makeClient());
+    const buttons = screen.getAllByRole('button', { name: /^\d+ — / });
+    expect(buttons).toHaveLength(10);
+    expect(buttons.map((b) => b.textContent)).toEqual([
+      '1 — Very easy',
+      '2 — Very easy',
+      '3 — Easy (UT2)',
+      '4 — Easy (UT2)',
+      '5 — Steady (UT1)',
+      '6 — Steady (UT1)',
+      '7 — Hard (threshold)',
+      '8 — Hard (threshold)',
+      '9 — Max',
+      '10 — Max',
+    ]);
+  });
+
+  it('saves the sRPE of the button that was clicked', async () => {
+    finished();
+    renderWithClient(<ErgLiveView />, makeClient());
+    fireEvent.click(screen.getByText('7 — Hard (threshold)'));
+    await save();
+    expect(insertMock.mock.calls[0][0].srpe).toBe(7);
+  });
+});
+
 describe('ErgLiveView planned-session matching', () => {
   const planned = {
     date: '8/18/26',

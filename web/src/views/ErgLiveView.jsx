@@ -10,19 +10,15 @@ import { THEME } from '../constants/theme.js';
 import { toISODate, toLogDate } from '../utils/dateFormat.js';
 import { invalidateSessionQueries } from '../utils/invalidateSessionQueries.js';
 import { FONT } from '../constants/type.js';
+import { SRPE_GUIDE } from '../constants/trainingConfig.js';
 
-const SRPE_GUIDE = [
-  { v: 1, label: '1 — Very easy' },
-  { v: 2, label: '2 — Easy' },
-  { v: 3, label: '3 — Light' },
-  { v: 4, label: '4 — Moderate' },
-  { v: 5, label: '5 — Somewhat hard' },
-  { v: 6, label: '6 — Hard' },
-  { v: 7, label: '7 — Very hard' },
-  { v: 8, label: '8 — Very very hard' },
-  { v: 9, label: '9 — Near maximal' },
-  { v: 10, label: '10 — Maximal' },
-];
+const SRPE_BUTTONS = SRPE_GUIDE.flatMap((band) => {
+  const [lo, hi] = band.range.split('-').map(Number);
+  return Array.from({ length: hi - lo + 1 }, (_, i) => ({
+    v: lo + i,
+    label: `${lo + i} — ${band.label}`,
+  }));
+});
 
 // ── SCREEN A: Connect ─────────────────────────────────────────────
 function ConnectScreen({
@@ -382,7 +378,7 @@ function SummaryScreen({ summary, onSave, onDiscard, onDone, saveState }) {
             flexWrap: 'wrap',
           }}
         >
-          {SRPE_GUIDE.map(({ v, label }) => (
+          {SRPE_BUTTONS.map(({ v, label }) => (
             <button
               key={v}
               onClick={() => setSrpe(v)}

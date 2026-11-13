@@ -30,11 +30,10 @@ function thresholdFor(type, cp, ftp) {
 // one of those bands ~10x too wide, which pinned TSB mid-range and meant the
 // fatigue deduction could never fire. Do not rescale one side without the other.
 //
-// Known offset, deliberately NOT calibrated away: on the two sessions carrying
-// both signals (150 W, sRPE 7) power reads ~24% below the sRPE figure. At 73%
-// of CP an RPE of 7 is genuinely elevated, and that gap is read as fatigue in
-// this project's own coaching notes. Tuning a factor to close it on n=2 would
-// erase the signal rather than measure it.
+// Known offset, deliberately NOT calibrated away: power-derived load can read
+// below the sRPE figure for the same session. An RPE that is high for the
+// watts is a fatigue signal, not a unit error, and tuning a factor to close the
+// gap would erase that signal rather than measure it.
 export function sessionLoad(session, { cp, ftp } = {}) {
   const minutes = parseDurationMinutes(session?.duration);
   if (!(minutes > 0)) return 0;

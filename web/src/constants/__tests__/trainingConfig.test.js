@@ -1,30 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import * as trainingConfig from '../trainingConfig.js';
-import {
-  CALIBRATION_STATUS,
-  CRITICAL_POWER,
-  FTP_TEST,
-  deriveCalibrationStatus,
-  derivePaceZones,
-} from '../trainingConfig.js';
+import { FTP_TEST, derivePaceZones } from '../trainingConfig.js';
 
-const loadModelRow = (rows) => rows.find((r) => r.key === 'load-model');
+// Names built by concatenation so this file does not trip noCulledCode.test.js.
+const REMOVED = [
+  'CALIBRATION' + '_STATUS',
+  'deriveCalibration' + 'Status',
+  'CRITICAL' + '_POWER',
+  'POWER' + '_DURATION',
+  'HR' + '_ZONES',
+  'EST' + '_MHR',
+  'HR130' + '_POWER',
+  'SRPE' + '_SCALE',
+];
 
 describe('CP is never mirrored as a static constant', () => {
-  it('CRITICAL_POWER carries no cpEstimate', () => {
-    expect(CRITICAL_POWER).not.toHaveProperty('cpEstimate');
-  });
-
   it('exports no static PACE_ZONES that could diverge from the live bands', () => {
     expect(trainingConfig).not.toHaveProperty('PACE_ZONES');
-  });
-
-  it('no static calibration row quotes a hardcoded CP wattage', () => {
-    const copy = CALIBRATION_STATUS.map(
-      (r) => `${r.metric} ${r.basis} ${r.upgrade}`
-    ).join(' ');
-    expect(copy).not.toMatch(/\b190\s*W\b/i);
-    expect(copy).not.toMatch(/CP\/FTP est\./i);
   });
 
   it('the CP test card carries no past-dated "when"', () => {
@@ -32,73 +24,19 @@ describe('CP is never mirrored as a static constant', () => {
   });
 });
 
-describe('deriveCalibrationStatus', () => {
-  it('quotes the live CP and its status when the anchor is available', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 205,
-      cpAvailable: true,
-      cpStatus: 'provisional',
-    });
-    expect(loadModelRow(rows).basis).toBe(
-      'CP 205W (provisional), strength TSS ±30%, CTL needs 42d'
+describe('personal calibration is removed (#422)', () => {
+  it.each(REMOVED)('%s is no longer exported', (name) => {
+    expect(trainingConfig[name]).toBeUndefined();
+  });
+
+  // The CP test card renders verbatim on ErgView: no status claim that can
+  // contradict the anchor, no one rower's setup or habits, no promise of a
+  // view this slice deleted.
+  it('the CP test card is generic', () => {
+    const text = Object.values(FTP_TEST).join(' ');
+    expect(text).not.toMatch(
+      /overdue|\bDF ?\d|caffeine|cannabis|projection|power-duration|W'/i
     );
-  });
-
-  it('reflects a confirmed anchor without changing the wattage source', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 212,
-      cpAvailable: true,
-      cpStatus: 'confirmed',
-    });
-    expect(loadModelRow(rows).basis).toMatch(/^CP 212W \(confirmed\),/);
-  });
-
-  it('says the anchor is unavailable rather than falling back to a stale CP', () => {
-    const rows = deriveCalibrationStatus({ cp: null, cpAvailable: false });
-    expect(loadModelRow(rows).basis).toMatch(/^CP anchor unavailable,/);
-    expect(loadModelRow(rows).basis).not.toMatch(/\d+W/);
-  });
-
-  it('treats a missing context the same as an unavailable anchor', () => {
-    expect(loadModelRow(deriveCalibrationStatus()).basis).toMatch(
-      /^CP anchor unavailable,/
-    );
-  });
-
-  it('labels an available anchor with an unknown status explicitly', () => {
-    const rows = deriveCalibrationStatus({ cp: 205, cpAvailable: true });
-    expect(loadModelRow(rows).basis).toBe(
-      'CP 205W (status unknown), strength TSS ±30%, CTL needs 42d'
-    );
-  });
-
-  it('leaves every other row untouched', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 205,
-      cpAvailable: true,
-      cpStatus: 'provisional',
-    });
-    expect(rows).toHaveLength(CALIBRATION_STATUS.length);
-    for (const [i, row] of rows.entries()) {
-      if (row.key === 'load-model') continue;
-      expect(row).toBe(CALIBRATION_STATUS[i]);
-    }
-  });
-
-  it('does not mutate the source array', () => {
-    const before = loadModelRow(CALIBRATION_STATUS).basis;
-    deriveCalibrationStatus({ cp: 205, cpAvailable: true });
-    expect(loadModelRow(CALIBRATION_STATUS).basis).toBe(before);
-  });
-
-  it('does not upgrade the confidence tier — that is #181, not this', () => {
-    const rows = deriveCalibrationStatus({
-      cp: 205,
-      cpAvailable: true,
-      cpStatus: 'confirmed',
-    });
-    expect(loadModelRow(rows).tier).toBe(2);
-    expect(loadModelRow(rows).conf).toBe('Estimated');
   });
 });
 
@@ -119,5 +57,11 @@ describe('derivePaceZones', () => {
     expect(band('UT2')).toEqual([113, 144]);
     expect(band('UT1')).toEqual([144, 164]);
     expect(band('AT')).toEqual([164, 185]);
+  });
+
+  it('derivePaceZones(205) is byte-identical to the pre-#422 output', () => {
+    expect(JSON.stringify(derivePaceZones(205))).toBe(
+      '[{"zone":"Recovery","color":"#666","wattsLow":0,"wattsHigh":113,"paceFloor":145.7683373800698,"paceCeil":300},{"zone":"UT2","color":"var(--color-accent)","wattsLow":113,"wattsHigh":144,"paceFloor":134.452387168712,"paceCeil":145.7683373800698},{"zone":"UT1","color":"var(--color-positive)","wattsLow":144,"wattsHigh":164,"paceFloor":128.74826901045958,"paceCeil":134.452387168712},{"zone":"AT","color":"var(--color-caution)","wattsLow":164,"wattsHigh":185,"paceFloor":123.67979934387759,"paceCeil":128.74826901045958},{"zone":"TR","color":"var(--color-warning)","wattsLow":185,"wattsHigh":215,"paceFloor":117.6367980107184,"paceCeil":123.67979934387759},{"zone":"AN","color":"var(--color-critical)","wattsLow":215,"wattsHigh":267,"paceFloor":109.44239648589375,"paceCeil":117.6367980107184}]'
+    );
   });
 });
