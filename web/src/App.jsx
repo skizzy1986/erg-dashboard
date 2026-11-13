@@ -151,13 +151,6 @@ const strengthTrend = {
 
 // ── CUSTOM CHART TOOLTIP ──────────────────────────────────────
 
-// ── NUTRITION LOG ─────────────────────────────────────────────
-// dayType: "two-a-day" | "training" | "rest"
-// Targets from bottom-up expenditure model: BMR 1,887 (93.5kg, 187.5cm,
-// M40s) + NEAT + TEF + training. Weekly maintenance ~3,140 kcal.
-// Calibration phase: eat at maintenance ~2 weeks, then 0.3kg/week deficit.
-// Protein 2g/kg = ~187g held constant. Carbs high. Fat moderate floor.
-
 // ── LOG SESSION FORM — writes a strength session to Supabase ───
 // Proof-of-concept write path. Strength only for now (erg pulls from
 // Strava). On submit: insert into the `sessions` table, then call

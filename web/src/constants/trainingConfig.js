@@ -44,13 +44,13 @@ export const SRPE_GUIDE = [
 ];
 
 export const FTP_TEST = {
-  when: 'Overdue — take the next genuinely fresh day, not the back end of a hard block',
+  when: 'On a fresh day, not the back end of a hard block.',
   protocol:
     '30min continuous at the hardest STEADY pace you can hold the full 30 (not a sprint). CP ≈ 95% of the 30min avg power. This is a Critical Power test in rowing terms. Or 4×8min progressive steps to map HR-power.',
   prereq:
-    'Fresh, well-fuelled, chest strap, DF125, separate warmup, no caffeine/cannabis that morning.',
+    'Fresh, well-fuelled, chest strap, your usual drag factor, separate warmup.',
   unlocks:
-    "Real CP → recalibrates load model (TSS/CTL/ATL/TSB), confirms zones, anchors the projection. Later format maxes (1-min, 1k, 5k) map the full power-duration curve and W'.",
+    'A measured CP recalibrates the load model (TSS/CTL/ATL/TSB) and the pace zones.',
 };
 
 const ZONE_POWER_PCT = [

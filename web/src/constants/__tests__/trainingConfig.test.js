@@ -28,6 +28,16 @@ describe('personal calibration is removed (#422)', () => {
   it.each(REMOVED)('%s is no longer exported', (name) => {
     expect(trainingConfig[name]).toBeUndefined();
   });
+
+  // The CP test card renders verbatim on ErgView: no status claim that can
+  // contradict the anchor, no one rower's setup or habits, no promise of a
+  // view this slice deleted.
+  it('the CP test card is generic', () => {
+    const text = Object.values(FTP_TEST).join(' ');
+    expect(text).not.toMatch(
+      /overdue|\bDF ?\d|caffeine|cannabis|projection|power-duration|W'/i
+    );
+  });
 });
 
 describe('derivePaceZones', () => {
