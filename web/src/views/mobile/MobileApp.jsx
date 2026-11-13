@@ -5,6 +5,7 @@ import MobileToday from './MobileToday.jsx';
 import MobileProgress from './MobileProgress.jsx';
 import MobileTrain from './MobileTrain.jsx';
 import MobileRecovery from './MobileRecovery.jsx';
+import MobileSettings from './MobileSettings.jsx';
 import BottomTabBar, {
   TAB_BAR_HEIGHT,
 } from '../../components/mobile/BottomTabBar.jsx';
@@ -12,9 +13,47 @@ import { useHashRoute } from '../../hooks/useHashRoute.js';
 import { DEFAULT_DESTINATION } from '../../constants/destinations.js';
 import { THEME } from '../../constants/theme.js';
 import { FONT } from '../../constants/type.js';
+import {
+  readStravaCallback,
+  stravaCallbackMessage,
+  clearStravaCallbackFromUrl,
+} from '../../utils/stravaCallback.js';
+
+// Screens the shell shows that are not destinations: no tab of their own, so
+// the tab bar shows none active while one is open.
+const SCREENS = ['settings'];
 
 export default function MobileApp() {
-  const [route, navigate] = useHashRoute();
+  // The Strava OAuth callback returns to the app root with the outcome in the
+  // query string (`/?strava=connected`), not in the hash, so the hash cannot
+  // route it. Read it once, in a state initialiser rather than useMemo — React
+  // may discard a memo, and this must not be re-read after the URL is cleaned.
+  // While it is present Settings is the first screen painted, as on desktop.
+  const [stravaCallback] = useState(() => readStravaCallback(window.location));
+  const [route, navigate] = useHashRoute(
+    SCREENS,
+    stravaCallback ? 'settings' : null
+  );
+  const [stravaNotice, setStravaNotice] = useState(() =>
+    stravaCallbackMessage(stravaCallback)
+  );
+  // Strip the params so a refresh does not replay the outcome, and point the
+  // hash at the screen actually showing so a reload stays on it.
+  useEffect(() => {
+    if (!stravaCallback) return;
+    clearStravaCallbackFromUrl(window);
+    const { pathname, search } = window.location;
+    window.history.replaceState(null, '', `${pathname}${search}#/settings`);
+  }, [stravaCallback]);
+  // The notice reports one OAuth return. Once you leave Settings it is spent,
+  // so Back then the gear does not announce "Strava connected" again. Route
+  // changes also arrive from hashchange (browser back), so this is adjusted
+  // during render rather than in each handler.
+  if (stravaNotice && route !== 'settings') setStravaNotice(null);
+  // Returning from Settings by its Back control puts focus back on the gear
+  // that opened it; any other way of reaching Today does not.
+  const [focusGear, setFocusGear] = useState(false);
+  if (focusGear && route !== DEFAULT_DESTINATION) setFocusGear(false);
   // Which session Train is running, if any. Held here rather than inside Train
   // because it decides whether the tab bar exists.
   const [trainMode, setTrainMode] = useState(null);
@@ -66,6 +105,18 @@ export default function MobileApp() {
         onStartSession={() => {
           navigate('train');
         }}
+        onOpenSettings={() => navigate('settings')}
+        focusSettings={focusGear}
+      />
+    );
+  else if (route === 'settings')
+    content = (
+      <MobileSettings
+        onBack={() => {
+          setFocusGear(true);
+          navigate(DEFAULT_DESTINATION);
+        }}
+        notice={stravaNotice}
       />
     );
   else if (route === 'train')

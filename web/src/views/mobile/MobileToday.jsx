@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useVitals } from '../../hooks/useVitals.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
@@ -56,7 +56,18 @@ const Card = ({ children, accent, wash }) => (
   </div>
 );
 
-export default function MobileToday({ onStartSession }) {
+const GEAR_PATH =
+  'M18.7 9.8L20.9 10.4L20.9 13.6L18.7 14.2L18.2 15.2L19.4 17.1L17.1 19.4L15.2 18.2L14.2 18.7L13.6 20.9L10.4 20.9L9.8 18.7L8.8 18.2L6.9 19.4L4.6 17.1L5.8 15.2L5.3 14.2L3.1 13.6L3.1 10.4L5.3 9.8L5.8 8.8L4.6 6.9L6.9 4.6L8.8 5.8L9.8 5.3L10.4 3.1L13.6 3.1L14.2 5.3L15.2 5.8L17.1 4.6L19.4 6.9L18.2 8.8Z';
+
+export default function MobileToday({
+  onStartSession,
+  onOpenSettings,
+  focusSettings = false,
+}) {
+  const gearRef = useRef(null);
+  useEffect(() => {
+    if (focusSettings) gearRef.current?.focus();
+  }, [focusSettings]);
   const { data: sessions } = useSessions();
   const { readiness } = useVitals();
   const { data: tssHistory, isLoading: loadPending } = useTSSHistory();
@@ -162,6 +173,47 @@ export default function MobileToday({ onStartSession }) {
           >
             {[phase, block].filter(Boolean).join(' · ').toUpperCase()}
           </span>
+        )}
+        {onOpenSettings && (
+          <button
+            ref={gearRef}
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="Settings"
+            style={{
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              alignSelf: 'center',
+              // The 44px target overhangs the 20px glyph; negative margins keep
+              // it from growing the header or pushing the glyph off the edge.
+              // Vertically it nets to 12px, under the text line, so the header
+              // keeps its pre-gear height.
+              margin: `-${SPACE.lg}px -${SPACE.md}px -${SPACE.lg}px ${phase ? 0 : 'auto'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              background: 'transparent',
+              color: THEME.textSubtle,
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d={GEAR_PATH} />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
         )}
       </header>
 

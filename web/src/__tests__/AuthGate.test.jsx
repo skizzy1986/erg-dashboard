@@ -269,6 +269,7 @@ describe('AuthGate boot behaviour', () => {
   });
 
   it('signs out through the floating button once authed', async () => {
+    mocks.isMobile = false;
     const d = deferred();
     mocks.getSession = d.promise;
 
@@ -279,6 +280,18 @@ describe('AuthGate boot behaviour', () => {
 
     fireEvent.click(screen.getByTitle('Sign out'));
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('has no floating sign-out on mobile, where Settings carries it', async () => {
+    const d = deferred();
+    mocks.getSession = d.promise;
+
+    render(<AuthGate />);
+    await act(async () => {
+      d.resolve({ data: { session: SESSION } });
+    });
+
+    expect(screen.queryByTitle('Sign out')).toBeNull();
   });
 
   it('renders the install button only when a PWA prompt is available', async () => {
