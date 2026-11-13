@@ -60,3 +60,10 @@ export function toLogDate(value) {
 
   return localLogDate(new Date());
 }
+
+// Local wall-clock HH:MM. toLocaleTimeString would drag the runner's locale
+// (and a 12-hour clock) into the assertion.
+export function clockTime(ms) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}

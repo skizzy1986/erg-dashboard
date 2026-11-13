@@ -9,6 +9,7 @@ import {
   SQUAT_GLOB_IGNORES,
   squatChunkFileNames,
 } from './scripts/squatChunks.mjs';
+import { HEALTH_NETWORK_ONLY_ROUTE } from './scripts/healthRoute.mjs';
 
 // The ground was written down in five places — index.html twice, two PWA
 // manifests and the Android launch theme — each with a "keep in sync" comment
@@ -102,6 +103,8 @@ export default defineConfig({
             },
           },
           SQUAT_CODE_ROUTE,
+          // Before the generic rule: Workbox serves the first matching route.
+          HEALTH_NETWORK_ONLY_ROUTE,
           {
             urlPattern: /supabase\.co\/rest/,
             handler: 'NetworkFirst',
@@ -250,6 +253,27 @@ export default defineConfig({
           branches: 70,
         },
         'src/utils/dateFormat.js': { lines: 80, functions: 80, branches: 70 },
+        'src/hooks/useBpReadings.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useLabResults.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useInjuries.js': { lines: 80, functions: 80, branches: 70 },
+        'src/utils/healthRecords.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/components/HealthRecordCard.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
         'src/utils/invalidateSessionQueries.js': {
           lines: 80,
           functions: 80,
