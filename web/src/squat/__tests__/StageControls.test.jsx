@@ -128,7 +128,9 @@ describe('the share slot on desktop', () => {
   it('is a third footer column, after the guide buttons, with no rule of its own', () => {
     const { rerender } = render(<Harness wide />);
     const footer = tab('Coaching guide').parentElement;
-    expect(footer.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
+    expect(footer.style.gridTemplateColumns).toBe(
+      'repeat(2, minmax(0px, 1fr))'
+    );
     const rules = () =>
       [...rail().querySelectorAll('div')].filter(
         (d) => d.style.borderTop && !d.style.display
@@ -140,7 +142,9 @@ describe('the share slot on desktop', () => {
         share={<button data-testid="share-slot">Copy link</button>}
       />
     );
-    expect(footer.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
+    expect(footer.style.gridTemplateColumns).toBe(
+      'repeat(3, minmax(0px, 1fr))'
+    );
     expect(screen.getByTestId('share-slot').parentElement).toBe(footer);
     expect(footer.lastElementChild).toBe(screen.getByTestId('share-slot'));
     // The overlay panel is positioned against the footer.
