@@ -187,6 +187,7 @@ vi.mock('../hooks/useTSSHistory.js', () => ({
 }));
 
 import App from '../App.jsx';
+import { version } from '../../package.json';
 
 // Two sessions on consecutive days, in classic TSS units.
 const LIVE_TSS = [
@@ -228,6 +229,13 @@ describe('App', () => {
     expect(await screen.findByText('OverviewView-stub')).toBeInTheDocument();
 
     expect(screen.getByText('SPLITIQ')).toBeInTheDocument();
+
+    // The header carries package.json's version, not a hardcoded label (R34),
+    // and no longer the one-athlete phase eyebrow (R35).
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(screen.getByText('v' + version)).toBeInTheDocument();
+    expect(screen.queryByText(/STRENGTH · BASE/)).toBeNull();
+    expect(screen.queryByText(/beta/)).toBeNull();
 
     // Eleven tabs: Coach retired in #414, Program and Journal in #418.
     expect(NAV).toHaveLength(11);

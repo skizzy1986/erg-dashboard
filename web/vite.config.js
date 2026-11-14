@@ -127,7 +127,7 @@ export default defineConfig({
       manifest: {
         name: 'SplitIQ',
         short_name: 'SplitIQ',
-        description: 'Performance intelligence for serious athletes.',
+        description: 'A training app where the movements explain themselves.',
         theme_color: GROUND,
         background_color: GROUND,
         display: 'standalone',

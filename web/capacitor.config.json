@@ -1,6 +1,6 @@
 {
-  "appId": "com.ergdashboard.android",
-  "appName": "Erg Dashboard",
+  "appId": "io.github.skizzy1986.splitiq",
+  "appName": "SplitIQ",
   "webDir": "dist",
   "server": { "androidScheme": "https" }
 }

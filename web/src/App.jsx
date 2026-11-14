@@ -14,6 +14,10 @@ import { FONT } from './constants/type.js';
 import { Trans } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
+import { version } from '../package.json';
+import { versionLabel } from './utils/appVersion.js';
+
+const VERSION_LABEL = versionLabel(version);
 
 // Every tab is lazy. Only one is on screen at a time, and three of them are
 // among the heaviest files in the repo (StrengthLogger ~1,682, OverviewView
@@ -31,22 +35,6 @@ const CalendarView = lazy(() => import('./views/CalendarView.jsx'));
 const PlanView = lazy(() => import('./views/PlanView.jsx'));
 const LogView = lazy(() => import('./views/LogView.jsx'));
 const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
-
-/* ═══════════════════════════════════════════════════════════════
-   ERG COACHING DASHBOARD · v1.2 beta
-   ───────────────────────────────────────────────────────────────
-   MAP (search the ── banner to jump):
-   • DATA + HELPERS ......... lines ~4–2015 (everything before App)
-       - Logs: SESSION LOG, BLOODS, HORMONE, MOBILITY, DECISION LEDGER
-       - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION
-       - Components: WorkoutItem, LogEntry, tooltips
-   • APP COMPONENT .......... from `export default function App`
-       - State, NAV, then one block per tab:
-         overview · calendar · erg · strength · mobility
-         · recovery · log
-   KEY SYSTEMS:
-   • Validate before deploy: esbuild + the each-tab render test.
-   ═══════════════════════════════════════════════════════════════ */
 
 // ── ERROR BOUNDARY (beta hardening) ───────────────────────────
 // Isolates render failures so one bad tab doesn't white-screen the app.
@@ -252,38 +240,27 @@ export default function App() {
             width: '100%',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-              gap: 8,
-            }}
-          >
+          {VERSION_LABEL && (
             <div
               style={{
-                fontSize: 9,
-                letterSpacing: 3,
-                color: THEME.accent,
-                marginBottom: 4,
-                minWidth: 0,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'baseline',
+                gap: 8,
               }}
             >
-              <Trans comment="Header tagline, all capitals">
-                ERG + STRENGTH · BASE
-              </Trans>
+              <div
+                style={{
+                  fontSize: 8,
+                  letterSpacing: 1,
+                  color: THEME.textFaint,
+                  flexShrink: 0,
+                }}
+              >
+                {VERSION_LABEL}
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: 8,
-                letterSpacing: 1,
-                color: THEME.textFaint,
-                flexShrink: 0,
-              }}
-            >
-              v1.2 beta
-            </div>
-          </div>
+          )}
           <div
             style={{
               fontSize: 24,

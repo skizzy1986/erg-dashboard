@@ -9,7 +9,6 @@ import {
 } from 'recharts';
 import StrengthTooltip from '../components/StrengthTooltip.jsx';
 import LogEntry from '../components/LogEntry.jsx';
-import { STRENGTH_TEMPLATES, PREHAB_NOTE } from '../constants/exercises.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
 import { FONT } from '../constants/type.js';
@@ -197,106 +196,6 @@ export default function StrengthView({ strengthSessions }) {
       </div>
 
       {/* Strength session list */}
-      {/* Saved Templates */}
-      <div
-        style={{
-          background: THEME.raised,
-          border: `1px solid ${THEME.border}`,
-          borderRadius: 6,
-          padding: '14px 16px',
-          marginBottom: 12,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 9,
-            letterSpacing: 3,
-            color: THEME.accentAlt,
-            marginBottom: 4,
-          }}
-        >
-          SAVED TEMPLATES · FITBOD
-        </div>
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.textFaint,
-            marginBottom: 12,
-            lineHeight: 1.5,
-          }}
-        >
-          Fixed workouts, low variability. Stops auto-generation inserting leg
-          accessories or dropping pulls. Fitbod still suggests load progression.
-        </div>
-        {STRENGTH_TEMPLATES.map((t) => (
-          <div
-            key={t.name}
-            style={{
-              marginBottom: 12,
-              paddingBottom: 12,
-              borderBottom: `1px solid ${THEME.divider}`,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'baseline',
-                marginBottom: 6,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: t.color,
-                }}
-              >
-                {t.name}
-              </span>
-              <span style={{ fontSize: 9, color: THEME.muted }}>{t.focus}</span>
-            </div>
-            {t.exercises.map((ex, i) => (
-              <div
-                key={i}
-                style={{
-                  fontSize: 11,
-                  color: THEME.textSubtle,
-                  lineHeight: 1.7,
-                  paddingLeft: 4,
-                }}
-              >
-                · {ex}
-              </div>
-            ))}
-          </div>
-        ))}
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.textFaint,
-            lineHeight: 1.5,
-            fontStyle: 'italic',
-          }}
-        >
-          Weekly: Upper 1 + Lower 1 + Upper 2 + Lower 2. Pull:press bias
-          maintained across the week. Squat heavy on Lower 1, explosive/light on
-          Lower 2 (daily undulating).
-        </div>
-        <div
-          style={{
-            fontSize: 9,
-            color: THEME.accentAlt2,
-            lineHeight: 1.6,
-            marginTop: 8,
-            borderTop: `1px solid ${THEME.divider}`,
-            paddingTop: 8,
-          }}
-        >
-          💗 Prehab + Shoulder: {PREHAB_NOTE}
-        </div>
-      </div>
-
       <div
         style={{
           fontSize: 9,

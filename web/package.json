@@ -23,6 +23,7 @@
     "check:colours": "node scripts/check-colour-literals.mjs",
     "check:context7": "node scripts/check-context7.mjs",
     "check:no-llm": "node scripts/check-no-llm-path.mjs",
+    "check:names": "node scripts/check-names.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
     "i18n:extract": "lingui extract --clean",
     "i18n:check": "lingui check sync --clean && lingui check missing --mode catalog --locale es",
