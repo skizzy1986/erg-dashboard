@@ -253,13 +253,23 @@ still outstanding.
 with the flag live showed `web/node_modules` restamped at session start, which only
 `session-start.sh`'s `npm ci --prefix web` does — so `SessionStart` fired.
 
-Note how that was established, because the obvious test does not work. Hook *stdout* — the
-`[HOOK] Bash command about to run …` echo, the lint hook's findings — does not reliably
-reach the agent, so its absence proves nothing: a hook that ran silently and a hook that
-never ran look identical. Two sessions concluded "hooks are not firing" from that absence,
-and after the flag was set a third did the same while the hooks were in fact running. Test a
-hook by what it *changes* — `node_modules` restamped, a `PreToolUse` exit 2 blocking a tool
-call (`block-secret-commit.sh`) — never by what it prints.
+Note how that was established, because the obvious test does not work. Hook output reaches
+the agent only through specific channels ([hooks reference](https://code.claude.com/docs/en/hooks)):
+plain stdout on exit 0 reaches Claude only for `UserPromptSubmit`, `UserPromptExpansion`,
+`SessionStart` and `PostModelSwitch`, and for every other event goes to the debug log;
+stderr from a hook that exits 0 is never seen; Claude sees stderr on exit 2 (where the event
+supports it) and JSON `hookSpecificOutput.additionalContext`; and a JSON `systemMessage` is
+shown to the user. The former `[HOOK] Bash command about to run …` echo was `PreToolUse`
+exit-0 stdout, so it never reached anyone — which is why two sessions concluded "hooks are
+not firing" from its absence, and after the flag was set a third did the same while the
+hooks were in fact running. It was removed in #482.
+
+Since #482 the lint hook returns findings as `additionalContext`, so a lint finding does
+reach the agent. A clean edit is silent **by design**, though, so missing lint output still
+proves nothing on its own. And in an untrusted workspace hooks do not run at all. Test a hook
+by what it *changes* — `node_modules` restamped, a `PreToolUse` exit 2 blocking a tool call
+(`block-secret-commit.sh`) — or by deliberately provoking a finding, never by the absence of
+output.
 
 Three `claude doctor` warnings are unrelated environment plumbing and predate this work
 (observed 2026-11-05 in a container booted before any of it): config install method

@@ -60,8 +60,7 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "bash .claude/hooks/block-secret-commit.sh" },
-          { "type": "command", "command": "echo '[HOOK] Bash command about to run. If this is git reset --hard, git push --force, or rm -rf — stop and confirm with the user first.'" }
+          { "type": "command", "command": "bash .claude/hooks/block-secret-commit.sh" }
         ]
       }
     ],
