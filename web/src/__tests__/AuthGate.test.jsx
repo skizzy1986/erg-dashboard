@@ -3,6 +3,11 @@ import { StrictMode } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import AuthGate from '../AuthGate.jsx';
 import { SPLASH_MIN_MS, SPLASH_MAX_MS } from '../hooks/useSplashGate.js';
+import { THEME } from '../constants/theme.js';
+import { TYPE } from '../constants/tokens.js';
+import { FONT } from '../constants/type.js';
+import { LANG_KEY } from '../i18n/lang.js';
+import { __resetLocaleCacheForTests, bootLocale } from '../i18n/locale.js';
 
 const mocks = vi.hoisted(() => ({
   getSession: null,
@@ -80,6 +85,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  window.localStorage.removeItem(LANG_KEY);
+  __resetLocaleCacheForTests();
 });
 
 describe('AuthGate boot behaviour', () => {
@@ -145,25 +152,98 @@ describe('AuthGate boot behaviour', () => {
     expect(splashes()).toBe(0);
   });
 
-  it('never renders the splash on desktop', async () => {
+  // [stored choice, line text, line lang, head word, <html lang>, sign-in prompt]
+  const LOCALES = [
+    ['en', 'Train Smarter', 'en', 'Smarter', 'en', 'Sign in to continue'],
+    [
+      'es',
+      'Entrena con cabeza',
+      'es',
+      'cabeza',
+      'es-CO',
+      'Inicia sesión para continuar',
+    ],
+  ];
+  // Split across a lead and a head span, so match the whole line's text.
+  const loginLine = (text) =>
+    screen.getByText(
+      (_, el) => el.tagName === 'DIV' && el.textContent === text
+    );
+  // A stored Spanish choice suspends LanguageProvider on the catalog; awaiting
+  // the same boot promise inside act() settles it (dashboard.es.test's pattern).
+  const toLogin = async (locale = 'en') => {
+    window.localStorage.setItem(LANG_KEY, locale);
+    const d = deferred();
+    mocks.getSession = d.promise;
+    let utils;
+    await act(async () => {
+      utils = render(<AuthGate />);
+      if (locale === 'es') await bootLocale('es', 'dashboard');
+    });
+    await act(async () => {
+      d.reject(new Error('network'));
+    });
+    return utils;
+  };
+
+  it.each(LOCALES)(
+    'shows the brand line for locale %j between SPLITIQ and the sign-in prompt',
+    async (locale, text, lang, head, htmlLang, promptText) => {
+      const { container } = await toLogin(locale);
+
+      const line = loginLine(text);
+      expect(line).toHaveAttribute('lang', lang);
+      expect(line.querySelector('span')).toHaveTextContent(
+        new RegExp(`^${head}$`)
+      );
+      expect(document.documentElement.getAttribute('lang')).toBe(htmlLang);
+
+      const brand = screen.getByText('SPLITIQ');
+      const prompt = screen.getByText(promptText);
+      const FOLLOWING = document.DOCUMENT_POSITION_FOLLOWING;
+      expect(brand.compareDocumentPosition(line) & FOLLOWING).toBeTruthy();
+      expect(line.compareDocumentPosition(prompt) & FOLLOWING).toBeTruthy();
+
+      const marked = container.querySelectorAll('[lang]');
+      expect(marked).toHaveLength(1);
+      expect(marked[0]).toBe(line);
+    }
+  );
+
+  it("styles the login line in the wordmark's two faces", async () => {
+    await toLogin();
+    const line = loginLine('Train Smarter');
+    // Read the inline style, not the computed one: jsdom 31 resolves an
+    // undefined var(--color-*) to black, so toHaveStyle cannot see the token.
+    expect(line.style.fontSize).toBe(`${TYPE.body.size}px`);
+    expect(line.style.fontWeight).toBe('600');
+    expect(line.style.letterSpacing).toBe(`${TYPE.title.letterSpacing}px`);
+    expect(line.style.color).toBe(THEME.text);
+    const head = line.querySelector('span');
+    expect(head.style.fontFamily).toBe(FONT.mono);
+    expect(head.style.fontWeight).toBe('700');
+    expect(head.style.color).toBe(THEME.accent);
+  });
+
+  it('plays the splash on desktop and clears it at the floor, as on mobile', async () => {
     mocks.isMobile = false;
     const d = deferred();
     mocks.getSession = d.promise;
 
     render(<AuthGate />);
-    expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(splashes()).toBe(1);
+    expect(screen.queryByText(/^Loading/)).toBeNull();
+    await act(async () => {
+      d.resolve({ data: { session: null } });
+    });
+    expect(splashes()).toBe(1);
 
-    advance(SPLASH_MIN_MS);
-    expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
-    expect(vi.getTimerCount()).toBe(0);
+    advance(SPLASH_MIN_MS - 1);
+    expect(splashes()).toBe(1);
 
-    advance(SPLASH_MAX_MS);
+    advance(1);
     expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(screen.getByText(/Sign in to continue/)).toBeTruthy();
   });
 
   it('shows exactly one of the splash and the loading pane while auth is unresolved', () => {
@@ -178,8 +258,8 @@ describe('AuthGate boot behaviour', () => {
     mocks.isMobile = false;
     mocks.getSession = deferred().promise;
     render(<AuthGate />);
-    expect(splashes()).toBe(0);
-    expect(screen.getByText(/^Loading/)).toBeTruthy();
+    expect(splashes()).toBe(1);
+    expect(screen.queryByText(/^Loading/)).toBeNull();
   });
 
   it("keeps that exclusivity, and the splash's identity, across the transition to a signed-in session", async () => {
@@ -270,6 +350,7 @@ describe('AuthGate boot behaviour', () => {
 
   it('signs out through the floating button once authed', async () => {
     mocks.isMobile = false;
+    mocks.dataReady = true;
     const d = deferred();
     mocks.getSession = d.promise;
 
@@ -277,9 +358,30 @@ describe('AuthGate boot behaviour', () => {
     await act(async () => {
       d.resolve({ data: { session: SESSION } });
     });
+    advance(SPLASH_MIN_MS);
 
     fireEvent.click(screen.getByTitle('Sign out'));
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  // The splash covers the page on desktop too, so a button rendered under it
+  // would still be reachable by Tab while invisible.
+  it('holds the desktop sign-out back until the splash has cleared', async () => {
+    mocks.isMobile = false;
+    mocks.dataReady = true;
+    const d = deferred();
+    mocks.getSession = d.promise;
+
+    render(<AuthGate />);
+    await act(async () => {
+      d.resolve({ data: { session: SESSION } });
+    });
+    expect(splashes()).toBe(1);
+    expect(screen.queryByTitle('Sign out')).toBeNull();
+
+    advance(SPLASH_MIN_MS);
+    expect(splashes()).toBe(0);
+    expect(screen.getByTitle('Sign out')).toBeTruthy();
   });
 
   it('has no floating sign-out on mobile, where Settings carries it', async () => {

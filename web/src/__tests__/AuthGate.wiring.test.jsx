@@ -165,7 +165,7 @@ describe('AuthGate → useSplashGate wiring', () => {
     });
   });
 
-  it('passes enabled false on desktop', async () => {
+  it('passes enabled true on desktop too', async () => {
     mocks.isMobile = false;
     const d = deferred();
     mocks.getSession = d.promise;
@@ -176,9 +176,9 @@ describe('AuthGate → useSplashGate wiring', () => {
     });
 
     expect(mocks.splashGate.mock.calls.length).toBeGreaterThan(0);
-    expect(
-      mocks.splashGate.mock.calls.every(([a]) => a.enabled === false)
-    ).toBe(true);
+    expect(mocks.splashGate.mock.calls.every(([a]) => a.enabled === true)).toBe(
+      true
+    );
   });
 
   it('forwards dataReady from useInitialDataReady', async () => {

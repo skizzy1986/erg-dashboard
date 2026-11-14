@@ -67,6 +67,11 @@ msgstr "ID de actividades: {0}"
 msgid "Back to Today"
 msgstr "Volver a Hoy"
 
+#. Splash word cycle, one discipline, all capitals
+#: src/components/mobile/SplashScreen.jsx
+msgid "BIKE"
+msgstr "BICI"
+
 #. Mobile tab bar: readiness, sleep, heart rate
 #: src/constants/destinations.js
 msgid "Body"
@@ -145,10 +150,10 @@ msgstr "Ingresa tu correo y tu contraseña."
 msgid "Erg"
 msgstr "Ergómetro"
 
-#. Splash-screen tagline, all capitals
+#. Splash word cycle, one discipline, all capitals
 #: src/components/mobile/SplashScreen.jsx
-msgid "ERG · STRENGTH · BIKE"
-msgstr "ERGÓMETRO · FUERZA · BICI"
+msgid "ERG"
+msgstr "ERGÓMETRO"
 
 #: src/utils/stravaStatus.js
 msgid "Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically."
@@ -362,6 +367,11 @@ msgstr "Strava rechazó el intento de conexión. Intenta conectarte de nuevo."
 #: src/App.jsx
 msgid "Strength"
 msgstr "Fuerza"
+
+#. Splash word cycle, one discipline, all capitals
+#: src/components/mobile/SplashScreen.jsx
+msgid "STRENGTH"
+msgstr "FUERZA"
 
 #. Error after pressing Sync now
 #: src/components/StravaConnectPanel.jsx

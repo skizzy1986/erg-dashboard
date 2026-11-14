@@ -75,10 +75,10 @@ async function openAuthed(page, context) {
   // no splash YET and the count-0 check below would pass before it mounts —
   // the baseline then captures the splash. Let the shell's chunks land first.
   await page.waitForLoadState('networkidle');
-  // The mobile splash overlays the tab tree, and toBeVisible() ignores
-  // occlusion, so every mobile baseline would capture the splash instead.
-  // The timeout must beat the default 5000ms — that is exactly the splash
-  // ceiling, so a default wait races it.
+  // The splash overlays the tab tree, and toBeVisible() ignores
+  // occlusion, so every baseline would capture the splash instead. The
+  // explicit 10 s timeout clears the 5 s splash ceiling whatever the config's
+  // expect default is.
   await expect(page.locator('.siq-splash')).toHaveCount(0, { timeout: 10_000 });
 }
 

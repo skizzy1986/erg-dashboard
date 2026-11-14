@@ -9,7 +9,7 @@ import ErrorFallback from '../components/ErrorFallback.jsx';
 import AuthGate from '../AuthGate.jsx';
 import SplashScreen from '../components/mobile/SplashScreen.jsx';
 
-const mocks = vi.hoisted(() => ({ isMobile: false }));
+const mocks = vi.hoisted(() => ({ isMobile: false, splash: true }));
 
 vi.mock('../supabaseClient.js', () => ({
   supabase: {
@@ -28,9 +28,19 @@ vi.mock('../hooks/useIsMobile.js', () => ({
 vi.mock('../hooks/useInitialDataReady.js', () => ({
   useInitialDataReady: () => false,
 }));
+// The splash plays on every device and holds Login back for its 4 s floor;
+// the login-card test turns it off, since it checks providers, not timing.
+vi.mock('../hooks/useSplashGate.js', async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    ...real,
+    useSplashGate: (opts) => (mocks.splash ? real.useSplashGate(opts) : false),
+  };
+});
 
 beforeEach(() => {
   mocks.isMobile = false;
+  mocks.splash = true;
   window.localStorage.clear();
   window.history.replaceState(null, '', '/');
 });
@@ -53,6 +63,7 @@ describe('top-level roots render with no provider above them', () => {
   });
 
   it('RouteRoot at / reaches the login card', async () => {
+    mocks.splash = false;
     render(<RouteRoot />);
     expect(await screen.findByText('Sign in to continue')).toBeInTheDocument();
     expect(

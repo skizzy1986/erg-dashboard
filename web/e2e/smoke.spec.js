@@ -44,12 +44,22 @@ test.describe('dashboard smoke', () => {
     page.on('pageerror', (err) => consoleErrors.push(String(err)));
 
     await installAppFixtures(context);
+    await page.goto('/');
+    // The splash plays on desktop too and overlays the nav for up to its
+    // 5000ms ceiling, and toBeVisible() ignores occlusion. AuthGate is lazy, so
+    // wait for the splash to mount first (a count-0 check made before it does
+    // would pass at once), then for it to clear. The explicit 10 s clears the
+    // 5 s ceiling whatever the config's expect default is. The seeded session
+    // resolves getSession, so the splash always mounts here.
+    await expect(page.locator('.siq-splash')).toHaveCount(1);
+    await expect(page.locator('.siq-splash')).toHaveCount(0, {
+      timeout: 10_000,
+    });
   });
 
   test('app gets past the auth gate and shows the dashboard nav', async ({
     page,
   }) => {
-    await page.goto('/');
     // The login screen would show a SIGN IN button; the dashboard shows the nav.
     await expect(
       page.getByRole('button', { name: NAV_LABEL('overview'), exact: true })
@@ -59,8 +69,6 @@ test.describe('dashboard smoke', () => {
 
   for (const tab of TABS) {
     test(`tab "${tab}" mounts without error`, async ({ page }) => {
-      await page.goto('/');
-
       const navButton = page.getByRole('button', {
         name: NAV_LABEL(tab),
         exact: true,

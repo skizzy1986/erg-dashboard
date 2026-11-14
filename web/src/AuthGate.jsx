@@ -8,6 +8,8 @@ import SplashScreen from './components/mobile/SplashScreen.jsx';
 import { captureError } from './utils/sentry.js';
 import { THEME } from './constants/theme.js';
 import { FONT } from './constants/type.js';
+import { TYPE, SPACE } from './constants/tokens.js';
+import { brandLine } from './utils/brandLine.js';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
 import './i18n/dashboard.js';
@@ -39,6 +41,7 @@ function Login() {
   // The cause, not its text: rendered in whichever language is active, so a
   // switch mid-error re-reads it instead of leaving the old language behind.
   const [err, setErr] = useState(null);
+  const line = brandLine(i18n.locale);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -124,6 +127,29 @@ function Login() {
           {/* Reachable before sign-in, so the language can change without an
               account. */}
           <LanguageToggle variant="cycle" withStatus={false} />
+        </div>
+        <div
+          lang={line.lang}
+          style={{
+            fontSize: TYPE.body.size,
+            fontWeight: 600,
+            letterSpacing: TYPE.title.letterSpacing,
+            lineHeight: TYPE.title.lineHeight,
+            color: THEME.text,
+            marginBottom: SPACE.sm,
+          }}
+        >
+          {line.lead}{' '}
+          <span
+            style={{
+              fontFamily: FONT.mono,
+              fontWeight: 700,
+              letterSpacing: 0,
+              color: THEME.accent,
+            }}
+          >
+            {line.head}
+          </span>
         </div>
         {/* Its own full-width line: beside the toggle, the sentence would
             squeeze the header row on a 360px phone. */}
@@ -298,7 +324,7 @@ function Gate() {
   const isMobile = useIsMobile();
   const dataReady = useInitialDataReady();
   const showSplash = useSplashGate({
-    enabled: isMobile,
+    enabled: true,
     authResolved: session !== undefined,
     authFailed,
     dataReady,
@@ -331,12 +357,12 @@ function Gate() {
     body = (
       <>
         {/* On a phone the floating button sat over Today's settings gear, so
-            sign-out lives on the mobile Settings screen instead. */}
-        {!isMobile && <SignOutButton />}
-        {/* The shell chunk is fetched here rather than at first paint. On a
-            phone the splash is already covering this window; once it has
-            dismissed at its ceiling — or on desktop, where it never shows —
-            fall back to the same pane the unresolved branch uses, so a slow
+            sign-out lives on the mobile Settings screen instead. Held back
+            while the splash covers the page, or Tab reaches a hidden button. */}
+        {!isMobile && !showSplash && <SignOutButton />}
+        {/* The shell chunk is fetched here rather than at first paint. The
+            splash is already covering this window; once it has dismissed at
+            its ceiling, fall back to the same pane the unresolved branch uses, so a slow
             chunk reads as loading rather than as a blank screen. */}
         <Suspense fallback={showSplash ? null : <LoadingPane />}>
           {isMobile ? <MobileApp /> : <App />}

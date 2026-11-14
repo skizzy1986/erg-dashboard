@@ -44,6 +44,12 @@ vi.mock('../../hooks/useIsMobile.js', () => ({ useIsMobile: () => false }));
 vi.mock('../../hooks/useInitialDataReady.js', () => ({
   useInitialDataReady: () => false,
 }));
+// The splash now plays on desktop too and holds Login back for its 4 s floor.
+// These tests are about language, not boot timing (AuthGate.test owns that).
+vi.mock('../../hooks/useSplashGate.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  useSplashGate: () => false,
+}));
 vi.mock('../../hooks/usePWAInstall.js', () => ({
   usePWAInstall: () => ({
     canInstall: true,

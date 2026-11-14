@@ -1,9 +1,11 @@
-// Stylesheet for the mobile splash (components/mobile/SplashScreen.jsx). It is a
+// Stylesheet for the splash (components/mobile/SplashScreen.jsx). It is a
 // string builder rather than inline styles because the splash needs keyframes,
 // and a keyframe cannot be expressed as a style object. Twin of themeCss.js.
 //
 // Every colour is interpolated from the passed theme — the palette is
 // mid-migration and a literal hex would silently survive the move.
+
+import { TYPE } from '../constants/tokens.js';
 
 // Not exported: the translucent accents the design calls for have no THEME
 // token. color-mix rather than a parsed rgba() because THEME values are
@@ -26,7 +28,9 @@ ${root} .siq-splash__base,
 ${root} .siq-splash__stroke,
 ${root} .siq-splash__head,
 ${root} .siq-splash__word,
-${root} .siq-splash__sub,
+${root} .siq-splash__cycle,
+${root} .siq-splash__tagline,
+${root} .siq-splash__tagline-head,
 ${root} .siq-splash__track {
   animation: none !important;
 }
@@ -54,9 +58,13 @@ ${root} .siq-splash__word {
   opacity: 1;
   transform: none;
 }
-${root} .siq-splash__sub {
+${root} .siq-splash__cycle {
+  opacity: 0;
+}
+${root} .siq-splash__tagline,
+${root} .siq-splash__tagline-head {
   opacity: 1;
-  letter-spacing: 3px;
+  transform: none;
 }
 ${root} .siq-splash__track {
   display: none;
@@ -134,11 +142,46 @@ export function splashCss(theme) {
   letter-spacing: 0;
   color: ${theme.accent};
 }
-.siq-splash__sub {
-  font-size: 9px;
-  letter-spacing: 3px;
+.siq-splash__line {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+}
+.siq-splash__line > * {
+  grid-area: 1 / 1;
+}
+.siq-splash__cycle {
+  font-size: ${TYPE.label.size}px;
+  font-weight: ${TYPE.label.weight};
+  letter-spacing: ${TYPE.micro.letterSpacing}px;
   color: ${theme.textSubtle};
-  animation: siq-splash-sub 620ms cubic-bezier(.2, .8, .2, 1) 800ms both;
+  opacity: 0;
+  animation: siq-splash-cycle 400ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.siq-splash__cycle--1 {
+  animation-delay: 560ms;
+}
+.siq-splash__cycle--2 {
+  animation-delay: 920ms;
+}
+.siq-splash__cycle--3 {
+  animation-delay: 1280ms;
+}
+.siq-splash__tagline {
+  font-size: ${TYPE.title.size}px;
+  font-weight: 600;
+  letter-spacing: ${TYPE.title.letterSpacing}px;
+  line-height: ${TYPE.title.lineHeight};
+  color: ${theme.text};
+  animation: siq-splash-tagline 600ms cubic-bezier(.2, .8, .2, 1) 1640ms both;
+}
+.siq-splash__tagline-head {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: ${theme.accent};
+  animation: siq-splash-tagline 600ms cubic-bezier(.2, .8, .2, 1) 1780ms both;
 }
 .siq-splash__progress {
   position: absolute;
@@ -195,9 +238,14 @@ export function splashCss(theme) {
   0% { opacity: 0; transform: translateY(9px); }
   37%, 100% { opacity: 1; transform: none; }
 }
-@keyframes siq-splash-sub {
+@keyframes siq-splash-tagline {
+  0% { opacity: 0; transform: translateY(6px); }
+  48%, 100% { opacity: 1; transform: none; }
+}
+@keyframes siq-splash-cycle {
   0% { opacity: 0; letter-spacing: 6px; }
-  48%, 100% { opacity: 1; letter-spacing: 3px; }
+  25%, 75% { opacity: 1; letter-spacing: ${TYPE.micro.letterSpacing}px; }
+  100% { opacity: 0; letter-spacing: 5px; transform: translateY(-3px); }
 }
 @keyframes siq-splash-track {
   0% { transform: translateX(-100%); }

@@ -9,7 +9,7 @@ proper names stay as they are (SplitIQ, Strava). Numbers use a decimal point.
 Placeholders in braces — `{count}`, `{0}` — must stay exactly as written; their order
 may change. To correct a line, reply with its **row** id and the new Spanish.
 
-## Dashboard (src/locales, 102 strings)
+## Dashboard (src/locales, 104 strings)
 
 | Row | English | Español | Where / note |
 |---|---|---|---|
@@ -27,6 +27,7 @@ may change. To correct a line, reply with its **row** id and the new Spanish.
 | `UVT0ke` | ⚠️ This section hit a render error and was isolated to protect the rest of the dashboard. | ⚠️ Esta sección tuvo un error al mostrarse y se aisló para proteger el resto del panel. | Shown in place of a dashboard tab that crashed · src/App.jsx |
 | `OJnS4k` | Activity ids: {0} | ID de actividades: {0} | Followed by a list of Strava activity numbers · placeholder {0}: (connection?.ambiguous_activity_ids ?? []).join(', ') · src/components/StravaConnectPanel.jsx |
 | `rtDcZz` | Back to Today | Volver a Hoy | src/views/mobile/MobileSettings.jsx |
+| `V3Mep1` | BIKE | BICI | Splash word cycle, one discipline, all capitals · src/components/mobile/SplashScreen.jsx |
 | `bGQplw` | Body | Cuerpo | Mobile tab bar: readiness, sleep, heart rate · src/constants/destinations.js |
 | `AjVXBS` | Calendar | Calendario | Desktop nav tab · src/App.jsx |
 | `LgcGHa` | Checking Strava connection… | Verificando la conexión con Strava… | Loading state · src/components/StravaConnectPanel.jsx |
@@ -43,7 +44,7 @@ may change. To correct a line, reply with its **row** id and the new Spanish.
 | `2e0dGW` | EMAIL | CORREO ELECTRÓNICO | Login form field label, all capitals · src/AuthGate.jsx |
 | `Md1Bvk` | Enter email and password. | Ingresa tu correo y tu contraseña. | Login form validation error. · src/AuthGate.jsx |
 | `cFg0mZ` | Erg | Ergómetro | Desktop nav tab: rowing ergometer · src/App.jsx |
-| `P_OvMn` | ERG · STRENGTH · BIKE | ERGÓMETRO · FUERZA · BICI | Splash-screen tagline, all capitals · src/components/mobile/SplashScreen.jsx |
+| `J0GPZK` | ERG | ERGÓMETRO | Splash word cycle, one discipline, all capitals · src/components/mobile/SplashScreen.jsx |
 | `KpFRBw` | Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically. | Importando historial: {imported} importadas, {adopted} vinculadas a sesiones existentes. Sigue automáticamente. | src/utils/stravaStatus.js |
 | `nbfdhU` | Integrations | Integraciones | Settings section heading above the Strava panel · src/views/SettingsView.jsx |
 | `xOTzt5` | just now | justo ahora | src/utils/stravaStatus.js |
@@ -91,6 +92,7 @@ may change. To correct a line, reply with its **row** id and the new Spanish.
 | `jbnNuS` | Strava rejected the connection attempt. Connect again to retry. | Strava rechazó el intento de conexión. Vuelve a conectar para reintentarlo. | src/utils/stravaStatus.js |
 | `LfffJJ` | Strava rejected the connection attempt. Try connecting again. | Strava rechazó el intento de conexión. Intenta conectarte de nuevo. | src/utils/stravaCallback.js |
 | `JR0j-9` | Strength | Fuerza | Desktop nav tab · src/App.jsx |
+| `bSUnKi` | STRENGTH | FUERZA | Splash word cycle, one discipline, all capitals · src/components/mobile/SplashScreen.jsx |
 | `3PLhiH` | Sync failed. Try again. | Falló la sincronización. Inténtalo de nuevo. | Error after pressing Sync now · src/components/StravaConnectPanel.jsx |
 | `lb_UU4` | Sync now | Sincronizar ahora | Button · src/components/StravaConnectPanel.jsx |
 | `eriCGy` | SYNCING TRAINING LOG | SINCRONIZANDO REGISTRO DE ENTRENAMIENTO | Splash-screen loading caption, all capitals · src/components/mobile/SplashScreen.jsx |
