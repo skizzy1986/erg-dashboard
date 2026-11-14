@@ -8,6 +8,10 @@ const TARGET = 44;
 
 // Read by screen readers, not drawn: lets a button's name carry the language's
 // own name in its own language (WCAG 3.1.2) while the visible text stays EN/ES.
+// The whole name lives in this one span and the visible code is aria-hidden:
+// `position: absolute` makes the span block-level, and accessible-name
+// computation pads a block child with spaces, so a name split across the
+// visible text and this span read "EN , English".
 const srOnly = {
   position: 'absolute',
   width: 1,
@@ -108,9 +112,9 @@ export default function LanguageToggle({
                 color: active ? THEME.bg : THEME.muted,
               }}
             >
-              {code(l)}
-              <span lang={LANG_TAG[l]} style={srOnly}>
-                , {LANG_UI.native[l]}
+              <span aria-hidden="true">{code(l)}</span>
+              <span style={srOnly}>
+                {code(l)}, <span lang={LANG_TAG[l]}>{LANG_UI.native[l]}</span>
               </span>
             </button>
           );
