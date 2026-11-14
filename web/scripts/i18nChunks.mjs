@@ -6,13 +6,15 @@
 // cached on first use instead. The Android build keeps it (unlike squat-*), so
 // Spanish works offline there.
 
-// A dashboard catalog for a language other than the source (English). The
-// English catalog is a static import on first paint; it must never pick up
-// this name, or it would leave the precache and the dashboard would break
-// offline. /squat's catalogs live under src/squat/ and take the squat- prefix
-// instead, because that rule is checked first.
+// A dashboard catalog for a language other than the source (English): the
+// boot catalog (src/locales/es.po) or a named one beside it (since i18n Phase
+// 2a, src/locales/views/es.po). An English catalog is a static import, on first
+// paint or in a shell's chunk; it must never pick up this name, or it would
+// leave the precache and the dashboard would break offline. /squat's catalogs
+// live under src/squat/ and take the squat- prefix instead, because that rule
+// is checked first.
 const TRANSLATED_CATALOG =
-  /\/src\/locales\/(?!en\.po)[a-z]{2}(?:-[A-Za-z]{2})?\.po(?:\?.*)?$/;
+  /\/src\/locales\/(?:[a-z][a-z0-9-]*\/)?(?!en\.po)[a-z]{2}(?:-[A-Za-z]{2})?\.po(?:\?.*)?$/;
 
 export const isTranslatedCatalog = (moduleIds) =>
   Array.isArray(moduleIds) &&

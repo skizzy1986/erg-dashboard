@@ -25,9 +25,12 @@ const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const SHEET = join(WEB, '..', 'docs', 'i18n', 'REVIEW-es-CO.md');
 export const REVIEW_RECORD = join(WEB, 'src', 'locales', 'review.es-CO.json');
 
-// Dashboard first: it is what PR-1 asks the reviewer to read.
+// Dashboard first: it is what PR-1 asks the reviewer to read. Its views
+// catalog (i18n Phase 2a) is its own table, so a reviewer can see which
+// strings are new in that pass.
 export const CATALOGS = [
   { name: 'Dashboard', dir: 'src/locales' },
+  { name: 'Dashboard views', dir: 'src/locales/views' },
   { name: '/squat', dir: 'src/squat/locales' },
 ];
 

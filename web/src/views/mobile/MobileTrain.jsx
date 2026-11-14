@@ -1,4 +1,6 @@
 import React from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
 import ErgLiveView from '../ErgLiveView.jsx';
 import StrengthLogger from '../../StrengthLogger.jsx';
 import { THEME } from '../../constants/theme.js';
@@ -26,7 +28,25 @@ const ENTRIES = [
   },
 ];
 
+// What each entry says on screen; ENTRIES keeps its English for code and tests.
+export const ENTRY_MESSAGES = {
+  erg: {
+    label: msg({ message: 'Erg session', comment: 'Start a rowing session' }),
+    detail: msg`Connect the PM5 and row against a watt band`,
+  },
+  strength: {
+    label: msg({
+      message: 'Strength session',
+      comment: 'Start a strength session',
+    }),
+    detail: msg`Log sets against today’s template`,
+  },
+};
+
+export { ENTRIES };
+
 export default function MobileTrain({ mode, onMode }) {
+  const { i18n } = useLingui();
   // A live session owns the screen — no tab bar, no chrome (HANDOFF.md §4).
   if (mode === 'erg') return <ErgLiveView />;
   if (mode === 'strength') return <StrengthLogger />;
@@ -48,7 +68,7 @@ export default function MobileTrain({ mode, onMode }) {
           marginBottom: SPACE.md,
         }}
       >
-        START A SESSION
+        <Trans comment="Heading, all capitals">START A SESSION</Trans>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE.sm }}>
@@ -77,7 +97,7 @@ export default function MobileTrain({ mode, onMode }) {
                 color: THEME.text,
               }}
             >
-              {e.label}
+              {i18n._(ENTRY_MESSAGES[e.mode].label)}
             </div>
             <div
               style={{
@@ -87,7 +107,7 @@ export default function MobileTrain({ mode, onMode }) {
                 marginTop: SPACE.xs,
               }}
             >
-              {e.detail}
+              {i18n._(ENTRY_MESSAGES[e.mode].detail)}
             </div>
           </button>
         ))}

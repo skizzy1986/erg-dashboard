@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useLingui } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useVitals } from '../../hooks/useVitals.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
@@ -8,7 +8,10 @@ import {
   calcTrainingLoad,
   sessionLoad,
   tsbBand,
+  TSB_BAND_MESSAGES,
 } from '../../utils/trainingLoad.js';
+import { readinessStatusText } from '../../utils/recoveryAnalytics.js';
+import { dateLocale } from '../../utils/displayLocale.js';
 import { toISODate, toLogDate } from '../../utils/dateFormat.js';
 import {
   COMPLETED_STATUSES,
@@ -69,7 +72,7 @@ export default function MobileToday({
   useEffect(() => {
     if (focusSettings) gearRef.current?.focus();
   }, [focusSettings]);
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const { data: sessions } = useSessions();
   const { readiness } = useVitals();
   const { data: tssHistory, isLoading: loadPending } = useTSSHistory();
@@ -154,11 +157,14 @@ export default function MobileToday({
             color: THEME.textSubtle,
           }}
         >
-          {new Date(`${today}T00:00:00`).toLocaleDateString('en-GB', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-          })}
+          {new Date(`${today}T00:00:00`).toLocaleDateString(
+            dateLocale(i18n.locale, 'en-GB'),
+            {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+            }
+          )}
         </span>
         {phase && (
           <span
@@ -220,7 +226,9 @@ export default function MobileToday({
       </header>
 
       <Card wash={readiness?.score != null ? THEME.surface : undefined}>
-        <Label>READINESS</Label>
+        <Label>
+          <Trans comment="Card heading, all capitals">READINESS</Trans>
+        </Label>
         {readiness?.score == null ? (
           // computeReadiness returns null when RHR is missing. That is a real
           // state and must not render as a zero or a confident low score.
@@ -233,7 +241,7 @@ export default function MobileToday({
                 marginTop: SPACE.xs,
               }}
             >
-              No reading this morning
+              <Trans>No reading this morning</Trans>
             </div>
             <div
               style={{
@@ -242,7 +250,9 @@ export default function MobileToday({
                 marginTop: SPACE.xs,
               }}
             >
-              Readiness needs a resting heart rate. Sync vitals from Body.
+              <Trans comment="Body is the name of a tab in the app">
+                Readiness needs a resting heart rate. Sync vitals from Body.
+              </Trans>
             </div>
           </>
         ) : (
@@ -270,11 +280,13 @@ export default function MobileToday({
                   marginTop: SPACE.xs,
                 }}
               >
-                {readiness.status}
+                {readinessStatusText(i18n, readiness.status)}
               </div>
             </div>
             <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-              <Label>FORM</Label>
+              <Label>
+                <Trans comment="Training form (TSB), all capitals">FORM</Trans>
+              </Label>
               <div
                 style={{
                   fontSize: TYPE.title.size,
@@ -286,7 +298,11 @@ export default function MobileToday({
                 {latestLoad ? latestLoad.tsb.toFixed(1) : '—'}
               </div>
               <div style={{ fontSize: TYPE.caption.size, color: THEME.muted }}>
-                {band?.label ?? (loadPending ? 'Reading…' : 'No reading')}
+                {band
+                  ? i18n._(TSB_BAND_MESSAGES[band.key])
+                  : loadPending
+                    ? t`Reading…`
+                    : t`No reading`}
               </div>
             </div>
           </div>
@@ -299,16 +315,20 @@ export default function MobileToday({
               marginTop: SPACE.sm,
             }}
           >
-            Scored on the readings that arrived — some were missing.
+            <Trans>
+              Scored on the readings that arrived — some were missing.
+            </Trans>
           </div>
         )}
       </Card>
 
-      <Label style={{ margin: `${SPACE.lg}px 0 ${SPACE.sm}px` }}>TODAY</Label>
+      <Label style={{ margin: `${SPACE.lg}px 0 ${SPACE.sm}px` }}>
+        <Trans comment="Section heading, all capitals">TODAY</Trans>
+      </Label>
       {todays.length === 0 ? (
         <Card>
           <div style={{ fontSize: TYPE.body.size, color: THEME.muted }}>
-            Nothing prescribed today.
+            <Trans>Nothing prescribed today.</Trans>
           </div>
         </Card>
       ) : (
@@ -354,7 +374,7 @@ export default function MobileToday({
                   cursor: 'pointer',
                 }}
               >
-                START SESSION
+                <Trans comment="Button, all capitals">START SESSION</Trans>
               </button>
             )}
           </Card>
@@ -362,7 +382,7 @@ export default function MobileToday({
       )}
 
       <Label style={{ margin: `${SPACE.lg}px 0 ${SPACE.sm}px` }}>
-        THIS WEEK
+        <Trans comment="Section heading, all capitals">THIS WEEK</Trans>
       </Label>
       <Card>
         <div style={{ display: 'flex', gap: SPACE.xl }}>
@@ -380,7 +400,9 @@ export default function MobileToday({
                 /{week.done + week.planned}
               </span>
             </div>
-            <Label style={{ marginTop: SPACE.xs }}>SESSIONS</Label>
+            <Label style={{ marginTop: SPACE.xs }}>
+              <Trans comment="Stat label, all capitals">SESSIONS</Trans>
+            </Label>
           </div>
           <div>
             <div
@@ -393,16 +415,22 @@ export default function MobileToday({
             >
               {week.tss}
             </div>
-            <Label style={{ marginTop: SPACE.xs }}>TSS LOGGED</Label>
+            <Label style={{ marginTop: SPACE.xs }}>
+              <Trans comment="Stat label, all capitals; TSS stays as is">
+                TSS LOGGED
+              </Trans>
+            </Label>
           </div>
         </div>
       </Card>
 
-      <Label style={{ margin: `${SPACE.lg}px 0 ${SPACE.sm}px` }}>RECENT</Label>
+      <Label style={{ margin: `${SPACE.lg}px 0 ${SPACE.sm}px` }}>
+        <Trans comment="Section heading, all capitals">RECENT</Trans>
+      </Label>
       {recent.length === 0 ? (
         <Card>
           <div style={{ fontSize: TYPE.body.size, color: THEME.muted }}>
-            No sessions logged yet.
+            <Trans>No sessions logged yet.</Trans>
           </div>
         </Card>
       ) : (

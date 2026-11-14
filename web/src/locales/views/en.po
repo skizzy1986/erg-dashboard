@@ -1,0 +1,962 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-11-13 17:18+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#. Calendar legend, after the done mark
+#: src/views/CalendarView.jsx
+msgid "· planned · ⊘ cancelled"
+msgstr "· planned · ⊘ cancelled"
+
+#: src/views/CalendarView.jsx
+msgid "{cancelledCount, plural, one {⊘ {cancelledCount} CANCELLED} other {⊘ {cancelledCount} CANCELLED}}"
+msgstr "{cancelledCount, plural, one {⊘ {cancelledCount} CANCELLED} other {⊘ {cancelledCount} CANCELLED}}"
+
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "{count, plural, one {{count} logged} other {{count} logged}}"
+msgstr "{count, plural, one {{count} logged} other {{count} logged}}"
+
+#. Day badge, all capitals: sessions done that day
+#: src/views/CalendarView.jsx
+msgid "{doneCount, plural, one {✓ DONE} other {✓ DONE ×{doneCount}}}"
+msgstr "{doneCount, plural, one {✓ DONE} other {✓ DONE ×{doneCount}}}"
+
+#: src/components/LogSessionForm.jsx
+msgid "＋ add exercise"
+msgstr "＋ add exercise"
+
+#. Button, all capitals
+#: src/components/LogSessionForm.jsx
+msgid "＋ LOG A STRENGTH SESSION"
+msgstr "＋ LOG A STRENGTH SESSION"
+
+#. Marks today in the calendar, all capitals
+#: src/components/WorkoutItem.jsx
+msgid "● TODAY"
+msgstr "● TODAY"
+
+#: src/views/OverviewView.jsx
+msgid "⚠️ Fatigued — recent load above fitness"
+msgstr "⚠️ Fatigued — recent load above fitness"
+
+#: src/views/OverviewView.jsx
+msgid "⚡ Neutral — recent load and fitness balanced"
+msgstr "⚡ Neutral — recent load and fitness balanced"
+
+#: src/views/OverviewView.jsx
+msgid "✅ Fresh — form positive; recent load below fitness"
+msgstr "✅ Fresh — form positive; recent load below fitness"
+
+#. Calendar legend
+#: src/views/CalendarView.jsx
+msgid "✓ done"
+msgstr "✓ done"
+
+#. Badge, all capitals
+#: src/components/LogEntry.jsx
+msgid "✓ DONE"
+msgstr "✓ DONE"
+
+#. All capitals
+#: src/components/WorkoutItem.jsx
+msgid "🍴 MEAL SIZE"
+msgstr "🍴 MEAL SIZE"
+
+#. What to eat around the session, all capitals
+#: src/components/WorkoutItem.jsx
+msgid "🍽 FUEL:"
+msgstr "🍽 FUEL:"
+
+#: src/views/OverviewView.jsx
+msgid "🔴 High fatigue — recent load well above fitness"
+msgstr "🔴 High fatigue — recent load well above fitness"
+
+#. Chart title, all capitals
+#: src/views/mobile/MobileAnalytics.jsx
+msgid "30-DAY LOAD TREND"
+msgstr "30-DAY LOAD TREND"
+
+#. Date field placeholder. The app stores month/day/year, so in Spanish write the format (mm/dd/aa) rather than a sample date a reader would take as day/month
+#: src/components/LogSessionForm.jsx
+msgid "6/19/26"
+msgstr "6/19/26"
+
+#. Chart title, all capitals; TSS stays as is
+#: src/views/mobile/MobileAnalytics.jsx
+msgid "8-WEEK TSS HISTORY"
+msgstr "8-WEEK TSS HISTORY"
+
+#: src/components/LogSessionForm.jsx
+msgid "Add a session label (e.g. Lower 2)."
+msgstr "Add a session label (e.g. Lower 2)."
+
+#: src/components/LogSessionForm.jsx
+msgid "Add at least one exercise."
+msgstr "Add at least one exercise."
+
+#. Session filter chip
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "All"
+msgstr "All"
+
+#. Average heart rate, all capitals
+#: src/components/LogEntry.jsx
+msgid "AVG HR"
+msgstr "AVG HR"
+
+#. Average power, all capitals
+#: src/components/LogEntry.jsx
+msgid "AVG WATTS"
+msgstr "AVG WATTS"
+
+#. After "vs": compared with the baseline
+#. Chart reference line label
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/RecoveryView.jsx
+msgid "baseline"
+msgstr "baseline"
+
+#: src/views/RecoveryView.jsx
+msgid "Baselines are your own rolling 28-day trimmed mean."
+msgstr "Baselines are your own rolling 28-day trimmed mean."
+
+#: src/views/mobile/MobileRecovery.jsx
+msgid "Below 7h target"
+msgstr "Below 7h target"
+
+#. Card title, all capitals
+#: src/views/RecoveryView.jsx
+msgid "BLOOD PRESSURE"
+msgstr "BLOOD PRESSURE"
+
+#. Card title, all capitals: blood test, cholesterol panel
+#: src/views/RecoveryView.jsx
+msgid "BLOODS · LIPID PANEL"
+msgstr "BLOODS · LIPID PANEL"
+
+#. Chart title, all capitals; kg stays as is
+#: src/views/mobile/MobileRecovery.jsx
+msgid "BODYWEIGHT — 14 DAYS (kg)"
+msgstr "BODYWEIGHT — 14 DAYS (kg)"
+
+#. Badge, all capitals
+#: src/components/LogEntry.jsx
+msgid "CANCELLED"
+msgstr "CANCELLED"
+
+#: src/components/LogEntry.jsx
+msgid "Cancelled — this session was not completed."
+msgstr "Cancelled — this session was not completed."
+
+#. Readiness status, all capitals
+#: src/utils/recoveryAnalytics.js
+msgid "CAUTION"
+msgstr "CAUTION"
+
+#. Blood pressure reading taken under proper resting conditions
+#: src/views/RecoveryView.jsx
+msgid "clean"
+msgstr "clean"
+
+#. When the blood sample was taken
+#: src/views/RecoveryView.jsx
+msgid "Collected {collected}"
+msgstr "Collected {collected}"
+
+#. {tsbSigned} is the signed form value, e.g. +4.2
+#: src/views/RecoveryView.jsx
+msgid "Composite of RHR vs baseline, HRV vs baseline, sleep, and training load (TSB {tsbSigned}). Heuristic, not validated — cross-check against sRPE and how you actually feel."
+msgstr "Composite of RHR vs baseline, HRV vs baseline, sleep, and training load (TSB {tsbSigned}). Heuristic, not validated — cross-check against sRPE and how you actually feel."
+
+#: src/views/RecoveryView.jsx
+msgid "Composite of RHR vs baseline, HRV vs baseline, sleep, and training load (TSB unavailable — excluded from this score). Heuristic, not validated — cross-check against sRPE and how you actually feel."
+msgstr "Composite of RHR vs baseline, HRV vs baseline, sleep, and training load (TSB unavailable — excluded from this score). Heuristic, not validated — cross-check against sRPE and how you actually feel."
+
+#. Google Health is a brand name: keep it
+#: src/views/mobile/MobileRecovery.jsx
+msgid "Connect Google Health to populate this view"
+msgstr "Connect Google Health to populate this view"
+
+#: src/views/mobile/MobileTrain.jsx
+msgid "Connect the PM5 and row against a watt band"
+msgstr "Connect the PM5 and row against a watt band"
+
+#. sRPE scale, effort 1-2: the talk test
+#: src/constants/srpeGuideMessages.js
+msgid "Could do all day. Full conversation, nose-breathing."
+msgstr "Could do all day. Full conversation, nose-breathing."
+
+#. {what} is the card's title in lower case, e.g. blood pressure
+#: src/components/HealthRecordCard.jsx
+msgid "Couldn't load {what}."
+msgstr "Couldn't load {what}."
+
+#: src/views/CalendarView.jsx
+msgid "Couldn't refresh sessions — showing what loaded earlier."
+msgstr "Couldn't refresh sessions — showing what loaded earlier."
+
+#: src/components/HealthRecordCard.jsx
+msgid "Couldn't refresh, showing earlier data."
+msgstr "Couldn't refresh, showing earlier data."
+
+#: src/views/OverviewView.jsx
+msgid "CP unavailable"
+msgstr "CP unavailable"
+
+#: src/views/OverviewView.jsx
+msgid "CTL builds over 42 days — values will be underestimated until ~6 weeks of data."
+msgstr "CTL builds over 42 days — values will be underestimated until ~6 weeks of data."
+
+#. Field label, all capitals. The date is stored month/day/year; in Spanish say so, e.g. FECHA (MES/DÍA/AÑO)
+#: src/components/LogSessionForm.jsx
+msgctxt "log-form-date"
+msgid "DATE"
+msgstr "DATE"
+
+#. Followed by the names of the guideline sources
+#: src/views/RecoveryView.jsx
+msgid "Decision limits:"
+msgstr "Decision limits:"
+
+#. Followed by a number: the population default baseline
+#: src/views/RecoveryView.jsx
+msgid "default"
+msgstr "default"
+
+#. Metric, all capitals
+#: src/components/LogEntry.jsx
+msgid "DISTANCE"
+msgstr "DISTANCE"
+
+#. Field label, all capitals
+#. Metric, all capitals
+#: src/components/LogEntry.jsx
+#: src/components/LogSessionForm.jsx
+msgid "DURATION"
+msgstr "DURATION"
+
+#: src/components/LogSessionForm.jsx
+msgid "easy · talk in sentences (UT2)"
+msgstr "easy · talk in sentences (UT2)"
+
+#. sRPE scale, effort 3-4
+#: src/constants/srpeGuideMessages.js
+msgid "Easy (UT2)"
+msgstr "Easy (UT2)"
+
+#. Session filter chip
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "Erg"
+msgstr "Erg"
+
+#: src/views/OverviewView.jsx
+msgid "erg + strength"
+msgstr "erg + strength"
+
+#. Stat tile, all capitals
+#: src/views/OverviewView.jsx
+msgid "ERG DISTANCE"
+msgstr "ERG DISTANCE"
+
+#. Start a rowing session
+#: src/views/mobile/MobileTrain.jsx
+msgid "Erg session"
+msgstr "Erg session"
+
+#: src/components/LogEntry.jsx
+msgid "Exercise"
+msgstr "Exercise"
+
+#: src/components/LogSessionForm.jsx
+msgid "Exercise name"
+msgstr "Exercise name"
+
+#. Field label, all capitals
+#: src/components/LogSessionForm.jsx
+msgid "EXERCISES"
+msgstr "EXERCISES"
+
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "Failed to load sessions"
+msgstr "Failed to load sessions"
+
+#. Subtitle of ATL
+#: src/views/OverviewView.jsx
+msgid "Fatigue"
+msgstr "Fatigue"
+
+#. All capitals; ATL stays as is
+#: src/views/mobile/MobileAnalytics.jsx
+msgid "FATIGUE / ATL"
+msgstr "FATIGUE / ATL"
+
+#. Readiness status, all capitals
+#: src/utils/recoveryAnalytics.js
+msgid "FATIGUED"
+msgstr "FATIGUED"
+
+#. Training form (TSB) band
+#: src/utils/trainingLoad.js
+msgid "Fatigued — recent load above fitness"
+msgstr "Fatigued — recent load above fitness"
+
+#: src/views/RecoveryView.jsx
+msgid "Fewer than 14 days of vitals, so population defaults are standing in for your baselines — treat the score as directional."
+msgstr "Fewer than 14 days of vitals, so population defaults are standing in for your baselines — treat the score as directional."
+
+#. Subtitle of CTL
+#: src/views/OverviewView.jsx
+msgid "Fitness"
+msgstr "Fitness"
+
+#. All capitals; CTL stays as is
+#: src/views/mobile/MobileAnalytics.jsx
+msgid "FITNESS / CTL"
+msgstr "FITNESS / CTL"
+
+#. Subtitle of TSB
+#: src/views/OverviewView.jsx
+msgid "Form"
+msgstr "Form"
+
+#. Training form (TSB), all capitals
+#: src/views/mobile/MobileToday.jsx
+msgid "FORM"
+msgstr "FORM"
+
+#. All capitals; TSB stays as is
+#. All capitals; TSB stays as is
+#: src/views/mobile/MobileAnalytics.jsx
+#: src/views/mobile/MobileRecovery.jsx
+msgid "FORM / TSB"
+msgstr "FORM / TSB"
+
+#. Training form (TSB) band
+#: src/utils/trainingLoad.js
+msgid "Fresh — good form"
+msgstr "Fresh — good form"
+
+#. sRPE scale, effort 3-4: the talk test
+#: src/constants/srpeGuideMessages.js
+msgid "Full conversation = 3. Comfortable, sustainable for hours."
+msgstr "Full conversation = 3. Comfortable, sustainable for hours."
+
+#: src/components/LogSessionForm.jsx
+msgid "hard · few words (threshold)"
+msgstr "hard · few words (threshold)"
+
+#. sRPE scale, effort 7-8
+#: src/constants/srpeGuideMessages.js
+msgid "Hard (threshold)"
+msgstr "Hard (threshold)"
+
+#. Blood lipid marker; decision limit for women
+#: src/utils/healthRecords.js
+msgid "HDL Cholesterol (female)"
+msgstr "HDL Cholesterol (female)"
+
+#. Blood lipid marker; decision limit for men
+#: src/utils/healthRecords.js
+msgid "HDL Cholesterol (male)"
+msgstr "HDL Cholesterol (male)"
+
+#. Training form (TSB) band
+#: src/utils/trainingLoad.js
+msgid "High fatigue — recent load well above fitness"
+msgstr "High fatigue — recent load well above fitness"
+
+#. Progress sub-tab: past sessions
+#: src/views/mobile/MobileProgress.jsx
+msgid "History"
+msgstr "History"
+
+#. Card title, all capitals
+#: src/views/RecoveryView.jsx
+msgid "HORMONE PANEL"
+msgstr "HORMONE PANEL"
+
+#. Chart title, all capitals; HRV stays as is
+#: src/views/mobile/MobileRecovery.jsx
+msgid "HRV TREND — 14 DAYS"
+msgstr "HRV TREND — 14 DAYS"
+
+#. Card title, all capitals
+#: src/views/RecoveryView.jsx
+msgid "INJURY WATCH"
+msgstr "INJURY WATCH"
+
+#. Calendar legend: the window shown, all capitals
+#: src/views/CalendarView.jsx
+msgid "LAST 3 DAYS · TODAY · NEXT 13 ·"
+msgstr "LAST 3 DAYS · TODAY · NEXT 13 ·"
+
+#. Stat tile, all capitals
+#: src/views/OverviewView.jsx
+msgid "LATEST WATTS"
+msgstr "LATEST WATTS"
+
+#. Blood lipid marker
+#: src/utils/healthRecords.js
+msgid "LDL Cholesterol"
+msgstr "LDL Cholesterol"
+
+#. Lipid decision limit, e.g. limit 3.0 mmol/L
+#: src/views/RecoveryView.jsx
+msgid "limit {target} {unit}"
+msgstr "limit {target} {unit}"
+
+#. Progress sub-tab: training load
+#: src/views/mobile/MobileProgress.jsx
+msgid "Load"
+msgstr "Load"
+
+#: src/views/CalendarView.jsx
+msgid "Loading sessions…"
+msgstr "Loading sessions…"
+
+#: src/views/RecoveryView.jsx
+msgid "Loading vitals…"
+msgstr "Loading vitals…"
+
+#: src/components/HealthRecordCard.jsx
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#: src/views/mobile/MobileTrain.jsx
+msgid "Log sets against today’s template"
+msgstr "Log sets against today’s template"
+
+#. Form title, all capitals
+#: src/components/LogSessionForm.jsx
+msgid "LOG STRENGTH SESSION"
+msgstr "LOG STRENGTH SESSION"
+
+#: src/views/OverviewView.jsx
+msgid "logged total"
+msgstr "logged total"
+
+#. Example session name: the second lower-body session
+#: src/components/LogSessionForm.jsx
+msgid "Lower 2"
+msgstr "Lower 2"
+
+#: src/views/RecoveryView.jsx
+msgid "Lower is better. A rising trend over several days = accumulating fatigue. HRV trend builds as more nights are logged."
+msgstr "Lower is better. A rising trend over several days = accumulating fatigue. HRV trend builds as more nights are logged."
+
+#. sRPE scale, effort 9-10
+#: src/constants/srpeGuideMessages.js
+msgid "Max"
+msgstr "Max"
+
+#: src/components/LogSessionForm.jsx
+msgid "max · can't talk"
+msgstr "max · can't talk"
+
+#: src/components/LogSessionForm.jsx
+msgid "moderate · short sentences (UT1)"
+msgstr "moderate · short sentences (UT1)"
+
+#: src/views/RecoveryView.jsx
+msgid "needs overnight wear"
+msgstr "needs overnight wear"
+
+#. Training form (TSB) band
+#: src/utils/trainingLoad.js
+msgid "Neutral — balanced"
+msgstr "Neutral — balanced"
+
+#: src/views/RecoveryView.jsx
+msgid "No blood pressure readings yet."
+msgstr "No blood pressure readings yet."
+
+#. Readiness status when there is no resting heart rate, all capitals
+#: src/utils/recoveryAnalytics.js
+msgid "NO DATA"
+msgstr "NO DATA"
+
+#: src/views/RecoveryView.jsx
+msgid "No hormone results yet."
+msgstr "No hormone results yet."
+
+#: src/views/RecoveryView.jsx
+msgid "No injuries logged yet."
+msgstr "No injuries logged yet."
+
+#: src/views/RecoveryView.jsx
+msgid "No lipid results yet."
+msgstr "No lipid results yet."
+
+#: src/components/LogEntry.jsx
+msgid "No metrics logged for this session."
+msgstr "No metrics logged for this session."
+
+#: src/views/mobile/MobileAnalytics.jsx
+#: src/views/mobile/MobileToday.jsx
+msgid "No reading"
+msgstr "No reading"
+
+#: src/views/mobile/MobileToday.jsx
+msgid "No reading this morning"
+msgstr "No reading this morning"
+
+#: src/views/RecoveryView.jsx
+msgid "No RHR reading — nothing to score"
+msgstr "No RHR reading — nothing to score"
+
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "No sessions found"
+msgstr "No sessions found"
+
+#: src/views/CalendarView.jsx
+msgid "No sessions in this window."
+msgstr "No sessions in this window."
+
+#: src/views/mobile/MobileToday.jsx
+msgid "No sessions logged yet."
+msgstr "No sessions logged yet."
+
+#: src/views/OverviewView.jsx
+msgid "No training-load reading — form status unknown."
+msgstr "No training-load reading — form status unknown."
+
+#: src/views/PlanView.jsx
+msgid "No upcoming planned sessions."
+msgstr "No upcoming planned sessions."
+
+#: src/views/mobile/MobileAnalytics.jsx
+msgid "No upcoming sessions"
+msgstr "No upcoming sessions"
+
+#: src/views/mobile/MobileRecovery.jsx
+msgid "No vitals recorded yet"
+msgstr "No vitals recorded yet"
+
+#: src/views/mobile/MobileToday.jsx
+msgid "Nothing prescribed today."
+msgstr "Nothing prescribed today."
+
+#: src/components/HealthRecordCard.jsx
+msgid "Offline: no saved data yet."
+msgstr "Offline: no saved data yet."
+
+#. Strava is a brand; RE is relative effort; HR is heart rate
+#: src/views/LogView.jsx
+msgid "Over-rating easy work is the common error — anchor to the talk test. TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output) cross-checked every session. All agree = confidence; diverge = early fatigue/stress signal."
+msgstr "Over-rating easy work is the common error — anchor to the talk test. TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output) cross-checked every session. All agree = confidence; diverge = early fatigue/stress signal."
+
+#. Badge, all capitals
+#. Day badge, all capitals
+#: src/components/LogEntry.jsx
+#: src/views/CalendarView.jsx
+msgid "PLANNED"
+msgstr "PLANNED"
+
+#. Meal after the session
+#: src/components/WorkoutItem.jsx
+msgid "Post:"
+msgstr "Post:"
+
+#: src/views/OverviewView.jsx
+msgid "Power-derived load is measured against rowing CP {cp}W and bike FTP {ftpW}W; revalidate with a test to sharpen it."
+msgstr "Power-derived load is measured against rowing CP {cp}W and bike FTP {ftpW}W; revalidate with a test to sharpen it."
+
+#: src/views/OverviewView.jsx
+msgid "Power-derived load is unavailable while the CP anchor cannot be read."
+msgstr "Power-derived load is unavailable while the CP anchor cannot be read."
+
+#. Meal before the session
+#: src/components/WorkoutItem.jsx
+msgid "Pre:"
+msgstr "Pre:"
+
+#: src/components/LogEntry.jsx
+msgid "Prescription — targets below."
+msgstr "Prescription — targets below."
+
+#: src/views/RecoveryView.jsx
+msgid "Prioritise recovery — reduce or rest"
+msgstr "Prioritise recovery — reduce or rest"
+
+#: src/views/mobile/MobileRecovery.jsx
+msgid "Prioritise recovery today"
+msgstr "Prioritise recovery today"
+
+#: src/views/mobile/MobileProgress.jsx
+msgid "Progress"
+msgstr "Progress"
+
+#: src/views/OverviewView.jsx
+msgid "Readiness"
+msgstr "Readiness"
+
+#. All capitals
+#. Card heading, all capitals
+#. Card heading, all capitals
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/mobile/MobileToday.jsx
+#: src/views/OverviewView.jsx
+msgid "READINESS"
+msgstr "READINESS"
+
+#. Chart title, all capitals
+#: src/views/mobile/MobileRecovery.jsx
+msgid "READINESS — 7 DAYS"
+msgstr "READINESS — 7 DAYS"
+
+#. Card heading, all capitals, then the date
+#: src/views/RecoveryView.jsx
+msgid "READINESS · {readingDate}"
+msgstr "READINESS · {readingDate}"
+
+#. Body is the name of a tab in the app
+#: src/views/mobile/MobileToday.jsx
+msgid "Readiness needs a resting heart rate. Sync vitals from Body."
+msgstr "Readiness needs a resting heart rate. Sync vitals from Body."
+
+#: src/views/mobile/MobileToday.jsx
+msgid "Reading…"
+msgstr "Reading…"
+
+#. Readiness status, all capitals
+#: src/utils/recoveryAnalytics.js
+msgid "READY"
+msgstr "READY"
+
+#. Section heading, all capitals
+#: src/views/mobile/MobileToday.jsx
+msgid "RECENT"
+msgstr "RECENT"
+
+#. Section heading, all capitals
+#. Section heading, all capitals
+#: src/views/mobile/MobileAnalytics.jsx
+#: src/views/OverviewView.jsx
+msgid "RECENT SESSIONS"
+msgstr "RECENT SESSIONS"
+
+#. Training zone name
+#: src/constants/srpeGuideMessages.js
+msgid "Recovery"
+msgstr "Recovery"
+
+#. Screen heading, all capitals
+#: src/views/mobile/MobileRecovery.jsx
+msgid "RECOVERY"
+msgstr "RECOVERY"
+
+#. Short for "reference range" before a lab range, e.g. "ref 0.5–1.0"
+#: src/utils/healthRecords.js
+msgid "ref"
+msgstr "ref"
+
+#. Injury resolved date
+#: src/views/RecoveryView.jsx
+msgid "resolved {date}"
+msgstr "resolved {date}"
+
+#. All capitals
+#. All capitals
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/RecoveryView.jsx
+msgid "RESTING HR"
+msgstr "RESTING HR"
+
+#. Chart title, all capitals
+#: src/views/RecoveryView.jsx
+msgid "RESTING HR TREND"
+msgstr "RESTING HR TREND"
+
+#. Chart title, all capitals
+#: src/views/mobile/MobileRecovery.jsx
+msgid "RESTING HR TREND — 14 DAYS"
+msgstr "RESTING HR TREND — 14 DAYS"
+
+#: src/views/OverviewView.jsx
+msgid "Rowing CP {cp}W · bike FTP {ftpW}W"
+msgstr "Rowing CP {cp}W · bike FTP {ftpW}W"
+
+#. {detail} is the server error message, shown as it came
+#: src/components/LogSessionForm.jsx
+msgid "Save failed: {detail}"
+msgstr "Save failed: {detail}"
+
+#: src/components/LogSessionForm.jsx
+msgid "Saved! Session added to your log."
+msgstr "Saved! Session added to your log."
+
+#. Button, busy, all capitals
+#: src/components/LogSessionForm.jsx
+msgid "SAVING…"
+msgstr "SAVING…"
+
+#: src/views/mobile/MobileToday.jsx
+msgid "Scored on the readings that arrived — some were missing."
+msgstr "Scored on the readings that arrived — some were missing."
+
+#: src/components/LogEntry.jsx
+msgid "Session · {duration}"
+msgstr "Session · {duration}"
+
+#. Field label, all capitals
+#: src/components/LogSessionForm.jsx
+msgid "SESSION LABEL"
+msgstr "SESSION LABEL"
+
+#. Banner lead-in, all capitals
+#: src/views/LogView.jsx
+msgid "SESSION LOG:"
+msgstr "SESSION LOG:"
+
+#: src/components/LogEntry.jsx
+msgid "Session logged."
+msgstr "Session logged."
+
+#. Screen heading, all capitals
+#. Stat label, all capitals
+#: src/views/mobile/MobileSessionLog.jsx
+#: src/views/mobile/MobileToday.jsx
+msgid "SESSIONS"
+msgstr "SESSIONS"
+
+#: src/views/CalendarView.jsx
+msgid "Sessions could not be loaded."
+msgstr "Sessions could not be loaded."
+
+#. Stat tile, all capitals
+#: src/views/OverviewView.jsx
+msgid "SESSIONS LOGGED"
+msgstr "SESSIONS LOGGED"
+
+#: src/views/mobile/MobileToday.jsx
+msgid "Settings"
+msgstr "Settings"
+
+#. Concept2 and Fitbod are brand names: keep them
+#: src/views/LogView.jsx
+msgid "Share Concept2 links or Fitbod screenshots to add sessions. sRPE captured every session."
+msgstr "Share Concept2 links or Fitbod screenshots to add sessions. sRPE captured every session."
+
+#. sRPE scale, effort 7-8: the talk test
+#: src/constants/srpeGuideMessages.js
+msgid "Short phrases only. Genuinely taxing. Threshold/AT."
+msgstr "Short phrases only. Genuinely taxing. Threshold/AT."
+
+#. Injury onset date
+#: src/views/RecoveryView.jsx
+msgid "since {date}"
+msgstr "since {date}"
+
+#. All capitals
+#. All capitals
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/RecoveryView.jsx
+msgid "SLEEP"
+msgstr "SLEEP"
+
+#. Chart title, all capitals
+#: src/views/mobile/MobileRecovery.jsx
+msgid "SLEEP — 14 DAYS"
+msgstr "SLEEP — 14 DAYS"
+
+#. All capitals
+#. All capitals
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/RecoveryView.jsx
+msgid "SLEEP SCORE"
+msgstr "SLEEP SCORE"
+
+#. Training zone name
+#: src/constants/srpeGuideMessages.js
+msgid "Sprint"
+msgstr "Sprint"
+
+#. sRPE stays as is
+#: src/components/LogSessionForm.jsx
+msgid "sRPE — talk-test anchored"
+msgstr "sRPE — talk-test anchored"
+
+#. sRPE stays as is; the rest is in capitals except the parenthesis
+#: src/views/LogView.jsx
+msgid "sRPE SCALE · TALK-TEST ANCHORED (asked every session)"
+msgstr "sRPE SCALE · TALK-TEST ANCHORED (asked every session)"
+
+#. Heading, all capitals
+#: src/views/mobile/MobileTrain.jsx
+msgid "START A SESSION"
+msgstr "START A SESSION"
+
+#. Button, all capitals
+#: src/views/mobile/MobileToday.jsx
+msgid "START SESSION"
+msgstr "START SESSION"
+
+#. sRPE scale, effort 5-6
+#: src/constants/srpeGuideMessages.js
+msgid "Steady (UT1)"
+msgstr "Steady (UT1)"
+
+#. Progress sub-tab
+#. Session filter chip
+#: src/views/mobile/MobileProgress.jsx
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "Strength"
+msgstr "Strength"
+
+#. Badge, all capitals
+#: src/views/mobile/MobileSessionLog.jsx
+msgid "STRENGTH"
+msgstr "STRENGTH"
+
+#. Start a strength session
+#: src/views/mobile/MobileTrain.jsx
+msgid "Strength session"
+msgstr "Strength session"
+
+#. Button, all capitals
+#: src/components/LogSessionForm.jsx
+msgid "SUBMIT SESSION"
+msgstr "SUBMIT SESSION"
+
+#. sRPE scale, effort 5-6: the talk test
+#: src/constants/srpeGuideMessages.js
+msgid "Talking in sentences but aware of breathing. Working but controlled."
+msgstr "Talking in sentences but aware of breathing. Working but controlled."
+
+#: src/views/RecoveryView.jsx
+msgid "target 7h+"
+msgstr "target 7h+"
+
+#: src/views/mobile/MobileRecovery.jsx
+msgid "Target met"
+msgstr "Target met"
+
+#. Banner lead-in, all capitals
+#: src/views/PlanView.jsx
+msgid "THE PLAN."
+msgstr "THE PLAN."
+
+#. Section heading, all capitals
+#: src/views/mobile/MobileToday.jsx
+msgid "THIS WEEK"
+msgstr "THIS WEEK"
+
+#. Section heading, all capitals
+#: src/views/mobile/MobileToday.jsx
+msgid "TODAY"
+msgstr "TODAY"
+
+#. Column: heaviest weight lifted, abbreviated
+#: src/components/LogEntry.jsx
+msgid "Top Wt"
+msgstr "Top Wt"
+
+#. Heaviest weight lifted, with an example
+#: src/components/LogSessionForm.jsx
+msgid "Top wt (70kg)"
+msgstr "Top wt (70kg)"
+
+#. Blood lipid marker
+#: src/utils/healthRecords.js
+msgid "Total Cholesterol"
+msgstr "Total Cholesterol"
+
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/RecoveryView.jsx
+msgid "Train as planned"
+msgstr "Train as planned"
+
+#: src/views/RecoveryView.jsx
+msgid "Train but monitor — consider easing intensity"
+msgstr "Train but monitor — consider easing intensity"
+
+#: src/views/mobile/MobileRecovery.jsx
+msgid "Train but monitor closely"
+msgstr "Train but monitor closely"
+
+#. Card heading, all capitals
+#: src/views/OverviewView.jsx
+msgid "TRAINING LOAD"
+msgstr "TRAINING LOAD"
+
+#. All capitals
+#. All capitals
+#: src/views/mobile/MobileAnalytics.jsx
+#: src/views/OverviewView.jsx
+msgid "TRAINING LOAD UNAVAILABLE"
+msgstr "TRAINING LOAD UNAVAILABLE"
+
+#: src/views/OverviewView.jsx
+msgid "Training phase"
+msgstr "Training phase"
+
+#. Blood lipid marker
+#: src/utils/healthRecords.js
+msgid "Triglycerides"
+msgstr "Triglycerides"
+
+#. Stat label, all capitals; TSS stays as is
+#: src/views/mobile/MobileToday.jsx
+msgid "TSS LOGGED"
+msgstr "TSS LOGGED"
+
+#. Section heading, all capitals
+#: src/views/mobile/MobileAnalytics.jsx
+msgid "UPCOMING"
+msgstr "UPCOMING"
+
+#: src/views/PlanView.jsx
+msgid "Upcoming prescriptions from Coach (today forward). A dashed border marks a planned session; tap any card for the targets. Cards mark ✓ done once you log the matching session."
+msgstr "Upcoming prescriptions from Coach (today forward). A dashed border marks a planned session; tap any card for the targets. Cards mark ✓ done once you log the matching session."
+
+#. sRPE scale, effort 1-2
+#: src/constants/srpeGuideMessages.js
+msgid "Very easy"
+msgstr "Very easy"
+
+#: src/components/LogSessionForm.jsx
+msgid "very easy · full conversation"
+msgstr "very easy · full conversation"
+
+#. All capitals
+#: src/views/RecoveryView.jsx
+msgid "VITALS UNAVAILABLE"
+msgstr "VITALS UNAVAILABLE"
+
+#. Column: total volume lifted, abbreviated
+#: src/components/LogEntry.jsx
+msgid "Vol"
+msgstr "Vol"
+
+#. Total volume lifted, with an example
+#: src/components/LogSessionForm.jsx
+msgid "Vol (2260kg)"
+msgstr "Vol (2260kg)"
+
+#. Compared with, e.g. vs your avg
+#. Compared with, e.g. vs your avg
+#: src/views/mobile/MobileRecovery.jsx
+msgid "vs {baselineLabel}"
+msgstr "vs {baselineLabel}"
+
+#. sRPE scale, effort 9-10: the talk test
+#: src/constants/srpeGuideMessages.js
+msgid "Words impossible. All-out. Race/test efforts only."
+msgstr "Words impossible. All-out. Race/test efforts only."
+
+#: src/views/OverviewView.jsx
+msgid "working avg power"
+msgstr "working avg power"
+
+#. Followed by a number: your own average
+#. Followed by a number: your own average
+#: src/views/mobile/MobileRecovery.jsx
+#: src/views/RecoveryView.jsx
+msgid "your avg"
+msgstr "your avg"

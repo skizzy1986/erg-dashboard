@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { Plural, Trans, useLingui } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
 import { useSessions } from '../../hooks/useSessions.js';
 import { THEME } from '../../constants/theme.js';
 import { alpha } from '../../utils/themeCss.js';
+import { dateLocale } from '../../utils/displayLocale.js';
 
 function typeColor(type) {
   const t = (type ?? '').toLowerCase();
@@ -16,14 +19,25 @@ function srpeColor(srpe) {
   return THEME.warning;
 }
 
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-GB', {
+// Whole words, not the filter code capitalised: a translation is not the code.
+const FILTERS = [
+  { id: 'all', label: msg({ message: 'All', comment: 'Session filter chip' }) },
+  { id: 'erg', label: msg({ message: 'Erg', comment: 'Session filter chip' }) },
+  {
+    id: 'strength',
+    label: msg({ message: 'Strength', comment: 'Session filter chip' }),
+  },
+];
+
+function formatDate(dateStr, lang) {
+  return new Date(dateStr).toLocaleDateString(dateLocale(lang, 'en-GB'), {
     day: 'numeric',
     month: 'short',
   });
 }
 
 export default function MobileSessionLog() {
+  const { i18n } = useLingui();
   const [activeFilter, setActiveFilter] = useState('all');
   const { data, isLoading, error } = useSessions();
 
@@ -37,6 +51,7 @@ export default function MobileSessionLog() {
       return s.type?.toLowerCase().includes('strength');
     return true;
   });
+  const count = filtered.length;
 
   const pillBase = {
     border: 'none',
@@ -71,10 +86,14 @@ export default function MobileSessionLog() {
             color: THEME.positive,
           }}
         >
-          SESSIONS
+          <Trans comment="Screen heading, all capitals">SESSIONS</Trans>
         </span>
         <span style={{ fontSize: 11, color: THEME.muted }}>
-          {filtered.length} logged
+          <Plural
+            value={count}
+            one={`${count} logged`}
+            other={`${count} logged`}
+          />
         </span>
       </div>
 
@@ -87,7 +106,7 @@ export default function MobileSessionLog() {
           marginTop: 12,
         }}
       >
-        {['all', 'erg', 'strength'].map((f) => {
+        {FILTERS.map(({ id: f, label }) => {
           const isActive = activeFilter === f;
           return (
             <button
@@ -100,7 +119,7 @@ export default function MobileSessionLog() {
                 fontWeight: isActive ? 700 : 400,
               }}
             >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+              {i18n._(label)}
             </button>
           );
         })}
@@ -115,7 +134,7 @@ export default function MobileSessionLog() {
             fontSize: 12,
           }}
         >
-          Loading…
+          <Trans>Loading…</Trans>
         </div>
       )}
 
@@ -128,7 +147,7 @@ export default function MobileSessionLog() {
             fontSize: 12,
           }}
         >
-          Failed to load sessions
+          <Trans>Failed to load sessions</Trans>
         </div>
       )}
 
@@ -141,7 +160,7 @@ export default function MobileSessionLog() {
             fontSize: 12,
           }}
         >
-          No sessions found
+          <Trans>No sessions found</Trans>
         </div>
       )}
 
@@ -186,7 +205,7 @@ export default function MobileSessionLog() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 10, color: THEME.muted }}>
-                  {s.date ? formatDate(s.date) : ''}
+                  {s.date ? formatDate(s.date, i18n.locale) : ''}
                 </span>
                 {s.duration && (
                   <span style={{ fontSize: 10, color: THEME.muted }}>
@@ -233,7 +252,7 @@ export default function MobileSessionLog() {
                     fontSize: 9,
                   }}
                 >
-                  STRENGTH
+                  <Trans comment="Badge, all capitals">STRENGTH</Trans>
                 </span>
               ) : null}
             </div>

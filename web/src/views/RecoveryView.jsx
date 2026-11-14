@@ -7,6 +7,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
 import { LIPID_REF } from '../constants/logs.js';
 import { useVitals } from '../hooks/useVitals.js';
 import { useBpReadings } from '../hooks/useBpReadings.js';
@@ -18,7 +20,11 @@ import {
   formatLabValue,
   formatLabRange,
   orderInjuries,
+  LAB_REF_MESSAGE,
+  labMarkerText,
 } from '../utils/healthRecords.js';
+import { readinessStatusText } from '../utils/recoveryAnalytics.js';
+import { displayLogDate } from '../utils/displayLocale.js';
 import { toLogDate, clockTime } from '../utils/dateFormat.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
@@ -64,42 +70,60 @@ function RecordRow({ label, value, sub }) {
 
 // The latest draw only; earlier draws stay in the table for a later trend view.
 function LatestDraw({ draw }) {
+  const { i18n } = useLingui();
+  const collected = displayLogDate(i18n.locale, toLogDate(draw.collectedOn));
+  const ref = i18n._(LAB_REF_MESSAGE);
   return (
     <>
       <div style={{ fontSize: 10, color: THEME.muted, margin: '4px 0' }}>
-        Collected {toLogDate(draw.collectedOn)}
+        <Trans comment="When the blood sample was taken">
+          Collected {collected}
+        </Trans>
       </div>
       {draw.markers.map((m) => (
         <RecordRow
           key={m.id}
-          label={m.marker}
+          label={labMarkerText(i18n, m.marker)}
           value={formatLabValue(m)}
-          sub={[formatLabRange(m), m.note].filter(Boolean).join(' · ')}
+          sub={[formatLabRange(m, ref), m.note].filter(Boolean).join(' · ')}
         />
       ))}
     </>
   );
 }
 
-function bpRow(r) {
+const CLEAN = msg({
+  message: 'clean',
+  comment: 'Blood pressure reading taken under proper resting conditions',
+});
+const SINCE = msg({ message: 'since {date}', comment: 'Injury onset date' });
+const RESOLVED = msg({
+  message: 'resolved {date}',
+  comment: 'Injury resolved date',
+});
+
+function bpRow(r, i18n) {
   const d = new Date(r.measured_at);
   const pulse = r.pulse_bpm != null ? ` · ${r.pulse_bpm} bpm` : '';
-  const sub = [r.context, r.clean ? 'clean' : null].filter(Boolean).join(' · ');
+  const sub = [r.context, r.clean ? i18n._(CLEAN) : null]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <RecordRow
       key={r.id}
-      label={`${toLogDate(d)} ${clockTime(d)}`}
+      label={`${displayLogDate(i18n.locale, toLogDate(d))} ${clockTime(d)}`}
       value={`${r.sys_mmhg}/${r.dia_mmhg} mmHg${pulse}`}
       sub={sub}
     />
   );
 }
 
-function injuryRow(r) {
+function injuryRow(r, i18n) {
   const side = r.side ? ` (${r.side})` : '';
+  const day = (v) => displayLogDate(i18n.locale, toLogDate(v));
   const dates = [
-    r.onset_on ? `since ${toLogDate(r.onset_on)}` : null,
-    r.resolved_on ? `resolved ${toLogDate(r.resolved_on)}` : null,
+    r.onset_on ? i18n._(SINCE, { date: day(r.onset_on) }) : null,
+    r.resolved_on ? i18n._(RESOLVED, { date: day(r.resolved_on) }) : null,
   ];
   return (
     <RecordRow
@@ -112,6 +136,7 @@ function injuryRow(r) {
 }
 
 function HealthSections() {
+  const { t, i18n } = useLingui();
   const bp = useBpReadings();
   const labs = useLabResults();
   const injuries = useInjuries();
@@ -120,28 +145,38 @@ function HealthSections() {
   return (
     <>
       <HealthRecordCard
-        title="BLOOD PRESSURE"
+        title={t({
+          message: 'BLOOD PRESSURE',
+          comment: 'Card title, all capitals',
+        })}
         accent={THEME.critical}
         query={bp}
         isEmpty={bp.rows.length === 0}
-        emptyText="No blood pressure readings yet."
+        emptyText={t`No blood pressure readings yet.`}
       >
-        {bp.rows.map(bpRow)}
+        {bp.rows.map((r) => bpRow(r, i18n))}
       </HealthRecordCard>
 
       <HealthRecordCard
-        title="BLOODS · LIPID PANEL"
+        title={t({
+          message: 'BLOODS · LIPID PANEL',
+          comment: 'Card title, all capitals: blood test, cholesterol panel',
+        })}
         accent={THEME.accent}
         query={labs}
         isEmpty={!lipid}
-        emptyText="No lipid results yet."
+        emptyText={t`No lipid results yet.`}
         footer={
           <>
-            {LIPID_REF.map((m) => (
-              <div key={m.marker} style={rowStyle}>
-                <span style={{ fontSize: 11, color: m.color }}>{m.marker}</span>
+            {LIPID_REF.map(({ marker, color, target, unit }) => (
+              <div key={marker} style={rowStyle}>
+                <span style={{ fontSize: 11, color }}>
+                  {labMarkerText(i18n, marker)}
+                </span>
                 <span style={{ fontSize: 10, color: THEME.muted }}>
-                  limit {m.target} {m.unit}
+                  <Trans comment="Lipid decision limit, e.g. limit 3.0 mmol/L">
+                    limit {target} {unit}
+                  </Trans>
                 </span>
               </div>
             ))}
@@ -153,7 +188,9 @@ function HealthSections() {
                 marginTop: 10,
               }}
             >
-              Decision limits:{' '}
+              <Trans comment="Followed by the names of the guideline sources">
+                Decision limits:
+              </Trans>{' '}
               {LIPID_SOURCES.map((s, i) => (
                 <span key={s.url}>
                   {i > 0 && ', '}
@@ -175,23 +212,29 @@ function HealthSections() {
       </HealthRecordCard>
 
       <HealthRecordCard
-        title="HORMONE PANEL"
+        title={t({
+          message: 'HORMONE PANEL',
+          comment: 'Card title, all capitals',
+        })}
         accent={THEME.accentAlt}
         query={labs}
         isEmpty={!hormone}
-        emptyText="No hormone results yet."
+        emptyText={t`No hormone results yet.`}
       >
         {hormone && <LatestDraw draw={hormone} />}
       </HealthRecordCard>
 
       <HealthRecordCard
-        title="INJURY WATCH"
+        title={t({
+          message: 'INJURY WATCH',
+          comment: 'Card title, all capitals',
+        })}
         accent={THEME.warning}
         query={injuries}
         isEmpty={injuries.rows.length === 0}
-        emptyText="No injuries logged yet."
+        emptyText={t`No injuries logged yet.`}
       >
-        {orderInjuries(injuries.rows).map(injuryRow)}
+        {orderInjuries(injuries.rows).map((r) => injuryRow(r, i18n))}
       </HealthRecordCard>
     </>
   );
@@ -205,6 +248,7 @@ function HealthSections() {
 // screen showed June numbers while mobile showed today's. Baselines are the
 // rolling personal ones, not two constants hand-set in June.
 export default function RecoveryView({ isWide }) {
+  const { t, i18n } = useLingui();
   const {
     latest: today,
     readiness,
@@ -218,11 +262,21 @@ export default function RecoveryView({ isWide }) {
   const hrvBaseline = personalBaselines.hrvBaseline;
   // Labelled per metric: HRV coverage is far sparser than RHR, so one flag for
   // both would present the population default as the athlete's own average.
-  const rhrNote = personalBaselines.rhrPersonal ? 'your avg' : 'default';
-  const hrvNote = personalBaselines.hrvPersonal ? 'your avg' : 'default';
+  const yourAvg = t({
+    message: 'your avg',
+    comment: 'Followed by a number: your own average',
+  });
+  const populationDefault = t({
+    message: 'default',
+    comment: 'Followed by a number: the population default baseline',
+  });
+  const rhrNote = personalBaselines.rhrPersonal ? yourAvg : populationDefault;
+  const tsbSigned = tsbNow == null ? null : (tsbNow > 0 ? '+' : '') + tsbNow;
+  const hrvNote = personalBaselines.hrvPersonal ? yourAvg : populationDefault;
   return (
     <>
       {(() => {
+        const readingDate = today?.date;
         if (!today)
           return (
             <div
@@ -233,7 +287,9 @@ export default function RecoveryView({ isWide }) {
                 fontSize: 13,
               }}
             >
-              {vitalsPending ? 'Loading vitals…' : 'VITALS UNAVAILABLE'}
+              {vitalsPending
+                ? t`Loading vitals…`
+                : t({ message: 'VITALS UNAVAILABLE', comment: 'All capitals' })}
             </div>
           );
         return (
@@ -265,7 +321,9 @@ export default function RecoveryView({ isWide }) {
                       marginBottom: 4,
                     }}
                   >
-                    READINESS · {today.date}
+                    <Trans comment="Card heading, all capitals, then the date">
+                      READINESS · {readingDate}
+                    </Trans>
                   </div>
                   <div
                     style={{
@@ -290,7 +348,7 @@ export default function RecoveryView({ isWide }) {
                       letterSpacing: 1,
                     }}
                   >
-                    {readiness.status}
+                    {readinessStatusText(i18n, readiness.status)}
                   </div>
                   <div
                     style={{
@@ -302,12 +360,12 @@ export default function RecoveryView({ isWide }) {
                     }}
                   >
                     {readiness.status === 'NO DATA'
-                      ? 'No RHR reading — nothing to score'
+                      ? t`No RHR reading — nothing to score`
                       : readiness.status === 'READY'
-                        ? 'Train as planned'
+                        ? t`Train as planned`
                         : readiness.status === 'CAUTION'
-                          ? 'Train but monitor — consider easing intensity'
-                          : 'Prioritise recovery — reduce or rest'}
+                          ? t`Train but monitor — consider easing intensity`
+                          : t`Prioritise recovery — reduce or rest`}
                   </div>
                 </div>
               </div>
@@ -321,16 +379,23 @@ export default function RecoveryView({ isWide }) {
                   lineHeight: 1.5,
                 }}
               >
-                Composite of RHR vs baseline, HRV vs baseline, sleep, and
-                training load (TSB{' '}
-                {tsbNow == null
-                  ? 'unavailable — excluded from this score'
-                  : (tsbNow > 0 ? '+' : '') + tsbNow}
-                ). Heuristic, not validated — cross-check against sRPE and how
-                you actually feel.{' '}
+                {tsbNow == null ? (
+                  <Trans>
+                    Composite of RHR vs baseline, HRV vs baseline, sleep, and
+                    training load (TSB unavailable — excluded from this score).
+                    Heuristic, not validated — cross-check against sRPE and how
+                    you actually feel.
+                  </Trans>
+                ) : (
+                  <Trans comment="{tsbSigned} is the signed form value, e.g. +4.2">
+                    Composite of RHR vs baseline, HRV vs baseline, sleep, and
+                    training load (TSB {tsbSigned}). Heuristic, not validated —
+                    cross-check against sRPE and how you actually feel.
+                  </Trans>
+                )}{' '}
                 {hasPersonalBaselines
-                  ? 'Baselines are your own rolling 28-day trimmed mean.'
-                  : 'Fewer than 14 days of vitals, so population defaults are standing in for your baselines — treat the score as directional.'}
+                  ? t`Baselines are your own rolling 28-day trimmed mean.`
+                  : t`Fewer than 14 days of vitals, so population defaults are standing in for your baselines — treat the score as directional.`}
               </div>
             </div>
 
@@ -345,7 +410,8 @@ export default function RecoveryView({ isWide }) {
             >
               {[
                 [
-                  'RESTING HR',
+                  'rhr',
+                  t({ message: 'RESTING HR', comment: 'All capitals' }),
                   `${today.rhr} bpm`,
                   `${rhrNote} ${rhrBaseline}`,
                   today.rhr <= rhrBaseline + 2
@@ -355,11 +421,12 @@ export default function RecoveryView({ isWide }) {
                       : THEME.critical,
                 ],
                 [
+                  'hrv',
                   'HRV',
                   today.hrv != null ? `${today.hrv} ms` : '—',
                   today.hrv != null
                     ? `${hrvNote} ${hrvBaseline}`
-                    : 'needs overnight wear',
+                    : t`needs overnight wear`,
                   today.hrv == null
                     ? THEME.textFaint
                     : today.hrv >= hrvBaseline - 3
@@ -369,9 +436,10 @@ export default function RecoveryView({ isWide }) {
                         : THEME.critical,
                 ],
                 [
-                  'SLEEP',
+                  'sleep',
+                  t({ message: 'SLEEP', comment: 'All capitals' }),
                   today.sleep != null ? `${today.sleep}h` : '—',
-                  today.sleep != null ? `target 7h+` : 'needs overnight wear',
+                  today.sleep != null ? t`target 7h+` : t`needs overnight wear`,
                   today.sleep == null
                     ? THEME.textFaint
                     : today.sleep >= 7
@@ -381,7 +449,8 @@ export default function RecoveryView({ isWide }) {
                         : THEME.critical,
                 ],
                 [
-                  'SLEEP SCORE',
+                  'sleepScore',
+                  t({ message: 'SLEEP SCORE', comment: 'All capitals' }),
                   today.sleepScore != null ? `${today.sleepScore}` : '—',
                   `Fitbit`,
                   today.sleepScore == null
@@ -392,9 +461,9 @@ export default function RecoveryView({ isWide }) {
                         ? THEME.caution
                         : THEME.critical,
                 ],
-              ].map(([k, v, sub, c]) => (
+              ].map(([id, k, v, sub, c]) => (
                 <div
-                  key={k}
+                  key={id}
                   style={{
                     background: THEME.raised,
                     border: `1px solid ${THEME.border}`,
@@ -446,7 +515,9 @@ export default function RecoveryView({ isWide }) {
                   marginBottom: 12,
                 }}
               >
-                RESTING HR TREND
+                <Trans comment="Chart title, all capitals">
+                  RESTING HR TREND
+                </Trans>
               </div>
               <ResponsiveContainer width="100%" height={150}>
                 <LineChart
@@ -489,7 +560,10 @@ export default function RecoveryView({ isWide }) {
                     strokeDasharray="3 3"
                     strokeOpacity={0.4}
                     label={{
-                      value: 'baseline',
+                      value: t({
+                        message: 'baseline',
+                        comment: 'Chart reference line label',
+                      }),
                       position: 'insideTopRight',
                       fontSize: 8,
                       fill: THEME.warning,
@@ -507,8 +581,11 @@ export default function RecoveryView({ isWide }) {
                 </LineChart>
               </ResponsiveContainer>
               <div style={{ marginTop: 8, fontSize: 9, color: THEME.muted }}>
-                Lower is better. A rising trend over several days = accumulating
-                fatigue. HRV trend builds as more nights are logged.
+                <Trans>
+                  Lower is better. A rising trend over several days =
+                  accumulating fatigue. HRV trend builds as more nights are
+                  logged.
+                </Trans>
               </div>
             </div>
           </>

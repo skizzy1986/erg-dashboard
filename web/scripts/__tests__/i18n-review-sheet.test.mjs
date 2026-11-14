@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { messages as dashboardEn } from '../../src/locales/en.po';
+import { messages as viewsEn } from '../../src/locales/views/en.po';
 import {
   SHEET,
   buildSheet,
@@ -18,6 +19,14 @@ describe('the es-CO review sheet', () => {
   it("uses Lingui's own ids, so a reviewer's row id finds the message", () => {
     const ids = catalogRows('src/locales').map((r) => r.id);
     expect(ids.sort()).toEqual(Object.keys(dashboardEn).sort());
+    const viewIds = catalogRows('src/locales/views').map((r) => r.id);
+    expect(viewIds.sort()).toEqual(Object.keys(viewsEn).sort());
+  });
+
+  it('gives the views catalog its own table', () => {
+    expect(buildSheet()).toMatch(
+      /^## Dashboard views \(src\/locales\/views, \d+ strings\)$/m
+    );
   });
 
   it('carries a review record whose stamp matches the corpus once signed off', () => {

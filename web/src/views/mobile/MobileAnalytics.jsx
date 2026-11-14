@@ -1,11 +1,14 @@
 import React, { useMemo } from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { THEME } from '../../constants/theme.js';
 import { LineChart, Line, BarChart, Bar, ResponsiveContainer } from 'recharts';
 import {
   calcTrainingLoad,
   sessionLoad,
   tsbBand,
+  TSB_BAND_MESSAGES,
 } from '../../utils/trainingLoad.js';
+import { dateLocale, displayLogDate } from '../../utils/displayLocale.js';
 import { useSessions } from '../../hooks/useSessions.js';
 import { useTSSHistory } from '../../hooks/useTSSHistory.js';
 import { useAnchors } from '../../hooks/useAnchors.js';
@@ -14,7 +17,6 @@ import { COMPLETED_STATUSES } from '../../constants/sessionStatus.js';
 import { FONT } from '../../constants/type.js';
 
 const tsbColor = (tsb) => THEME[tsbBand(tsb)?.token] ?? THEME.muted;
-const tsbSignal = (tsb) => tsbBand(tsb)?.label ?? 'No reading';
 
 function typeColor(type) {
   const t = (type ?? '').toLowerCase();
@@ -24,6 +26,12 @@ function typeColor(type) {
 }
 
 export default function MobileAnalytics() {
+  const { t, i18n } = useLingui();
+  const lang = i18n.locale;
+  const tsbSignal = (tsb) => {
+    const band = tsbBand(tsb);
+    return band ? i18n._(TSB_BAND_MESSAGES[band.key]) : t`No reading`;
+  };
   const { data: tssHistory, isLoading: loadPending } = useTSSHistory();
   const { data: sessionsData } = useSessions();
   const { cp, ftp } = useAnchors();
@@ -75,9 +83,9 @@ export default function MobileAnalytics() {
   const signal = latest
     ? tsbSignal(latest.tsb)
     : loadUnavailable
-      ? 'TRAINING LOAD UNAVAILABLE'
+      ? t({ message: 'TRAINING LOAD UNAVAILABLE', comment: 'All capitals' })
       : '';
-  const dateStr = new Date().toLocaleDateString('en-GB', {
+  const dateStr = new Date().toLocaleDateString(dateLocale(lang, 'en-GB'), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -122,7 +130,7 @@ export default function MobileAnalytics() {
             marginBottom: 6,
           }}
         >
-          FORM / TSB
+          <Trans comment="All capitals; TSB stays as is">FORM / TSB</Trans>
         </div>
         <div
           style={{
@@ -164,7 +172,7 @@ export default function MobileAnalytics() {
               marginBottom: 4,
             }}
           >
-            FITNESS / CTL
+            <Trans comment="All capitals; CTL stays as is">FITNESS / CTL</Trans>
           </div>
           <div
             style={{
@@ -193,7 +201,7 @@ export default function MobileAnalytics() {
               marginBottom: 4,
             }}
           >
-            FATIGUE / ATL
+            <Trans comment="All capitals; ATL stays as is">FATIGUE / ATL</Trans>
           </div>
           <div
             style={{
@@ -224,7 +232,7 @@ export default function MobileAnalytics() {
             marginBottom: 10,
           }}
         >
-          30-DAY LOAD TREND
+          <Trans comment="Chart title, all capitals">30-DAY LOAD TREND</Trans>
         </div>
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={loadData.slice(-30)}>
@@ -283,7 +291,9 @@ export default function MobileAnalytics() {
             marginBottom: 10,
           }}
         >
-          8-WEEK TSS HISTORY
+          <Trans comment="Chart title, all capitals; TSS stays as is">
+            8-WEEK TSS HISTORY
+          </Trans>
         </div>
         <ResponsiveContainer width="100%" height={80}>
           <BarChart data={weeklyData} barCategoryGap="20%">
@@ -306,7 +316,7 @@ export default function MobileAnalytics() {
             marginBottom: 8,
           }}
         >
-          RECENT SESSIONS
+          <Trans comment="Section heading, all capitals">RECENT SESSIONS</Trans>
         </div>
         {recentSessions.map((s, i) => (
           <div
@@ -321,7 +331,9 @@ export default function MobileAnalytics() {
           >
             <span style={{ fontSize: 12, color: THEME.text }}>{s.note}</span>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 10, color: THEME.muted }}>{s.date}</div>
+              <div style={{ fontSize: 10, color: THEME.muted }}>
+                {displayLogDate(lang, s.date)}
+              </div>
               <div
                 style={{ fontSize: 12, fontWeight: 700, color: THEME.positive }}
               >
@@ -348,11 +360,11 @@ export default function MobileAnalytics() {
                 marginBottom: 8,
               }}
             >
-              UPCOMING
+              <Trans comment="Section heading, all capitals">UPCOMING</Trans>
             </div>
             {upcoming.length === 0 ? (
               <div style={{ fontSize: 12, color: THEME.muted }}>
-                No upcoming sessions
+                <Trans>No upcoming sessions</Trans>
               </div>
             ) : (
               upcoming.map((s) => (
@@ -380,7 +392,7 @@ export default function MobileAnalytics() {
                     {s.label ?? s.type}
                   </span>
                   <span style={{ fontSize: 10, color: THEME.muted }}>
-                    {s.date}
+                    {displayLogDate(lang, s.date)}
                   </span>
                 </div>
               ))
