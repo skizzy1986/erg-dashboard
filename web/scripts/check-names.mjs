@@ -91,15 +91,23 @@ try {
     `${person.toLowerCase()} in lower case`,
   ].join('\n');
   writeFileSync(join(dir, 'canary.txt'), canary + '\n');
-  const hits =
-    grep(dir, OLD_NAMES, ['--no-index'], ['.']).length +
-    grep(dir, PERSON, ['--no-index'], ['.']).length;
-  const want = OLD_NAMES.needles.length + 1;
-  if (hits !== want) {
-    failures.push(
-      `self-test: matched ${hits} of ${want} canary lines, so a clean ` +
-        'scan would prove nothing'
-    );
+  // Each rule is checked on its own: a summed count could hide one rule
+  // over-matching while the other under-matches by the same amount.
+  const checks = [
+    [
+      'old-name',
+      grep(dir, OLD_NAMES, ['--no-index'], ['.']).length,
+      OLD_NAMES.needles.length,
+    ],
+    ['person', grep(dir, PERSON, ['--no-index'], ['.']).length, 1],
+  ];
+  for (const [rule, hits, want] of checks) {
+    if (hits !== want) {
+      failures.push(
+        `self-test: ${rule} rule matched ${hits} of ${want} canary lines, ` +
+          'so a clean scan would prove nothing'
+      );
+    }
   }
 } finally {
   rmSync(dir, { recursive: true, force: true });
