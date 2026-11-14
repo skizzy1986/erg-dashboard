@@ -111,13 +111,19 @@ jobs:
       - name: Drop web-only squat chunks and data
         run: rm -f dist/assets/squat-*
         working-directory: web
-      # The dashboard's Spanish catalog is the opposite case: the APK ships the
-      # dashboard, so it carries the catalog and Spanish works offline. It is
-      # named i18n-* (scripts/i18nChunks.mjs) and must survive the strip above,
-      # while nothing squat-* may.
-      - name: Assert the Spanish catalog ships and squat does not
+      # The dashboard's Spanish catalogs are the opposite case: the APK ships
+      # the dashboard, so it carries them and Spanish works offline. Both (the
+      # boot catalog and, since i18n Phase 2a, the views catalog) are named
+      # i18n-* (scripts/i18nChunks.mjs) and must survive the strip above, while
+      # nothing squat-* may.
+      - name: Assert the Spanish catalogs ship and squat does not
         run: |
           ls dist/assets/i18n-es-*.js
+          count=$(ls dist/assets/i18n-es-*.js | wc -l)
+          if [ "$count" -lt 2 ]; then
+            echo "expected both Spanish dashboard catalogs, found $count" >&2
+            exit 1
+          fi
           if ls dist/assets/squat-* 2>/dev/null; then
             echo "squat-* files are still in dist/assets" >&2
             exit 1

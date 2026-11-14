@@ -20,9 +20,11 @@ export const LANG_UI = {
     en: 'Language: English (EN). Switch to Spanish',
     es: 'Idioma: español (ES). Cambiar a inglés',
   },
-  // Only ever shown in English: it reports that Spanish did not arrive.
+  // Only ever shown in English: it reports that Spanish did not arrive. Reload,
+  // not retry: a browser may keep a failed dynamic import for the life of the
+  // page, so choosing Spanish again without a reload can fail the same way.
   unavailable: {
-    en: 'Spanish could not be loaded. Check your connection and try again.',
+    en: 'Spanish could not be loaded. Check your connection and reload the page.',
   },
 };
 

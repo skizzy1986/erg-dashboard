@@ -14,6 +14,7 @@ import { FONT } from './constants/type.js';
 import { Trans } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
+import './i18n/views.js';
 import { version } from '../package.json';
 import { versionLabel } from './utils/appVersion.js';
 
@@ -240,11 +241,14 @@ export default function App() {
             width: '100%',
           }}
         >
+          {/* Left-aligned: at the far right AuthGate's floating sign-out button
+              covers it at desktop widths (the button is fixed to the viewport,
+              the row to the container). */}
           {VERSION_LABEL && (
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: 'flex-start',
                 alignItems: 'baseline',
                 gap: 8,
               }}

@@ -265,7 +265,6 @@ msgstr "Reintentar"
 #. Desktop nav tab
 #: src/App.jsx
 #: src/views/mobile/MobileSettings.jsx
-#: src/views/mobile/MobileToday.jsx
 msgid "Settings"
 msgstr "Configuración"
 

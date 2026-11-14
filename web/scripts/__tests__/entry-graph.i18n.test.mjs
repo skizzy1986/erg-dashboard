@@ -1,4 +1,5 @@
 import {
+  catalogTextLeaks,
   firstPaintLeaks,
   i18nCatalogProblems,
   precachedI18n,
@@ -94,5 +95,88 @@ describe('precachedI18n', () => {
     expect(precachedI18n(['icons/i18n-flag.png', 'assets/xi18n-a.js'])).toEqual(
       []
     );
+  });
+});
+
+// i18n Phase 2a: a second Spanish catalog, loaded from the lazy shells.
+const VIEWS_ES = 'src/locales/views/es.po';
+const TWO = {
+  ...BUILD,
+  'src/AuthGate.jsx': {
+    ...BUILD['src/AuthGate.jsx'],
+    dynamicImports: [ES, 'src/App.jsx'],
+  },
+  'src/App.jsx': {
+    file: 'assets/App-f.js',
+    isDynamicEntry: true,
+    imports: ['index.html', 'src/AuthGate.jsx'],
+    dynamicImports: [VIEWS_ES],
+  },
+  [VIEWS_ES]: { file: 'assets/i18n-es-g.js', isDynamicEntry: true },
+};
+
+describe('both Spanish dashboard catalogs', () => {
+  it('each is off both first paints, named i18n-*, and out of /squat', () => {
+    for (const root of [ES, VIEWS_ES]) {
+      expect(firstPaintLeaks(TWO, root, BOOTS, LABEL), root).toEqual([]);
+      expect(i18nCatalogProblems(TWO, root, SQUAT, I18N_JS), root).toEqual([]);
+    }
+  });
+
+  it('names the views catalog when it is imported statically by the shell', () => {
+    const leaky = {
+      ...TWO,
+      'src/AuthGate.jsx': {
+        ...TWO['src/AuthGate.jsx'],
+        imports: [...TWO['src/AuthGate.jsx'].imports, VIEWS_ES],
+      },
+    };
+    expect(firstPaintLeaks(leaky, VIEWS_ES, BOOTS, LABEL)[0]).toMatch(
+      /on src\/AuthGate\.jsx's first paint: i18n-es-g\.js/
+    );
+  });
+
+  it('precachedI18n names both chunks', () => {
+    const [msg] = precachedI18n(['assets/i18n-es-d.js', 'assets/i18n-es-g.js']);
+    expect(msg).toMatch(/i18n-es-d\.js, assets\/i18n-es-g\.js/);
+  });
+});
+
+describe('catalogTextLeaks (the views English catalog)', () => {
+  const PHRASES = [
+    'No upcoming planned sessions.',
+    'Nothing prescribed today.',
+  ];
+  const shell = {
+    file: 'App-f.js',
+    text: 'x("No upcoming planned sessions.")',
+  };
+  const entry = { file: 'AuthGate-b.js', text: 'y("Sign in to continue")' };
+
+  it('passes when the words are only in a lazy chunk', () => {
+    expect(
+      catalogTextLeaks([entry], [entry, shell], PHRASES, 'Views English')
+    ).toEqual([]);
+  });
+
+  it('names the first-paint file that carries them', () => {
+    const leaked = {
+      ...entry,
+      text: `${entry.text}"Nothing prescribed today."`,
+    };
+    expect(
+      catalogTextLeaks([leaked], [leaked, shell], PHRASES, 'Views English')
+    ).toEqual([
+      'Views English is on first paint: AuthGate-b.js. Import it only from the lazy shells (src/i18n/views.js).',
+    ]);
+  });
+
+  it('reports itself blind when the words are nowhere in the build', () => {
+    expect(
+      catalogTextLeaks([entry], [entry], PHRASES, 'Views English')[0]
+    ).toMatch(/not found in any built file/);
+    expect(catalogTextLeaks([entry], [entry], [], 'Views English')).toEqual([
+      'Views English: no phrases to look for.',
+    ]);
   });
 });

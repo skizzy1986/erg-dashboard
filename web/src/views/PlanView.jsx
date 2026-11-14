@@ -1,3 +1,4 @@
+import { Trans } from '@lingui/react/macro';
 import LogEntry from '../components/LogEntry.jsx';
 import { THEME } from '../constants/theme.js';
 
@@ -33,10 +34,14 @@ export default function PlanView({ plannedSessions, loggedKeys, isWide }) {
           lineHeight: 1.6,
         }}
       >
-        <span style={{ color: THEME.accent, fontWeight: 700 }}>THE PLAN. </span>
-        Upcoming prescriptions from Coach (today forward). A dashed border marks
-        a planned session; tap any card for the targets. Cards mark ✓ done once
-        you log the matching session.
+        <span style={{ color: THEME.accent, fontWeight: 700 }}>
+          <Trans comment="Banner lead-in, all capitals">THE PLAN.</Trans>{' '}
+        </span>
+        <Trans>
+          Upcoming prescriptions from Coach (today forward). A dashed border
+          marks a planned session; tap any card for the targets. Cards mark ✓
+          done once you log the matching session.
+        </Trans>
       </div>
       {items.length === 0 ? (
         <div
@@ -50,7 +55,7 @@ export default function PlanView({ plannedSessions, loggedKeys, isWide }) {
             textAlign: 'center',
           }}
         >
-          No upcoming planned sessions.
+          <Trans>No upcoming planned sessions.</Trans>
         </div>
       ) : (
         <div

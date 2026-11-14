@@ -2,6 +2,8 @@ import { render, screen, act, fireEvent, within } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { messages as en } from '../../locales/en.po';
 import { messages as es } from '../../locales/es.po';
+import { messages as viewsEn } from '../../locales/views/en.po';
+import { messages as viewsEs } from '../../locales/views/es.po';
 import { LANG_KEY } from '../lang.js';
 import { __resetLocaleCacheForTests, bootLocale } from '../locale.js';
 import {
@@ -13,7 +15,9 @@ import {
 import { THEME } from '../../constants/theme.js';
 
 // AC 9: every Phase-1 dashboard surface renders Spanish. AC 10: a view still
-// waiting for its #412 slice renders whole English in Spanish mode.
+// waiting for its #412 slice renders whole English in Spanish mode. Phase 2a
+// moved Overview (and the other settled views) to Spanish; MobilityView, still
+// waiting, now carries the AC 10 guard.
 
 const mocks = vi.hoisted(() => ({
   native: false,
@@ -93,17 +97,18 @@ import SettingsView from '../../views/SettingsView.jsx';
 import SplashScreen from '../../components/mobile/SplashScreen.jsx';
 import ErrorFallback from '../../components/ErrorFallback.jsx';
 import OverviewView from '../../views/OverviewView.jsx';
+import MobilityView from '../../views/MobilityView.jsx';
 import LanguageProvider from '../LanguageProvider.jsx';
 
-// Every Spanish string the catalog holds and no English one does: a node that
+// Every Spanish string the catalogs hold and no English one does: a node that
 // shows one of these inside an "English" view is a half-translated sentence.
 const spanishOnly = () => {
   const english = new Set(
-    Object.values(en)
+    Object.values({ ...en, ...viewsEn })
       .flat()
       .filter((v) => typeof v === 'string')
   );
-  return Object.values(es)
+  return Object.values({ ...es, ...viewsEs })
     .flat()
     .filter((v) => typeof v === 'string' && v.trim().length > 3)
     .filter((v) => !english.has(v));
@@ -115,7 +120,7 @@ const inSpanish = () => {
 
 // The Spanish catalog for components rendered without the provider.
 const activateSpanish = () => {
-  i18n.load('es', { ...en, ...es });
+  i18n.load('es', { ...en, ...viewsEn, ...es, ...viewsEs });
   i18n.activate('es');
 };
 
@@ -371,8 +376,8 @@ describe('Settings in Spanish', () => {
   });
 });
 
-describe('A view still waiting for its #412 slice', () => {
-  it('renders whole English in Spanish mode, with no Spanish string inside it', () => {
+describe('Overview, through its #412 slice (i18n Phase 2a)', () => {
+  it('now renders Spanish, with no English heading left in it', () => {
     activateSpanish();
     const vitals = {
       date: '2026-08-21',
@@ -394,7 +399,20 @@ describe('A view still waiting for its #412 slice', () => {
         isWide
       />
     );
-    expect(screen.getByText(/Rowing CP 205W/)).toBeInTheDocument();
+    expect(screen.getByText(/CP de remo 205W/)).toBeInTheDocument();
+    expect(screen.getByText('CARGA DE ENTRENAMIENTO')).toBeInTheDocument();
+    const text = container.textContent;
+    for (const english of ['TRAINING LOAD', 'RECENT SESSIONS', 'Rowing CP']) {
+      expect(text).not.toContain(english);
+    }
+  });
+});
+
+describe('A view still waiting for its #412 slice', () => {
+  it('renders whole English in Spanish mode, with no Spanish string inside it', () => {
+    activateSpanish();
+    const { container } = render(<MobilityView />);
+    expect(screen.getByText('ROUTINES · ON HAND')).toBeInTheDocument();
     const text = container.textContent;
     const leaked = spanishOnly().filter((s) => text.includes(s));
     expect(leaked).toEqual([]);

@@ -37,11 +37,13 @@
 //   SQUAT_3D              three.js and the anatomy scene: the files reachable
 //                         only through the scene's lazy import. Fetched after
 //                         the anatomy data, never on either first paint.
-//   DASH_ES               the dashboard's Spanish catalog: files reachable
-//                         only through src/locales/es.po. Fetched by a visitor
-//                         who chose Spanish, never on first paint, never
-//                         precached. Carved out of TOTAL, like SQUAT_3D, so a
-//                         language never reads as "the dashboard grew".
+//   DASH_ES               the dashboard's Spanish catalogs: files reachable
+//                         only through src/locales/es.po (boot) or
+//                         src/locales/views/es.po (views, i18n Phase 2a).
+//                         Fetched by a visitor who chose Spanish, never on
+//                         first paint, never precached. Carved out of TOTAL,
+//                         like SQUAT_3D, so a language never reads as "the
+//                         dashboard grew".
 //   SQUAT_DATA            the anatomy stream itself (already gzip, so measured
 //                         raw), plus a check that nothing the service worker
 //                         precaches exceeds Workbox's 2 MiB per-file ceiling —
@@ -58,6 +60,7 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 import {
+  catalogTextLeaks,
   entryFilesFrom,
   firstPaintLeaks,
   i18nCatalogProblems,
@@ -72,6 +75,7 @@ import {
 } from './entry-graph.mjs';
 import { SQUAT_JS } from './squatChunks.mjs';
 import { I18N_JS } from './i18nChunks.mjs';
+import { parsePo } from './i18n-review-sheet.mjs';
 
 // Measured 2026-09-03, after #329 landed mathjs removal: entry 134.9 KB,
 // total 373.5 KB. Entry gets ~15 KB of headroom — tight, because that is the
@@ -160,7 +164,15 @@ const MAX_SQUAT_3D_GZIP_KB = 145;
 // The dashboard's Spanish catalog. Measured 2026-11-13 (i18n PR-1) at 2.8 KB;
 // +~2 KB, to a whole KB. It grows with every translated view (Phase 2+), each
 // of which raises it deliberately with its own measured figure.
-const MAX_DASH_ES_GZIP_KB = 5;
+//
+// Raised 5 -> 9 on 2026-11-13 (i18n Phase 2a, approved by Scott at Gate 1+2):
+// DASH_ES now counts both Spanish dashboard catalogs. The boot catalog is
+// unchanged at 2.8 KB; the new views catalog (194 messages: Overview, Calendar,
+// Plan, Log, Recovery, their components and the five mobile panes) builds to
+// its own i18n-es-* chunk at 4.5 KB. Measured 7.3 KB (7,478 B). Worth it: it
+// is the Spanish for every settled view, fetched only by a visitor who chose
+// Spanish, never precached. Rule: 7.3 + 2 = 9.3, to a whole KB: 9.
+const MAX_DASH_ES_GZIP_KB = 9;
 // The stream measured 2,202,168 bytes; 2.3 MB keeps a re-run of the pipeline
 // from quietly doubling every first visit.
 const MAX_SQUAT_DATA_BYTES = 2_300_000;
@@ -170,7 +182,12 @@ const MAX_PRECACHE_FILE_BYTES = 2 * 1024 * 1024;
 const DASHBOARD_BOOT = 'src/AuthGate.jsx';
 const SQUAT_ROOT = 'src/squat/SquatApp.jsx';
 const SCENE_ROOT = 'src/anatomy/scene/createAnatomyScene.js';
-const DASH_ES_ROOT = 'src/locales/es.po';
+const DASH_ES_ROOTS = ['src/locales/es.po', 'src/locales/views/es.po'];
+// The views catalog's English rides in the lazy shells' chunk (App.jsx and
+// MobileApp.jsx import src/i18n/views.js). It has no manifest key, so it is
+// kept off first paint by its words: messages only it holds.
+const VIEWS_EN = 'src/locales/views/en.po';
+const BOOT_EN = 'src/locales/en.po';
 const SQUAT_DATA = /^squat-anatomy-.*\.bin$/;
 
 const DIST = join(process.cwd(), 'dist');
@@ -267,9 +284,11 @@ try {
       .map(assetName)
   );
   dashEsFiles = new Set(
-    onlyReachableVia(manifest, DASH_ES_ROOT, 'Dashboard catalog')
-      .filter(isCountedAsset)
-      .map(assetName)
+    DASH_ES_ROOTS.flatMap((root) =>
+      onlyReachableVia(manifest, root, 'Dashboard catalog')
+        .filter(isCountedAsset)
+        .map(assetName)
+    )
   );
 } catch (error) {
   die(error.message);
@@ -300,15 +319,54 @@ const dashEsBytes = sum(dashEsAssets);
 // with every budget still green if the ceiling happened to fit; a squat chunk
 // without the prefix is precached into every dashboard install; a prefixed
 // shared chunk is never precached, so the dashboard breaks offline.
+// ASCII-only, long, placeholder-free messages the views catalog holds and the
+// boot catalog does not: what a minifier leaves byte for byte in the output.
+function viewsEnglishLeaks() {
+  const ids = (f) =>
+    new Set(
+      parsePo(readFileSync(join(process.cwd(), f), 'utf8')).map((e) => e.msgid)
+    );
+  const boot = ids(BOOT_EN);
+  const phrases = [...ids(VIEWS_EN)].filter(
+    (m) =>
+      !boot.has(m) &&
+      m.length >= 24 &&
+      /^[\x20-\x7e]+$/.test(m) &&
+      !/[{}'"\\]/.test(m)
+  );
+  const text = (file) => ({
+    file: assetName(file),
+    text: readFileSync(join(DIST, file), 'utf8'),
+  });
+  const js = (f) => f.endsWith('.js');
+  const firstPaintText = [DASHBOARD_BOOT, SQUAT_ROOT].flatMap((key) =>
+    entryFilesFrom(manifest, { bootKeys: [key] })
+      .filter(js)
+      .map(text)
+  );
+  const allText = readdirSync(ASSET_DIR)
+    .filter(js)
+    .map((f) => text(join('assets', f)));
+  return catalogTextLeaks(
+    firstPaintText,
+    allText,
+    phrases,
+    'The views English catalog'
+  );
+}
+
 const invariants = [];
 try {
   invariants.push(
     ...firstPaintLeaks(manifest, SCENE_ROOT, [DASHBOARD_BOOT, SQUAT_ROOT]),
-    ...firstPaintLeaks(manifest, DASH_ES_ROOT, [DASHBOARD_BOOT, SQUAT_ROOT], {
-      what: 'the Spanish dashboard catalog',
-      fix: 'Load it only through ensureLocale (src/i18n/locale.js).',
-    }),
-    ...i18nCatalogProblems(manifest, DASH_ES_ROOT, SQUAT_ROOT, I18N_JS),
+    ...DASH_ES_ROOTS.flatMap((root) => [
+      ...firstPaintLeaks(manifest, root, [DASHBOARD_BOOT, SQUAT_ROOT], {
+        what: `the Spanish dashboard catalog ${root}`,
+        fix: 'Load it only through ensureLocale (src/i18n/locale.js).',
+      }),
+      ...i18nCatalogProblems(manifest, root, SQUAT_ROOT, I18N_JS),
+    ]),
+    ...viewsEnglishLeaks(),
     ...prefixMismatch(
       squatOnlyFiles(manifest, SQUAT_ROOT),
       readdirSync(ASSET_DIR),
@@ -395,7 +453,7 @@ console.log(
   `    ${kb(totalBytes).padStart(10)}  total  (budget ${MAX_TOTAL_GZIP_KB} KB) — everything the dashboard can reach, Spanish excluded`
 );
 console.log(
-  `    ${kb(dashEsBytes).padStart(10)}  dash es  (budget ${MAX_DASH_ES_GZIP_KB} KB) — Spanish catalog, fetched only on choosing it, not precached`
+  `    ${kb(dashEsBytes).padStart(10)}  dash es  (budget ${MAX_DASH_ES_GZIP_KB} KB) — both Spanish catalogs, fetched only on choosing it, not precached`
 );
 console.log('\nSquat tool (gzipped):');
 for (const a of squatAssets) {
@@ -452,7 +510,7 @@ for (const [label, bytes, budgetKb, advice] of [
     'Dashboard Spanish catalog',
     dashEsBytes,
     MAX_DASH_ES_GZIP_KB,
-    'The dashboard es.po grew — raise MAX_DASH_ES_GZIP_KB deliberately with the measured figure.',
+    'A dashboard es.po grew — raise MAX_DASH_ES_GZIP_KB deliberately with the measured figure.',
   ],
   [
     'Squat 3D',

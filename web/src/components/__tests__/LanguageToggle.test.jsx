@@ -76,7 +76,7 @@ describe('LanguageToggle', () => {
     fireEvent.click(screen.getByRole('button', { name: /Switch to Spanish/ }));
     await waitFor(() =>
       expect(screen.getByTestId('below')).toHaveTextContent(
-        'Spanish could not be loaded'
+        'Spanish could not be loaded. Check your connection and reload the page.'
       )
     );
     expect(screen.getByTestId('row')).not.toHaveTextContent(/could not/);
