@@ -17,7 +17,7 @@ Scott's project.
    **send Scott your username**.
 2. **Accept the invitation.** Scott adds you, and GitHub emails you an invitation: click
    **Accept**. If the email doesn't arrive, open
-   <https://github.com/skizzy1986/erg-dashboard/invitations> while you're logged in.
+   <https://github.com/skizzy1986/SplitIQ/invitations> while you're logged in.
 3. **Have a play.** The tool is live at <https://erg-dashboard-eight.vercel.app/squat>.
    Drag the depth slider, spin the model and open the guide.
 
@@ -34,7 +34,7 @@ Scott's project.
    instructions** from [`PROMPTS.md`](PROMPTS.md#chat) into its instructions. That
    gives every chat in the project the background and Scott's ground rules.
 2. Give the project the code, so Claude can read it. Either connect the GitHub
-   repository with Claude's GitHub integration (`skizzy1986/erg-dashboard`), or copy
+   repository with Claude's GitHub integration (`skizzy1986/SplitIQ`), or copy
    the files you're curious about from GitHub into the chat. Start with
    `docs/onboarding/README.md`.
 3. Chat. There are starter prompts in [`PROMPTS.md`](PROMPTS.md#chat): a tour, "how
@@ -53,7 +53,7 @@ project folder, and Claude will pick up the project's ground rules for you.
 
 ## How you and Scott talk
 
-Discussions live at <https://github.com/skizzy1986/erg-dashboard/discussions>. Post
+Discussions live at <https://github.com/skizzy1986/SplitIQ/discussions>. Post
 there in your browser, or have Claude Code post for you.
 
 | You want to… | Where |
