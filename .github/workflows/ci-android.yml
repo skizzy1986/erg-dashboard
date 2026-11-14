@@ -34,7 +34,7 @@ jobs:
     outputs:
       android: ${{ steps.filter.outputs.android }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
@@ -42,6 +42,7 @@ jobs:
             android:
               - 'web/android/**'
               - 'web/capacitor.config.json'
+              - 'web/package.json'
               - 'web/src/**'
               - 'supabase/**'
               - '.github/workflows/ci-android.yml'
@@ -52,7 +53,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.android == 'true'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
@@ -79,13 +80,13 @@ jobs:
     needs: [changes, build-web]
     if: needs.changes.outputs.android == 'true'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: '21'
           distribution: temurin
@@ -110,6 +111,18 @@ jobs:
       - name: Drop web-only squat chunks and data
         run: rm -f dist/assets/squat-*
         working-directory: web
+      # The dashboard's Spanish catalog is the opposite case: the APK ships the
+      # dashboard, so it carries the catalog and Spanish works offline. It is
+      # named i18n-* (scripts/i18nChunks.mjs) and must survive the strip above,
+      # while nothing squat-* may.
+      - name: Assert the Spanish catalog ships and squat does not
+        run: |
+          ls dist/assets/i18n-es-*.js
+          if ls dist/assets/squat-* 2>/dev/null; then
+            echo "squat-* files are still in dist/assets" >&2
+            exit 1
+          fi
+        working-directory: web
       - name: Sync Capacitor assets
         run: npx cap sync android
         working-directory: web
@@ -118,6 +131,6 @@ jobs:
         working-directory: web/android
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: erg-dashboard-debug
+          name: splitiq-debug
           path: web/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14

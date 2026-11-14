@@ -37,7 +37,7 @@ SplitIQ is one app: **a training app where the movements explain themselves.**
 | **Training log** | `/` | Supabase login | The context around the movements: sessions, strength logging and a load model that doesn't claim more than it can support. You need your own Supabase project to run it, and you don't need it for `/squat`. |
 
 **Where it's going** lives in two places, so this page doesn't repeat it: the roadmap epic
-[#432](https://github.com/skizzy1986/erg-dashboard/issues/432), and the H1 table under
+[#432](https://github.com/skizzy1986/SplitIQ/issues/432), and the H1 table under
 [The horizons](../ROADMAP.md#the-horizons) in `docs/ROADMAP.md`.
 
 The issue and PR threads are the best history of *why* things are the way they are —
@@ -50,11 +50,11 @@ each PR description carries its decisions, review trail and follow-ups.
 `/squat` never touches Supabase (a test pins this), so it runs with an empty `.env`.
 
 ```bash
-git clone https://github.com/skizzy1986/erg-dashboard.git
+git clone https://github.com/skizzy1986/SplitIQ.git
 ```
 
 ```bash
-cd erg-dashboard/web && npm ci
+cd SplitIQ/web && npm ci
 ```
 
 ```bash
@@ -156,7 +156,7 @@ tests in the same PR as the code, coverage only goes up, lint/format/build green
 main point of your access.
 
 1. **Have an idea?** Open a Discussion in **💡 Ideas**
-   (<https://github.com/skizzy1986/erg-dashboard/discussions/categories/ideas>).
+   (<https://github.com/skizzy1986/SplitIQ/discussions/categories/ideas>).
    The form asks for the problem, the idea, who it's for, and how big it is. Rough is
    fine. Good ideas get promoted to issues on the project board.
 2. **Built something to show?** Post it in **🙌 Show and tell** with a link to your

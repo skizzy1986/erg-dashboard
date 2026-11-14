@@ -1,0 +1,474 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2026-11-13 12:07+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+
+#: src/utils/stravaStatus.js
+msgid "{cause} {failed} of {attempted} activities have failed since connecting."
+msgstr "{cause} {failed} of {attempted} activities have failed since connecting."
+
+#: src/utils/stravaStatus.js
+msgid "{count, plural, one {{count} activity matched more than one existing session and were skipped} other {{count} activities matched more than one existing session and were skipped}}"
+msgstr "{count, plural, one {{count} activity matched more than one existing session and were skipped} other {{count} activities matched more than one existing session and were skipped}}"
+
+#: src/utils/stravaStatus.js
+msgid "{count, plural, one {{count} activity matched sessions already in the log.} other {{count} activities matched sessions already in the log.}}"
+msgstr "{count, plural, one {{count} activity matched sessions already in the log.} other {{count} activities matched sessions already in the log.}}"
+
+#: src/utils/stravaStatus.js
+msgid "{count, plural, one {{count} day} other {{count} days}}"
+msgstr "{count, plural, one {{count} day} other {{count} days}}"
+
+#: src/utils/stravaStatus.js
+msgid "{count, plural, one {{count} session imported since connecting} other {{count} sessions imported since connecting}}"
+msgstr "{count, plural, one {{count} session imported since connecting} other {{count} sessions imported since connecting}}"
+
+#: src/utils/stravaStatus.js
+msgid "{daysAgo, plural, one {{daysAgo} day ago} other {{daysAgo} days ago}}"
+msgstr "{daysAgo, plural, one {{daysAgo} day ago} other {{daysAgo} days ago}}"
+
+#: src/utils/stravaStatus.js
+msgid "{hours, plural, one {{hours} hour ago} other {{hours} hours ago}}"
+msgstr "{hours, plural, one {{hours} hour ago} other {{hours} hours ago}}"
+
+#: src/utils/stravaStatus.js
+msgid "{importedText}; {matchedText}"
+msgstr "{importedText}; {matchedText}"
+
+#: src/utils/stravaStatus.js
+msgid "{importedText}. New Strava activities are imported automatically."
+msgstr "{importedText}. New Strava activities are imported automatically."
+
+#: src/utils/stravaStatus.js
+msgid "{minutes, plural, one {{minutes} minute ago} other {{minutes} minutes ago}}"
+msgstr "{minutes, plural, one {{minutes} minute ago} other {{minutes} minutes ago}}"
+
+#. Install-the-app button, all capitals
+#: src/AuthGate.jsx
+msgid "＋ ADD TO HOME SCREEN"
+msgstr "＋ ADD TO HOME SCREEN"
+
+#. Shown in place of a dashboard tab that crashed
+#: src/App.jsx
+msgid "⚠️ This section hit a render error and was isolated to protect the rest of the dashboard."
+msgstr "⚠️ This section hit a render error and was isolated to protect the rest of the dashboard."
+
+#. Followed by a list of Strava activity numbers
+#. placeholder {0}: (connection?.ambiguous_activity_ids ?? []).join(', ')
+#: src/components/StravaConnectPanel.jsx
+msgid "Activity ids: {0}"
+msgstr "Activity ids: {0}"
+
+#: src/views/mobile/MobileSettings.jsx
+msgid "Back to Today"
+msgstr "Back to Today"
+
+#. Mobile tab bar: readiness, sleep, heart rate
+#: src/constants/destinations.js
+msgid "Body"
+msgstr "Body"
+
+#. Desktop nav tab
+#: src/App.jsx
+msgid "Calendar"
+msgstr "Calendar"
+
+#. Loading state
+#: src/components/StravaConnectPanel.jsx
+msgid "Checking Strava connection…"
+msgstr "Checking Strava connection…"
+
+#. Login error. Only shown in Spanish; English shows the server message.
+#: src/utils/authError.js
+msgid "Confirm your email address before signing in."
+msgstr "Confirm your email address before signing in."
+
+#. Button
+#: src/components/StravaConnectPanel.jsx
+msgid "Connect Strava"
+msgstr "Connect Strava"
+
+#: src/utils/stravaStatus.js
+msgid "Connect Strava to import rides and runs into the training calendar automatically."
+msgstr "Connect Strava to import rides and runs into the training calendar automatically."
+
+#: src/utils/stravaStatus.js
+msgid "Connected · waiting for the first sync"
+msgstr "Connected · waiting for the first sync"
+
+#. Login error when the device is offline. Only shown in Spanish.
+#: src/utils/authError.js
+msgid "Could not reach the server. Check your connection and try again."
+msgstr "Could not reach the server. Check your connection and try again."
+
+#. Error state heading
+#: src/components/StravaConnectPanel.jsx
+msgid "Could not read the Strava connection status"
+msgstr "Could not read the Strava connection status"
+
+#. Error after pressing Connect Strava
+#: src/components/StravaConnectPanel.jsx
+msgid "Could not start the Strava connection. Try again."
+msgstr "Could not start the Strava connection. Try again."
+
+#. Button
+#: src/components/StravaConnectPanel.jsx
+msgid "Disconnect"
+msgstr "Disconnect"
+
+#. Browser confirmation dialog before disconnecting Strava
+#: src/hooks/useStravaConnect.js
+msgid "Disconnect Strava? Future activities will stop importing. Sessions already imported are never deleted — they stay in your log."
+msgstr "Disconnect Strava? Future activities will stop importing. Sessions already imported are never deleted — they stay in your log."
+
+#. Button, busy
+#: src/components/StravaConnectPanel.jsx
+msgid "Disconnecting…"
+msgstr "Disconnecting…"
+
+#. Login form field label, all capitals
+#: src/AuthGate.jsx
+msgid "EMAIL"
+msgstr "EMAIL"
+
+#. Login form validation error.
+#: src/AuthGate.jsx
+msgid "Enter email and password."
+msgstr "Enter email and password."
+
+#. Desktop nav tab: rowing ergometer
+#: src/App.jsx
+msgid "Erg"
+msgstr "Erg"
+
+#. Splash-screen tagline, all capitals
+#: src/components/mobile/SplashScreen.jsx
+msgid "ERG · STRENGTH · BIKE"
+msgstr "ERG · STRENGTH · BIKE"
+
+#: src/utils/stravaStatus.js
+msgid "Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically."
+msgstr "Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically."
+
+#. Settings section heading above the Strava panel
+#: src/views/SettingsView.jsx
+msgid "Integrations"
+msgstr "Integrations"
+
+#: src/utils/stravaStatus.js
+msgid "just now"
+msgstr "just now"
+
+#. Settings section heading above the language control
+#: src/views/SettingsView.jsx
+msgid "Language"
+msgstr "Language"
+
+#: src/utils/stravaStatus.js
+msgid "Last sync {when}"
+msgstr "Last sync {when}"
+
+#: src/utils/stravaStatus.js
+msgid "Last sync did not finish cleanly"
+msgstr "Last sync did not finish cleanly"
+
+#. Desktop nav tab: live erg session
+#: src/App.jsx
+msgid "Live"
+msgstr "Live"
+
+#. Shown while the session or the app is loading
+#: src/AuthGate.jsx
+msgid "Loading…"
+msgstr "Loading…"
+
+#. Desktop nav tab: past sessions
+#: src/App.jsx
+msgid "Log"
+msgstr "Log"
+
+#. Desktop nav tab: log strength sets live
+#: src/App.jsx
+msgid "Logger"
+msgstr "Logger"
+
+#. Desktop nav tab
+#: src/App.jsx
+msgid "Mobility"
+msgstr "Mobility"
+
+#: src/utils/stravaStatus.js
+msgid "No successful sync in {span}"
+msgstr "No successful sync in {span}"
+
+#: src/utils/stravaStatus.js
+msgid "Nothing already imported is affected — reconnecting resumes from where it stopped."
+msgstr "Nothing already imported is affected — reconnecting resumes from where it stopped."
+
+#: src/utils/stravaStatus.js
+msgid "Nothing was overwritten. Resolve the duplicates in the log, then sync again."
+msgstr "Nothing was overwritten. Resolve the duplicates in the log, then sync again."
+
+#: src/utils/stravaStatus.js
+msgid "Older activities are fetched a page at a time to stay inside Strava rate limits."
+msgstr "Older activities are fetched a page at a time to stay inside Strava rate limits."
+
+#. Button, busy
+#: src/components/StravaConnectPanel.jsx
+msgid "Opening Strava…"
+msgstr "Opening Strava…"
+
+#. Desktop nav tab
+#: src/App.jsx
+msgid "Overview"
+msgstr "Overview"
+
+#. Login form field label, all capitals
+#: src/AuthGate.jsx
+msgid "PASSWORD"
+msgstr "PASSWORD"
+
+#. Desktop nav tab
+#: src/App.jsx
+msgid "Plan"
+msgstr "Plan"
+
+#. Mobile tab bar
+#: src/constants/destinations.js
+msgid "Progress"
+msgstr "Progress"
+
+#. Button
+#: src/components/StravaConnectPanel.jsx
+msgid "Reconnect"
+msgstr "Reconnect"
+
+#. Desktop nav tab
+#: src/App.jsx
+msgid "Recovery"
+msgstr "Recovery"
+
+#. Button in the error state
+#: src/components/StravaConnectPanel.jsx
+msgid "Retry"
+msgstr "Retry"
+
+#. Desktop nav tab
+#: src/App.jsx
+#: src/views/mobile/MobileSettings.jsx
+#: src/views/mobile/MobileToday.jsx
+msgid "Settings"
+msgstr "Settings"
+
+#. Section eyebrow, all capitals
+#: src/views/SettingsView.jsx
+msgid "SETTINGS"
+msgstr "SETTINGS"
+
+#. Login button
+#: src/AuthGate.jsx
+msgid "SIGN IN"
+msgstr "SIGN IN"
+
+#: src/AuthGate.jsx
+msgid "Sign in to continue"
+msgstr "Sign in to continue"
+
+#. Tooltip on the sign-out button
+#: src/AuthGate.jsx
+#: src/views/mobile/MobileSettings.jsx
+msgid "Sign out"
+msgstr "Sign out"
+
+#. Floating button, all capitals
+#: src/AuthGate.jsx
+msgid "SIGN OUT"
+msgstr "SIGN OUT"
+
+#. Login button while the request is in flight
+#: src/AuthGate.jsx
+msgid "SIGNING IN…"
+msgstr "SIGNING IN…"
+
+#: src/utils/stravaStatus.js
+msgid "Some activities could not be saved to the database. Run the sync again."
+msgstr "Some activities could not be saved to the database. Run the sync again."
+
+#: src/utils/stravaCallback.js
+msgid "Something went wrong finishing the connection. Try again."
+msgstr "Something went wrong finishing the connection. Try again."
+
+#: src/utils/stravaStatus.js
+msgid "Strava access was revoked. Reconnect to resume importing."
+msgstr "Strava access was revoked. Reconnect to resume importing."
+
+#: src/utils/stravaStatus.js
+msgid "Strava caps how many activities can be read per 15 minutes. Nothing was lost; importing continues from where it stopped."
+msgstr "Strava caps how many activities can be read per 15 minutes. Nothing was lost; importing continues from where it stopped."
+
+#: src/utils/stravaCallback.js
+msgid "Strava connected. Your history is importing now — it continues in the background."
+msgstr "Strava connected. Your history is importing now — it continues in the background."
+
+#. Screen reader only: name of the Strava settings panel
+#: src/components/StravaConnectPanel.jsx
+msgid "Strava connection"
+msgstr "Strava connection"
+
+#: src/utils/stravaCallback.js
+msgid "Strava connection cancelled. Nothing was changed — connect whenever you are ready."
+msgstr "Strava connection cancelled. Nothing was changed — connect whenever you are ready."
+
+#: src/utils/stravaCallback.js
+msgid "Strava could not be connected. {why}"
+msgstr "Strava could not be connected. {why}"
+
+#: src/utils/stravaCallback.js
+msgid "Strava did not send back an authorisation code. Start the connection again."
+msgstr "Strava did not send back an authorisation code. Start the connection again."
+
+#: src/utils/stravaStatus.js
+msgid "Strava is having problems. The next sync will retry."
+msgstr "Strava is having problems. The next sync will retry."
+
+#: src/utils/stravaStatus.js
+msgid "Strava not connected"
+msgstr "Strava not connected"
+
+#: src/utils/stravaStatus.js
+msgid "Strava rate limit reached. Importing pauses until it resets."
+msgstr "Strava rate limit reached. Importing pauses until it resets."
+
+#: src/utils/stravaStatus.js
+msgid "Strava rate limit reached. Sync resumes at {resumesAt}."
+msgstr "Strava rate limit reached. Sync resumes at {resumesAt}."
+
+#: src/utils/stravaStatus.js
+msgid "Strava rate limit reached. Sync resumes shortly."
+msgstr "Strava rate limit reached. Sync resumes shortly."
+
+#: src/utils/stravaStatus.js
+msgid "Strava rejected the connection attempt. Connect again to retry."
+msgstr "Strava rejected the connection attempt. Connect again to retry."
+
+#: src/utils/stravaCallback.js
+msgid "Strava rejected the connection attempt. Try connecting again."
+msgstr "Strava rejected the connection attempt. Try connecting again."
+
+#. Desktop nav tab
+#: src/App.jsx
+msgid "Strength"
+msgstr "Strength"
+
+#. Error after pressing Sync now
+#: src/components/StravaConnectPanel.jsx
+msgid "Sync failed. Try again."
+msgstr "Sync failed. Try again."
+
+#. Button
+#: src/components/StravaConnectPanel.jsx
+msgid "Sync now"
+msgstr "Sync now"
+
+#. Splash-screen loading caption, all capitals
+#: src/components/mobile/SplashScreen.jsx
+msgid "SYNCING TRAINING LOG"
+msgstr "SYNCING TRAINING LOG"
+
+#. Button, busy
+#: src/components/StravaConnectPanel.jsx
+msgid "Syncing…"
+msgstr "Syncing…"
+
+#. Desktop footer hint. Concept2 and Fitbod are brand names: keep them.
+#: src/App.jsx
+msgid "Tap any session to expand · Share Concept2 links or Fitbod screenshots to log sessions"
+msgstr "Tap any session to expand · Share Concept2 links or Fitbod screenshots to log sessions"
+
+#: src/utils/stravaCallback.js
+msgid "That is a different Strava account from the one already connected. Disconnect the current account first."
+msgstr "That is a different Strava account from the one already connected. Disconnect the current account first."
+
+#: src/utils/stravaCallback.js
+msgid "The connection did not complete. Try again."
+msgstr "The connection did not complete. Try again."
+
+#: src/utils/stravaStatus.js
+msgid "The connection is missing activity read permission. Reconnect and approve activity access."
+msgstr "The connection is missing activity read permission. Reconnect and approve activity access."
+
+#. Error state detail
+#: src/components/StravaConnectPanel.jsx
+msgid "The connection itself may be fine — only this status read failed."
+msgstr "The connection itself may be fine — only this status read failed."
+
+#: src/utils/stravaCallback.js
+msgid "The connection link had expired or been used already. Start the connection again."
+msgstr "The connection link had expired or been used already. Start the connection again."
+
+#: src/utils/stravaCallback.js
+msgid "The connection link was opened incorrectly. Start the connection again."
+msgstr "The connection link was opened incorrectly. Start the connection again."
+
+#: src/utils/stravaCallback.js
+msgid "The connection was missing permission to read your activities. Connect again and approve activity access."
+msgstr "The connection was missing permission to read your activities. Connect again and approve activity access."
+
+#: src/utils/stravaStatus.js
+msgid "The last sync failed for an unrecognised reason. Try again."
+msgstr "The last sync failed for an unrecognised reason. Try again."
+
+#: src/utils/stravaStatus.js
+msgid "The limit has reset — you can sync again now."
+msgstr "The limit has reset — you can sync again now."
+
+#: src/utils/stravaStatus.js
+msgid "The scheduled import has not run recently. Sync now to catch up."
+msgstr "The scheduled import has not run recently. Sync now to catch up."
+
+#. Login error. Only shown in Spanish; English shows the server message.
+#: src/utils/authError.js
+msgid "The server took too long to answer. Try again."
+msgstr "The server took too long to answer. Try again."
+
+#: src/utils/stravaStatus.js
+msgid "The Strava token could not be refreshed. Reconnect to resume importing."
+msgstr "The Strava token could not be refreshed. Reconnect to resume importing."
+
+#. Login error. Only shown in Spanish; English shows the server message.
+#: src/utils/authError.js
+msgid "This account cannot sign in."
+msgstr "This account cannot sign in."
+
+#. Mobile tab bar
+#: src/constants/destinations.js
+msgid "Today"
+msgstr "Today"
+
+#. Login error. Only shown in Spanish; English shows the server message.
+#: src/utils/authError.js
+msgid "Too many attempts. Wait a few minutes and try again."
+msgstr "Too many attempts. Wait a few minutes and try again."
+
+#. Mobile tab bar
+#: src/constants/destinations.js
+msgid "Train"
+msgstr "Train"
+
+#. Login error for any unrecognised cause. Only shown in Spanish.
+#: src/utils/authError.js
+msgid "We could not sign you in. Try again."
+msgstr "We could not sign you in. Try again."
+
+#: src/utils/stravaStatus.js
+msgid "Working backwards from {from}."
+msgstr "Working backwards from {from}."
+
+#. Login error. Only shown in Spanish; English shows the server message.
+#: src/utils/authError.js
+msgid "Wrong email or password."
+msgstr "Wrong email or password."

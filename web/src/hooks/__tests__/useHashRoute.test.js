@@ -98,3 +98,37 @@ describe('useHashRoute', () => {
     expect(window.location.hash).toBe('#/coach');
   });
 });
+
+describe('useHashRoute — non-destination screens', () => {
+  const SCREENS = ['settings'];
+  beforeEach(() => setHash(''));
+  afterEach(() => setHash(''));
+
+  it('reads a screen it was given', () => {
+    setHash('#/settings');
+    const { result } = renderHook(() => useHashRoute(SCREENS));
+    expect(result.current[0]).toBe('settings');
+  });
+
+  it('navigates to a screen it was given', () => {
+    const { result } = renderHook(() => useHashRoute(SCREENS));
+    act(() => result.current[1]('settings'));
+    expect(result.current[0]).toBe('settings');
+    expect(window.location.hash).toBe('#/settings');
+  });
+
+  it('an initial route overrides the hash for the first render', () => {
+    setHash('#/today');
+    const { result } = renderHook(() => useHashRoute(SCREENS, 'settings'));
+    expect(result.current[0]).toBe('settings');
+  });
+
+  it('a screen is not a destination and is refused without being given', () => {
+    expect(isDestination('settings')).toBe(false);
+    setHash('#/settings');
+    const { result } = renderHook(() => useHashRoute());
+    expect(result.current[0]).toBe('today');
+    act(() => result.current[1]('settings'));
+    expect(result.current[0]).toBe('today');
+  });
+});

@@ -346,7 +346,7 @@ asking for: the split measured here cut the entry 395.4 → 134.7 KB (−66%) wh
 26.3 KB to the total. That bind was not theoretical: main sat at 399.2 KB of its
 400 KB total budget — 0.8 KB spare — so the next commit of any size would have failed. Judge a PR on the **entry** row.
 
-Both shells and all fourteen desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
+Both shells and all eleven desktop tabs are lazy (`AuthGate.jsx`, `App.jsx`), so
 recharts (90.7 KB, shared by seven files) is out of first paint entirely. What remains
 in the entry is React, react-query and `@supabase/supabase-js` — auth is needed before
 anything can render, so the client cannot be deferred. Note `createClient` pulls in
@@ -368,21 +368,37 @@ squat 3D 138.4 / 145 KB**, data 2.20 MB. R11 moved the hash parser out of
 `utils/squatRoute.js` into the tool, so the dashboard entry *dropped* 0.4 KB (147.3 →
 146.9) while both squat gates grew (entry +2.2, total +2.6 KB: squat-only static code
 counts against both). Both squat ceilings were raised in that change, `SQUAT_ENTRY`
-120 → 122 and `SQUAT_TOTAL` 30 → 34, on Scott's Gate-2 rule (first applied in PR C,
-#470, which took `SQUAT_ENTRY` 117 → 120; `docs/squat/HERO_STAGE_SPEC.md`): raise a
-squat budget to the measured figure plus ~2 KB, rounded to a whole KB, with a dated
-comment, and never relax the dashboard's 150. `SQUAT_TOTAL` is the loose ceiling by the
+120 → 122 and `SQUAT_TOTAL` 30 → 34, under the budget-raise rule below (first applied
+in PR C, #470, which took `SQUAT_ENTRY` 117 → 120). `SQUAT_TOTAL` is the loose ceiling by the
 script's own definition — never precached, `CacheFirst` at runtime, stripped from the
 APK — so those bytes are on nobody's first paint. **PR B's strain panel (#471) fitted
 without a raise** — measured 2026-11-13: **entry 146.9 / 150, total 377.6 / 400, squat
 entry 121.6 / 122, squat total 33.1 / 34, squat 3D 138.4 / 145 KB**, data 2.20 MB. **Spare
 after PR B: squat entry 0.4 KB, squat total 0.9 KB.** The raise Scott agreed for PR B was
 not needed, so it carries to PR A (director camera + autoplay), under the same rule, unless
-the squat-entry trim (#467) lands first. The muscle list is
+the squat-entry trim (#467) lands first. **Latest — measured 2026-11-13 on `main` at
+`961c4c5`: entry 146.9 / 150, total 334.8 / 400, squat entry 121.5 / 122, squat total
+33.0 / 34, squat 3D 138.4 / 145 KB, data 2.20 / 2.30 MB.** Total fell 42.8 KB from PR B's
+377.6 as the product-coherence slices deleted code: #499 (Program and Journal tabs)
+−32.6 → 345.0, #502 (benchmark ladder) −4.3 → 340.7, #506 (roster) −7.4 → 333.3, then
+#500 (health records) +1.5. None of it touched the entry. The muscle list is
 deliberately not lazy-loaded (the canvas is `aria-hidden` with `tabindex="-1"`, so the
 list is the model's accessible substitute and must not sit behind a chunk that can fail
 to fetch).
 `/squat` must never import `supabaseClient.js` (`RouteRoot.test.jsx` pins it).
+
+**i18n PR-1 (es-CO on Lingui 6) raised two budgets and added a third**, measured
+2026-11-13: **entry 155.6 / 157, total 338.7 / 400, squat entry 122.0 / 124, squat
+total 33.0 / 34, squat 3D 138.4 / 145 KB, DASH_ES 2.8 / 5 KB**, data 2.20 MB.
+**ENTRY 150 → 157**: the Lingui runtime and the English catalog are on first paint by
+design (production message descriptors are id-only, so English cannot render without
+its catalog). **SQUAT_ENTRY 122 → 124**: `src/i18n/lang.js` and the root fallback's
+words sit in the shared `main` chunk, because RouteRoot's offline message and the
+Sentry root fallback render before any product chunk. **DASH_ES** is new: the
+dashboard's Spanish catalog, reachable only through `src/locales/es.po`, never
+precached, and carved out of TOTAL so a language never reads as the dashboard
+growing. Spare after it: entry 1.4 KB, squat entry 2.0 KB — the 3.2 KB entry figure
+below predates it.
 
 **Squat-only JS is `squat-` prefixed, never precached, and cached at runtime instead** — a
 reversal of PR1, where the tool's (then small) JS chunks were precached. `chunkFileNames`
@@ -403,13 +419,44 @@ fix round added **+0.3 KB** more (→ 146.4): `RouteRoot` resolves the squat the
 `/squat/` → `/squat`. PR2a added **+0.2 KB** (→ 146.6): `RouteRoot`'s first-visit offline
 message when the tool's chunk cannot be fetched. PR2b-i added **+0.2 KB** (→ 146.8), all
 of it shared code the muscle panel pulled across the chunk boundary. The dashboard pays
-~2.3 KB of its 150 KB entry for the second product; that leaves 3.2 KB spare, so the next
-entry-growing change should look at the `RealtimeClient` reclaim above first.
+~2.3 KB of its 150 KB entry for the second product; that leaves 3.1 KB spare
+(2026-11-13). The next
+entry-growing change can win room back with the `RealtimeClient` reclaim or raise the
+budget under the rule below.
 
 Session Replay is still **not** enabled: it costs ~35-50 KB gzip and `Sentry.init` runs
-at first paint, so it lands in the entry, where there is 3.2 KB spare (2026-11-05). It is now a
+at first paint, so it lands in the entry, where there is 3.1 KB spare (2026-11-13). It is now a
 lazy-loading question (`Sentry.lazyLoadIntegration`) rather than a flat impossibility.
 `npm run size` enforces every budget inside the **Build** job.
+
+**Budgets rise deliberately, never by drift (#504).** No budget is a performance
+threshold; each is a ratchet against unnoticed creep, and a feature that earns its bytes
+may raise one. This applies to every gate: ENTRY, TOTAL, SQUAT_ENTRY, SQUAT_TOTAL,
+SQUAT_3D, SQUAT_DATA, and the planned per-language DASH_ES / SQUAT_ES. In the PR that
+needs the room:
+
+1. Run `npm run build && npm run size`, then raise the ceiling to the measured figure
+   plus ~2 KB, rounded to a whole KB. SQUAT_3D and SQUAT_DATA keep proportionate
+   headroom instead (~5% and ~0.1 MB, as their existing comments in that file do):
+   a flat 2 KB is noise against 138 KB of three.js or 2.2 MB of raw data.
+2. Add a dated comment beside the constant in `web/scripts/check-bundle-size.mjs`
+   saying what grew and why it is worth it, in that file's style.
+3. Quote the before/after `npm run size` output in the PR body and update the figures
+   in this section.
+
+Scott approves each raise at the PR's Gate 2, as before; the change is that a raise is
+now an option, not a breach. A raise is never a side effect of another change, and
+budgets still ratchet down when the bundle shrinks. `npm run size` stays in the Build
+job: the "never" is gone, the check is not.
+
+Design rules that keep raises small:
+
+- Heavy content (motion data, 3D, per-variation prose) loads on demand, never in first
+  paint.
+- Language catalogs and squat-only chunks stay out of the Workbox precache.
+- The `RealtimeClient` reclaim (above) is an optional clean-up to win entry headroom
+  back. It is estimated at 20–26 KB but **unmeasured**, so measure it before counting
+  on it.
 
 **Never quote a bundle figure from this file — re-measure it.** These numbers drift, and
 a stale one has already mis-scoped work here (the doc said ~360 KB with ~40 KB spare when

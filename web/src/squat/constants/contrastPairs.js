@@ -35,11 +35,11 @@ export const GROUNDS = {
 // bold). `large` is set only where every use of the pair qualifies.
 export const PAIRS = [
   // Off-card, on the page ground.
-  { fg: 'text', ground: 'bg', where: 'h1 (30–40 px), h2, secondary buttons' },
+  { fg: 'text', ground: 'bg', where: 'h2, secondary buttons' },
   { fg: 'textSubtle', ground: 'bg', where: 'hero subtitle, micro label' },
   // Header.
   { fg: 'positive', ground: 'header', where: 'SPLITIQ wordmark 13–15 px' },
-  { fg: 'text', ground: 'header', where: '"Squat" 14 px' },
+  { fg: 'text', ground: 'header', where: 'h1 "High-bar back squat" 14 px' },
   { fg: 'accent', ground: 'header', where: '"Open SplitIQ" link 13 px' },
   { fg: 'textSubtle', ground: 'field', where: 'theme control, guide facts' },
   { fg: 'text', ground: 'field', where: 'guide fact values' },

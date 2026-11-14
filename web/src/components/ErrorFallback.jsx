@@ -1,12 +1,17 @@
 // Fallback UI rendered by the Sentry error boundary when a render crashes.
-// Kept dependency-free and self-contained so it can never itself throw.
+// Kept dependency-free and self-contained so it can never itself throw — which
+// is also why it reads the stored language itself rather than through Lingui:
+// it renders outside every provider, possibly before any catalog has loaded.
 import { THEME } from '../constants/theme.js';
 import { FONT } from '../constants/type.js';
+import { LANG_TAG, ROOT_ERROR_TEXT, initialLang } from '../i18n/lang.js';
 
 export default function ErrorFallback({ resetError }) {
+  const lang = initialLang();
   return (
     <div
       role="alert"
+      lang={LANG_TAG[lang]}
       style={{
         minHeight: '100vh',
         display: 'flex',
@@ -29,7 +34,7 @@ export default function ErrorFallback({ resetError }) {
           letterSpacing: 1,
         }}
       >
-        SOMETHING WENT WRONG
+        {ROOT_ERROR_TEXT.heading[lang]}
       </div>
       <div
         style={{
@@ -39,8 +44,7 @@ export default function ErrorFallback({ resetError }) {
           maxWidth: 320,
         }}
       >
-        The error has been reported. Try again, and if it keeps happening reload
-        the app.
+        {ROOT_ERROR_TEXT.body[lang]}
       </div>
       <button
         onClick={resetError}
@@ -57,7 +61,7 @@ export default function ErrorFallback({ resetError }) {
           fontFamily: 'inherit',
         }}
       >
-        TRY AGAIN
+        {ROOT_ERROR_TEXT.retry[lang]}
       </button>
     </div>
   );

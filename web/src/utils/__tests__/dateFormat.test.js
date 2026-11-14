@@ -1,5 +1,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { toISODate, toLogDate } from '../dateFormat.js';
+import {
+  toISODate,
+  toLogDate,
+  logEntriesForDate,
+  clockTime,
+} from '../dateFormat.js';
 
 describe('toISODate', () => {
   it('normalizes "7/9/26" to 2026-07-09', () => {
@@ -91,5 +96,83 @@ describe('toLogDate', () => {
     const lateNight = new Date(Date.UTC(2026, 7, 19, 3, 30));
     expect(lateNight.toISOString().slice(0, 10)).toBe('2026-08-19');
     expect(toLogDate(lateNight)).toBe('8/18/26');
+  });
+});
+
+describe('logEntriesForDate', () => {
+  it('builds an unpadded M/D/YY key and never matches a padded one', () => {
+    const rows = [
+      { date: '7/9/30', label: 'Unpadded' },
+      { date: '07/09/30', label: 'Padded' },
+    ];
+    expect(logEntriesForDate(new Date(2030, 6, 9), rows)).toEqual([rows[0]]);
+  });
+
+  it('handles a single-digit month with a double-digit day and the reverse', () => {
+    const rows = [
+      { date: '3/14/30', label: 'March' },
+      { date: '11/5/30', label: 'November' },
+    ];
+    expect(logEntriesForDate(new Date(2030, 2, 14), rows)).toEqual([rows[0]]);
+    expect(logEntriesForDate(new Date(2030, 10, 5), rows)).toEqual([rows[1]]);
+  });
+
+  it('rolls December 31 over to January 1 of the next year', () => {
+    const rows = [
+      { date: '12/31/30', label: 'NYE' },
+      { date: '1/1/31', label: 'NYD' },
+    ];
+    expect(logEntriesForDate(new Date(2030, 11, 31), rows)).toEqual([rows[0]]);
+    expect(logEntriesForDate(new Date(2030, 11, 31 + 1), rows)).toEqual([
+      rows[1],
+    ]);
+  });
+
+  it('pads the two-digit year', () => {
+    const rows = [{ date: '1/5/00', label: 'Y2K' }];
+    expect(logEntriesForDate(new Date(2000, 0, 5), rows)).toEqual(rows);
+  });
+
+  it('returns [] when nothing matches', () => {
+    expect(
+      logEntriesForDate(new Date(2030, 0, 2), [{ date: '1/3/30' }])
+    ).toEqual([]);
+  });
+
+  it('treats a null or undefined list as empty', () => {
+    expect(logEntriesForDate(new Date(2030, 0, 2), null)).toEqual([]);
+    expect(logEntriesForDate(new Date(2030, 0, 2), undefined)).toEqual([]);
+  });
+
+  it('returns [] for an invalid Date rather than matching today', () => {
+    const today = new Date();
+    const rows = [{ date: toLogDate(today), label: 'Today' }];
+    expect(logEntriesForDate(new Date('nope'), rows)).toEqual([]);
+    expect(logEntriesForDate(undefined, rows)).toEqual([]);
+  });
+
+  it('is status-blind: cancelled and completed rows on one day both return', () => {
+    const rows = [
+      { date: '4/2/30', label: 'A', status: 'cancelled' },
+      { date: '4/2/30', label: 'B', status: 'completed' },
+    ];
+    expect(logEntriesForDate(new Date(2030, 3, 2), rows)).toEqual(rows);
+  });
+});
+
+describe('clockTime', () => {
+  afterEach(() => {
+    delete globalThis.process.env.TZ;
+  });
+
+  it('renders the local 24-hour wall clock, zero-padded', () => {
+    expect(clockTime(new Date(2026, 7, 18, 7, 5).getTime())).toBe('07:05');
+    expect(clockTime(new Date(2026, 7, 18, 23, 59))).toBe('23:59');
+  });
+
+  it('uses the local zone, not UTC, either side of midnight', () => {
+    globalThis.process.env.TZ = 'Australia/Perth';
+    // 16:30Z is 00:30 the next day in Perth (UTC+8, no DST).
+    expect(clockTime(Date.UTC(2026, 7, 20, 16, 30))).toBe('00:30');
   });
 });

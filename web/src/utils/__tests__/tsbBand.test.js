@@ -51,6 +51,16 @@ describe('tsbBand', () => {
     expect(new Set(TSB_BANDS.map((b) => b.token)).size).toBe(TSB_BANDS.length);
     expect(new Set(TSB_BANDS.map((b) => b.label)).size).toBe(TSB_BANDS.length);
   });
+
+  // #421: labels render on MobileToday and MobileAnalytics; they describe load,
+  // they never tell the user what to do today.
+  it('labels describe the load and prescribe nothing', () => {
+    for (const b of TSB_BANDS) {
+      expect(b.label, b.key).not.toMatch(
+        /\b(rest|train|skip|add|protect|ready for|critical|mid-week)\b/i
+      );
+    }
+  });
 });
 
 describe('no surface bands TSB on its own thresholds', () => {

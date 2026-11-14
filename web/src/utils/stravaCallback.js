@@ -6,6 +6,9 @@
 // Pure so the parsing and the "which message" branches are covered without
 // mounting App. App.jsx only calls these three.
 
+import { i18n } from '@lingui/core';
+import { msg, t } from '@lingui/core/macro';
+
 const PARAMS = ['strava', 'reason'];
 
 // `reason` is the redirect vocabulary emitted by strava-oauth-callback's fail()
@@ -28,8 +31,25 @@ export const CALLBACK_REASON_LABELS = {
   unknown: 'The connection did not complete. Try again.',
 };
 
+// The labels above stay the English reference the tests read; these render, in
+// the active language. A test pins every message to its label.
+export const CALLBACK_REASON_MESSAGES = {
+  state: msg`The connection link had expired or been used already. Start the connection again.`,
+  code: msg`Strava did not send back an authorisation code. Start the connection again.`,
+  exchange: msg`Strava rejected the connection attempt. Try connecting again.`,
+  insufficient_scope: msg`The connection was missing permission to read your activities. Connect again and approve activity access.`,
+  athlete_mismatch: msg`That is a different Strava account from the one already connected. Disconnect the current account first.`,
+  method: msg`The connection link was opened incorrectly. Start the connection again.`,
+  server: msg`Something went wrong finishing the connection. Try again.`,
+  unknown: msg`The connection did not complete. Try again.`,
+};
+
 export function describeCallbackReason(reason) {
-  return CALLBACK_REASON_LABELS[reason] ?? CALLBACK_REASON_LABELS.unknown;
+  return i18n._(
+    CALLBACK_REASON_LABELS[reason]
+      ? CALLBACK_REASON_MESSAGES[reason]
+      : CALLBACK_REASON_MESSAGES.unknown
+  );
 }
 
 function hashQuery(hash) {
@@ -54,7 +74,7 @@ export function stravaCallbackMessage(callback) {
   if (callback.status === 'connected') {
     return {
       tone: 'positive',
-      text: 'Strava connected. Your history is importing now — it continues in the background.',
+      text: t`Strava connected. Your history is importing now — it continues in the background.`,
     };
   }
   // Declining on Strava's consent screen is a choice, not a fault: say so
@@ -62,12 +82,13 @@ export function stravaCallbackMessage(callback) {
   if (callback.reason === 'denied') {
     return {
       tone: 'muted',
-      text: 'Strava connection cancelled. Nothing was changed — connect whenever you are ready.',
+      text: t`Strava connection cancelled. Nothing was changed — connect whenever you are ready.`,
     };
   }
+  const why = describeCallbackReason(callback.reason);
   return {
     tone: 'critical',
-    text: `Strava could not be connected. ${describeCallbackReason(callback.reason)}`,
+    text: t`Strava could not be connected. ${why}`,
   };
 }
 

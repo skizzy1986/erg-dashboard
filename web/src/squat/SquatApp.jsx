@@ -32,7 +32,6 @@ import AttributionFooter from './components/AttributionFooter.jsx';
 import {
   card,
   linkButton,
-  microLabel,
   primaryButton,
   secondaryButton,
   touchLink,
@@ -505,27 +504,6 @@ export default function SquatApp({ loadScene = loadSceneModule } = {}) {
             hostRef={hostRef}
             wide={wide}
             strain={strainInline ? null : strain}
-            title={
-              <>
-                {wide && (
-                  <span style={{ ...microLabel, display: 'block' }}>
-                    Coaching model
-                  </span>
-                )}
-                <h1
-                  style={{
-                    margin: 0,
-                    fontSize: wide ? 40 : 30,
-                    fontWeight: 700,
-                    letterSpacing: wide ? -1 : -0.5,
-                    lineHeight: 1.1,
-                    color: THEME.text,
-                  }}
-                >
-                  High-bar back squat
-                </h1>
-              </>
-            }
           />
           <StageControls
             view={controlsView}

@@ -1,5 +1,7 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { lingui } from '@lingui/vite-plugin';
 import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { DEFAULT_THEME } from './src/constants/themeValues.js';
@@ -9,6 +11,8 @@ import {
   SQUAT_GLOB_IGNORES,
   squatChunkFileNames,
 } from './scripts/squatChunks.mjs';
+import { HEALTH_NETWORK_ONLY_ROUTE } from './scripts/healthRoute.mjs';
+import { I18N_CODE_ROUTE, I18N_GLOB_IGNORES } from './scripts/i18nChunks.mjs';
 
 // The ground was written down in five places — index.html twice, two PWA
 // manifests and the Android launch theme — each with a "keep in sync" comment
@@ -73,6 +77,7 @@ const sentryDefine = {
 export default defineConfig({
   plugins: [
     react(),
+    lingui({ macroTransform: true }),
     substituteGround,
     VitePWA({
       registerType: 'autoUpdate',
@@ -88,7 +93,10 @@ export default defineConfig({
         // The tool's JS is excluded the same way (#382 PR2): with three.js it
         // is ~150 KB gzip that every installed dashboard would fetch on each
         // update. It is cached on first use (squat-code rule below).
-        globIgnores: SQUAT_GLOB_IGNORES,
+        //
+        // A translated catalog (i18n-*) likewise: only a visitor who chose
+        // that language fetches it, and it is cached on first use (i18n-code).
+        globIgnores: SQUAT_GLOB_IGNORES.concat(I18N_GLOB_IGNORES),
         runtimeCaching: [
           {
             // Content-hashed and immutable, so cache-first is safe, and a
@@ -102,6 +110,9 @@ export default defineConfig({
             },
           },
           SQUAT_CODE_ROUTE,
+          I18N_CODE_ROUTE,
+          // Before the generic rule: Workbox serves the first matching route.
+          HEALTH_NETWORK_ONLY_ROUTE,
           {
             urlPattern: /supabase\.co\/rest/,
             handler: 'NetworkFirst',
@@ -116,7 +127,7 @@ export default defineConfig({
       manifest: {
         name: 'SplitIQ',
         short_name: 'SplitIQ',
-        description: 'Performance intelligence for serious athletes.',
+        description: 'A training app where the movements explain themselves.',
         theme_color: GROUND,
         background_color: GROUND,
         display: 'standalone',
@@ -180,6 +191,16 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.js'],
+    // Every render gets Lingui's provider without editing a test file. Exact
+    // match only: src/test/rtl.js reaches the real package by its file path.
+    alias: [
+      {
+        find: /^@testing-library\/react$/,
+        replacement: fileURLToPath(
+          new URL('./src/test/rtl.js', import.meta.url)
+        ),
+      },
+    ],
     // Playwright E2E specs live in e2e/ and must not be collected by Vitest.
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
     // JUnit XML is the only format Sentry Test Analytics ingests. `default`
@@ -249,33 +270,32 @@ export default defineConfig({
           functions: 80,
           branches: 70,
         },
-        'src/utils/eventWindow.js': { lines: 80, functions: 80, branches: 70 },
-        'src/utils/benchmarkStatus.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/hooks/useBenchmarkStatuses.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/components/BenchmarkBadge.jsx': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/components/BenchmarkLinkControl.jsx': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/hooks/useLinkBenchmarkSession.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
         'src/utils/dateFormat.js': { lines: 80, functions: 80, branches: 70 },
+        'src/hooks/useBpReadings.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useLabResults.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useInjuries.js': { lines: 80, functions: 80, branches: 70 },
+        'src/utils/healthRecords.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/components/HealthRecordCard.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/utils/ergTrend.js': { lines: 80, functions: 80, branches: 70 },
+        // #422 rewrote most of ErgView; pinned at its measured coverage after
+        // the slice (94.33 / 90.9 / 89.65), rounded down (2026-11-13).
+        'src/views/ErgView.jsx': { lines: 94, functions: 90, branches: 89 },
         'src/utils/invalidateSessionQueries.js': {
           lines: 80,
           functions: 80,
@@ -293,11 +313,6 @@ export default defineConfig({
           branches: 70,
         },
         'src/hooks/useErgSessions.js': {
-          lines: 80,
-          functions: 80,
-          branches: 70,
-        },
-        'src/hooks/useBenchmarkSessions.js': {
           lines: 80,
           functions: 80,
           branches: 70,
@@ -328,6 +343,16 @@ export default defineConfig({
           branches: 70,
         },
         'src/views/MobilityView.jsx': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/utils/liftSeries.js': {
+          lines: 80,
+          functions: 80,
+          branches: 70,
+        },
+        'src/hooks/useLiftHistory.js': {
           lines: 80,
           functions: 80,
           branches: 70,

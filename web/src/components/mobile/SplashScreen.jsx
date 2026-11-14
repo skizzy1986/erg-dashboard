@@ -2,6 +2,7 @@ import { THEME } from '../../constants/theme.js';
 import { splashCss } from '../../utils/splashCss.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { FONT } from '../../constants/type.js';
+import { Trans } from '@lingui/react/macro';
 
 const CSS = splashCss(THEME);
 
@@ -55,12 +56,20 @@ export default function SplashScreen() {
         <div className="siq-splash__word">
           Split<span className="siq-splash__word-iq">IQ</span>
         </div>
-        <div className="siq-splash__sub">ERG · STRENGTH · BIKE</div>
+        <div className="siq-splash__sub">
+          <Trans comment="Splash-screen tagline, all capitals">
+            ERG · STRENGTH · BIKE
+          </Trans>
+        </div>
       </div>
       <div className="siq-splash__progress">
         <div className="siq-splash__track" />
       </div>
-      <div className="siq-splash__caption">SYNCING TRAINING LOG</div>
+      <div className="siq-splash__caption">
+        <Trans comment="Splash-screen loading caption, all capitals">
+          SYNCING TRAINING LOG
+        </Trans>
+      </div>
     </div>
   );
 }

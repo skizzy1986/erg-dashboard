@@ -5,7 +5,7 @@
 // newly-logged sessions silently vanish from training-load calculations.
 export const COMPLETED_STATUSES = ['actual', 'completed', 'logged'];
 
-// A forward-looking prescription — a session Scott intends to do, not one that
+// A forward-looking prescription — a session the user intends to do, not one that
 // happened. Deliberately NOT in COMPLETED_STATUSES: it must never clear a
 // benchmark, only reschedule one.
 export const PLANNED_STATUS = 'planned';

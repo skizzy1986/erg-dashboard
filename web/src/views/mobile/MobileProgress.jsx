@@ -75,7 +75,7 @@ export default function MobileProgress() {
         })}
       </div>
       {active.render()}
-      {/* Progress is where Scott reviews whether the log is complete, so the
+      {/* Progress is where the user reviews whether the log is complete, so the
           import's health belongs at the foot of it. Deliberately NOT a sixth
           destination — DESTINATIONS is the fixed five from DESIGN_BRIEF.md §2.2. */}
       <StravaConnectPanel compact />

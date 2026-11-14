@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient.js';
+import { i18n } from '@lingui/core';
+import { msg } from '@lingui/core/macro';
 
 // The browser NEVER calls Strava directly. `strava-connect` builds the
 // authorize URL server-side (it is the only side that holds the client secret)
@@ -10,6 +12,13 @@ import { supabase } from '../supabaseClient.js';
 // true, and a test in useStravaConnect.test.jsx enforces it.
 export const DISCONNECT_CONFIRM =
   'Disconnect Strava? Future activities will stop importing. Sessions already imported are never deleted — they stay in your log.';
+// The same words as a descriptor, so the browser's confirm dialog is asked in
+// the active language. The constant stays English; a test pins the two.
+export const DISCONNECT_CONFIRM_MSG = msg({
+  message:
+    'Disconnect Strava? Future activities will stop importing. Sessions already imported are never deleted — they stay in your log.',
+  comment: 'Browser confirmation dialog before disconnecting Strava',
+});
 
 export function useStravaConnect() {
   const queryClient = useQueryClient();
@@ -51,7 +60,10 @@ export function useStravaConnect() {
   // The confirm lives with the mutation, not in the panel, so the promise that
   // imported sessions survive is made in exactly one place.
   const requestDisconnect = useCallback(() => {
-    if (typeof window !== 'undefined' && !window.confirm(DISCONNECT_CONFIRM)) {
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(i18n._(DISCONNECT_CONFIRM_MSG))
+    ) {
       return;
     }
     disconnect.mutate();

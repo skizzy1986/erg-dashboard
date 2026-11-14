@@ -8,10 +8,9 @@ import { RADIUS, SPACE, TYPE } from '../../constants/tokens.js';
 // Train is the doing: the session in front of you. It absorbs what were the
 // separate "Live" and "Strength" tabs — DESIGN_BRIEF.md §2.2.
 //
-// The prescription card that should lead this screen is HANDOFF.md §2's
-// PrescriptionCard and lands with C1. Until then these are the two entry
-// points, so nothing that was reachable before this change is unreachable
-// after it.
+// When the planner (R40) writes today's session as a sessions row with
+// status 'planned', it leads this screen. Until then these are the two entry
+// points, so nothing reachable before this change is unreachable after it.
 const ENTRIES = [
   {
     mode: 'erg',

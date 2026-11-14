@@ -572,6 +572,38 @@ test.describe('phone 390 px layout', () => {
   });
 });
 
+// #501: the page's one h1 is the header breadcrumb, not a card on the stage.
+// The header row must hold it, the theme control and the link without
+// overflowing; at 360 px the h1 truncates with an ellipsis instead.
+async function expectTitleInHeader(page) {
+  const h1 = page.getByRole('heading', { level: 1 });
+  await expect(h1).toHaveCount(1);
+  await expect(h1).toHaveText('High-bar back squat');
+  await expect(page.locator('body header').first().locator('h1')).toHaveCount(
+    1
+  );
+  await expect(
+    page.getByRole('region', { name: '3D model' }).locator('h1')
+  ).toHaveCount(0);
+  const fit = await page.evaluate(() => {
+    const header = document.querySelector('header');
+    const row = header.firstElementChild;
+    const right = (el) => el.getBoundingClientRect().right;
+    const link = [...header.querySelectorAll('a')].find((a) =>
+      a.textContent.startsWith('Open SplitIQ')
+    );
+    return {
+      rowFits: row.scrollWidth <= row.clientWidth,
+      headerFits: header.scrollWidth <= header.clientWidth,
+      linkRight: right(link),
+      vw: document.documentElement.clientWidth,
+    };
+  });
+  expect(fit.rowFits).toBe(true);
+  expect(fit.headerFits).toBe(true);
+  expect(fit.linkRight).toBeLessThanOrEqual(fit.vw);
+}
+
 for (const width of [360, 390]) {
   test.describe(`phone ${width} px`, () => {
     test.use({
@@ -585,6 +617,10 @@ for (const width of [360, 390]) {
     }) => {
       await openReady(page);
       expect(await noHorizontalScroll(page)).toBe(true);
+      await expectTitleInHeader(page);
+      await expect(
+        page.getByRole('button', { name: /^Theme: / })
+      ).toBeInViewport({ ratio: 1 });
       await expect(page.getByRole('link', { name: /Open SplitIQ/ })).toHaveText(
         /^Open SplitIQ/
       );
@@ -803,6 +839,7 @@ for (const [label, viewport, phone] of [
       page,
     }) => {
       await openReady(page);
+      await expectTitleInHeader(page);
       const stage = await page
         .getByRole('region', { name: '3D model' })
         .boundingBox();
@@ -814,6 +851,22 @@ for (const [label, viewport, phone] of [
         expect(stage.height).toBeGreaterThanOrEqual(520);
         // Fills the viewport below the header, less the hero's padding.
         expect(stage.y + stage.height).toBeGreaterThanOrEqual(720 - 16 - 1);
+      }
+      // #501: the framing chip is placed by its own wrapper, top-right on
+      // desktop and in the stage's bottom corner on a phone.
+      const chip = await page
+        .getByRole('region', { name: '3D model' })
+        .getByText('Modelled, not measured')
+        .boundingBox();
+      expect(chip.x).toBeGreaterThanOrEqual(stage.x);
+      expect(chip.y).toBeGreaterThanOrEqual(stage.y);
+      expect(chip.x + chip.width).toBeLessThanOrEqual(stage.x + stage.width);
+      expect(chip.y + chip.height).toBeLessThanOrEqual(stage.y + stage.height);
+      if (phone) {
+        expect(chip.y).toBeGreaterThanOrEqual(stage.y + stage.height / 2);
+      } else {
+        expect(stage.x + stage.width - (chip.x + chip.width)).toBeLessThan(32);
+        expect(chip.y - stage.y).toBeLessThan(32);
       }
       // Docked: the rail sits beside the stage on desktop, the bar under it on
       // a phone (criterion 17).

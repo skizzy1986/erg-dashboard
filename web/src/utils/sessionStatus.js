@@ -13,7 +13,7 @@ import {
 // before the constraint removed the last way to reach it.
 //
 // Failing closed is deliberate. An unknown value hides the session loudly —
-// Scott looks for it and it is missing — rather than counting phantom training
+// the user looks for it and it is missing — rather than counting phantom training
 // silently. It also matches useTSSHistory.js:17, which excludes unknown
 // statuses server-side via .in('status', COMPLETED_STATUSES).
 export function isCompletedStatus(status) {

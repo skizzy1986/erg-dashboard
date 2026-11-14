@@ -28,7 +28,7 @@ viewer sees what the lift does without hunting through controls or scrolling.
 - Don't pad: replace, don't add alongside. Three.js and scene code stay out of `SquatApp`'s static graph.
 - Each PR runs `npm run build && npm run size` and pastes the output into the PR body.
 - If `SQUAT_ENTRY` exceeds its ceiling, raise `MAX_SQUAT_ENTRY_GZIP_KB` to the measured figure + ~2 KB, with a dated comment in that file's style, and update the bundle paragraph in `CLAUDE.md`.
-- The dashboard entry budget (150 KB) is **not** relaxed. Flag anything that adds bytes to `main`; `constants/themeValues.js` and `constants/theme.js` are emitted from `main.jsx`.
+- The dashboard entry budget (150 KB) rises only under the deliberate-raise rule in `CLAUDE.md` (#504), never as a side effect of a squat PR. Flag anything that adds bytes to `main`; `constants/themeValues.js` and `constants/theme.js` are emitted from `main.jsx`.
 - Caveat: #465 (the gate does not measure the production build) is open, so figures are indicative until it lands.
 
 **Gate 2:**
@@ -100,6 +100,7 @@ Left: **`SquatStage`** fills its cell and keeps the canvas host, the "Modelled, 
 - `<h1>High-bar back squat</h1>` moves into the stage's top-left overlay on an opaque `THEME.surface` chip, replacing the "3D model" micro-label.
 - `section aria-label="3D model"` stays.
 - The h1 remains the first heading in DOM order.
+- *Superseded by #501 (2026-11-13): the h1 now lives in the squat header ("SPLITIQ / High-bar back squat"); the stage carries no title.*
 
 Right: the **`StageControls` rail**, one card at full hero height. It is a flex column with no internal scroll, in this order:
 
@@ -157,7 +158,7 @@ Modified files:
   - Add an optional `compact` (bool).
   - Their `<h2>` labels become `<h3>` under one rail `<h2>Controls</h2>`. Keep them: e2e uses the group names.
 - **`SquatStage.jsx`**:
-  - New optional `title` (node) for the top-left overlay.
+  - New optional `title` (node) for the top-left overlay. *Superseded by #501 (2026-11-13): the prop is removed; the h1 lives in the squat header.*
   - New optional `children` (overlay nodes after the chips; PR B's strain panel goes here).
   - `minHeight` becomes `height: '100%'` with a 520 / 460 floor.
 - **`SquatApp.jsx`**: restructured per the layout. The intro's duplicate buttons are deleted (they move to the rail footer). MuscleSection and PhaseStrip are unchanged.
@@ -184,7 +185,7 @@ PR C is mostly a move. It adds the rail and the phone disclosure, and removes th
 ### Risks
 
 - `svh` falls back to minHeight on older Safari.
-- Moving the h1 into an overlay could upset the heading order the axe e2e checks.
+- Moving the h1 into an overlay could upset the heading order the axe e2e checks. *Superseded by #501 (2026-11-13): the h1 now lives in the squat header ("SPLITIQ / High-bar back squat"); the stage carries no title.*
 - e2e selectors use group names, which are preserved.
 - Rollback is a plain revert: layout only, no data.
 

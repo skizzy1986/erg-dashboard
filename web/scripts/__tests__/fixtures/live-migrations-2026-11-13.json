@@ -1,0 +1,140 @@
+{
+  "migrations": [
+    {
+      "version": "20260619235836",
+      "name": "sessions_integration_columns_and_owner_rls"
+    },
+    {
+      "version": "20260620000422",
+      "name": "sessions_add_source_column"
+    },
+    {
+      "version": "20260620122709",
+      "name": "strength_logger_schema"
+    },
+    {
+      "version": "20260620122747",
+      "name": "strength_logger_views_and_rollup"
+    },
+    {
+      "version": "20260620225816",
+      "name": "strength_templates_and_assignments"
+    },
+    {
+      "version": "20260620231523",
+      "name": "strength_coach_suggestions_and_performance_views"
+    },
+    {
+      "version": "20260621115135",
+      "name": "create_vitals_table"
+    },
+    {
+      "version": "20260622031616",
+      "name": "vitals_user_date_unique"
+    },
+    {
+      "version": "20260622031638",
+      "name": "vitals_upsert_coalesce_fn"
+    },
+    {
+      "version": "20260622043728",
+      "name": "exercise_media_phase1"
+    },
+    {
+      "version": "20260622043757",
+      "name": "exercise_media_harden_function"
+    },
+    {
+      "version": "20260622045110",
+      "name": "exercise_with_media_add_images"
+    },
+    {
+      "version": "20260622045846",
+      "name": "exercise_prefs"
+    },
+    {
+      "version": "20260622061329",
+      "name": "wo004_strength_templates"
+    },
+    {
+      "version": "20260622062540",
+      "name": "enable_cron_and_net_for_vitals_import"
+    },
+    {
+      "version": "20260622173542",
+      "name": "backup_snapshots_infra"
+    },
+    {
+      "version": "20260622173551",
+      "name": "schedule_daily_backup"
+    },
+    {
+      "version": "20260623013027",
+      "name": "wo007_work_orders_and_shape_gate"
+    },
+    {
+      "version": "20260623152837",
+      "name": "add_source_column_to_sessions"
+    },
+    {
+      "version": "20260625165710",
+      "name": "002_coach_messages"
+    },
+    {
+      "version": "20260629075627",
+      "name": "005_vitals_activity_columns"
+    },
+    {
+      "version": "20260629081912",
+      "name": "add_timed_exercise_columns"
+    },
+    {
+      "version": "20260701134834",
+      "name": "context_store_coach_log_and_anchors"
+    },
+    {
+      "version": "20260821154335",
+      "name": "sessions_date_iso"
+    },
+    {
+      "version": "20260821155509",
+      "name": "sessions_date_iso_pin_search_path"
+    },
+    {
+      "version": "20260821170735",
+      "name": "sessions_benchmark_key"
+    },
+    {
+      "version": "20260823071356",
+      "name": "sessions_status_constraint"
+    },
+    {
+      "version": "20261106035559",
+      "name": "bp_readings"
+    },
+    {
+      "version": "20261106035601",
+      "name": "vitals_nutrition_intake"
+    },
+    {
+      "version": "20261106105922",
+      "name": "011_revoke_security_definer_execute"
+    },
+    {
+      "version": "20261107040151",
+      "name": "013_drop_coach_messages"
+    },
+    {
+      "version": "20261109010647",
+      "name": "014_revoke_default_function_execute"
+    },
+    {
+      "version": "20261113111854",
+      "name": "015_bp_readings"
+    },
+    {
+      "version": "20261113111929",
+      "name": "016_health_records"
+    }
+  ]
+}

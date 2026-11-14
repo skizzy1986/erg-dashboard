@@ -131,20 +131,6 @@ test.describe('desktop shell', () => {
     await shot(page, 'desktop-calendar');
   });
 
-  test('program', async ({ page, context }) => {
-    await openAuthed(page, context);
-    await expect(nav(page, 'PROGRAM')).toBeVisible();
-    await switchTo(page, nav(page, 'PROGRAM'));
-    await shot(page, 'desktop-program');
-  });
-
-  test('journal', async ({ page, context }) => {
-    await openAuthed(page, context);
-    await expect(nav(page, 'JOURNAL')).toBeVisible();
-    await switchTo(page, nav(page, 'JOURNAL'));
-    await shot(page, 'desktop-journal');
-  });
-
   // ErrorFallback renders only from the Sentry boundary in main.jsx, which
   // wraps AuthGate — the inner ErrorBoundary in App.jsx catches per-tab crashes
   // with its own message, so no tab can reach it. useIsMobile()'s useState

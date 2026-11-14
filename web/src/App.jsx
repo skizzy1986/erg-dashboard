@@ -11,45 +11,30 @@ import { tsbBand, calcTrainingLoad } from './utils/trainingLoad.js';
 import { THEME } from './constants/theme.js';
 import { alpha } from './utils/themeCss.js';
 import { FONT } from './constants/type.js';
+import { Trans } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
+import { version } from '../package.json';
+import { versionLabel } from './utils/appVersion.js';
 
-// Every tab is lazy. Only one is on screen at a time, and four of them are
-// the heaviest files in the repo (ProgramView ~1,958 lines, StrengthLogger
-// ~1,682, OverviewView ~1,423, ErgView ~1,271), so shipping every tab to
+const VERSION_LABEL = versionLabel(version);
+
+// Every tab is lazy. Only one is on screen at a time, and three of them are
+// among the heaviest files in the repo (StrengthLogger ~1,682, OverviewView
+// ~1,423, ErgView ~1,271), so shipping every tab to
 // paint one of them was most of the entry chunk. React.lazy caches the
 // resolved module, so only a tab's FIRST visit suspends.
 const StrengthLogger = lazy(() => import('./StrengthLogger.jsx'));
 const ErgLiveView = lazy(() => import('./views/ErgLiveView.jsx'));
 const ErgView = lazy(() => import('./views/ErgView.jsx'));
-const JournalView = lazy(() => import('./views/JournalView.jsx'));
 const RecoveryView = lazy(() => import('./views/RecoveryView.jsx'));
 const StrengthView = lazy(() => import('./views/StrengthView.jsx'));
 const MobilityView = lazy(() => import('./views/MobilityView.jsx'));
 const OverviewView = lazy(() => import('./views/OverviewView.jsx'));
-const ProgramView = lazy(() => import('./views/ProgramView.jsx'));
 const CalendarView = lazy(() => import('./views/CalendarView.jsx'));
 const PlanView = lazy(() => import('./views/PlanView.jsx'));
 const LogView = lazy(() => import('./views/LogView.jsx'));
 const SettingsView = lazy(() => import('./views/SettingsView.jsx'));
-
-/* ═══════════════════════════════════════════════════════════════
-   ERG COACHING DASHBOARD · v1.2 beta
-   ───────────────────────────────────────────────────────────────
-   MAP (search the ── banner to jump):
-   • DATA + HELPERS ......... lines ~4–2015 (everything before App)
-       - Logs: SESSION LOG, BLOODS, HORMONE, MOBILITY, DECISION LEDGER
-       - Plans: MICROCYCLE, SEASON, EVENT PROGRESSION, MACROFACTOR
-       - Engine: ADAPTIVE DECISION ENGINE, AUTOREGULATION, ROSTER
-       - Components: WorkoutItem, LogEntry, tooltips
-   • APP COMPONENT .......... from `export default function App`
-       - State + live clock/roster, NAV, then one block per tab:
-         overview · calendar · program · erg · strength · mobility
-         · recovery · log · journal
-   KEY SYSTEMS:
-   • Roster auto-switch: getRosterMode() — home/FIFO by date,
-     anchored to ROSTER_ANCHOR (Tue 23 Jun 2026 = FIFO out).
-   • Shared workout UI: WorkoutItem (one session/box) + daySessions().
-   • Validate before deploy: esbuild + the each-tab render test.
-   ═══════════════════════════════════════════════════════════════ */
 
 // ── ERROR BOUNDARY (beta hardening) ───────────────────────────
 // Isolates render failures so one bad tab doesn't white-screen the app.
@@ -82,8 +67,10 @@ class ErrorBoundary extends Component {
             lineHeight: 1.6,
           }}
         >
-          ⚠️ This section hit a render error and was isolated to protect the
-          rest of the dashboard.
+          <Trans comment="Shown in place of a dashboard tab that crashed">
+            ⚠️ This section hit a render error and was isolated to protect the
+            rest of the dashboard.
+          </Trans>
           <br />
           <span style={{ color: THEME.neutralAccent, fontSize: 10 }}>
             {this.state.msg}
@@ -95,52 +82,9 @@ class ErrorBoundary extends Component {
   }
 }
 
-const strengthTrend = {
-  'Back Squat': [
-    { date: '6/3', e1rm: 109.7 },
-    { date: '6/5', e1rm: 110.5 },
-    { date: '6/9', e1rm: 118.0 },
-  ],
-  'Romanian Deadlift': [
-    { date: '6/3', e1rm: 85.2 },
-    { date: '6/5', e1rm: 89.2 },
-    { date: '6/9', e1rm: 95.8 },
-  ],
-  'Bench Press': [
-    { date: '6/3', e1rm: 63.4 },
-    { date: '6/8', e1rm: 71.2 },
-  ],
-  'Incline Bench': [
-    { date: '6/3', e1rm: 52.9 },
-    { date: '6/7', e1rm: 55.8 },
-    { date: '6/8', e1rm: 61.7 },
-  ],
-  'Cable Row': [
-    { date: '5/31', e1rm: 62.3 },
-    { date: '6/4', e1rm: 74.6 },
-    { date: '6/8', e1rm: 98.0 },
-  ],
-  'Barbell Row': [
-    { date: '5/31', e1rm: 53.8 },
-    { date: '6/4', e1rm: 62.8 },
-  ],
-  'Lat Pulldown': [
-    { date: '5/31', e1rm: 66.1 },
-    { date: '6/4', e1rm: 74.6 },
-  ],
-  'Shoulder Press': [
-    { date: '6/4', e1rm: 41.9 },
-    { date: '6/7', e1rm: 46.2 },
-  ],
-};
-
 // ── PROGRAM STRUCTURE ─────────────────────────────────────────
 // Based on: polarized TID (Seiler 2010, Silva Oliveira et al. 2024),
 // British Rowing training matrix, Pete Plan continuous improvement model
-
-// ── 2-WEEK MICROCYCLE (roster-driven) ─────────────────────────
-// 1-on/1-off FIFO roster used AS periodization. Home week = loading,
-// FIFO week = auto-deload. Erg is priority; strength yields when scarce.
 
 // ── STRENGTH GUIDELINES ───────────────────────────────────────
 // Concurrent training: heavy/low-rep compounds minimise interference
@@ -156,24 +100,41 @@ const strengthTrend = {
 
 // ── CUSTOM CHART TOOLTIP ──────────────────────────────────────
 
-// ── TRAINING LOAD DATA ────────────────────────────────────────
-// TSS per day. Erg: (duration_sec/3600) × (avg_watts/FTP)² × 100
-// Strength: time-based estimates (upper ~50, lower ~55, combined ~55)
-// FTP estimated at 190W — update after threshold session.
-
-// ── NUTRITION LOG ─────────────────────────────────────────────
-// dayType: "two-a-day" | "training" | "rest"
-// Targets from bottom-up expenditure model: BMR 1,887 (93.5kg, 187.5cm,
-// M40s) + NEAT + TEF + training. Weekly maintenance ~3,140 kcal.
-// Calibration phase: eat at maintenance ~2 weeks, then 0.3kg/week deficit.
-// Protein 2g/kg = ~187g held constant. Carbs high. Fat moderate floor.
-
 // ── LOG SESSION FORM — writes a strength session to Supabase ───
 // Proof-of-concept write path. Strength only for now (erg pulls from
 // Strava). On submit: insert into the `sessions` table, then call
 // onSaved() so the parent re-fetches and the new entry appears.
 // ── MAIN APP ──────────────────────────────────────────────────
+// The desktop tabs. Labels are message descriptors, translated at render, so
+// a language switch relabels the nav without remounting a tab.
+const NAV = [
+  ['overview', msg({ message: 'Overview', comment: 'Desktop nav tab' })],
+  ['calendar', msg({ message: 'Calendar', comment: 'Desktop nav tab' })],
+  ['plan', msg({ message: 'Plan', comment: 'Desktop nav tab' })],
+  [
+    'live',
+    msg({ message: 'Live', comment: 'Desktop nav tab: live erg session' }),
+  ],
+  [
+    'erg',
+    msg({ message: 'Erg', comment: 'Desktop nav tab: rowing ergometer' }),
+  ],
+  ['strength', msg({ message: 'Strength', comment: 'Desktop nav tab' })],
+  [
+    'logger',
+    msg({
+      message: 'Logger',
+      comment: 'Desktop nav tab: log strength sets live',
+    }),
+  ],
+  ['mobility', msg({ message: 'Mobility', comment: 'Desktop nav tab' })],
+  ['recovery', msg({ message: 'Recovery', comment: 'Desktop nav tab' })],
+  ['log', msg({ message: 'Log', comment: 'Desktop nav tab: past sessions' })],
+  ['settings', msg({ message: 'Settings', comment: 'Desktop nav tab' })],
+];
+
 export default function App() {
+  const { _ } = useLingui();
   // The Strava OAuth callback returns to `…#/settings?strava=…`. There is no
   // router here — `view` is useState and nothing else reads the location — so
   // without this the whole OAuth outcome, errors included, would land on
@@ -187,13 +148,11 @@ export default function App() {
         : readStravaCallback(window.location),
     []
   );
-  const stravaNotice = useMemo(
-    () => stravaCallbackMessage(stravaCallback),
-    [stravaCallback]
-  );
+  // Built at render, not memoised on the callback: its text is translated, and
+  // a language switch while the notice is showing must re-read it. useLingui
+  // above re-renders App on that switch.
+  const stravaNotice = stravaCallbackMessage(stravaCallback);
   const [view, setView] = useState(stravaCallback ? 'settings' : 'overview');
-  const [expanded, setExpanded] = useState(null);
-  const [nowTick, setNowTick] = useState(new Date()); // for date-awareness (day rollover)
   // Clearing the URL is an external-system update, so it belongs in an effect.
   // Without it a refresh replays a stale OAuth result.
   useEffect(() => {
@@ -205,10 +164,6 @@ export default function App() {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   ); // viewport width → responsive layout
   useEffect(() => {
-    const t = setInterval(() => setNowTick(new Date()), 60000); // once a minute is plenty
-    return () => clearInterval(t);
-  }, []);
-  useEffect(() => {
     if (typeof window === 'undefined') return;
     const onResize = () => setVw(window.innerWidth);
     window.addEventListener('resize', onResize);
@@ -219,6 +174,7 @@ export default function App() {
   const containerMax = isWide ? 1100 : 680;
 
   const {
+    dbStatus,
     loggedSessions,
     cancelledSessions,
     logDisplaySessions,
@@ -251,7 +207,6 @@ export default function App() {
   // Was hardcoded at 55000. The logged erg sessions actually sum to ~216km, so
   // the headline understated the work by about 4x.
   const totalErgDist = ergSessions.reduce((m, e) => m + (e.distance_m ?? 0), 0);
-  const latestSquat = strengthTrend['Back Squat'].slice(-1)[0];
   const totalSessions = loggedSessions.length;
 
   return (
@@ -285,36 +240,27 @@ export default function App() {
             width: '100%',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-              gap: 8,
-            }}
-          >
+          {VERSION_LABEL && (
             <div
               style={{
-                fontSize: 9,
-                letterSpacing: 3,
-                color: THEME.accent,
-                marginBottom: 4,
-                minWidth: 0,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'baseline',
+                gap: 8,
               }}
             >
-              ERG + STRENGTH · BASE
+              <div
+                style={{
+                  fontSize: 8,
+                  letterSpacing: 1,
+                  color: THEME.textFaint,
+                  flexShrink: 0,
+                }}
+              >
+                {VERSION_LABEL}
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: 8,
-                letterSpacing: 1,
-                color: THEME.textFaint,
-                flexShrink: 0,
-              }}
-            >
-              v1.2 beta
-            </div>
-          </div>
+          )}
           <div
             style={{
               fontSize: 24,
@@ -346,27 +292,10 @@ export default function App() {
             margin: '18px 0 16px',
           }}
         >
-          {[
-            ['overview', 'Overview'],
-            ['calendar', 'Calendar'],
-            ['program', 'Program'],
-            ['plan', 'Plan'],
-            ['live', 'Live'],
-            ['erg', 'Erg'],
-            ['strength', 'Strength'],
-            ['logger', 'Logger'],
-            ['mobility', 'Mobility'],
-            ['recovery', 'Recovery'],
-            ['log', 'Log'],
-            ['journal', 'Journal'],
-            ['settings', 'Settings'],
-          ].map(([v, label]) => (
+          {NAV.map(([v, label]) => (
             <button
               key={v}
-              onClick={() => {
-                setView(v);
-                setExpanded(null);
-              }}
+              onClick={() => setView(v)}
               style={{
                 flex: '1 1 auto',
                 minWidth: 0,
@@ -385,7 +314,7 @@ export default function App() {
                 fontFamily: FONT.mono,
               }}
             >
-              {label.toUpperCase()}
+              {_(label).toUpperCase()}
             </button>
           ))}
         </div>
@@ -425,14 +354,11 @@ export default function App() {
             {view === 'calendar' && (
               <CalendarView
                 loggedSessions={loggedSessions}
+                plannedSessions={plannedSessions}
                 cancelledSessions={cancelledSessions}
+                dbStatus={dbStatus}
                 isWide={isWide}
               />
-            )}
-
-            {/* ── PROGRAM VIEW ── */}
-            {view === 'program' && (
-              <ProgramView expanded={expanded} setExpanded={setExpanded} />
             )}
 
             {/* ── OVERVIEW ── */}
@@ -444,11 +370,9 @@ export default function App() {
                 loadData={loadData}
                 loggedSessions={loggedSessions}
                 latestErg={latestErg}
-                latestSquat={latestSquat}
                 totalErgDist={totalErgDist}
                 totalSessions={totalSessions}
                 isWide={isWide}
-                nowTick={nowTick}
               />
             )}
 
@@ -462,10 +386,7 @@ export default function App() {
 
             {/* ── STRENGTH VIEW ── */}
             {view === 'strength' && (
-              <StrengthView
-                strengthTrend={strengthTrend}
-                strengthSessions={strengthSessions}
-              />
+              <StrengthView strengthSessions={strengthSessions} />
             )}
 
             {/* ── MOBILITY VIEW ── */}
@@ -482,9 +403,6 @@ export default function App() {
                 onSaved={fetchSessions}
               />
             )}
-
-            {/* ── JOURNAL VIEW (longitudinal spine) ── */}
-            {view === 'journal' && <JournalView />}
 
             {/* ── SETTINGS VIEW (integrations: Strava today, more later) ── */}
             {view === 'settings' && (
@@ -506,8 +424,10 @@ export default function App() {
             lineHeight: 1.7,
           }}
         >
-          Tap any session to expand · Share Concept2 links or Fitbod screenshots
-          to log sessions
+          <Trans comment="Desktop footer hint. Concept2 and Fitbod are brand names: keep them.">
+            Tap any session to expand · Share Concept2 links or Fitbod
+            screenshots to log sessions
+          </Trans>
         </div>
       </div>
     </div>

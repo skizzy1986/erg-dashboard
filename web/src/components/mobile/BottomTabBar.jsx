@@ -2,11 +2,13 @@ import React from 'react';
 import { THEME } from '../../constants/theme.js';
 import { LAYER, TYPE } from '../../constants/tokens.js';
 import { DESTINATIONS } from '../../constants/destinations.js';
+import { useLingui } from '@lingui/react';
 
 // The artboards draw a 64px bar; 56 was the old value.
 export const TAB_BAR_HEIGHT = 64;
 
 export default function BottomTabBar({ activeTab, onTabChange }) {
+  const { _ } = useLingui();
   return (
     <div
       style={{
@@ -25,7 +27,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
         borderTop: `1px solid ${THEME.border}`,
       }}
     >
-      {DESTINATIONS.map(({ id, label, icon }) => (
+      {DESTINATIONS.map(({ id, message, icon }) => (
         <button
           key={id}
           onClick={() => onTabChange(id)}
@@ -53,7 +55,7 @@ export default function BottomTabBar({ activeTab, onTabChange }) {
               color: activeTab === id ? THEME.accent : THEME.textSubtle,
             }}
           >
-            {label}
+            {_(message)}
           </span>
         </button>
       ))}

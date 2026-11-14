@@ -200,16 +200,24 @@ export default function SquatHeader({ preference, onThemeChange, compact }) {
           <span aria-hidden="true" style={{ color: THEME.border }}>
             /
           </span>
-          <span
+          {/* The page's one h1. It lived on the stage until #501, where the
+              camera frames the model edge to edge and the card covered the
+              bar. The row is nowrap, so on a 360 px phone it truncates
+              rather than push the theme button or the link off-screen. */}
+          <h1
             style={{
+              margin: 0,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
               fontFamily: FONT.sans,
               fontSize: 14,
               fontWeight: 600,
               color: THEME.text,
             }}
           >
-            Squat
-          </span>
+            High-bar back squat
+          </h1>
         </div>
         {compact ? (
           <ThemeCycleButton

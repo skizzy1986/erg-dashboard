@@ -15,7 +15,6 @@ const ACCENT_RGB = rgb(DEFAULT_THEME.accent);
 const TABS = [
   'overview',
   'calendar',
-  'program',
   'plan',
   'live',
   'erg',
@@ -24,7 +23,6 @@ const TABS = [
   'mobility',
   'recovery',
   'log',
-  'journal',
   'settings',
 ];
 
