@@ -12,11 +12,17 @@
 >
 > | PR | Scope | Status |
 > |---|---|---|
-> | PR-M | Mobile Settings screen (gear in Today header, reuses SettingsView) | shipped to PR #508 — awaiting baseline + merge |
-> | PR-1 | Lingui foundation (spike first) + dashboard Phase 1 | not started |
+> | PR-M | Mobile Settings screen (gear in Today header, reuses SettingsView) | **merged** — #508 |
+> | PR-1 | Lingui foundation (spike first) + dashboard Phase 1 | **merged** — #522 |
+> | Phase 2a | the settled views (Overview, Calendar, Plan, Log, Recovery; mobile Today, Progress, Body, Train picker) on a second "views" catalog | **merged** — #533 |
+> | Phase 2b | Live, mobile Strength, Erg, Mobility, Strength/Logger — each after #518/#519/#422/#423/#520 | waiting |
 > | PR-2 | /squat chrome on Lingui | not started |
 > | PR-3 | /squat prose overlay | not started |
-> | Phase 2+ | one PR per #412 slice (#419–#423) after it lands | not started |
+>
+> Status as of 2026-11-14; the roadmap's language track (I1–I8 in `docs/ROADMAP.md`) is
+> the live tracker. Native review was waived as a merge gate for PR-1 and Phase 2a (D22)
+> and stays pending. Phase 2a replaced this spec's per-view catalog idea (§ "Phase 2+
+> watch item") with one shared views catalog loaded by the dashboard shells.
 
 ---
 
