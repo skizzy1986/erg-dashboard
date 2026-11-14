@@ -4,7 +4,7 @@ body:
     attributes:
       value: |
         Thanks — rough ideas are welcome. Good ones get promoted to issues on the Split IQ board.
-        New here? Start with [docs/onboarding](https://github.com/skizzy1986/erg-dashboard/tree/main/docs/onboarding).
+        New here? Start with [docs/onboarding](https://github.com/skizzy1986/SplitIQ/tree/main/docs/onboarding).
   - type: dropdown
     id: area
     attributes:

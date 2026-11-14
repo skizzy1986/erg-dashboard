@@ -23,7 +23,7 @@ ground rules.
 ```text
 I'm exploring my friend Scott's SplitIQ project as an invited, read-only collaborator. I'm an interested hobbyist, not a professional developer, and I'm new to GitHub.
 
-The project: github.com/skizzy1986/erg-dashboard. I'm focused on the public /squat tool, a 3D coaching model of the high-bar back squat (live at https://erg-dashboard-eight.vercel.app/squat). It's built with React and three.js. The posing maths is in web/src/anatomy/, the squat UI and coaching content are in web/src/squat/, and the docs are in docs/onboarding/ and docs/squat/. Ideas for future movements are welcome: see docs/onboarding/NEW_MOVEMENT.md.
+The project: github.com/skizzy1986/SplitIQ. I'm focused on the public /squat tool, a 3D coaching model of the high-bar back squat (live at https://erg-dashboard-eight.vercel.app/squat). It's built with React and three.js. The posing maths is in web/src/anatomy/, the squat UI and coaching content are in web/src/squat/, and the docs are in docs/onboarding/ and docs/squat/. Ideas for future movements are welcome: see docs/onboarding/NEW_MOVEMENT.md.
 
 How to help me:
 - Explain things in plain words, define jargon the first time, and go one step at a time. I learn by asking questions, so encourage them.
@@ -72,14 +72,14 @@ I've been using chat to explore this project. In plain words, what could I do wi
 
 For when you want to run the tool on your own computer and build things. **Prompt 1**
 runs before the project is on your computer. For all the others, open Claude Code
-**inside the `erg-dashboard` folder**, so it picks up the project and its `/collaborate`
+**inside the `SplitIQ` folder**, so it picks up the project and its `/collaborate`
 mode.
 
 ### 1. Setup — run once, in an empty folder
 
 ```text
 I'm new to GitHub and software development. My friend Scott has invited me (read-only)
-to his GitHub repository skizzy1986/erg-dashboard so I can explore and
+to his GitHub repository skizzy1986/SplitIQ so I can explore and
 prototype on his 3D squat coaching tool. Please set everything up for me, one step at a
 time, explaining each step in plain words before you do it and asking before you
 install anything:
@@ -89,12 +89,12 @@ install anything:
    installer or my OS's normal package manager.
 2. Log me in to GitHub with "gh auth login" (GitHub.com, HTTPS, log in with a web
    browser) and tell me exactly what to click in the browser.
-3. Download the project with "gh repo clone skizzy1986/erg-dashboard".
-4. In erg-dashboard/web run "npm ci", then start it with "npm run dev". No keys or
+3. Download the project with "gh repo clone skizzy1986/SplitIQ".
+4. In SplitIQ/web run "npm ci", then start it with "npm run dev". No keys or
    accounts are needed for the squat tool.
 5. Tell me to open http://localhost:5173/squat and check it works.
 6. Finish by telling me how to stop and restart it, and that next time I should open
-   Claude Code inside the erg-dashboard folder and type /collaborate.
+   Claude Code inside the SplitIQ folder and type /collaborate.
 
 Never push anything to Scott's repository.
 ```

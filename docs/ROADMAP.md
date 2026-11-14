@@ -1,7 +1,7 @@
 # SplitIQ product roadmap
 
 > The decided roadmap. `VISION.md` is the authority where they disagree. Tracked by epic
-> [#432](https://github.com/skizzy1986/erg-dashboard/issues/432). The evidence behind
+> [#432](https://github.com/skizzy1986/SplitIQ/issues/432). The evidence behind
 > every line is the Gate 1 packet,
 > [`roadmap/ROADMAP_PACKET_2026-11-07.md`](roadmap/ROADMAP_PACKET_2026-11-07.md), with its
 > two research appendices. The squat tool's own candidate-PR list is
@@ -13,7 +13,7 @@
 >
 > Amended 2026-11-13 after the `VISION.md` amendment (#515): D13–D18, and a second track
 > for the log (L1–L3), tracked by epic
-> [#511](https://github.com/skizzy1986/erg-dashboard/issues/511). D19 records an intention
+> [#511](https://github.com/skizzy1986/SplitIQ/issues/511). D19 records an intention
 > to deepen the squat tool; it approves nothing.
 
 ## What SplitIQ is
@@ -66,12 +66,12 @@ through `/orchestrate <item>` with its own Gate 2 and Gate 3, one PR per item, `
 
 | # | Item | Issue | Size | Blocks |
 |---|---|---|---|---|
-| R1 | Five coach/athlete walkthroughs of `/squat`. Also ask each coach whether they would want an athlete's shared log here: the only evidence L3 will have before it is built | [#433](https://github.com/skizzy1986/erg-dashboard/issues/433) | S | All of H2 (D10) |
-| R2 | Read the SimTK/OpenSim model terms and OpenCap terms (Scott, D8) | [#434](https://github.com/skizzy1986/erg-dashboard/issues/434) | S | R11, R26–R28, R21, any invite beyond Paul |
-| R3 | Health data out of source and bundle (reorientation slice 4a) | [#416](https://github.com/skizzy1986/erg-dashboard/issues/416) | S | R11, R26–R28, any invite beyond Paul |
-| R4 | Migration for the `exercises` seed and the three un-migrated views | [#435](https://github.com/skizzy1986/erg-dashboard/issues/435) | M | R22. **#429 first**, or the migration can merge and never apply |
-| R5 | Backup gaps | [#428](https://github.com/skizzy1986/erg-dashboard/issues/428) | M | R31 |
-| R6 | Reorientation slices 4b–12 | [#417–#425](https://github.com/skizzy1986/erg-dashboard/issues/412) | per #412 | — |
+| R1 | Five coach/athlete walkthroughs of `/squat`. Also ask each coach whether they would want an athlete's shared log here: the only evidence L3 will have before it is built | [#433](https://github.com/skizzy1986/SplitIQ/issues/433) | S | All of H2 (D10) |
+| R2 | Read the SimTK/OpenSim model terms and OpenCap terms (Scott, D8) | [#434](https://github.com/skizzy1986/SplitIQ/issues/434) | S | R11, R26–R28, R21, any invite beyond Paul |
+| R3 | Health data out of source and bundle (reorientation slice 4a) | [#416](https://github.com/skizzy1986/SplitIQ/issues/416) | S | R11, R26–R28, any invite beyond Paul |
+| R4 | Migration for the `exercises` seed and the three un-migrated views | [#435](https://github.com/skizzy1986/SplitIQ/issues/435) | M | R22. **#429 first**, or the migration can merge and never apply |
+| R5 | Backup gaps | [#428](https://github.com/skizzy1986/SplitIQ/issues/428) | M | R31 |
+| R6 | Reorientation slices 4b–12 | [#417–#425](https://github.com/skizzy1986/SplitIQ/issues/412) | per #412 | — |
 | R33 | Privacy research note (D17): what holding another person's training and health data requires, from primary sources (the Privacy Act, OAIC guidance), marked as not legal advice. Scott decides after it whether a professional opinion is needed | — | S | R37, all of L3, R31 |
 
 H1 may run beside slices 4b–12 under D6's fences: #416 first; no `CLAUDE.md` edits outside
@@ -87,18 +87,18 @@ and every chart is readable by keyboard.
 
 | # | Item | Issue | Size | Depends on |
 |---|---|---|---|---|
-| R7 | Bundle headroom baseline and per-PR re-measure convention | [#436](https://github.com/skizzy1986/erg-dashboard/issues/436) | S | — |
-| R8 | Time axis: play, pause, scrub, speed via `meta.rep` | [#407](https://github.com/skizzy1986/erg-dashboard/issues/407) | M | R7 |
-| R9 | Charts: angles, moments, force, activation, length, each with a data table | [#437](https://github.com/skizzy1986/erg-dashboard/issues/437) | L | R7, R8, D9 |
-| R10 | "How this was modelled and what it cannot say" page | [#438](https://github.com/skizzy1986/erg-dashboard/issues/438) | S | — |
-| R11 | Share-a-view v1: copy-link over hash state, camera in the hash | [#439](https://github.com/skizzy1986/erg-dashboard/issues/439) | S–M | R3, R8 |
-| R12 | Movement config object; extract the squat behind it, no behaviour change | [#440](https://github.com/skizzy1986/erg-dashboard/issues/440) | M | R7 |
-| R13 | Data-driven barbell and attach frame | [#441](https://github.com/skizzy1986/erg-dashboard/issues/441) | M | R12 |
-| R14 | Generalised phases from config | [#442](https://github.com/skizzy1986/erg-dashboard/issues/442) | S–M | R12 |
-| R15 | Multi-dataset bundle rule and generalised `squat-` chunk naming | [#443](https://github.com/skizzy1986/erg-dashboard/issues/443) | M | R12 |
-| R16 | Generalise the prose scan over per-movement content | [#444](https://github.com/skizzy1986/erg-dashboard/issues/444) | M | R12 |
-| R17 | Measure real phone performance for the 3D chunk and data | [#445](https://github.com/skizzy1986/erg-dashboard/issues/445) | S | R7 |
-| R18 | Refresh `docs/onboarding/*` | [#446](https://github.com/skizzy1986/erg-dashboard/issues/446) | S | — |
+| R7 | Bundle headroom baseline and per-PR re-measure convention | [#436](https://github.com/skizzy1986/SplitIQ/issues/436) | S | — |
+| R8 | Time axis: play, pause, scrub, speed via `meta.rep` | [#407](https://github.com/skizzy1986/SplitIQ/issues/407) | M | R7 |
+| R9 | Charts: angles, moments, force, activation, length, each with a data table | [#437](https://github.com/skizzy1986/SplitIQ/issues/437) | L | R7, R8, D9 |
+| R10 | "How this was modelled and what it cannot say" page | [#438](https://github.com/skizzy1986/SplitIQ/issues/438) | S | — |
+| R11 | Share-a-view v1: copy-link over hash state, camera in the hash | [#439](https://github.com/skizzy1986/SplitIQ/issues/439) | S–M | R3, R8 |
+| R12 | Movement config object; extract the squat behind it, no behaviour change | [#440](https://github.com/skizzy1986/SplitIQ/issues/440) | M | R7 |
+| R13 | Data-driven barbell and attach frame | [#441](https://github.com/skizzy1986/SplitIQ/issues/441) | M | R12 |
+| R14 | Generalised phases from config | [#442](https://github.com/skizzy1986/SplitIQ/issues/442) | S–M | R12 |
+| R15 | Multi-dataset bundle rule and generalised `squat-` chunk naming | [#443](https://github.com/skizzy1986/SplitIQ/issues/443) | M | R12 |
+| R16 | Generalise the prose scan over per-movement content | [#444](https://github.com/skizzy1986/SplitIQ/issues/444) | M | R12 |
+| R17 | Measure real phone performance for the 3D chunk and data | [#445](https://github.com/skizzy1986/SplitIQ/issues/445) | S | R7 |
+| R18 | Refresh `docs/onboarding/*` | [#446](https://github.com/skizzy1986/SplitIQ/issues/446) | S | — |
 
 ### H2 — Second and third flagship movements (not yet approved; gated on R1)
 
@@ -162,7 +162,7 @@ moves L3 further out. R44's Gate 1 is where that trade is made.
 The horizons above sequence the anatomy half. This track sequences the log half that
 `VISION.md` widened on 2026-11-13: one coherent dashboard, a deterministic planner, and a
 coach working with what an athlete shares. It is tracked by epic
-[#511](https://github.com/skizzy1986/erg-dashboard/issues/511), whose item letters are
+[#511](https://github.com/skizzy1986/SplitIQ/issues/511), whose item letters are
 given in brackets. Each item still runs through `/orchestrate` with its own gates, and
 takes the roadmap PR slot in turn with H1 (D16).
 

@@ -9,7 +9,7 @@ Code on the web), not in the repo. Only two pieces live in git: the project perm
 
 ## Repository
 
-One repository: `skizzy1986/erg-dashboard`. Because there is only one, the repo's
+One repository: `skizzy1986/SplitIQ`. Because there is only one, the repo's
 `.claude/settings.json` is the project settings for every cloud session.
 
 ## Setup script
@@ -367,7 +367,7 @@ a clear error.
 
 A cloud session can read Discussions but cannot write to them:
 
-- `gh api "repos/skizzy1986/erg-dashboard/discussions?per_page=30"` lists them over REST,
+- `gh api "repos/skizzy1986/SplitIQ/discussions?per_page=30"` lists them over REST,
   and `.../discussions/<n>/comments` lists a thread's comments (both verified 2026-11-12).
   Both need the repository attached to the session; without it they return 403.
 - GraphQL is blocked, and REST has no write route: `POST /repos/{owner}/{repo}/discussions`
@@ -436,7 +436,7 @@ branches named `release-assets/*`.
 
 ## Rebuild checklist
 
-1. Create the environment with the repository `skizzy1986/erg-dashboard`.
+1. Create the environment with the repository `skizzy1986/SplitIQ`.
 2. Paste the setup script — **including the trust-flag block** under *Project permissions*,
    without which none of `.claude/settings.json` applies.
 3. Set network access to Limited and add the hosts above.

@@ -18,7 +18,7 @@ architecture, the quality bar — still applies to any code you write.
 | | |
 |---|---|
 | **You** | Claude, working on the collaborator's own computer, in his clone of the repo. |
-| **The collaborator** | Has **Read** access to `skizzy1986/erg-dashboard`. He cannot push to it. He may not know what a branch, commit, fork or PR is — explain as you go. |
+| **The collaborator** | Has **Read** access to `skizzy1986/SplitIQ`. He cannot push to it. He may not know what a branch, commit, fork or PR is — explain as you go. |
 | **Scott** | Owns the repo and the product. Reviews everything. Runs a gated build pipeline with Claude Code (`/orchestrate`) to turn good ideas into shipped features. |
 
 ## How to work with him
@@ -46,7 +46,7 @@ architecture, the quality bar — still applies to any code you write.
 
 ## Hard rules (these protect Scott's project)
 
-- **Never push to `skizzy1986/erg-dashboard`.** Work on a local branch named
+- **Never push to `skizzy1986/SplitIQ`.** Work on a local branch named
   `explore/<short-topic>`. Code leaves his machine only via his own fork, and only when
   he says so.
 - **Never modify `main`**, never rewrite history on a branch you didn't create, never
@@ -104,10 +104,10 @@ Context7-first rule in `.claude/skills/erg-context.md` and name your source.
    OS.
 2. `gh auth status`; if not logged in, run `gh auth login` (GitHub.com → HTTPS → log in
    with a web browser) and walk him through the browser step.
-3. If the repo isn't cloned yet: `gh repo clone skizzy1986/erg-dashboard`. If that
+3. If the repo isn't cloned yet: `gh repo clone skizzy1986/SplitIQ`. If that
    fails with "not found", he probably hasn't accepted Scott's invitation — have him check
-   his email or https://github.com/skizzy1986/erg-dashboard/invitations.
-4. `cd erg-dashboard/web && npm ci`, then `npm run dev`, and have him open
+   his email or https://github.com/skizzy1986/SplitIQ/invitations.
+4. `cd SplitIQ/web && npm ci`, then `npm run dev`, and have him open
    http://localhost:5173/squat. No keys or accounts needed.
 5. Confirm it works, then suggest `tour`.
 
@@ -129,7 +129,7 @@ chapter.
    2–5 checkable acceptance criteria — the format of Scott's feature template
    (`.github/ISSUE_TEMPLATE/feature.yml`), so he can promote it in one step.
 3. Show him the draft. If he approves, post it (see *Posting a Discussion*) or give him
-   the text to paste at https://github.com/skizzy1986/erg-dashboard/discussions/new?category=ideas.
+   the text to paste at https://github.com/skizzy1986/SplitIQ/discussions/new?category=ideas.
 
 ### `prototype <topic>` — try it for real
 1. `git switch -c explore/<topic>` from an up-to-date `main` (`git fetch origin` first).
@@ -144,7 +144,7 @@ chapter.
 ### `share` — show Scott a prototype
 1. Ask whether he wants to share code or just the result. Results alone (screenshots +
    description) are often enough.
-2. For code: create his fork (`gh repo fork skizzy1986/erg-dashboard --remote=false`;
+2. For code: create his fork (`gh repo fork skizzy1986/SplitIQ --remote=false`;
    if forking is disabled for this private repo, say so and share a summary + key code
    snippets in the post instead), add it as remote `fork`, and push the `explore/*`
    branch there. Never push to `origin`.
@@ -182,7 +182,7 @@ post any not yet shared), and anything confusing in the docs or code. Suggest po
 Discussions are posted through the GraphQL API. Look up the IDs, then create:
 
 ```bash
-gh api graphql -f query='query { repository(owner:"skizzy1986", name:"erg-dashboard") { id discussionCategories(first:20) { nodes { id slug } } } }'
+gh api graphql -f query='query { repository(owner:"skizzy1986", name:"SplitIQ") { id discussionCategories(first:20) { nodes { id slug } } } }'
 ```
 
 ```bash

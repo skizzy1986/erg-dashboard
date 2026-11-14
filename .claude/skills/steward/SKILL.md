@@ -75,7 +75,7 @@ Green is at its most misleading here.
 **Read it yourself — do not trust the table below, this file included.**
 
 ```bash
-gh api repos/skizzy1986/erg-dashboard/rulesets/18063518 \
+gh api repos/skizzy1986/SplitIQ/rulesets/18063518 \
   --jq '{updated_at, bypass: .bypass_actors, required: [.rules[]
     | select(.type=="required_status_checks")
     | .parameters.required_status_checks[].context]}'
@@ -174,7 +174,7 @@ converted by #317, `.github/workflows/context7-rule.yml` as added by #325, and �
 required set — **the ruleset API itself**, not a screenshot and not a person's recollection:
 
 ```
-GET /repos/skizzy1986/erg-dashboard/rulesets/18063518
+GET /repos/skizzy1986/SplitIQ/rulesets/18063518
   → updated_at 2026-08-28T12:22:08.154+08:00, bypass_actors [], enforcement active
   → 10 required contexts, as listed above
 ```
