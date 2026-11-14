@@ -116,6 +116,7 @@ const GROUPS = {
     'analyze' + 'Barometer',
     'SRPE' + '_SCALE',
   ],
+  'R35 one-athlete prose': ['STRENGTH' + '_TEMPLATES', 'PREHAB' + '_NOTE'],
 };
 const NEEDLES = Object.values(GROUPS).flat();
 const RE = new RegExp(NEEDLES.map((n) => `\\b${n}\\b`).join('|'));

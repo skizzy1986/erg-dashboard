@@ -9,7 +9,7 @@ proper names stay as they are (SplitIQ, Strava). Numbers use a decimal point.
 Placeholders in braces — `{count}`, `{0}` — must stay exactly as written; their order
 may change. To correct a line, reply with its **row** id and the new Spanish.
 
-## Dashboard (src/locales, 105 strings)
+## Dashboard (src/locales, 104 strings)
 
 | Row | English | Español | Where / note |
 |---|---|---|---|
@@ -45,7 +45,6 @@ may change. To correct a line, reply with its **row** id and the new Spanish.
 | `Md1Bvk` | Enter email and password. | Ingresa tu correo y tu contraseña. | Login form validation error. · src/AuthGate.jsx |
 | `cFg0mZ` | Erg | Ergómetro | Desktop nav tab: rowing ergometer · src/App.jsx |
 | `J0GPZK` | ERG | ERGÓMETRO | Splash word cycle, one discipline, all capitals · src/components/mobile/SplashScreen.jsx |
-| `vfqTq_` | ERG + STRENGTH · BASE | ERGÓMETRO + FUERZA · BASE | Header tagline, all capitals · src/App.jsx |
 | `KpFRBw` | Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically. | Importando historial: {imported} importadas, {adopted} vinculadas a sesiones existentes. Sigue automáticamente. | src/utils/stravaStatus.js |
 | `nbfdhU` | Integrations | Integraciones | Settings section heading above the Strava panel · src/views/SettingsView.jsx |
 | `xOTzt5` | just now | justo ahora | src/utils/stravaStatus.js |

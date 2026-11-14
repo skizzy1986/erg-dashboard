@@ -7,7 +7,7 @@
 //
 // There is deliberately no free-text error column on the backend — a raw
 // upstream error body could carry a client_secret into a browser-readable
-// column — so every message shown to Scott is composed HERE from the bounded
+// column — so every message shown to the user is composed HERE from the bounded
 // `last_error_code` enum. Never expect prose from the server.
 //
 // Words go through Lingui at CALL time (never at module scope), so the panel
@@ -26,7 +26,7 @@ const STALE_AFTER_MS = 48 * HOUR_MS;
 
 // The complete `last_error_code` enum. Every key must map to a non-empty
 // string; a code with no entry falls back to `unknown` rather than rendering
-// the raw enum value at Scott.
+// the raw enum value at the user.
 export const ERROR_CODE_LABELS = {
   token_exchange_failed:
     'Strava rejected the connection attempt. Connect again to retry.',
@@ -180,7 +180,7 @@ export function describeConnection(connection, now = new Date()) {
   // lifetime counter that nothing resets, so a single failure — and the 23505
   // label-collision path guarantees one eventually — would pin this warning on
   // every clean run thereafter. A failure signal that never clears is noise,
-  // and it teaches Scott to stop reading the panel.
+  // and it teaches the user to stop reading the panel.
   if (status === 'partial' || status === 'error') {
     const cause = errorDetail || describeErrorCode('unknown');
     const attempted = imported + failed;

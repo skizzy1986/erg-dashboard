@@ -1,4 +1,4 @@
-# WORKFLOW — how work flows through erg-dashboard
+# WORKFLOW — how work flows through SplitIQ
 
 > The single, standing process for planning and shipping changes. It replaces
 > the `coach/work-orders/` system (now deprecated). If you're new here, read this
@@ -43,7 +43,7 @@ Priority is **relative and re-sorted often** — it's a stack rank, not a promis
 
 ### Ideas that start in Discussions
 
-Ideas and prototypes arrive in [Discussions](https://github.com/skizzy1986/erg-dashboard/discussions),
+Ideas and prototypes arrive in [Discussions](https://github.com/skizzy1986/SplitIQ/discussions),
 not as issues. One worth building is **promoted**: it becomes an issue here, and the thread
 is told so. The loop closes itself when the work ships.
 
@@ -51,7 +51,7 @@ is told so. The loop closes itself when the work ships.
    can…") with acceptance criteria, and put this line on its own in the body:
 
    ```
-   Discussion: https://github.com/skizzy1986/erg-dashboard/discussions/<n>
+   Discussion: https://github.com/skizzy1986/SplitIQ/discussions/<n>
    ```
 
    `Discussion: #<n>` works too. Then reply on the thread with the issue link. The weekly
@@ -225,7 +225,7 @@ on the board with its parent set; give it a Horizon and Size with `set` and it a
 every view above.
 
 > **Built-in workflows (configured 2026-11-05, *Project → ⋯ → Workflows*).**
-> **On:** Auto-add to project (repo `erg-dashboard`, filter `is:issue,pr is:open`) ·
+> **On:** Auto-add to project (repo `SplitIQ`, filter `is:issue,pr is:open`) ·
 > Item added to project (issues + PRs → Backlog) · Item reopened (→ Backlog) ·
 > Pull request linked to issue (→ In review) · Item closed (→ Done) ·
 > Pull request merged (→ Done) · Auto-close issue (default) · Auto-add sub-issues (default).

@@ -213,17 +213,16 @@ describe('AuthGate boot behaviour', () => {
   it("styles the login line in the wordmark's two faces", async () => {
     await toLogin();
     const line = loginLine('Train Smarter');
-    expect(line).toHaveStyle({
-      fontSize: `${TYPE.body.size}px`,
-      fontWeight: '600',
-      letterSpacing: `${TYPE.title.letterSpacing}px`,
-      color: THEME.text,
-    });
-    expect(line.querySelector('span')).toHaveStyle({
-      fontFamily: FONT.mono,
-      fontWeight: '700',
-      color: THEME.accent,
-    });
+    // Read the inline style, not the computed one: jsdom 31 resolves an
+    // undefined var(--color-*) to black, so toHaveStyle cannot see the token.
+    expect(line.style.fontSize).toBe(`${TYPE.body.size}px`);
+    expect(line.style.fontWeight).toBe('600');
+    expect(line.style.letterSpacing).toBe(`${TYPE.title.letterSpacing}px`);
+    expect(line.style.color).toBe(THEME.text);
+    const head = line.querySelector('span');
+    expect(head.style.fontFamily).toBe(FONT.mono);
+    expect(head.style.fontWeight).toBe('700');
+    expect(head.style.color).toBe(THEME.accent);
   });
 
   it('plays the splash on desktop and clears it at the floor, as on mobile', async () => {

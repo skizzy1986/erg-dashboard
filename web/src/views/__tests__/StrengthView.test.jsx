@@ -34,7 +34,7 @@ const renderView = () =>
 describe('StrengthView', () => {
   beforeEach(() => hookState.mockReset());
 
-  it('renders the first lift trend, templates and sessions', () => {
+  it('renders the first lift trend and sessions', () => {
     hookState.mockReturnValue(loaded({ lifts, setCount: 3, scoredCount: 3 }));
     renderView();
     expect(
@@ -44,7 +44,8 @@ describe('StrengthView', () => {
     expect(screen.getByText('35kg')).toBeInTheDocument();
     expect(screen.getByText(/current e1RM · 1\/9\/01/)).toBeInTheDocument();
     expect(screen.getByText('+5.0kg')).toBeInTheDocument();
-    expect(screen.getByText(/SAVED TEMPLATES/i)).toBeInTheDocument();
+    expect(screen.queryByText(/SAVED TEMPLATES/i)).toBeNull();
+    expect(screen.queryByText(/Prehab/)).toBeNull();
     expect(screen.getByText('STRENGTH SESSIONS')).toBeInTheDocument();
   });
 

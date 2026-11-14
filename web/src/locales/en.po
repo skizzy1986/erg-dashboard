@@ -155,11 +155,6 @@ msgstr "Erg"
 msgid "ERG"
 msgstr "ERG"
 
-#. Header tagline, all capitals
-#: src/App.jsx
-msgid "ERG + STRENGTH · BASE"
-msgstr "ERG + STRENGTH · BASE"
-
 #: src/utils/stravaStatus.js
 msgid "Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically."
 msgstr "Importing history — {imported} imported, {adopted} matched to existing sessions. Continuing automatically."

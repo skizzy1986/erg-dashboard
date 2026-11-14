@@ -75,7 +75,7 @@ Green is at its most misleading here.
 **Read it yourself — do not trust the table below, this file included.**
 
 ```bash
-gh api repos/skizzy1986/erg-dashboard/rulesets/18063518 \
+gh api repos/skizzy1986/SplitIQ/rulesets/18063518 \
   --jq '{updated_at, bypass: .bypass_actors, required: [.rules[]
     | select(.type=="required_status_checks")
     | .parameters.required_status_checks[].context]}'
@@ -114,12 +114,12 @@ functions, so on a `coach-chat` change it **runs, passes, and verifies nothing**
 Requiring it did not close that hole.
 
 **`Build Debug APK` is required; the job it depends on is not.** `build-apk` declares
-`needs: [changes, build-web]` with a plain `if:` and no `always()` (`ci-android.yml:64-66`),
+`needs: [changes, build-web]` with a plain `if:` and no `always()` (`ci-android.yml:80-81`),
 so when `Build Web Assets` **fails**, `build-apk` does not run and reports `skipped` — which
 branch protection counts as passing. Requiring the APK therefore does not require the web
 build behind it. The overlap is partial cover, not full: a genuine compile break also fails
 `Build` in `ci-web.yml`, which is required, but `Build Web Assets` additionally consumes
-`secrets.SUPABASE_URL` / `SUPABASE_ANON_KEY` (`ci-android.yml:55-57`) that `ci-web`'s Build
+`secrets.SUPABASE_URL` / `SUPABASE_ANON_KEY` (`ci-android.yml:68-70`) that `ci-web`'s Build
 does not, so a rotated or missing secret fails it alone — and turns the required APK check
 green by skipping it. *Reasoned from the workflow and GitHub's `needs` semantics; not yet
 observed in this repo. Verify before citing it as the cause of a specific green.* Requiring
@@ -142,6 +142,8 @@ it guards live in `.claude/skills/**` and the repo-root `CLAUDE.md` (#325). Veri
 the required set; the `Zone bands` row it does carry is now correctly a gate (#311).
 
 ## Verified against
+
+`ci-android.yml` line citations (`:21-24`, `:27`, `:68-70`, `:80-81`) re-checked on 2026-11-14 at `b2bcbce`; the two in *What protects `main`* had drifted after #524 added a path-filter line.
 
 The *Reports but is not required* row re-verified on 2026-11-09 against `.github/workflows/migrations-manifest.yml` as added by #451: it reports `Detect migration inputs` (covered by the `Detect …` clause) and `Migrations manifest is consistent`, and the ruleset query below had not been re-run for it, so the required set is still assumed to be the same ten until it is.
 
@@ -174,7 +176,7 @@ converted by #317, `.github/workflows/context7-rule.yml` as added by #325, and �
 required set — **the ruleset API itself**, not a screenshot and not a person's recollection:
 
 ```
-GET /repos/skizzy1986/erg-dashboard/rulesets/18063518
+GET /repos/skizzy1986/SplitIQ/rulesets/18063518
   → updated_at 2026-08-28T12:22:08.154+08:00, bypass_actors [], enforcement active
   → 10 required contexts, as listed above
 ```

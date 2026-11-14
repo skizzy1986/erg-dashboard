@@ -276,7 +276,7 @@ describe('SquatApp', () => {
       const hero = screen.getByTestId('squat-hero');
       expect(hero.style.display).toBe('grid');
       expect(hero.style.gridTemplateColumns).toBe(
-        'minmax(0, 1fr) clamp(260px, 26vw, 320px)'
+        'minmax(0px, 1fr) clamp(260px, 26vw, 320px)'
       );
       const [first, second] = hero.children;
       expect(first).toBe(screen.getByRole('region', { name: '3D model' }));

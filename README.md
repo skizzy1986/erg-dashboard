@@ -4,15 +4,15 @@ A personal training system for rowing, strength, and cycling — built to replac
 Strava, Garmin Connect, Concept2 Logbook, and TrainingPeaks with a single,
 fully personalised app.
 
-[![CI — Web](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-web.yml/badge.svg)](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-web.yml)
-[![CI — Android](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-android.yml/badge.svg)](https://github.com/skizzy1986/erg-dashboard/actions/workflows/ci-android.yml)
+[![CI — Web](https://github.com/skizzy1986/SplitIQ/actions/workflows/ci-web.yml/badge.svg)](https://github.com/skizzy1986/SplitIQ/actions/workflows/ci-web.yml)
+[![CI — Android](https://github.com/skizzy1986/SplitIQ/actions/workflows/ci-android.yml/badge.svg)](https://github.com/skizzy1986/SplitIQ/actions/workflows/ci-android.yml)
 
 **v1.3.0** · React 19 + Supabase + Capacitor Android · Deployed on Vercel
 
 > **New collaborator?** Start at [`docs/onboarding/START_HERE.md`](docs/onboarding/START_HERE.md)
 > (no GitHub experience needed). From there, run the public squat tool with no secrets,
 > learn how it's built with Claude Code's `/collaborate` mode, and share ideas in
-> [Discussions](https://github.com/skizzy1986/erg-dashboard/discussions/categories/ideas).
+> [Discussions](https://github.com/skizzy1986/SplitIQ/discussions/categories/ideas).
 
 ---
 
@@ -162,7 +162,7 @@ npx vitest run --coverage  # Tests + coverage report
 ## Project Structure
 
 ```
-erg-dashboard/
+SplitIQ/
 ├── web/
 │   ├── src/
 │   │   ├── constants/        training config, exercise library, UI config

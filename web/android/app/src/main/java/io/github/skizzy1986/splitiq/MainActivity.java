@@ -1,4 +1,4 @@
-package com.ergdashboard.android;
+package io.github.skizzy1986.splitiq;
 
 import com.getcapacitor.BridgeActivity;
 
