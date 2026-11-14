@@ -15,6 +15,9 @@
 > for the log (L1–L3), tracked by epic
 > [#511](https://github.com/skizzy1986/SplitIQ/issues/511). D19 records an intention
 > to deepen the squat tool; it approves nothing.
+>
+> Amended 2026-11-14: the language track (Spanish, es-CO), I1–I8, D20–D23, and the
+> bundle baseline re-measured after it.
 
 ## What SplitIQ is
 
@@ -199,6 +202,32 @@ Done when an invited coach can read exactly what one athlete has granted, and no
 | R42 | Coach–athlete relationship, grants and RLS, built to R37's spec, with every policy tested as denied by default | L | R37, R41, H2 done |
 | R43 | Coach view in the four destinations, and coach-set plans through the planner | L | R38, R40, R42 |
 
+## The language track (added 2026-11-14, D20–D23)
+
+Spanish (es-CO) across the whole app: the dashboard, `/squat` and the APK. It ran as
+roadmap PRs through `/orchestrate`, one PR per phase. The approved story and spec, with
+the per-phase decisions, are [`i18n/SPEC.md`](i18n/SPEC.md); the native-review sheet is
+[`i18n/REVIEW-es-CO.md`](i18n/REVIEW-es-CO.md). Every phase keeps the rules in D20.
+
+Done when every screen a user can reach reads in Spanish under the toggle, `/squat`
+included, and a native speaker has signed off the copy.
+
+| # | Item | Status | Depends on |
+|---|---|---|---|
+| I1 | Mobile Settings screen, reached from a gear on Today; sign-out moves into it on mobile (PR-M) | **Done** — [#508](https://github.com/skizzy1986/SplitIQ/pull/508) | — |
+| I2 | Lingui 6 foundation and the dashboard shell in Spanish: login and toggle, splash, nav, Settings → Idioma, the Strava panel, error states, mobile Settings (PR-1) | **Done** — [#522](https://github.com/skizzy1986/SplitIQ/pull/522) | I1 |
+| I3 | The settled views (Phase 2a): Overview, Calendar, Plan, Log, Recovery; mobile Today, Progress, Body and the Train picker. Adds a second, lazily loaded "views" catalog so view text stays off first paint | **Done** — [#533](https://github.com/skizzy1986/SplitIQ/pull/533) | I2 |
+| I4 | The remaining views (Phase 2b), each in or after the PR that settles it: Live and the mobile Strength pane after #518/#519; Erg after #422; Mobility after #423; Strength and the logger after #520. Until then those screens are English inside Spanish menus, which D20 accepts | Waiting | #518, #519, #422, #423, #520 |
+| I5 | `/squat` chrome on Lingui (PR-2): controls, labels, notices and the guide shell. Expect a `SQUAT_ENTRY` raise under #504, because the Lingui runtime then counts in the squat entry | Not started | I2 |
+| I6 | `/squat` prose (PR-3): guide prose, muscle names and roles from the pinned manifest, synonyms, rep summaries, as an id-keyed overlay so `content.test.js` stays unedited | Not started | I5 |
+| I7 | Native-speaker sign-off: Scott's Colombian reviewer works through `REVIEW-es-CO.md`; corrections land as follow-up PRs, and `review.es-CO.json` moves to `reviewed` once the copy is final | Pending — waived as a merge gate (D22) | — |
+| I8 | Follow-ups from Phase 2a: a date picker for the log form ([#528](https://github.com/skizzy1986/SplitIQ/issues/528)), retrying a failed Spanish download without a reload ([#529](https://github.com/skizzy1986/SplitIQ/issues/529)), the design-sync barrel under Lingui ([#521](https://github.com/skizzy1986/SplitIQ/issues/521)) | Open | — |
+
+Known limits carried by the track: an offline PWA user drops back to English after each
+deploy until they reconnect (the Spanish chunks are never precached by design; the APK is
+unaffected), and the desktop has no splash, so a hung Spanish download shows an empty
+ground for up to 4 s before English.
+
 ## What we are not building
 
 | Not building | Why |
@@ -226,8 +255,10 @@ Done when an invited coach can read exactly what one athlete has granted, and no
   `LICENSE`.
 - The SimTK/OpenSim and OpenCap terms are not yet read (R2). Nothing is promoted beyond
   the current collaborator until they are.
-- Coverage thresholds and bundle ceilings never go down. The one granted raise is D9
-  (`SQUAT_TOTAL` for charts, with `SQUAT_ENTRY` held at 117 KB).
+- Coverage thresholds never go down. Bundle ceilings rise only under the #504 rule
+  (measured + ~2 KB, a dated comment, Scott's approval at the PR's Gate 2) and ratchet
+  down when the bundle shrinks. Raises granted so far include D9 and the language
+  track's (D23).
 - `/squat` never imports `supabaseClient.js`. No personal data in a shareable link.
 - Health data lives in the database behind owner-only RLS, never in tracked source or a
   public chunk. Before any real user beyond invitation, get a proper read on the Privacy
@@ -235,7 +266,7 @@ Done when an invited coach can read exactly what one athlete has granted, and no
   and no coach reads an athlete's row before it (D17). Coach access adds per-category
   grants on top of owner-only RLS; it never loosens it.
 
-## Bundle baseline — measured 2026-11-07 at `bdac9fb` (after slice 4a, #447)
+## Bundle baseline — measured 2026-11-14 at `556673e` (after the language track's I3, #533)
 
 Re-measure with `npm run build && npm run size` before any PR that touches `/squat`'s
 static graph; never quote this table as current. The PR template asks for the five squat
@@ -243,12 +274,18 @@ figures in the body of every such PR (R7, #436).
 
 | Budget | Measured | Ceiling | Spare |
 |---|---|---|---|
-| Dashboard entry | 146.8 KB | 150 KB | 3.2 KB |
-| Dashboard total | 377.5 KB | 400 KB | 22.5 KB |
-| Squat entry | 116.4 KB | 117 KB | **0.6 KB** |
-| Squat total | 27.6 KB | 30 KB | 2.4 KB |
-| Squat 3D | 138.2 KB | 145 KB | 6.8 KB |
-| Squat data | 2,202,168 B | 2,300,000 B | ~98 KB |
+| Dashboard entry | 156.3 KB | 157 KB | **0.7 KB** |
+| Dashboard total | 338.7 KB | 400 KB | 61.3 KB |
+| Dashboard Spanish (`DASH_ES`) | 7.4 KB | 9 KB | 1.6 KB |
+| Squat entry | 122.0 KB | 124 KB | 2.0 KB |
+| Squat total | 33.0 KB | 34 KB | 1.0 KB |
+| Squat 3D | 138.4 KB | 145 KB | 6.6 KB |
+| Squat data | 2.20 MB | 2.30 MB | ~0.1 MB |
+
+The dashboard entry has the least room left: the next entry-growing change needs a #504
+raise or the `RealtimeClient` reclaim (see the repo-root `CLAUDE.md`). I5 will need a
+`SQUAT_ENTRY` raise. The previous baseline (2026-11-07 at `bdac9fb`: entry 146.8 / 150,
+total 377.5 / 400, squat entry 116.4 / 117) is kept in git history.
 
 ## Decisions record
 
@@ -273,5 +310,9 @@ figures in the body of every such PR (R7, #436).
 | D17 | 2026-11-13: Privacy read starts with a `/research` note from primary sources (R33). Scott decides after it whether a professional opinion is needed. No coach reads an athlete's row before then |
 | D18 | 2026-11-13: "Not building" narrowed to match `VISION.md`. One-athlete prescription, coaching-business features and team logging stay out; the generic planner and a coach's list of athletes are in. D4 is unchanged |
 | D19 | 2026-11-13: Intention recorded, nothing approved: a deeper pass on the squat tool (UI polish, variants, a female model, a skinned body and brand avatars). R44's deep dive runs first and its Gate 1 decides the build |
+| D20 | 2026-11-13: Spanish is es-CO (Latin American, Colombian), **tú only, never usted** (a test enforces it), decimal point, English as the first-visit default with no browser detection. Views still pending their #412 slice stay wholly English in Spanish mode. User data (session labels, exercise names, notes, anchor values) is never translated |
+| D21 | 2026-11-13: Lingui 6 for the whole app; mobile Settings is its own PR (I1); the dashboard ENTRY budget may rise under the #504 rule |
+| D22 | 2026-11-13: Scott waived the native-speaker review as a merge gate for I2 and I3, after reviewing the preview himself as an intermediate learner. The review stays tracked as pending (I7); wording fixes land as follow-up PRs |
+| D23 | 2026-11-13/14: Budget changes from the language track: `ENTRY` 150 → 157 and `SQUAT_ENTRY` 122 → 124 (I2), a new `DASH_ES` line at 5 KB raised to 9 KB with a second, lazily loaded views catalog (I3). The views' English loads with the dashboard shells, not on first paint |
 
 A changed decision is a new row here with the date, not an edit to the old one.
