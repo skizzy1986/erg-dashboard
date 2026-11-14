@@ -400,6 +400,21 @@ precached, and carved out of TOTAL so a language never reads as the dashboard
 growing. Spare after it: entry 1.4 KB, squat entry 2.0 KB — the 3.2 KB entry figure
 below predates it.
 
+**i18n Phase 2a (Spanish for the settled views) raised DASH_ES 5 → 9 and nothing else**,
+measured 2026-11-14 after rebasing onto `f305cde` (#532): **entry 156.3 / 157, total 338.7 / 400, squat entry 122.0 / 124,
+squat total 33.0 / 34, squat 3D 138.4 / 145 KB, DASH_ES 7.4 / 9 KB**, data 2.20 MB. The
+views' words are a second dashboard catalog (`src/locales/views/`, files listed in
+`VIEWS_SOURCES` in `web/lingui.config.js`): its English rides in the lazy shells'
+chunk (`App.jsx` and `MobileApp.jsx` import `src/i18n/views.js`), so it is in TOTAL,
+not ENTRY; its Spanish is a second `i18n-es-*` chunk, counted in DASH_ES with the boot
+catalog's, and prefetched by the boot path (`registerPrefetch` in
+`src/i18n/dashboard.js`, Spanish only) the moment Spanish is chosen or booted. The size
+step fails if the views English reaches either first paint (found by its words:
+`catalogTextLeaks` in `entry-graph.mjs`). The entry still grew ~0.6 KB against PR-1's 155.6 (measured
+159,970 B before that rebase): `locale.js` now loads several catalogs per product and prefetches a
+late one, and `LanguageProvider` holds a Spanish visitor until a late-registering one
+arrives. Spare after it: entry 0.7 KB, DASH_ES 1.6 KB.
+
 **Squat-only JS is `squat-` prefixed, never precached, and cached at runtime instead** — a
 reversal of PR1, where the tool's (then small) JS chunks were precached. `chunkFileNames`
 in `web/vite.config.js` names a chunk `squat-*` only when every module in it is under

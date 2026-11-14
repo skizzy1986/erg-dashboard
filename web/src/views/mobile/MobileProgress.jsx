@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useLingui } from '@lingui/react/macro';
+import { msg } from '@lingui/core/macro';
 import MobileAnalytics from './MobileAnalytics.jsx';
 import MobileSessionLog from './MobileSessionLog.jsx';
 import MobileStrength from './MobileStrength.jsx';
@@ -25,7 +27,20 @@ const PANES = [
   { id: 'strength', label: 'Strength', render: () => <MobileStrength /> },
 ];
 
+// What each pane's tab says; PANES keeps its English for code and tests.
+export const PANE_MESSAGES = {
+  load: msg({ message: 'Load', comment: 'Progress sub-tab: training load' }),
+  history: msg({
+    message: 'History',
+    comment: 'Progress sub-tab: past sessions',
+  }),
+  strength: msg({ message: 'Strength', comment: 'Progress sub-tab' }),
+};
+
+export { PANES };
+
 export default function MobileProgress() {
+  const { t, i18n } = useLingui();
   const [pane, setPane] = useState(PANES[0].id);
   const active = PANES.find((p) => p.id === pane) ?? PANES[0];
 
@@ -33,7 +48,7 @@ export default function MobileProgress() {
     <div style={{ background: THEME.bg, minHeight: '100vh' }}>
       <div
         role="tablist"
-        aria-label="Progress"
+        aria-label={t`Progress`}
         style={{
           display: 'flex',
           gap: SPACE.xs,
@@ -69,7 +84,7 @@ export default function MobileProgress() {
                 cursor: 'pointer',
               }}
             >
-              {p.label}
+              {i18n._(PANE_MESSAGES[p.id])}
             </button>
           );
         })}

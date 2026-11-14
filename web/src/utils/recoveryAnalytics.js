@@ -1,3 +1,4 @@
+import { msg } from '@lingui/core/macro';
 import { THEME } from '../constants/theme.js';
 // Population fallbacks, used only until 14 days of personal data exist. Exported
 // so tests and any other reader use these numbers rather than a second copy.
@@ -81,6 +82,30 @@ export function computeReadiness(latest, baselines = {}, tsb = null) {
   const partial = latest.hrv == null || latest.sleep == null;
   return { score, status, color, partial };
 }
+
+// The readiness status is a code: views and useVitals compare it, so it stays
+// English. What a view shows is its descriptor, translated at render.
+export const READINESS_STATUS_MESSAGES = {
+  READY: msg({ message: 'READY', comment: 'Readiness status, all capitals' }),
+  CAUTION: msg({
+    message: 'CAUTION',
+    comment: 'Readiness status, all capitals',
+  }),
+  FATIGUED: msg({
+    message: 'FATIGUED',
+    comment: 'Readiness status, all capitals',
+  }),
+  'NO DATA': msg({
+    message: 'NO DATA',
+    comment:
+      'Readiness status when there is no resting heart rate, all capitals',
+  }),
+};
+
+export const readinessStatusText = (i18n, status) =>
+  READINESS_STATUS_MESSAGES[status]
+    ? i18n._(READINESS_STATUS_MESSAGES[status])
+    : status;
 
 export function computeReadinessHistory(rows, baselines = {}) {
   return (rows ?? [])

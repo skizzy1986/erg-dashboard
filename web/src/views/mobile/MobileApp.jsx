@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import '../../i18n/views.js';
 import MobileToday from './MobileToday.jsx';
 import MobileProgress from './MobileProgress.jsx';
 import MobileTrain from './MobileTrain.jsx';

@@ -1,10 +1,13 @@
+import { Trans, useLingui } from '@lingui/react/macro';
 import LogSessionForm from '../components/LogSessionForm.jsx';
 import LogEntry from '../components/LogEntry.jsx';
 import { SRPE_GUIDE } from '../constants/trainingConfig.js';
+import { SRPE_GUIDE_MESSAGES } from '../constants/srpeGuideMessages.js';
 import { THEME } from '../constants/theme.js';
 
 // ── LOG VIEW (session log form + sRPE reference + logged history) ──
 export default function LogView({ logDisplaySessions, isWide, onSaved }) {
+  const { i18n } = useLingui();
   return (
     <>
       <div
@@ -21,10 +24,14 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
         }}
       >
         <span style={{ color: THEME.caution, fontWeight: 700 }}>
-          SESSION LOG:{' '}
+          <Trans comment="Banner lead-in, all capitals">
+            SESSION LOG:
+          </Trans>{' '}
         </span>
-        Share Concept2 links or Fitbod screenshots to add sessions. sRPE
-        captured every session.
+        <Trans comment="Concept2 and Fitbod are brand names: keep them">
+          Share Concept2 links or Fitbod screenshots to add sessions. sRPE
+          captured every session.
+        </Trans>
       </div>
 
       {/* Interactive log form — writes to the database */}
@@ -49,7 +56,9 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
             marginBottom: 8,
           }}
         >
-          sRPE SCALE · TALK-TEST ANCHORED (asked every session)
+          <Trans comment="sRPE stays as is; the rest is in capitals except the parenthesis">
+            sRPE SCALE · TALK-TEST ANCHORED (asked every session)
+          </Trans>
         </div>
         {SRPE_GUIDE.map((s, i) => (
           <div
@@ -80,7 +89,7 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
                   fontWeight: 600,
                 }}
               >
-                {s.label}
+                {i18n._(SRPE_GUIDE_MESSAGES[s.range].label)}
               </span>
               <span
                 style={{
@@ -89,7 +98,7 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
                   marginLeft: 6,
                 }}
               >
-                — {s.anchor}
+                — {i18n._(SRPE_GUIDE_MESSAGES[s.range].anchor)}
               </span>
             </div>
           </div>
@@ -103,10 +112,12 @@ export default function LogView({ logDisplaySessions, isWide, onSaved }) {
             fontStyle: 'italic',
           }}
         >
-          Over-rating easy work is the common error — anchor to the talk test.
-          TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output)
-          cross-checked every session. All agree = confidence; diverge = early
-          fatigue/stress signal.
+          <Trans comment="Strava is a brand; RE is relative effort; HR is heart rate">
+            Over-rating easy work is the common error — anchor to the talk test.
+            TRIANGULATION: sRPE (felt) + Strava RE (HR-dist) + watts/HR (output)
+            cross-checked every session. All agree = confidence; diverge = early
+            fatigue/stress signal.
+          </Trans>
         </div>
       </div>
       <div

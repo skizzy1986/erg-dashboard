@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { C, ICON } from '../constants/ui.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
+import { displayLogDate } from '../utils/displayLocale.js';
 
 export default function LogEntry({ entry, done = false }) {
+  const { t, i18n } = useLingui();
   const [open, setOpen] = useState(false);
   const color = C[entry.type] || THEME.neutralAccent;
   const isErg = !!entry._isErg;
+  const duration = entry.duration;
   const planned = entry.status === 'planned';
   const cancelled = entry.status === 'cancelled';
   // Flat erg metrics replaced the removed `splits` field. Planned erg rows
@@ -83,7 +87,7 @@ export default function LogEntry({ entry, done = false }) {
                     verticalAlign: 'middle',
                   }}
                 >
-                  ✓ DONE
+                  <Trans comment="Badge, all capitals">✓ DONE</Trans>
                 </span>
               )}
               {planned && !done && (
@@ -100,7 +104,7 @@ export default function LogEntry({ entry, done = false }) {
                     verticalAlign: 'middle',
                   }}
                 >
-                  PLANNED
+                  <Trans comment="Badge, all capitals">PLANNED</Trans>
                 </span>
               )}
               {cancelled && !done && (
@@ -118,12 +122,12 @@ export default function LogEntry({ entry, done = false }) {
                     verticalAlign: 'middle',
                   }}
                 >
-                  CANCELLED
+                  <Trans comment="Badge, all capitals">CANCELLED</Trans>
                 </span>
               )}
             </div>
             <div style={{ fontSize: 11, color: THEME.muted }}>
-              {entry.date}
+              {displayLogDate(i18n.locale, entry.date)}
               {entry.duration ? ` · ${entry.duration}` : ''}
               {entry.srpe != null && (
                 <span style={{ color: THEME.caution }}>
@@ -179,16 +183,35 @@ export default function LogEntry({ entry, done = false }) {
                 }}
               >
                 {[
-                  ['DURATION', entry.duration || '—'],
-                  ['DISTANCE', fmtDist(entry.distance_m)],
                   [
-                    'AVG WATTS',
+                    'duration',
+                    t({ message: 'DURATION', comment: 'Metric, all capitals' }),
+                    entry.duration || '—',
+                  ],
+                  [
+                    'distance',
+                    t({ message: 'DISTANCE', comment: 'Metric, all capitals' }),
+                    fmtDist(entry.distance_m),
+                  ],
+                  [
+                    'watts',
+                    t({
+                      message: 'AVG WATTS',
+                      comment: 'Average power, all capitals',
+                    }),
                     entry.avg_watts != null ? `${entry.avg_watts}W` : '—',
                   ],
-                  ['AVG HR', entry.avg_hr != null ? `${entry.avg_hr}` : '—'],
-                ].map(([k, v]) => (
+                  [
+                    'hr',
+                    t({
+                      message: 'AVG HR',
+                      comment: 'Average heart rate, all capitals',
+                    }),
+                    entry.avg_hr != null ? `${entry.avg_hr}` : '—',
+                  ],
+                ].map(([id, k, v]) => (
                   <div
-                    key={k}
+                    key={id}
                     style={{
                       background: THEME.bg,
                       borderRadius: 4,
@@ -221,10 +244,10 @@ export default function LogEntry({ entry, done = false }) {
                 }}
               >
                 {planned
-                  ? 'Prescription — targets below.'
+                  ? t`Prescription — targets below.`
                   : cancelled
-                    ? 'Cancelled — this session was not completed.'
-                    : 'No metrics logged for this session.'}
+                    ? t`Cancelled — this session was not completed.`
+                    : t`No metrics logged for this session.`}
               </div>
             )
           ) : entry.exercises ? (
@@ -239,13 +262,27 @@ export default function LogEntry({ entry, done = false }) {
               <thead>
                 <tr style={{ borderBottom: `1px solid ${THEME.border}` }}>
                   {[
-                    ['Exercise', '42%'],
-                    ['Top Wt', '19%'],
-                    ['Vol', '20%'],
-                    ['1RM', '19%'],
-                  ].map(([h, w]) => (
+                    ['exercise', t`Exercise`, '42%'],
+                    [
+                      'top',
+                      t({
+                        message: 'Top Wt',
+                        comment: 'Column: heaviest weight lifted, abbreviated',
+                      }),
+                      '19%',
+                    ],
+                    [
+                      'vol',
+                      t({
+                        message: 'Vol',
+                        comment: 'Column: total volume lifted, abbreviated',
+                      }),
+                      '20%',
+                    ],
+                    ['1rm', '1RM', '19%'],
+                  ].map(([id, h, w]) => (
                     <td
-                      key={h}
+                      key={id}
                       style={{
                         padding: '5px 4px',
                         color: THEME.muted,
@@ -318,12 +355,12 @@ export default function LogEntry({ entry, done = false }) {
               }}
             >
               {planned
-                ? 'Prescription — targets below.'
+                ? t`Prescription — targets below.`
                 : cancelled
-                  ? 'Cancelled — this session was not completed.'
+                  ? t`Cancelled — this session was not completed.`
                   : entry.duration
-                    ? `Session · ${entry.duration}`
-                    : 'Session logged.'}
+                    ? t`Session · ${duration}`
+                    : t`Session logged.`}
             </div>
           )}
           {entry.coachNote && (

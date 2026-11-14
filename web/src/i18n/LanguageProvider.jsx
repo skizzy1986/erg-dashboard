@@ -7,10 +7,17 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { bootLocale, ensureLocale } from './locale.js';
+import {
+  bootLocale,
+  catalogNames,
+  ensureLocale,
+  localeReady,
+  subscribeCatalogs,
+} from './locale.js';
 import {
   DEFAULT_LANG,
   LANGS,
@@ -37,13 +44,32 @@ export default function LanguageProvider({ product, children }) {
   // A visitor who chose Spanish is held on the Suspense fallback above (the
   // themed ground) until the catalog arrives, rather than painted in English
   // and repainted: one read, and nothing for a screen reader to announce twice.
-  const bootOk =
-    stored === DEFAULT_LANG ? true : use(bootLocale(stored, product));
+  // The promise is fixed at mount, so a later registration cannot re-suspend a
+  // visitor who has since switched to English.
+  const [boot] = useState(() =>
+    stored === DEFAULT_LANG ? null : bootLocale(stored, product)
+  );
+  const bootOk = boot ? use(boot) : true;
 
   const [lang, setLangState] = useState(() => (bootOk ? stored : DEFAULT_LANG));
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(!bootOk);
   const latest = useRef(0);
+
+  // A catalog registered after boot (the dashboard's views catalog arrives
+  // with its lazy shell) while Spanish is on: hold the same way until it
+  // arrives, or fall back to English with the failure shown, so a view never
+  // paints half its words in the other language. A runtime switch loads every
+  // registered catalog before it flips (setLang), so it never waits here.
+  useSyncExternalStore(subscribeCatalogs, () => catalogNames(product));
+  const held =
+    lang === DEFAULT_LANG || localeReady(lang, product)
+      ? true
+      : use(bootLocale(lang, product));
+  if (!held) {
+    setLangState(DEFAULT_LANG);
+    setFailed(true);
+  }
 
   // A runtime switch never suspends: that would unmount the tree under it,
   // half-filled forms included. It waits for the catalog, then flips.

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trans } from '@lingui/react/macro';
 import { workoutAccent } from '../utils/formatting.js';
 import { THEME } from '../constants/theme.js';
 import { alpha } from '../utils/themeCss.js';
@@ -87,7 +88,9 @@ export default function WorkoutItem({
                 marginBottom: 3,
               }}
             >
-              ● TODAY
+              <Trans comment="Marks today in the calendar, all capitals">
+                ● TODAY
+              </Trans>
             </div>
           )}
           {session ? (
@@ -177,7 +180,9 @@ export default function WorkoutItem({
               }}
             >
               <span style={{ color: THEME.positive, fontWeight: 700 }}>
-                🍽 FUEL:{' '}
+                <Trans comment="What to eat around the session, all capitals">
+                  🍽 FUEL:
+                </Trans>{' '}
               </span>
               {session.fuel}
             </div>
@@ -203,12 +208,12 @@ export default function WorkoutItem({
                   marginBottom: 5,
                 }}
               >
-                🍴 MEAL SIZE
+                <Trans comment="All capitals">🍴 MEAL SIZE</Trans>
               </div>
               {session.meal.pre && (
                 <div style={{ marginBottom: session.meal.post ? 5 : 0 }}>
                   <span style={{ color: THEME.caution, fontWeight: 700 }}>
-                    Pre:{' '}
+                    <Trans comment="Meal before the session">Pre:</Trans>{' '}
                   </span>
                   {session.meal.pre}
                 </div>
@@ -216,7 +221,7 @@ export default function WorkoutItem({
               {session.meal.post && (
                 <div>
                   <span style={{ color: THEME.caution, fontWeight: 700 }}>
-                    Post:{' '}
+                    <Trans comment="Meal after the session">Post:</Trans>{' '}
                   </span>
                   {session.meal.post}
                 </div>

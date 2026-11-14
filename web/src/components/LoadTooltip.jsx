@@ -1,9 +1,12 @@
 import React from 'react';
+import { useLingui } from '@lingui/react';
 import { THEME } from '../constants/theme.js';
 import { tsbBand } from '../utils/trainingLoad.js';
 import { FONT } from '../constants/type.js';
+import { displayChartDate } from '../utils/displayLocale.js';
 
 export default function LoadTooltip({ active, payload }) {
+  const { i18n } = useLingui();
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   const tsbColor = THEME[tsbBand(d.tsb)?.token] ?? THEME.muted;
@@ -27,7 +30,7 @@ export default function LoadTooltip({ active, payload }) {
           letterSpacing: 2,
         }}
       >
-        {d.date}
+        {displayChartDate(i18n.locale, d.date)}
         {d.note ? ` · ${d.note}` : ''}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
