@@ -1,0 +1,29 @@
+{
+  // ESLint: find web/eslint.config.js from whichever file is open
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+
+  // Prettier: only format where a .prettierrc exists (web/), and only JS/JSX,
+  // matching what `npm run format:check` and the pre-commit hook cover
+  "prettier.requireConfig": true,
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+
+  // Vitest: the one test config lives in web/
+  "vitest.rootConfig": "web/vite.config.js",
+
+  // Deno only for the edge functions; web/ keeps the built-in TS server
+  "deno.enablePaths": ["./supabase/functions"],
+
+  // Keep generated output out of search and the file tree
+  "search.exclude": {
+    "**/node_modules": true,
+    "web/dist": true,
+    "web/coverage": true
+  }
+}

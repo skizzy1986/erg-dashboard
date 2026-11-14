@@ -1,0 +1,20 @@
+{
+  // Start the dev server first: `npm run dev` in web/ (Vite default port 5173)
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "Debug web (Edge)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/web"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug web (Chrome)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/web"
+    }
+  ]
+}
